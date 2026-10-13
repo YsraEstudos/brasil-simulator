@@ -32,7 +32,7 @@ jobs:
           [[ -n "$SONAR_ORGANIZATION" ]] || missing+=(SONAR_ORGANIZATION variable)
           [[ -n "$SONAR_PROJECT_KEY" ]] || missing+=(SONAR_PROJECT_KEY variable)
           if (( ${#missing[@]} )); then
-            printf 'Missing GitHub Actions configuration: %s\\n' "${missing[*]}" >&2
+            printf '%s\n' "Missing GitHub Actions configuration: ${missing[*]}" >&2
             exit 1
           fi
       - name: SonarCloud analysis
