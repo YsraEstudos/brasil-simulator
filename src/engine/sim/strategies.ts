@@ -1,4 +1,5 @@
 import type { EventChoiceDefinition, GameEvent } from '../../types/event';
+import { AGENDA_ACTIONS, PRESSURE_ACTION_ID } from '../actions';
 import { createRng, seedRng, type Rng } from '../rng';
 import type { Decision, EventChoice, GameContent, GameState, MonthInput } from '../types';
 
@@ -90,6 +91,7 @@ function pickOne<T>(rng: Rng, items: readonly T[]): T | undefined {
 }
 
 const POPULISTA_ORDER = [
+  'salario_minimo_valorizacao',
   'transferencia_renda_ampliacao',
   'infraestrutura_credito_adicional',
   'iof_credito_reducao',
@@ -100,6 +102,20 @@ const POPULISTA_ORDER = [
 const AUSTERA_ORDER = ['contingenciamento', 'gastos_tributarios_revisao', 'reforma_administrativa'];
 
 const REFORMISTA_ORDER = ['reforma_administrativa', 'gastos_tributarios_revisao', 'infraestrutura_credito_adicional'];
+
+/** Renda e consumo da base da pirâmide: transferências, salário mínimo e IR progressivo (ECONOMIC_MODEL.md §9). */
+const DISTRIBUTIVA_ORDER = ['transferencia_renda_ampliacao', 'salario_minimo_valorizacao', 'irpf_tabela'];
+
+/** Capacidade de produzir: infraestrutura, reforma do Estado, revisão de benefícios e crédito mais barato. */
+const PRO_OFERTA_ORDER = [
+  'infraestrutura_credito_adicional',
+  'reforma_administrativa',
+  'gastos_tributarios_revisao',
+  'iof_credito_reducao',
+];
+
+/** Pressão sobre o BC a cada trimestre (ECONOMIC_MODEL.md §5.4.1, teste de sentido). */
+const PRESSURE_EVERY_MONTHS = 3;
 
 /** Linha de base: não envia nada e não responde a eventos (os padrões entram sozinhos no prazo). */
 const inerte: Strategy = {
@@ -168,5 +184,55 @@ const aleatoria: Strategy = {
   },
 };
 
+const distributiva: Strategy = {
+  id: 'distributiva',
+  name: 'Distributiva',
+  decide(state, content) {
+    const events = answerEvents(state, content, useDefault);
+    return { decisions: sendInOrder(state, content, DISTRIBUTIVA_ORDER, events.spent), eventChoices: events.choices };
+  },
+};
+
+const proOferta: Strategy = {
+  id: 'pro_oferta',
+  name: 'Pró-oferta',
+  decide(state, content) {
+    const events = answerEvents(state, content, useDefault);
+    return { decisions: sendInOrder(state, content, PRO_OFERTA_ORDER, events.spent), eventChoices: events.choices };
+  },
+};
+
+/**
+ * A mesma estratégia, pressionando o Banco Central a cada trimestre quando sobra ponto de agenda depois das
+ * decisões dela (o motor processa eventos e decisões na ordem enviada).
+ */
+export function withQuarterlyPressure(base: Strategy): Strategy {
+  const pressure = AGENDA_ACTIONS[PRESSURE_ACTION_ID];
+  return {
+    id: `${base.id}_pressao_bc`,
+    name: `${base.name} + pressão sobre o BC`,
+    decide(state, content) {
+      const input = base.decide(state, content);
+      if (!pressure || state.monthIndex % PRESSURE_EVERY_MONTHS !== 0) return input;
+      const eventCost = (input.eventChoices ?? []).reduce((sum, choice) => {
+        const def = content.events.find((e) => e.id === choice.eventId)?.choices.find((c) => c.id === choice.choiceId);
+        return sum + (def?.agendaCost ?? 0);
+      }, 0);
+      const spent = eventCost + input.decisions.reduce((sum, d) => sum + d.agendaCost, 0);
+      if (state.resources.agendaPointsPerMonth - spent < pressure.agendaCost) return input;
+      return { ...input, decisions: [...input.decisions, { policyId: pressure.id, agendaCost: pressure.agendaCost }] };
+    },
+  };
+}
+
 /** Todas as estratégias-robô, na ordem de exibição do balanceamento. */
-export const STRATEGIES: readonly Strategy[] = [inerte, populistaFiscal, austera, reformista, aleatoria];
+export const STRATEGIES: readonly Strategy[] = [
+  inerte,
+  populistaFiscal,
+  austera,
+  reformista,
+  distributiva,
+  proOferta,
+  withQuarterlyPressure(inerte),
+  aleatoria,
+];

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_SCENARIO_ID, loadContent, PROTOTYPE_MONTHS } from '@/content';
 
+import { isAgendaAction } from '../actions';
 import { advanceMonth } from '../advanceMonth';
 import { createInitialState } from '../state';
 import type { GameContent, Indicators, MonthInput } from '../types';
@@ -111,7 +112,7 @@ describe('Estratégias-robô: ações legítimas (GAME_DESIGN.md §4.3 e ECONOMI
     const allowed = new Set(content.scenario.policies);
     for (const s of STRATEGIES) {
       for (const { input } of playInputs(s, 2, PROTOTYPE_MONTHS)) {
-        for (const d of input.decisions) expect(allowed.has(d.policyId)).toBe(true);
+        for (const d of input.decisions) expect(allowed.has(d.policyId) || isAgendaAction(d.policyId)).toBe(true);
       }
     }
   });
@@ -168,6 +169,13 @@ describe('summarizeRuns', () => {
       primaryEnd: 0,
       selicEnd: 0.1,
       approvedProposals: 1,
+      cumulativeGrowth: 0.02,
+      max: { inflation, grossDebt: 0.8, selic: 0.1, riskPremium: 0.025 },
+      monthsOverLimit: 0,
+      monthsBelowFloor: 0,
+      exchangeRateEnd: 5.4,
+      riskPremiumEnd: 0.025,
+      impulsesEnd: 0,
     });
     const [a, b] = summarizeRuns([run('x', 0.04), run('y', 0.1, ['erro']), run('x', 0.06)]);
     expect(a?.strategyId).toBe('x');
