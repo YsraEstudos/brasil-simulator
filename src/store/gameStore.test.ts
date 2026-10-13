@@ -69,6 +69,23 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     expect(app.getState().campaigns[0].status).toBe('encerrada');
   });
 
+  it('corrige ao carregar uma campanha com o último mês gravado mas ainda "ativa"', async () => {
+    const { db, launchApp } = await device();
+    let app = await launchApp();
+    await app.getState().newCampaign({ name: 'Interrompida', difficulty: 'casual' });
+    const id = app.getState().active!.id;
+    for (let m = 0; m < PROTOTYPE_MONTHS; m++) await app.getState().endMonth();
+    // Simula um save antigo: último mês gravado, status não atualizado.
+    await db.run("UPDATE campaigns SET status = 'ativa' WHERE id = ?", [id]);
+
+    app = await launchApp();
+    await app.getState().continueCampaign(id);
+    expect(app.getState().active!.finished).toBe(true);
+    await app.getState().endMonth();
+    expect(app.getState().active!.state.monthIndex).toBe(PROTOTYPE_MONTHS);
+    expect(app.getState().campaigns[0].status).toBe('encerrada');
+  });
+
   it('apaga campanhas e mantém a lista coerente', async () => {
     const { launchApp } = await device();
     const app = await launchApp();

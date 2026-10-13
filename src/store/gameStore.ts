@@ -131,13 +131,19 @@ export function createGameStore(deps: GameStoreDeps) {
           const state = await loadLatestState(d, id);
           const previous =
             state.monthIndex > 0 ? (await loadStateAt(d, id, state.monthIndex - 1))?.indicators : undefined;
+          // Saves anteriores à gravação atômica podem ter o último mês com status "ativa": corrige ao carregar.
+          const finished = summary?.status === 'encerrada' || state.monthIndex >= PROTOTYPE_MONTHS;
+          if (finished && summary?.status !== 'encerrada') {
+            await finishCampaign(d, id);
+            await refreshList(d);
+          }
           set({
             active: {
               id,
               name: summary?.name ?? id,
               state,
               previous,
-              finished: summary?.status === 'encerrada',
+              finished,
             },
           });
         }),
@@ -147,9 +153,8 @@ export function createGameStore(deps: GameStoreDeps) {
           const active = get().active;
           if (!active || active.finished) return;
           const result = advanceMonth(active.state, decisions);
-          await recordMonth(d, active.id, result);
           const finished = result.state.monthIndex >= PROTOTYPE_MONTHS;
-          if (finished) await finishCampaign(d, active.id);
+          await recordMonth(d, active.id, result, { finish: finished });
           set({
             active: {
               ...active,
