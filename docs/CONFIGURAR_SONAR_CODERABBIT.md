@@ -23,11 +23,9 @@ O workflow interrompe o check se qualquer um desses três valores estiver ausent
 
 ## 2. Ativar CodeRabbit
 
-1. Entre ou crie sua conta no [CodeRabbit](https://app.coderabbit.ai) usando GitHub.
-2. Adicione o repositório `YsraEstudos/brasil-simulator` à lista de repositórios autorizados.
-3. Autorize a instalação do app no repositório privado.
+O status `CodeRabbit` já apareceu como sucesso no PR desta configuração, confirmando que o app está integrado ao repositório. O arquivo `.coderabbit.yaml` solicita revisões automáticas em português, inclusive em PRs em rascunho, e reavalia novos commits.
 
-O arquivo `.coderabbit.yaml` já solicita revisões automáticas em português, inclusive em PRs em rascunho, e reavalia novos commits. O app precisa estar instalado para receber os eventos do GitHub.
+Se o status deixar de aparecer em PRs futuros, entre ou crie uma conta em [CodeRabbit](https://app.coderabbit.ai) com GitHub, adicione `YsraEstudos/brasil-simulator` à lista de repositórios e autorize o app.
 
 ## 3. Exigir os checks antes do merge (opcional)
 
@@ -42,4 +40,6 @@ O workflow não recebe `SONAR_TOKEN` em eventos de pull request originados de fo
 
 ## 4. Confirmar a instalação
 
-Depois de salvar as variáveis e instalar os apps, abra um PR de teste ou atualize um PR aberto. Em **Actions**, confirme que o job `check` termina verde e que o SonarCloud publica o resultado. No PR, confirme que o CodeRabbit iniciou uma revisão. Se o job falhar por configuração ausente, confira os nomes exatos dos secrets e das variáveis na etapa 1.
+Depois de salvar as variáveis, abra um PR de teste ou atualize um PR aberto. Em **Actions**, confirme que o job `check` termina verde e que o SonarCloud publica o resultado. No PR, confirme que o CodeRabbit iniciou uma revisão. Se o job falhar por configuração ausente, confira os nomes exatos dos secrets e das variáveis na etapa 1.
+
+Na primeira execução deste workflow, `npm run check` passou e a validação Sonar falhou porque os três valores ainda não estavam cadastrados. Depois de concluir a etapa 1, reexecute o job para confirmar a análise.
