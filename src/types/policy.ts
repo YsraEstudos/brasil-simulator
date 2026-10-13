@@ -120,6 +120,11 @@ export const policySchema = z
         regions: z.array(z.enum(['norte', 'nordeste', 'centro_oeste', 'sudeste', 'sul', 'nacional'])),
       })
       .strict(),
+    /**
+     * Posição da proposta nos eixos dos blocos (POLITICAL_RULES.md §6.2: afinidade ideológica).
+     * Econômico: −1 estado … 1 mercado. Social: −1 progressista … 1 conservador.
+     */
+    position: z.object({ economic: z.number().min(-1).max(1), social: z.number().min(-1).max(1) }).strict(),
     /** Status dos números desta política (DATA_SOURCES.md §2.1). */
     dataStatus: dataStatusSchema,
   })

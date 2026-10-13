@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { advanceMonth, createInitialState, type GameState, type MonthStep } from '../engine';
+import { TEST_BILL, TEST_DECREE, TEST_PEC, testContent, testState } from '@/tests/fixtures';
+
+import { advanceMonth, type GameState, type MonthStep } from '../engine';
 import {
   CampaignNotFoundError,
   createCampaign,
@@ -15,15 +17,13 @@ import { LATEST_DB_VERSION, MIGRATIONS, type Migration } from './migrations';
 import { openNodeDatabase } from './nodeDatabase';
 import type { SqlDatabase } from './types';
 
-const newState = (seed = 7): GameState =>
-  createInitialState({
-    scenarioId: 'teste',
-    difficulty: 'estrategica',
-    seed,
-    indicators: { approval: 0.45, gdpGrowth12m: 0.02, inflation12m: 0.045, unemployment: 0.06, primaryBalance12m: 0 },
-  });
+const content = testContent();
+const newState = (seed = 7): GameState => testState(seed);
 
-const noise: MonthStep = (_s, rng) => [{ indicator: 'approval', cause: 'ruido_teste', delta: rng.normal() * 0.001 }];
+const noise: MonthStep = (s, ctx) => ({
+  state: { ...s },
+  contributions: [{ indicator: 'approval', cause: 'ruido_teste', delta: ctx.rng.normal() * 0.001 }],
+});
 
 const tables = async (db: SqlDatabase) =>
   (await db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")).map(
@@ -94,7 +94,8 @@ describe('campanhas', () => {
     for (let m = 0; m < 6; m++) {
       const r = advanceMonth(
         state,
-        m === 0 ? [{ policyId: 'decreto_iof', agendaCost: 1, params: { aliquota: 0.01 } }] : [],
+        { decisions: m === 0 ? [{ policyId: TEST_DECREE.id, agendaCost: 1, params: { aliquota: 0.01 } }] : [] },
+        content,
         [noise],
       );
       await recordMonth(db, 'c1', r);
@@ -106,7 +107,9 @@ describe('campanhas', () => {
     expect(resumed).toEqual(state);
 
     // Continuar a partir do save dá o mesmo que continuar sem salvar (determinismo).
-    expect(advanceMonth(resumed, [], [noise]).state).toEqual(advanceMonth(state, [], [noise]).state);
+    expect(advanceMonth(resumed, { decisions: [] }, content, [noise]).state).toEqual(
+      advanceMonth(state, { decisions: [] }, content, [noise]).state,
+    );
 
     const [summary] = await listCampaigns(db);
     expect(summary).toMatchObject({ id: 'c1', currentMonth: 6, difficulty: 'estrategica', status: 'ativa' });
@@ -118,24 +121,33 @@ describe('campanhas', () => {
     await recordMonth(
       db,
       'c1',
-      advanceMonth(state, [
-        { policyId: 'pec_reforma', agendaCost: 2 },
-        { policyId: 'pl_irpf', agendaCost: 2 },
-      ]),
+      advanceMonth(
+        state,
+        {
+          decisions: [
+            { policyId: TEST_PEC.id, agendaCost: 2 },
+            { policyId: TEST_BILL.id, agendaCost: 1 },
+            { policyId: TEST_DECREE.id, agendaCost: 1 },
+          ],
+        },
+        content,
+        [],
+      ),
     );
     const rows = await db.all<{ policy_id: string; accepted: number; rejection_reason: string | null }>(
       'SELECT policy_id, accepted, rejection_reason FROM decisions ORDER BY position',
     );
     expect(rows).toEqual([
-      { policy_id: 'pec_reforma', accepted: 1, rejection_reason: null },
-      { policy_id: 'pl_irpf', accepted: 0, rejection_reason: 'sem_pontos_de_agenda' },
+      { policy_id: TEST_PEC.id, accepted: 1, rejection_reason: null },
+      { policy_id: TEST_BILL.id, accepted: 1, rejection_reason: null },
+      { policy_id: TEST_DECREE.id, accepted: 0, rejection_reason: 'sem_pontos_de_agenda' },
     ]);
   });
 
   it('recusa gravar um mês fora de ordem (não sobrescreve o save)', async () => {
     const state = newState();
     await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
-    const r = advanceMonth(state, []);
+    const r = advanceMonth(state, { decisions: [] }, content, []);
     await recordMonth(db, 'c1', r);
     await expect(recordMonth(db, 'c1', r)).rejects.toThrow(/não está no mês 0/);
     expect((await loadLatestState(db, 'c1')).monthIndex).toBe(1);
@@ -144,7 +156,11 @@ describe('campanhas', () => {
   it('apagar a campanha remove snapshots e decisões em cascata', async () => {
     const state = newState();
     await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
-    await recordMonth(db, 'c1', advanceMonth(state, [{ policyId: 'a', agendaCost: 1 }]));
+    await recordMonth(
+      db,
+      'c1',
+      advanceMonth(state, { decisions: [{ policyId: TEST_DECREE.id, agendaCost: 1 }] }, content, []),
+    );
     await deleteCampaign(db, 'c1');
     for (const t of ['campaigns', 'snapshots', 'decisions']) {
       expect(await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM ${t}`)).toEqual({ n: 0 });

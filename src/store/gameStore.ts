@@ -13,18 +13,16 @@ import {
 } from '@/database/campaignRepository';
 import { getSetting, setSetting } from '@/database/settingsRepository';
 import type { SqlDatabase } from '@/database/types';
+import { DEFAULT_SCENARIO_ID, loadContent, PROTOTYPE_MONTHS, SCENARIOS } from '@/content';
 import {
   advanceMonth,
   createInitialState,
-  indicatorsFromScenario,
-  type Decision,
   type Difficulty,
   type GameState,
   type Indicators,
+  type MonthInput,
   type MonthReport,
 } from '@/engine';
-
-import { DEFAULT_SCENARIO_ID, PROTOTYPE_MONTHS, SCENARIOS } from './scenarios';
 
 export interface ActiveCampaign {
   id: string;
@@ -48,7 +46,7 @@ export interface GameStoreState {
   init(): Promise<void>;
   newCampaign(input: { name: string; difficulty: Difficulty }): Promise<void>;
   continueCampaign(id: string): Promise<void>;
-  endMonth(decisions?: readonly Decision[]): Promise<void>;
+  endMonth(input?: MonthInput): Promise<void>;
   leaveCampaign(): Promise<void>;
   deleteCampaign(id: string): Promise<void>;
   setTextScale(scale: TextScale): Promise<void>;
@@ -113,12 +111,7 @@ export function createGameStore(deps: GameStoreDeps) {
           const scenario = SCENARIOS[DEFAULT_SCENARIO_ID];
           const seed = Math.floor(deps.random() * 2 ** 31);
           const id = `c_${seed.toString(36)}_${Math.floor(deps.random() * 2 ** 31).toString(36)}`;
-          const state = createInitialState({
-            scenarioId: scenario.id,
-            difficulty,
-            seed,
-            indicators: indicatorsFromScenario(scenario),
-          });
+          const state = createInitialState({ content: loadContent(scenario.id), difficulty, seed });
           const trimmed = name.trim() || 'Nova campanha';
           await createCampaign(d, { id, name: trimmed, scenarioVersion: scenario.version, state });
           set({ active: { id, name: trimmed, state, finished: false } });
@@ -148,11 +141,11 @@ export function createGameStore(deps: GameStoreDeps) {
           });
         }),
 
-      endMonth: (decisions = []) =>
+      endMonth: (input = { decisions: [] }) =>
         run(async (d) => {
           const active = get().active;
           if (!active || active.finished) return;
-          const result = advanceMonth(active.state, decisions);
+          const result = advanceMonth(active.state, input, loadContent(active.state.scenarioId));
           const finished = result.state.monthIndex >= PROTOTYPE_MONTHS;
           await recordMonth(d, active.id, result, { finish: finished });
           set({

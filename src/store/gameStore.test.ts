@@ -43,7 +43,8 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     await app.getState().newCampaign({ name: '  Governo Teste  ', difficulty: 'casual' });
     const id = app.getState().active!.id;
     expect(app.getState().active!.name).toBe('Governo Teste');
-    for (let m = 0; m < 3; m++) await app.getState().endMonth([{ policyId: 'decreto_iof', agendaCost: 1 }]);
+    for (let m = 0; m < 3; m++)
+      await app.getState().endMonth({ decisions: [{ policyId: 'contingenciamento', agendaCost: 1 }] });
     const before = app.getState().active!.state;
     expect(before.monthIndex).toBe(3);
 
@@ -122,16 +123,12 @@ describe('migração 2 (configurações)', () => {
     // A store exige a v2 (settings) só ao ler preferências; criamos a campanha direto pelo repositório.
     const { createCampaign } = await import('@/database/campaignRepository');
     const { createInitialState } = await import('@/engine');
+    const { loadContent } = await import('@/content');
     await createCampaign(db, {
       id: 'antiga',
       name: 'Campanha da v1',
       scenarioVersion: '0.1.0',
-      state: createInitialState({
-        scenarioId: 'prototipo_ficticio',
-        difficulty: 'casual',
-        seed: 1,
-        indicators: { approval: 0.5, gdpGrowth12m: 0, inflation12m: 0.03, unemployment: 0.07, primaryBalance12m: 0 },
-      }),
+      state: createInitialState({ content: loadContent('prototipo_ficticio'), difficulty: 'casual', seed: 1 }),
     });
     expect(await migrate(db)).toEqual([2]);
     expect(LATEST_DB_VERSION).toBe(2);
