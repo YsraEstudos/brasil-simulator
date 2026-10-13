@@ -1,10 +1,18 @@
 import type { Policy } from '../../types/policy';
 import { TERM_MONTHS } from '../calendar';
-import { legislativeInstrument, predictVotes, type VotePrediction } from '../congress/congress';
+import {
+  housePresident,
+  legislativeInstrument,
+  predictVotes,
+  sessionAt,
+  type VotePrediction,
+} from '../congress/congress';
+import { blocRelation } from '../congress/relations';
+import { pautaOccupancy, pautaSlots } from '../proposals/proposals';
 import { createRng, seedRng } from '../rng';
 import { fiscalRoom } from '../economy/fiscal';
 import { currentNominalGdpMillions } from '../state';
-import type { GameContent, GameState } from '../types';
+import type { GameContent, GameState, Proposal } from '../types';
 
 import { pct, pp } from './format';
 
@@ -117,8 +125,13 @@ function fazendaOpinion(state: Readonly<GameState>, content: GameContent, parts:
   return { text: sentences.join(' '), tone };
 }
 
+/** Folga da etapa em fração das cadeiras da Casa (compara Câmara e Senado na mesma escala). */
+function slack(v: VotePrediction): number {
+  return (v.expectedYes - v.required) / v.total;
+}
+
 /** Parecer de articulação para a etapa mais apertada: faixa ou número exato, conforme a dificuldade. */
-function votesOpinion(state: Readonly<GameState>, policyId: string, prediction: VotePrediction): Opinion {
+export function votesOpinion(state: Readonly<GameState>, policyId: string, prediction: VotePrediction): Opinion {
   const { required, total } = prediction;
   const house = HOUSE_LABEL[prediction.house] ?? prediction.house;
   const round = prediction.round > 1 ? ` (${prediction.round}º turno)` : '';
@@ -170,6 +183,48 @@ function comunicacaoOpinion(state: Readonly<GameState>, policy: Policy, content:
 }
 
 /**
+ * Avisos de pauta para uma proposta nova (POLITICAL_RULES.md §6.3): pauta da Câmara cheia, presidência da Casa
+ * com relação ruim e pedágio de emendas em votação de quórum qualificado.
+ */
+function congressWarnings(state: Readonly<GameState>, policy: Policy, content: GameContent): string[] {
+  const instrument = legislativeInstrument(policy);
+  if (instrument === null) return [];
+  const c = content.calibration;
+  const warnings: string[] = [];
+  const house = sessionAt(instrument, 0)?.house ?? null;
+  if (house !== null) {
+    const occupied = pautaOccupancy(state.proposals, house, content);
+    if (occupied > 0 && occupied + pautaSlots(instrument, c) > c.capacidade_pauta) {
+      warnings.push(`Pauta ${house === 'camara' ? 'da Câmara' : 'do Senado'} cheia: vai esperar vaga.`);
+    }
+  }
+  const president = housePresident(content, house ?? 'senado');
+  if (president && blocRelation(state, president) < c.limiar_presidente_casa) {
+    warnings.push(`A presidência da Casa (bloco ${president.name}) está insatisfeita e pode não pautar.`);
+  }
+  if (instrument === 'pec' || instrument === 'projeto_lei_complementar') {
+    warnings.push('Quórum qualificado: os líderes devem cobrar emendas para votar.');
+  }
+  return warnings;
+}
+
+/**
+ * Previsão da próxima sessão de uma proposta já no Congresso (aba Congresso): parecer da etapa mais apertada
+ * da Casa atual, com as contrapartidas já negociadas. `null` fora da tramitação.
+ */
+export function proposalForecast(state: GameState, proposal: Proposal, content: GameContent): Opinion | null {
+  const policy = content.policies[proposal.policyId];
+  const instrument = policy ? legislativeInstrument(policy) : null;
+  if (!policy || instrument === null) return null;
+  const session = sessionAt(instrument, proposal.stage);
+  if (session === null) return null;
+  const votes = predictVotes(state, policy, content, proposal).slice(0, session.stages.length);
+  if (votes.length === 0) return null;
+  const tightest = votes.reduce((a, b) => (slack(b) < slack(a) ? b : a));
+  return votesOpinion(state, policy.id, tightest);
+}
+
+/**
  * Pareceres da mesa de despacho (GAME_DESIGN.md §4.4) antes de uma decisão. Função pura: não altera `state`
  * nem avança `state.rng`. Previsões vêm do próprio motor (`predictVotes`), com faixa e viés por dificuldade.
  */
@@ -184,9 +239,13 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
   let votes: VotePrediction[] = [];
   if (legislativeInstrument(policy) !== null) {
     votes = predictVotes(state, policy, content);
-    // Etapa mais apertada: menor folga entre votos esperados e exigidos.
-    const tightest = votes.reduce((a, b) => (b.expectedYes - b.required < a.expectedYes - a.required ? b : a));
+    // Etapa mais apertada: menor folga entre votos esperados e exigidos, em fração das cadeiras da Casa.
+    const tightest = votes.reduce((a, b) => (slack(b) < slack(a) ? b : a));
     articulacao = votesOpinion(state, policy.id, tightest);
+    const warnings = congressWarnings(state, policy, content);
+    if (warnings.length > 0) {
+      articulacao = { text: `${articulacao.text} ${warnings.join(' ')}`, tone: articulacao.tone };
+    }
   }
 
   return {

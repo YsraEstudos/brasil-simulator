@@ -1,16 +1,22 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Card, Text } from '@/components/ui';
-import { MIN_TOUCH, Radius, Spacing } from '@/constants/theme';
-import type { PendingEvent } from '@/engine';
-import { useTheme } from '@/hooks/use-theme';
+import { Spacing } from '@/constants/theme';
+import type { PendingEvent, Proposal, SanctionChoice } from '@/engine';
 import type { GameEvent } from '@/types/event';
 
-import { costText, monthLabel } from './labels';
+import { ChoiceOption } from './ChoiceOption';
+import { monthLabel } from './labels';
 
 export interface PendingItem {
   event: GameEvent;
   pending: PendingEvent;
+}
+
+/** Projeto aprovado à espera de sanção neste mês (POLITICAL_RULES.md §7). */
+export interface SanctionItem {
+  proposal: Proposal;
+  name: string;
 }
 
 export interface EventInboxProps {
@@ -20,20 +26,75 @@ export interface EventInboxProps {
   /** Se a opção cabe nos pontos de agenda restantes (a já marcada sempre pode ser desmarcada). */
   canChoose: (eventId: string, choiceId: string) => boolean;
   onChoose: (eventId: string, choiceId: string) => void;
+  sanctions: readonly SanctionItem[];
+  /** Decisão de sanção marcada, por proposta. */
+  sanctionChosen: Readonly<Partial<Record<string, SanctionChoice>>>;
+  onSanction: (proposalId: string, choice: SanctionChoice) => void;
 }
 
-/** Caixa de entrada: eventos que pedem resposta neste mês (GAME_DESIGN.md §4.2). */
-export function EventInbox({ items, chosen, canChoose, onChoose }: EventInboxProps) {
-  const { colors } = useTheme();
+const SANCTION_OPTIONS: Record<SanctionChoice, { label: string; description: string }> = {
+  sancionar: {
+    label: 'Sancionar',
+    description: 'A lei entra em vigor como o Congresso aprovou, com os acréscimos do relator, se houver.',
+  },
+  vetar_acrescimos: {
+    label: 'Vetar os acréscimos',
+    description:
+      'Sanciona o projeto e veta só os acréscimos do relator. O Congresso aprecia o veto no mês seguinte e pode derrubá-lo por maioria absoluta de cada Casa.',
+  },
+  vetar_total: {
+    label: 'Vetar o projeto inteiro',
+    description:
+      'A lei não entra em vigor, salvo se o Congresso derrubar o veto. Veto derrubado é derrota política; veto mantido rende um pouco de capital.',
+  },
+};
 
+/** Caixa de entrada: projetos para sancionar e eventos que pedem resposta neste mês (GAME_DESIGN.md §4.2). */
+export function EventInbox({
+  items,
+  chosen,
+  canChoose,
+  onChoose,
+  sanctions,
+  sanctionChosen,
+  onSanction,
+}: EventInboxProps) {
   return (
     <View style={styles.root}>
       <Text variant="title">Caixa de entrada</Text>
-      {items.length === 0 && (
+      {items.length === 0 && sanctions.length === 0 && (
         <Text variant="body" color="textSecondary">
-          Nenhum evento pede resposta neste mês.
+          Nada pede resposta neste mês.
         </Text>
       )}
+      {sanctions.map(({ proposal, name }) => {
+        const options: SanctionChoice[] =
+          proposal.rider > 0 ? ['sancionar', 'vetar_acrescimos', 'vetar_total'] : ['sancionar', 'vetar_total'];
+        const selected = sanctionChosen[proposal.id] ?? 'sancionar';
+        return (
+          <Card key={proposal.id} title={`Sanção: ${name}`} subtitle="Sem resposta neste mês, vale a sanção tácita.">
+            <Text variant="body">
+              {proposal.rider > 0
+                ? 'O Congresso aprovou o projeto, e o relator incluiu acréscimos estranhos ao texto, com despesa extra.'
+                : 'O Congresso aprovou o projeto. Decida se sanciona ou veta.'}
+            </Text>
+            <View style={styles.options} accessibilityRole="radiogroup">
+              {options.map((choice) => (
+                <ChoiceOption
+                  key={choice}
+                  label={SANCTION_OPTIONS[choice].label}
+                  description={SANCTION_OPTIONS[choice].description}
+                  agendaCost={0}
+                  selected={selected === choice}
+                  isDefault={choice === 'sancionar'}
+                  enabled
+                  onPress={() => onSanction(proposal.id, choice)}
+                />
+              ))}
+            </View>
+          </Card>
+        );
+      })}
       {items.map(({ event, pending }) => {
         const selectedId = chosen[event.id];
         const deadline = monthLabel(pending.monthIndex + 1);
@@ -43,37 +104,17 @@ export function EventInbox({ items, chosen, canChoose, onChoose }: EventInboxPro
             <View style={styles.options} accessibilityRole="radiogroup">
               {event.choices.map((choice) => {
                 const isSelected = selectedId === choice.id;
-                const isDefault = event.defaultChoice === choice.id;
-                const enabled = isSelected || canChoose(event.id, choice.id);
                 return (
-                  <Pressable
+                  <ChoiceOption
                     key={choice.id}
-                    onPress={() => {
-                      if (enabled) onChoose(event.id, choice.id);
-                    }}
-                    accessibilityRole="radio"
-                    accessibilityLabel={`${choice.label}, custo ${costText(choice.agendaCost)}${isDefault ? ', padrão se não responder' : ''}`}
-                    accessibilityState={{ checked: isSelected, disabled: !enabled }}
-                    style={[
-                      styles.option,
-                      {
-                        borderColor: isSelected ? colors.accent : colors.border,
-                        backgroundColor: isSelected ? colors.surfaceRaised : colors.surface,
-                      },
-                      !enabled && styles.disabled,
-                    ]}>
-                    <Text variant="label">
-                      {isSelected ? '◉ ' : '○ '}
-                      {choice.label}
-                      {isDefault ? ' (padrão se não responder)' : ''}
-                    </Text>
-                    <Text variant="body" color="textSecondary">
-                      {choice.description}
-                    </Text>
-                    <Text variant="caption" color="textMuted" tabular>
-                      custo: {costText(choice.agendaCost)}
-                    </Text>
-                  </Pressable>
+                    label={choice.label}
+                    description={choice.description}
+                    agendaCost={choice.agendaCost}
+                    selected={isSelected}
+                    isDefault={event.defaultChoice === choice.id}
+                    enabled={isSelected || canChoose(event.id, choice.id)}
+                    onPress={() => onChoose(event.id, choice.id)}
+                  />
                 );
               })}
             </View>
@@ -87,12 +128,4 @@ export function EventInbox({ items, chosen, canChoose, onChoose }: EventInboxPro
 const styles = StyleSheet.create({
   root: { gap: Spacing.two },
   options: { gap: Spacing.two },
-  option: {
-    minHeight: MIN_TOUCH,
-    borderWidth: 1.5,
-    borderRadius: Radius.md,
-    padding: Spacing.two,
-    gap: Spacing.half,
-  },
-  disabled: { opacity: 0.45 },
 });

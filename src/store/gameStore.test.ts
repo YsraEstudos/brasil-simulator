@@ -64,6 +64,23 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     expect(resumed.lastReport).toEqual(lastReport); // relatório do mês anterior vem do banco
   });
 
+  it('encerrar o mês sem entrada usa o rascunho da agenda e o limpa; nova campanha começa sem rascunho', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Rascunho', difficulty: 'estrategica' });
+    app.getState().toggleDecision({ policyId: 'contingenciamento', agendaCost: 0 });
+    app.getState().toggleDecision({ policyId: 'pressionar_banco_central', agendaCost: 0 });
+    await app.getState().endMonth();
+    const report = app.getState().active!.lastReport!;
+    expect(report.accepted.map((d) => d.policyId)).toEqual(['contingenciamento', 'pressionar_banco_central']);
+    expect(report.rejected).toEqual([]);
+    expect(app.getState().draft.decisions).toEqual([]);
+
+    app.getState().toggleDecision({ policyId: 'irpf_tabela', agendaCost: 0 });
+    await app.getState().newCampaign({ name: 'Outra', difficulty: 'casual' });
+    expect(app.getState().draft.decisions).toEqual([]);
+  });
+
   it('encerra a campanha no fim do protótipo e não avança mais', async () => {
     const { launchApp } = await device();
     const app = await launchApp();

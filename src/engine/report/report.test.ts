@@ -159,4 +159,12 @@ describe('adviseDecision', () => {
   it('política desconhecida lança RangeError', () => {
     expect(() => adviseDecision(testState(), 'nao_existe', content)).toThrow(RangeError);
   });
+
+  it('articulação avisa pedágio na PEC e presidência da Casa insatisfeita (POLITICAL_RULES.md §6.3)', () => {
+    const pec = adviseDecision(testState(), TEST_PEC.id, content);
+    expect(pec.articulacao.text).toContain('Quórum qualificado');
+    expect(adviseDecision(testState(), TEST_BILL.id, content).articulacao.text).not.toContain('Quórum qualificado');
+    const hostil = adviseDecision(withRelation(testState(), -100), TEST_BILL.id, content);
+    expect(hostil.articulacao.text).toContain('pode não pautar');
+  });
 });

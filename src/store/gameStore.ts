@@ -18,12 +18,15 @@ import { DEFAULT_SCENARIO_ID, loadContent, PROTOTYPE_MONTHS, SCENARIOS } from '@
 import {
   advanceMonth,
   createInitialState,
+  type Decision,
   type Difficulty,
   type GameState,
   type Indicators,
   type MonthInput,
   type MonthReport,
 } from '@/engine';
+
+import { draftInput, EMPTY_DRAFT, toggleDecision, toggleEventChoice, type AgendaDraft } from './agendaDraft';
 
 export interface ActiveCampaign {
   id: string;
@@ -43,11 +46,17 @@ export interface GameStoreState {
   campaigns: CampaignSummary[];
   active: ActiveCampaign | null;
   textScale: TextScale;
+  /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
+  draft: AgendaDraft;
 
   init(): Promise<void>;
   newCampaign(input: { name: string; difficulty: Difficulty }): Promise<void>;
   continueCampaign(id: string): Promise<void>;
+  /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
   endMonth(input?: MonthInput): Promise<void>;
+  toggleDecision(decision: Decision): void;
+  toggleEventChoice(eventId: string, choiceId: string): void;
+  clearDraft(): void;
   leaveCampaign(): Promise<void>;
   deleteCampaign(id: string): Promise<void>;
   setTextScale(scale: TextScale): Promise<void>;
@@ -94,6 +103,7 @@ export function createGameStore(deps: GameStoreDeps) {
       campaigns: [],
       active: null,
       textScale: 1,
+      draft: EMPTY_DRAFT,
 
       async init() {
         if (db) return;
@@ -115,7 +125,7 @@ export function createGameStore(deps: GameStoreDeps) {
           const state = createInitialState({ content: loadContent(scenario.id), difficulty, seed });
           const trimmed = name.trim() || 'Nova campanha';
           await createCampaign(d, { id, name: trimmed, scenarioVersion: scenario.version, state });
-          set({ active: { id, name: trimmed, state, finished: false } });
+          set({ active: { id, name: trimmed, state, finished: false }, draft: EMPTY_DRAFT });
           await refreshList(d);
         }),
 
@@ -142,14 +152,16 @@ export function createGameStore(deps: GameStoreDeps) {
               lastReport,
               finished,
             },
+            draft: EMPTY_DRAFT,
           });
         }),
 
-      endMonth: (input = { decisions: [] }) =>
+      endMonth: (input) =>
         run(async (d) => {
           const active = get().active;
           if (!active || active.finished) return;
-          const result = advanceMonth(active.state, input, loadContent(active.state.scenarioId));
+          const content = loadContent(active.state.scenarioId);
+          const result = advanceMonth(active.state, input ?? draftInput(get().draft, content), content);
           const finished = result.state.monthIndex >= PROTOTYPE_MONTHS;
           await recordMonth(d, active.id, result, { finish: finished });
           set({
@@ -160,13 +172,18 @@ export function createGameStore(deps: GameStoreDeps) {
               lastReport: result.report,
               finished,
             },
+            draft: EMPTY_DRAFT,
           });
           await refreshList(d);
         }),
 
+      toggleDecision: (decision) => set((s) => ({ draft: toggleDecision(s.draft, decision) })),
+      toggleEventChoice: (eventId, choiceId) => set((s) => ({ draft: toggleEventChoice(s.draft, eventId, choiceId) })),
+      clearDraft: () => set({ draft: EMPTY_DRAFT }),
+
       leaveCampaign: () =>
         run(async (d) => {
-          set({ active: null });
+          set({ active: null, draft: EMPTY_DRAFT });
           await refreshList(d);
         }),
 

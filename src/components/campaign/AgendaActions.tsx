@@ -40,30 +40,32 @@ export function AgendaActions({ state, content, selected, canInclude, onToggle }
   return (
     <View style={styles.root}>
       <Text variant="title">Ações de governo</Text>
-      {Object.values(AGENDA_ACTIONS).map((action) => {
-        const included = selected.includes(action.id);
-        const blocked = !included && !canInclude(action.agendaCost);
-        return (
-          <Card key={action.id} title={action.name} subtitle={action.summary}>
-            <Text variant="caption" color="textSecondary">
-              Ação imediata · {costText(action.agendaCost)} de agenda
-            </Text>
-            {action.id === PRESSURE_ACTION_ID && (
-              <Text variant="caption" color="warning">
-                {pressureContext(state, content)}
+      {Object.values(AGENDA_ACTIONS)
+        .filter((action) => action.listed)
+        .map((action) => {
+          const included = selected.includes(action.id);
+          const blocked = !included && !canInclude(action.agendaCost);
+          return (
+            <Card key={action.id} title={action.name} subtitle={action.summary}>
+              <Text variant="caption" color="textSecondary">
+                Ação imediata · {costText(action.agendaCost)} de agenda
               </Text>
-            )}
-            <Button
-              label={included ? 'Retirar da agenda' : 'Incluir na agenda'}
-              variant={included ? 'secondary' : 'primary'}
-              disabled={blocked}
-              accessibilityHint={blocked ? 'Pontos de agenda insuficientes neste mês' : undefined}
-              onPress={() => onToggle(action.id)}
-              block
-            />
-          </Card>
-        );
-      })}
+              {action.id === PRESSURE_ACTION_ID && (
+                <Text variant="caption" color="warning">
+                  {pressureContext(state, content)}
+                </Text>
+              )}
+              <Button
+                label={included ? 'Retirar da agenda' : 'Incluir na agenda'}
+                variant={included ? 'secondary' : 'primary'}
+                disabled={blocked}
+                accessibilityHint={blocked ? 'Pontos de agenda insuficientes neste mês' : undefined}
+                onPress={() => onToggle(action.id)}
+                block
+              />
+            </Card>
+          );
+        })}
     </View>
   );
 }

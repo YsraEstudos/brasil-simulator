@@ -4,14 +4,14 @@ import { StyleSheet, View } from 'react-native';
 import { PROTOTYPE_MONTHS, loadContent } from '@/content';
 import { Button, Indicator, formatNumber, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { AGENDA_ACTIONS, type IndicatorKey } from '@/engine';
+import { SANCTION_ACTION_ID, type Decision, type IndicatorKey, type SanctionChoice } from '@/engine';
 import type { Policy } from '@/types/policy';
-import { gameStore, useGame, type ActiveCampaign } from '@/store';
+import { decisionCost, draftPoints, fits, gameStore, useGame, type ActiveCampaign } from '@/store';
 
 import { AgendaActions } from './AgendaActions';
 import { DecisionPanel } from './DecisionPanel';
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER, monthLabel } from './labels';
-import { EventInbox, type PendingItem } from './EventInbox';
+import { EventInbox, type PendingItem, type SanctionItem } from './EventInbox';
 import { LegacyReport } from './LegacyReport';
 import { MonthSummary } from './MonthSummary';
 import { ProposalList } from './ProposalList';
@@ -24,72 +24,59 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
   const content = useMemo(() => loadContent(state.scenarioId), [state.scenarioId]);
   const eventsById = useMemo(() => new Map(content.events.map((e) => [e.id, e])), [content]);
 
+  const draft = useGame((s) => s.draft);
   const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
-  const [selected, setSelected] = useState<readonly string[]>([]);
-  const [chosen, setChosen] = useState<Partial<Record<string, string>>>({});
   const [expandedPolicy, setExpandedPolicy] = useState<string | null>(null);
   const [openProposal, setOpenProposal] = useState<string | null>(null);
 
   const pointsMax = state.resources.agendaPointsPerMonth;
+  const pointsUsed = draftPoints(draft, content);
+  const { toggleDecision, toggleEventChoice } = gameStore.getState();
 
   const inbox: PendingItem[] = state.events.pending.flatMap((pending) => {
     const event = eventsById.get(pending.eventId);
     return event ? [{ event, pending }] : [];
   });
 
-  const policyCost = (id: string): number => content.policies[id]?.agendaCost ?? AGENDA_ACTIONS[id]?.agendaCost ?? 0;
-  const choiceCost = (eventId: string, choiceId: string | undefined): number =>
-    eventsById.get(eventId)?.choices.find((c) => c.id === choiceId)?.agendaCost ?? 0;
+  const sanctions: SanctionItem[] = state.proposals
+    .filter((p) => p.status === 'aguardando_sancao' && p.voteMonth === state.monthIndex)
+    .map((proposal) => ({ proposal, name: content.policies[proposal.policyId]?.name ?? proposal.policyId }));
+  const sanctionChosen: Partial<Record<string, SanctionChoice>> = {};
+  for (const d of draft.decisions) {
+    const choice = d.params?.choice;
+    if (d.policyId === SANCTION_ACTION_ID && typeof choice === 'string') {
+      sanctionChosen[String(d.params?.proposalId)] = choice as SanctionChoice;
+    }
+  }
 
-  // Escolhas de eventos efetivamente marcadas (só as de eventos ainda pendentes).
-  const chosenEntries = inbox.flatMap(({ event }) => {
-    const choiceId = chosen[event.id];
-    return choiceId === undefined ? [] : [{ eventId: event.id, choiceId, cost: choiceCost(event.id, choiceId) }];
-  });
-  const pointsUsed = selected.reduce((n, id) => n + policyCost(id), 0) + chosenEntries.reduce((n, e) => n + e.cost, 0);
+  // Políticas e ações marcadas sem alvo; as com alvo (negociação, ministérios) aparecem na aba Congresso.
+  const selected = draft.decisions.filter((d) => d.params === undefined).map((d) => d.policyId);
+  const simple = (id: string): Decision => {
+    const decision: Decision = { policyId: id, agendaCost: 0 };
+    return { ...decision, agendaCost: decisionCost(decision, content) };
+  };
 
   const canInclude = (policy: Policy): boolean =>
-    selected.includes(policy.id) || pointsUsed + policy.agendaCost <= pointsMax;
+    selected.includes(policy.id) || fits(draft, simple(policy.id), content, pointsMax);
 
+  const choiceCost = (eventId: string, choiceId: string | undefined): number =>
+    eventsById.get(eventId)?.choices.find((c) => c.id === choiceId)?.agendaCost ?? 0;
   const canChoose = (eventId: string, choiceId: string): boolean => {
-    const current = chosen[eventId];
+    const current = draft.eventChoices[eventId];
     const releasing = current === undefined ? 0 : choiceCost(eventId, current);
     return pointsUsed - releasing + choiceCost(eventId, choiceId) <= pointsMax;
   };
 
-  const togglePolicy = (policy: Policy) => {
-    if (selected.includes(policy.id)) {
-      setSelected((prev) => prev.filter((id) => id !== policy.id));
-    } else if (canInclude(policy)) {
-      setSelected((prev) => [...prev, policy.id]);
-    }
-  };
-
-  const toggleAction = (id: string) => {
-    const cost = policyCost(id);
-    if (selected.includes(id)) {
-      setSelected((prev) => prev.filter((x) => x !== id));
-    } else if (pointsUsed + cost <= pointsMax) {
-      setSelected((prev) => [...prev, id]);
-    }
-  };
-
-  const chooseEvent = (eventId: string, choiceId: string) => {
-    setChosen((prev) => ({ ...prev, [eventId]: prev[eventId] === choiceId ? undefined : choiceId }));
+  const toggleSimple = (id: string) => {
+    const decision = simple(id);
+    if (selected.includes(id) || fits(draft, decision, content, pointsMax)) toggleDecision(decision);
   };
 
   const endMonth = async () => {
     const before = state.monthIndex;
-    await gameStore.getState().endMonth({
-      decisions: selected.map((id) => ({ policyId: id, agendaCost: policyCost(id) })),
-      eventChoices: chosenEntries.map((e) => ({ eventId: e.eventId, choiceId: e.choiceId })),
-    });
-    // Só limpa as seleções se o mês avançou; se a operação foi ignorada ou falhou, a agenda continua marcada.
-    if (gameStore.getState().active?.state.monthIndex !== before) {
-      setSelected([]);
-      setChosen({});
-      setExpandedPolicy(null);
-    }
+    await gameStore.getState().endMonth();
+    // A store limpa o rascunho só se o mês avançou; aqui fecha a mesa de despacho que estava aberta.
+    if (gameStore.getState().active?.state.monthIndex !== before) setExpandedPolicy(null);
   };
 
   return (
@@ -142,7 +129,17 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
         </>
       ) : (
         <>
-          <EventInbox items={inbox} chosen={chosen} canChoose={canChoose} onChoose={chooseEvent} />
+          <EventInbox
+            items={inbox}
+            chosen={draft.eventChoices}
+            canChoose={canChoose}
+            onChoose={toggleEventChoice}
+            sanctions={sanctions}
+            sanctionChosen={sanctionChosen}
+            onSanction={(proposalId, choice) =>
+              toggleDecision({ policyId: SANCTION_ACTION_ID, agendaCost: 0, params: { proposalId, choice } })
+            }
+          />
 
           <DecisionPanel
             state={state}
@@ -152,10 +149,7 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
             pointsUsed={pointsUsed}
             pointsMax={pointsMax}
             onExpand={setExpandedPolicy}
-            onToggle={(id) => {
-              const policy = content.policies[id];
-              if (policy) togglePolicy(policy);
-            }}
+            onToggle={toggleSimple}
             canInclude={canInclude}
           />
 
@@ -164,7 +158,7 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
             content={content}
             selected={selected}
             canInclude={(cost) => pointsUsed + cost <= pointsMax}
-            onToggle={toggleAction}
+            onToggle={toggleSimple}
           />
 
           <ProposalList

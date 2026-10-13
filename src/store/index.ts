@@ -12,3 +12,4 @@ export function useGame<T>(selector: (s: GameStoreState) => T): T {
 }
 
 export type { ActiveCampaign, GameStoreState } from './gameStore';
+export * from './agendaDraft';
