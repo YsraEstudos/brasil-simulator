@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { insertLegacyCampaign } from '@/tests/legacyDb';
 import { TEST_BILL, TEST_DECREE, TEST_PEC, testContent, testState } from '@/tests/fixtures';
 
 import { advanceMonth, STATE_SCHEMA_VERSION, type GameState, type MonthResult, type MonthStep } from '../engine';
@@ -8,11 +9,14 @@ import {
   createCampaign,
   deleteCampaign,
   listCampaigns,
+  loadIndicatorHistory,
   loadLatestState,
   loadReport,
+  loadStateAt,
   recordMonth,
   REPORT_RETENTION_MONTHS,
   SaveTooNewError,
+  SNAPSHOT_RETENTION_MONTHS,
 } from './campaignRepository';
 import { currentVersion, DatabaseTooNewError, migrate } from './migrate';
 import { LATEST_DB_VERSION, MIGRATIONS, type Migration } from './migrations';
@@ -51,7 +55,7 @@ describe('migrações', () => {
   it('aplica só as pendentes num banco antigo, preservando os dados', async () => {
     const db = openNodeDatabase();
     await migrate(db, MIGRATIONS.slice(0, 1));
-    await createCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
+    await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
     const v2: Migration = {
       version: LATEST_DB_VERSION + 1,
       name: 'teste_coluna_nova',
@@ -84,8 +88,8 @@ describe('migrações', () => {
   it('migra um banco v2 para v3 mantendo as campanhas', async () => {
     const db = openNodeDatabase();
     await migrate(db, MIGRATIONS.slice(0, 2));
-    await createCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
-    expect(await migrate(db)).toEqual([3]);
+    await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
+    expect(await migrate(db)).toEqual([3, 4]);
     expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
     expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Antiga']);
   });
@@ -205,6 +209,49 @@ describe('campanhas', () => {
     expect(kept.map((r) => r.month_index)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
     expect(await loadReport(db, 'c1', 14)).toEqual(results[14].report);
     expect(await loadReport(db, 'c1', 2)).toBeNull();
+  });
+
+  it('guarda snapshots completos só dos últimos 13 meses e a série de indicadores inteira (ECONOMIC_MODEL.md §11)', async () => {
+    let state = newState(8);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    for (let m = 0; m < 20; m++) {
+      const r = advanceMonth(state, { decisions: [] }, content, [noise]);
+      await recordMonth(db, 'c1', r);
+      state = r.state;
+    }
+    expect(SNAPSHOT_RETENTION_MONTHS).toBe(13);
+    const snaps = await db.all<{ month_index: number }>(
+      'SELECT month_index FROM snapshots WHERE campaign_id = ? ORDER BY month_index',
+      ['c1'],
+    );
+    expect(snaps.map((r) => r.month_index)).toEqual(Array.from({ length: 13 }, (_, i) => i + 8));
+    expect(await loadLatestState(db, 'c1')).toEqual(state);
+    expect(await loadStateAt(db, 'c1', 19)).not.toBeNull();
+    expect(await loadStateAt(db, 'c1', 7)).toBeNull();
+
+    const history = await loadIndicatorHistory(db, 'c1');
+    expect(history.map((p) => p.monthIndex)).toEqual(Array.from({ length: 21 }, (_, i) => i));
+    expect(history[20]?.indicators).toEqual(state.indicators);
+    expect(history[20]?.grossDebt).toBe(state.economy.grossDebt);
+  });
+
+  it('a migração 4 preenche a série com os snapshots que já existiam', async () => {
+    const old = openNodeDatabase();
+    await migrate(old, MIGRATIONS.slice(0, 3));
+    const state = newState(2);
+    await old.run(
+      `INSERT INTO campaigns (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month)
+       VALUES ('c1', 'x', ?, '0.1.0', 'estrategica', 2, '0.2.0', 0)`,
+      [state.scenarioId],
+    );
+    await old.run(
+      'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
+      ['c1', 0, state.schemaVersion, JSON.stringify(state)],
+    );
+    expect(await migrate(old)).toEqual([4]);
+    const [point] = await loadIndicatorHistory(old, 'c1');
+    expect(point?.indicators).toEqual(state.indicators);
+    expect(point?.selic).toBe(state.economy.selic);
   });
 
   it('grava eventos disparados (no mês seguinte, sem escolha) e resolvidos (com a escolha)', async () => {

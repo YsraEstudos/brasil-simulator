@@ -125,17 +125,17 @@ describe('migração 2 (configurações)', () => {
     await migrate(db, MIGRATIONS.slice(0, 1));
     const v1 = createGameStore({ openDb: async () => ({ ...db, close: async () => {} }), random: fakeRandom() });
     // A store exige a v2 (settings) só ao ler preferências; criamos a campanha direto pelo repositório.
-    const { createCampaign } = await import('@/database/campaignRepository');
+    const { insertLegacyCampaign } = await import('@/tests/legacyDb');
     const { createInitialState } = await import('@/engine');
     const { loadContent } = await import('@/content');
-    await createCampaign(db, {
+    await insertLegacyCampaign(db, {
       id: 'antiga',
       name: 'Campanha da v1',
       scenarioVersion: '0.1.0',
       state: createInitialState({ content: loadContent('prototipo_ficticio'), difficulty: 'casual', seed: 1 }),
     });
-    expect(await migrate(db)).toEqual([2, 3]);
-    expect(LATEST_DB_VERSION).toBe(3);
+    expect(await migrate(db)).toEqual([2, 3, 4]);
+    expect(LATEST_DB_VERSION).toBe(4);
     await v1.getState().init();
     expect(v1.getState().campaigns.map((c) => c.name)).toEqual(['Campanha da v1']);
   });

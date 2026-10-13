@@ -4,6 +4,7 @@ import {
   type Decision,
   type Difficulty,
   type GameState,
+  type Indicators,
   type MonthReport,
   type MonthResult,
 } from '../engine';
@@ -11,6 +12,23 @@ import type { SqlDatabase } from './types';
 
 /** Quantos meses de decomposição causal (`MonthReport`) ficam no banco (ECONOMIC_MODEL.md §11). */
 export const REPORT_RETENTION_MONTHS = 12;
+
+/**
+ * Quantos snapshots completos do estado ficam no banco, contando o atual (ECONOMIC_MODEL.md §11). Os meses mais
+ * antigos ficam só em `indicator_history`. 13 = o mês atual e os 12 anteriores (comparações de 12 meses).
+ */
+export const SNAPSHOT_RETENTION_MONTHS = 13;
+
+/** Um mês da série de longo prazo: indicadores e as principais variáveis econômicas (null em saves antigos). */
+export interface IndicatorPoint {
+  monthIndex: number;
+  indicators: Indicators;
+  selic: number | null;
+  grossDebt: number | null;
+  credibility: number | null;
+  exchangeRate: number | null;
+  riskPremium: number | null;
+}
 
 export interface CampaignSummary {
   id: string;
@@ -124,6 +142,30 @@ export async function recordMonth(
       report.monthIndex - (REPORT_RETENTION_MONTHS - 1),
     ]);
     await insertSnapshot(db, campaignId, state);
+    await db.run('DELETE FROM snapshots WHERE campaign_id = ? AND month_index < ?', [
+      campaignId,
+      state.monthIndex - (SNAPSHOT_RETENTION_MONTHS - 1),
+    ]);
+  });
+}
+
+/** Série de longo prazo da campanha, mês a mês (inclui o mês 0). */
+export async function loadIndicatorHistory(db: SqlDatabase, campaignId: string): Promise<IndicatorPoint[]> {
+  const rows = await db.all<{ month_index: number; point_json: string }>(
+    'SELECT month_index, point_json FROM indicator_history WHERE campaign_id = ? ORDER BY month_index',
+    [campaignId],
+  );
+  return rows.map((r) => {
+    const p = JSON.parse(r.point_json) as Omit<IndicatorPoint, 'monthIndex'>;
+    return {
+      monthIndex: r.month_index,
+      indicators: p.indicators,
+      selic: p.selic ?? null,
+      grossDebt: p.grossDebt ?? null,
+      credibility: p.credibility ?? null,
+      exchangeRate: p.exchangeRate ?? null,
+      riskPremium: p.riskPremium ?? null,
+    };
   });
 }
 
@@ -194,11 +236,26 @@ export async function deleteCampaign(db: SqlDatabase, campaignId: string): Promi
   await db.run('DELETE FROM campaigns WHERE id = ?', [campaignId]);
 }
 
+/** Grava o estado completo do mês e o ponto da série de longo prazo (na transação de quem chama). */
 async function insertSnapshot(db: SqlDatabase, campaignId: string, state: GameState) {
   await db.run(
     'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
     [campaignId, state.monthIndex, state.schemaVersion, JSON.stringify(state)],
   );
+  const e = state.economy;
+  const point: Omit<IndicatorPoint, 'monthIndex'> = {
+    indicators: state.indicators,
+    selic: e.selic,
+    grossDebt: e.grossDebt,
+    credibility: e.credibility,
+    exchangeRate: e.exchangeRate,
+    riskPremium: e.riskPremium,
+  };
+  await db.run('INSERT INTO indicator_history (campaign_id, month_index, point_json) VALUES (?, ?, ?)', [
+    campaignId,
+    state.monthIndex,
+    JSON.stringify(point),
+  ]);
 }
 
 /** Converte um estado salvo para a estrutura atual (passos v1 → v2… em `src/engine/upgrade.ts`). */
