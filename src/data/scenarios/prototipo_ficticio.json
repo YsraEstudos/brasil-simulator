@@ -1,0 +1,82 @@
+{
+  "id": "prototipo_ficticio",
+  "version": "0.1.0",
+  "name": "Protótipo (dados fictícios)",
+  "startPeriod": "2027-01",
+  "indicators": {
+    "approval": {
+      "value": 0.45,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "placeholder até o cenário brasil_2027_01 (Fase 02)"
+    },
+    "gdpGrowth12m": { "value": 0.02, "unit": "fração", "status": "PROVISORIO" },
+    "inflation12m": { "value": 0.045, "unit": "fração", "status": "PROVISORIO" },
+    "unemployment": { "value": 0.06, "unit": "fração", "status": "PROVISORIO" },
+    "primaryBalance12m": { "value": -0.004, "unit": "fração do PIB", "status": "PROVISORIO" }
+  },
+  "parameters": {},
+  "blocs": [
+    {
+      "id": "esquerda",
+      "name": "Esquerda",
+      "chamberSeats": 110,
+      "senateSeats": 14,
+      "ideology": { "economic": -0.7, "social": -0.6 },
+      "cohesion": 0.85,
+      "governmentRelation": 0,
+      "interests": ["social"]
+    },
+    {
+      "id": "centro_esquerda",
+      "name": "Centro-Esquerda",
+      "chamberSeats": 70,
+      "senateSeats": 10,
+      "ideology": { "economic": -0.3, "social": -0.2 },
+      "cohesion": 0.7,
+      "governmentRelation": 0,
+      "interests": ["educacao"]
+    },
+    {
+      "id": "centro",
+      "name": "Centro",
+      "chamberSeats": 150,
+      "senateSeats": 24,
+      "ideology": { "economic": 0.1, "social": 0.2 },
+      "cohesion": 0.5,
+      "governmentRelation": 0,
+      "interests": ["emendas", "infraestrutura"]
+    },
+    {
+      "id": "centro_direita",
+      "name": "Centro-Direita",
+      "chamberSeats": 98,
+      "senateSeats": 18,
+      "ideology": { "economic": 0.5, "social": 0.4 },
+      "cohesion": 0.65,
+      "governmentRelation": 0,
+      "interests": ["agro", "industria"]
+    },
+    {
+      "id": "direita",
+      "name": "Direita",
+      "chamberSeats": 85,
+      "senateSeats": 15,
+      "ideology": { "economic": 0.7, "social": 0.8 },
+      "cohesion": 0.8,
+      "governmentRelation": 0,
+      "interests": ["seguranca"]
+    }
+  ],
+  "copomMonths": [1, 3, 5, 6, 7, 9, 11, 12],
+  "policies": [
+    "infraestrutura_credito_adicional",
+    "iof_credito_reducao",
+    "irpf_tabela",
+    "contingenciamento",
+    "transferencia_renda_ampliacao",
+    "seguranca_cooperacao",
+    "gastos_tributarios_revisao",
+    "reforma_administrativa"
+  ]
+}

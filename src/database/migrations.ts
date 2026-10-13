@@ -62,6 +62,18 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX events_by_month ON events (campaign_id, month_index);
     `,
   },
+  {
+    version: 2,
+    name: 'configuracoes',
+    sql: `
+      -- Preferências do jogador (ex.: tamanho do texto). Valor em JSON.
+      CREATE TABLE settings (
+        key        TEXT PRIMARY KEY,
+        value_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      );
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

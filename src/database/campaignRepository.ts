@@ -121,6 +121,23 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
   }));
 }
 
+/** Estado salvo de um mês específico (ex.: o anterior, para mostrar variações). `null` se não existir. */
+export async function loadStateAt(db: SqlDatabase, campaignId: string, monthIndex: number): Promise<GameState | null> {
+  const row = await db.first<{ state_schema_version: number; state_json: string }>(
+    'SELECT state_schema_version, state_json FROM snapshots WHERE campaign_id = ? AND month_index = ?',
+    [campaignId, monthIndex],
+  );
+  return row ? upgradeState(row.state_schema_version, row.state_json) : null;
+}
+
+/** Marca a campanha como encerrada (fim do protótipo, do mandato, impeachment…). */
+export async function finishCampaign(db: SqlDatabase, campaignId: string): Promise<void> {
+  await db.run(
+    `UPDATE campaigns SET status = 'encerrada', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
+    [campaignId],
+  );
+}
+
 /** Apaga a campanha e, em cascata, snapshots, decisões e eventos. */
 export async function deleteCampaign(db: SqlDatabase, campaignId: string): Promise<void> {
   await db.run('DELETE FROM campaigns WHERE id = ?', [campaignId]);

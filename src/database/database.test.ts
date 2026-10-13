@@ -55,7 +55,8 @@ describe('migrações', () => {
       name: 'teste_coluna_nova',
       sql: "ALTER TABLE campaigns ADD COLUMN notes TEXT NOT NULL DEFAULT '';",
     };
-    expect(await migrate(db, [...MIGRATIONS, v2])).toEqual([v2.version]);
+    // pendentes = todas depois da v1, mais a nova
+    expect(await migrate(db, [...MIGRATIONS, v2])).toEqual([...MIGRATIONS.slice(1).map((m) => m.version), v2.version]);
     expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Antiga']);
   });
 
