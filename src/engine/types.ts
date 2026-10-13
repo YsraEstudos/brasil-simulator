@@ -1,16 +1,20 @@
-import type { RngState } from './rng';
+import type { GameEvent } from '../types/event';
+import type { Policy } from '../types/policy';
+import type { Scenario } from '../types/scenario';
+import type { Calibration } from './economy/calibration';
+import type { Rng, RngState } from './rng';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 1;
+export const STATE_SCHEMA_VERSION = 2;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.1.0';
+export const ENGINE_VERSION = '0.2.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
 /**
  * Indicadores do protótipo (GAME_DESIGN.md §8.1). Todos em **fração decimal** (0,045 = 4,5%), nunca
- * porcentagem inteira (ECONOMIC_MODEL.md §2).
+ * porcentagem inteira (ECONOMIC_MODEL.md §2). Só mudam por `Contribution` (soma = variação, §7.3).
  */
 export interface Indicators {
   /** Aprovação do governo, 0–1. */
@@ -36,18 +40,207 @@ export interface Resources {
 }
 
 /**
+ * Variáveis econômicas que não são indicadores do protótipo (ECONOMIC_MODEL.md §3, subconjunto v0.1).
+ * Fluxos fiscais em fração do PIB **anualizada** (o fluxo do mês × 12 / PIB anual).
+ */
+export interface EconomyState {
+  /** Hiato do produto h = ln(Y/Ystar). */
+  outputGap: number;
+  /** Crescimento potencial anual (fração). */
+  potentialGrowth: number;
+  /** Selic meta anual. */
+  selic: number;
+  /** Juro real que já chegou à economia: média móvel do juro real ex ante com a defasagem `lagR` (§5.2). */
+  effectiveRealRate: number;
+  /** Expectativa de inflação 12 meses `pe` (§5.3). */
+  inflationExpectation: number;
+  /** Credibilidade fiscal e monetária, 0–1 (§5.3). */
+  credibility: number;
+  /** Dívida bruta do governo geral / PIB. */
+  grossDebt: number;
+  /** Taxa implícita anual da dívida (§5.9). */
+  implicitRate: number;
+  /** Receita primária líquida do mês, fração do PIB anualizada. */
+  revenue: number;
+  /** Despesa primária do mês, fração do PIB anualizada. */
+  primarySpending: number;
+  /** Resultado primário do mês = revenue − primarySpending (invariante §7.1). */
+  monthlyPrimary: number;
+  /** Juros nominais do mês, fração do PIB anualizada (= implicitRate × dívida anterior). */
+  interest: number;
+  /** Ajuste da dívida no mês (efeito denominador: crescimento do PIB nominal), em fração do PIB (§7.2). */
+  debtAdjustment: number;
+}
+
+/**
+ * Alvos de impulso agendado (ECONOMIC_MODEL.md §5.11). Unidade de `delta` por alvo:
+ *
+ * | alvo | unidade de `delta` | quem consome |
+ * | --- | --- | --- |
+ * | `gasto.*` | despesa primária adicional enquanto ativo, fração do PIB anualizada (negativo = corte) | economia |
+ * | `receita.tributaria` | receita adicional enquanto ativo, fração do PIB anualizada | economia |
+ * | `receita.desoneracao_*` | receita **perdida** enquanto ativo, fração do PIB anualizada (positivo = perda) | economia |
+ * | `demanda.credito` | impulso de demanda sem efeito fiscal, fração do PIB anualizada | economia |
+ * | `oferta.potencial` | crescimento potencial anual adicional enquanto ativo (fração) | economia |
+ * | `choque.hiato` | soma ao hiato em cada mês ativo (fração) | economia |
+ * | `choque.inflacao` | soma ao alvo da inflação 12m enquanto ativo (fração) | economia |
+ * | `credibilidade` | variação da credibilidade em cada mês ativo (0–1) | economia |
+ * | `aprovacao` | variação da aprovação em cada mês ativo (fração) | opinião |
+ * | `capital_politico` | variação do capital político em cada mês ativo (pontos 0–100) | opinião |
+ * | `relacao_congresso` | variação da relação de **todos** os blocos com o governo em cada mês ativo (−100…100) | Congresso |
+ */
+export type ImpulseTarget =
+  | 'gasto.investimento'
+  | 'gasto.custeio'
+  | 'gasto.transferencia_baixa_renda'
+  | 'gasto.transferencia_alta_renda'
+  | 'gasto.obrigatoria'
+  | 'receita.tributaria'
+  | 'receita.desoneracao_consumo'
+  | 'receita.desoneracao_renda'
+  | 'demanda.credito'
+  | 'oferta.potencial'
+  | 'choque.hiato'
+  | 'choque.inflacao'
+  | 'credibilidade'
+  | 'aprovacao'
+  | 'capital_politico'
+  | 'relacao_congresso';
+
+/** Efeito futuro agendado (ECONOMIC_MODEL.md §5.11). */
+export interface ScheduledImpulse {
+  /** Decisão, proposta, evento ou projeto de origem (ex.: `proposta:irpf_tabela_3`, `evento:alta_petroleo_5`). */
+  sourceId: string;
+  /** Texto do "Por que mudou?", ex.: "Obras de infraestrutura". */
+  label: string;
+  target: ImpulseTarget;
+  /** Efeito por mês ativo, na unidade do alvo (tabela em `ImpulseTarget`). */
+  delta: number;
+  /** monthIndex do primeiro mês com efeito. */
+  startMonth: number;
+  /** Último mês com efeito (inclusivo); `null` = permanente. */
+  endMonth: number | null;
+}
+
+/** Estados da proposta (GAME_DESIGN.md §9). RASCUNHO, VALIDAÇÃO e ENVIADA são transitórios no mesmo mês. */
+export type ProposalStatus =
+  | 'bloqueada'
+  | 'em_tramitacao'
+  | 'parada'
+  | 'rejeitada'
+  | 'aprovada'
+  | 'em_execucao'
+  | 'concluida'
+  | 'suspensa'
+  | 'abandonada';
+
+/** Transição registrada na trilha de auditoria da proposta. */
+export interface ProposalTransition {
+  monthIndex: number;
+  status: ProposalStatus;
+  /** ID da causa, ex.: `votacao_camara`, `recesso`, `atraso_execucao`. */
+  cause: string;
+  /** Texto para o jogador, em português. */
+  detail: string;
+}
+
+export type House = 'camara' | 'senado';
+
+export interface BlocVote {
+  blocId: string;
+  /** Apoio calculado (POLITICAL_RULES.md §6.2), sem unidade; > limiar = bloco orienta "sim". */
+  support: number;
+  yes: number;
+  no: number;
+}
+
+export interface VoteResult {
+  monthIndex: number;
+  house: House;
+  /** Turno (PEC tem 2 por Casa). */
+  round: number;
+  yes: number;
+  no: number;
+  /** Votos "sim" necessários. */
+  required: number;
+  approved: boolean;
+  blocs: BlocVote[];
+}
+
+export interface Proposal {
+  /** `${policyId}_${createdMonth}` */
+  id: string;
+  policyId: string;
+  createdMonth: number;
+  status: ProposalStatus;
+  /** Fração do texto original que sobreviveu (1 = original; < 1 = alterado pelo relator). */
+  scale: number;
+  /** Mês previsto da votação (só propostas legislativas). */
+  voteMonth: number | null;
+  /** Primeiro e último mês de execução (null antes de executar; last null = permanente). */
+  executionStart: number | null;
+  executionEnd: number | null;
+  votes: VoteResult[];
+  history: ProposalTransition[];
+}
+
+/** Parte dinâmica de cada bloco; o resto (cadeiras, ideologia, coesão) vem do cenário. */
+export interface BlocState {
+  id: string;
+  /** −100 … 100 */
+  governmentRelation: number;
+}
+
+export interface CongressState {
+  blocs: BlocState[];
+}
+
+/** Evento à espera de resposta do jogador (GAME_DESIGN.md §4.2, caixa de entrada). */
+export interface PendingEvent {
+  eventId: string;
+  /** Mês em que apareceu. Sem resposta até o fim do mês seguinte → escolha padrão. */
+  monthIndex: number;
+}
+
+export interface EventsState {
+  pending: PendingEvent[];
+  /** Último mês em que cada evento disparou (para o intervalo mínimo entre ocorrências). */
+  lastFired: Record<string, number>;
+  /** Quantas vezes cada evento já disparou. */
+  count: Record<string, number>;
+}
+
+/**
  * Uma escolha do jogador no mês. Escolher nunca altera indicadores diretamente: a decisão vira uma proposta
- * que o motor processa (GAME_DESIGN.md §9). O catálogo de políticas e a máquina de estados chegam na Fase 02.
+ * que o motor processa (GAME_DESIGN.md §9).
  */
 export interface Decision {
   /** ID de conteúdo em português, ex.: `infraestrutura_credito_adicional`. */
   policyId: string;
-  /** Custo em pontos de agenda (virá do catálogo na Fase 02). */
+  /** Custo em pontos de agenda. O motor usa o custo do catálogo quando a política existe. */
   agendaCost: number;
   params?: Readonly<Record<string, number | string | boolean>>;
 }
 
-export type DecisionRejection = 'sem_pontos_de_agenda' | 'custo_invalido';
+/** Resposta a um evento pendente. */
+export interface EventChoice {
+  eventId: string;
+  choiceId: string;
+}
+
+/** Entrada do jogador num mês. */
+export interface MonthInput {
+  decisions: readonly Decision[];
+  eventChoices?: readonly EventChoice[];
+}
+
+export type DecisionRejection =
+  | 'sem_pontos_de_agenda'
+  | 'custo_invalido'
+  | 'politica_desconhecida'
+  | 'ja_em_andamento'
+  | 'evento_nao_pendente'
+  | 'escolha_invalida';
 
 /** Parcela de uma variação, com causa, para o "Por que mudou?" (ECONOMIC_MODEL.md §1.6). */
 export interface Contribution {
@@ -55,6 +248,8 @@ export interface Contribution {
   /** ID da causa: proposta, choque, Banco Central, tendência… */
   cause: string;
   delta: number;
+  /** Texto curto para o jogador (ex.: "Juros do Banco Central"). */
+  label?: string;
 }
 
 /** Registro permanente de uma decisão aceita (trilha de auditoria). */
@@ -74,7 +269,25 @@ export interface GameState {
   monthIndex: number;
   indicators: Indicators;
   resources: Resources;
+  economy: EconomyState;
+  congress: CongressState;
+  proposals: Proposal[];
+  /** Fila de efeitos futuros (ECONOMIC_MODEL.md §5.11). Impulsos vencidos saem da fila. */
+  impulses: ScheduledImpulse[];
+  events: EventsState;
   decisionLog: DecisionRecord[];
+}
+
+/** Mudança de estado de uma proposta no mês, para o relatório. */
+export interface ProposalChange {
+  proposalId: string;
+  policyId: string;
+  transition: ProposalTransition;
+}
+
+export interface CopomDecision {
+  previous: number;
+  next: number;
 }
 
 export interface MonthReport {
@@ -84,9 +297,58 @@ export interface MonthReport {
   rejected: { decision: Decision; reason: DecisionRejection }[];
   /** Variação de cada indicador no mês, decomposta por causa. */
   contributions: Contribution[];
+  proposalChanges: ProposalChange[];
+  /** Escolhas aplicadas a eventos (do jogador ou automáticas, quando o prazo venceu). */
+  eventsResolved: { eventId: string; choiceId: string; automatic: boolean }[];
+  /** Eventos que apareceram neste mês e aguardam resposta. */
+  eventsFired: string[];
+  /** Reunião do Copom no mês, se houve. */
+  copom: CopomDecision | null;
+  /** Avisos curtos para o jogador (ex.: gasto acima do limite). */
+  notes: string[];
 }
 
 export interface MonthResult {
   state: GameState;
   report: MonthReport;
 }
+
+/** Conteúdo do jogo usado pelo motor (validado fora dele; o motor não lê arquivos). */
+export interface GameContent {
+  scenario: Scenario;
+  policies: Readonly<Record<string, Policy>>;
+  events: readonly GameEvent[];
+  calibration: Calibration;
+}
+
+/** Partes do relatório que as etapas preenchem (o resto é montado pelo `advanceMonth`). */
+export type ReportDraft = Pick<MonthReport, 'proposalChanges' | 'eventsResolved' | 'eventsFired' | 'notes'> & {
+  copom: CopomDecision | null;
+};
+
+export interface StepContext {
+  rng: Rng;
+  content: GameContent;
+  /** Decisões aceitas neste mês (já descontados os pontos de agenda), na ordem enviada. */
+  decisions: readonly Decision[];
+  /** Respostas a eventos aceitas neste mês. */
+  eventChoices: readonly EventChoice[];
+  /** Coletor do relatório: as etapas acrescentam itens aqui. */
+  draft: ReportDraft;
+}
+
+export interface StepOutput {
+  /**
+   * Novo estado. **Indicadores são ignorados**: o `advanceMonth` os recalcula somando `contributions`
+   * (garante o invariante §7.3). As demais partes do estado são usadas como devolvidas.
+   */
+  state: GameState;
+  contributions: Contribution[];
+}
+
+/**
+ * Etapa do processamento mensal. Recebe o estado já atualizado pelas etapas anteriores do mês e devolve o
+ * novo estado e as contribuições. Função pura: não altera `state` (copie o que mudar).
+ * `state.monthIndex` é o mês sendo processado.
+ */
+export type MonthStep = (state: Readonly<GameState>, ctx: StepContext) => StepOutput;

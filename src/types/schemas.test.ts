@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createInitialState, indicatorsFromScenario, type Indicators } from '../engine';
+import { createInitialState, DEFAULT_CALIBRATION, indicatorsFromScenario } from '../engine';
 import { dataValueSchema, type DataValue } from './data';
 import { parsePolicy, type Policy } from './policy';
 import { parseScenario, type Scenario } from './scenario';
@@ -29,6 +29,7 @@ const infra: Policy = {
     { kind: 'sobrecusto', probability: 0.2 },
   ],
   affected: { groups: ['trabalhadores_construcao'], sectors: ['construcao'], regions: ['nacional'] },
+  position: { economic: -0.2, social: 0 },
   dataStatus: 'PROVISORIO',
 };
 
@@ -153,8 +154,8 @@ describe('Scenario', () => {
     const r = parseScenario(scenario);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    const indicators: Indicators = indicatorsFromScenario(r.scenario);
-    const state = createInitialState({ scenarioId: r.scenario.id, difficulty: 'casual', seed: 1, indicators });
+    const content = { scenario: r.scenario, policies: {}, events: [], calibration: DEFAULT_CALIBRATION };
+    const state = createInitialState({ content, difficulty: 'casual', seed: 1 });
     expect(state.indicators.inflation12m).toBe(0.045);
     expect(state.resources.agendaPointsPerMonth).toBe(4);
   });

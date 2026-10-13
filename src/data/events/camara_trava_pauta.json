@@ -1,0 +1,51 @@
+{
+  "id": "camara_trava_pauta",
+  "title": "Presidência da Câmara trava pauta",
+  "description": "O presidente da Câmara recusa colocar em votação os projetos do governo, após atrito com o bloco que o apoia. As propostas ficam paradas até uma resposta.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      { "variable": "congressRelation", "op": "lt", "value": 5 },
+      { "variable": "proposalsInCongress", "op": "gt", "value": 0 }
+    ],
+    "probability": 0.2,
+    "cooldownMonths": 6,
+    "maxOccurrences": 3
+  },
+  "onFire": [{ "target": "capital_politico", "delta": -3, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "negociar_cargos",
+      "label": "Negociar cargos e emendas",
+      "description": "Destrava a pauta e melhora a relação com o Congresso, mas aumenta a despesa com emendas e cria um custo de confiança.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "relacao_congresso", "delta": 8, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "gasto.custeio", "delta": 0.001, "lagMonths": 0, "durationMonths": 6 },
+        { "target": "credibilidade", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "confrontar",
+      "label": "Confrontar a Presidência",
+      "description": "Ganha aprovação com o discurso de enfrentamento, mas piora a relação com o Congresso e tranca ainda mais a pauta.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -8, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "esperar",
+      "label": "Esperar a crise passar",
+      "description": "Mantém a postura institucional e a credibilidade, mas o capital político continua a cair enquanto a pauta fica parada.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "capital_politico", "delta": -2, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    }
+  ],
+  "defaultChoice": "esperar",
+  "dataStatus": "FICTICIO"
+}

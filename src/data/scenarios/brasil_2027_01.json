@@ -1,0 +1,158 @@
+{
+  "id": "brasil_2027_01",
+  "version": "0.1.0",
+  "name": "Brasil, janeiro de 2027 (dados provisórios)",
+  "startPeriod": "2027-01",
+  "indicators": {
+    "approval": {
+      "value": 0.48,
+      "unit": "fração",
+      "status": "FICTICIO",
+      "note": "Presidente fictício: aprovação inicial de design, sem origem em pesquisa. Substituir apenas por decisão de design, não por dado de pesquisa sem nova versão do cenário."
+    },
+    "gdpGrowth12m": {
+      "value": 0.018,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: crescimento de 12 meses ainda não importado. Substituir pelo PIB real (IBGE, Contas Nacionais) conforme DATA_SOURCES.md §4.1."
+    },
+    "inflation12m": {
+      "value": 0.042,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: IPCA de 12 meses ainda não importado. Substituir pelo IPCA real (IBGE/BCB) conforme DATA_SOURCES.md §4.1."
+    },
+    "unemployment": {
+      "value": 0.06,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: taxa de desocupação ainda não importada. Substituir pela PNAD Contínua (IBGE) conforme DATA_SOURCES.md §4.1."
+    },
+    "primaryBalance12m": {
+      "value": -0.004,
+      "unit": "fração do PIB",
+      "status": "PROVISORIO",
+      "note": "Placeholder: resultado primário de 12 meses ainda não importado. Substituir pelo RTN (Tesouro) conforme DATA_SOURCES.md §4.1."
+    }
+  },
+  "economy": {
+    "nominalGdpMillions": {
+      "value": 13600000,
+      "unit": "R$ milhões",
+      "status": "PROVISORIO",
+      "note": "Placeholder: PIB nominal de 12 meses ainda não importado (IBGE, Contas Nacionais). Ordem de grandeza apenas."
+    },
+    "outputGap": {
+      "value": 0.005,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: hiato do produto ainda não estimado a partir de dados reais."
+    },
+    "selic": {
+      "value": 0.13,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: Selic ainda não importada (BCB, SGS). Não reflete a meta oficial do Copom."
+    },
+    "inflationExpectation": {
+      "value": 0.04,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: expectativa de inflação ainda não importada (BCB, Focus). Não é projeção oficial."
+    },
+    "credibility": {
+      "value": 0.65,
+      "unit": "índice 0–1",
+      "status": "PROVISORIO",
+      "note": "Placeholder: índice de credibilidade do banco central sem método documentado. Calibração na Fase 03."
+    },
+    "grossDebt": {
+      "value": 0.8,
+      "unit": "fração do PIB",
+      "status": "PROVISORIO",
+      "note": "Placeholder: dívida bruta (DBGG) ainda não importada (BCB, Estatísticas Fiscais)."
+    },
+    "implicitRate": {
+      "value": 0.12,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: taxa implícita da dívida ainda não calculada a partir de dados reais."
+    },
+    "revenue": {
+      "value": 0.187,
+      "unit": "fração do PIB",
+      "status": "PROVISORIO",
+      "note": "Placeholder: receita primária ainda não importada (Tesouro, RTN)."
+    },
+    "primarySpending": {
+      "value": 0.191,
+      "unit": "fração do PIB",
+      "status": "PROVISORIO",
+      "note": "Placeholder: despesa primária ainda não importada (Tesouro, RTN). Diferença com a receita coincide com o resultado primário placeholder."
+    }
+  },
+  "parameters": {},
+  "blocs": [
+    {
+      "id": "esquerda",
+      "name": "Esquerda",
+      "chamberSeats": 110,
+      "senateSeats": 14,
+      "ideology": { "economic": -0.7, "social": -0.6 },
+      "cohesion": 0.85,
+      "governmentRelation": 0,
+      "interests": ["social"]
+    },
+    {
+      "id": "centro_esquerda",
+      "name": "Centro-Esquerda",
+      "chamberSeats": 70,
+      "senateSeats": 10,
+      "ideology": { "economic": -0.3, "social": -0.2 },
+      "cohesion": 0.7,
+      "governmentRelation": 0,
+      "interests": ["educacao"]
+    },
+    {
+      "id": "centro",
+      "name": "Centro",
+      "chamberSeats": 150,
+      "senateSeats": 24,
+      "ideology": { "economic": 0.1, "social": 0.2 },
+      "cohesion": 0.5,
+      "governmentRelation": 10,
+      "interests": ["emendas", "infraestrutura"]
+    },
+    {
+      "id": "centro_direita",
+      "name": "Centro-Direita",
+      "chamberSeats": 98,
+      "senateSeats": 18,
+      "ideology": { "economic": 0.5, "social": 0.4 },
+      "cohesion": 0.65,
+      "governmentRelation": 0,
+      "interests": ["agro", "industria"]
+    },
+    {
+      "id": "direita",
+      "name": "Direita",
+      "chamberSeats": 85,
+      "senateSeats": 15,
+      "ideology": { "economic": 0.7, "social": 0.8 },
+      "cohesion": 0.8,
+      "governmentRelation": 0,
+      "interests": ["seguranca"]
+    }
+  ],
+  "copomMonths": [1, 3, 5, 6, 7, 9, 11, 12],
+  "policies": [
+    "infraestrutura_credito_adicional",
+    "iof_credito_reducao",
+    "irpf_tabela",
+    "contingenciamento",
+    "transferencia_renda_ampliacao",
+    "seguranca_cooperacao",
+    "gastos_tributarios_revisao",
+    "reforma_administrativa"
+  ]
+}

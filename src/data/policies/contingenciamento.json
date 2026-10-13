@@ -1,0 +1,35 @@
+{
+  "id": "contingenciamento",
+  "name": "Contingenciamento de despesas discricionárias",
+  "summary": "Bloqueia por decreto de programação parte das despesas discricionárias para cumprir a meta fiscal. Reduz o custeio e o investimento, com custo político e ganho de credibilidade fiscal.",
+  "area": "fiscal",
+  "competence": "federal",
+  "instruments": ["decreto_programacao"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": -30000,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["sem_custo"],
+  "timeline": {
+    "planningMonths": 0,
+    "expectedLegislativeMonths": 0,
+    "executionMonths": 12,
+    "maturationMonths": 0
+  },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": -20000, "lagMonths": 0 },
+    { "channel": "investimento_publico", "magnitude": -10000, "lagMonths": 0 },
+    { "channel": "aprovacao", "magnitude": -0.015, "lagMonths": 1 },
+    { "channel": "credibilidade_fiscal", "magnitude": 0.03, "lagMonths": 0 }
+  ],
+  "risks": [],
+  "affected": {
+    "groups": ["servidores", "usuarios_de_servicos_publicos"],
+    "sectors": ["servicos", "construcao"],
+    "regions": ["nacional"]
+  },
+  "position": { "economic": 0.5, "social": 0 },
+  "dataStatus": "PROVISORIO"
+}

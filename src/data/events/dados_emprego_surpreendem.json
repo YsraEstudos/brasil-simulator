@@ -1,0 +1,37 @@
+{
+  "id": "dados_emprego_surpreendem",
+  "title": "Dados de emprego surpreendem",
+  "description": "A pesquisa mensal de emprego mostra avanço acima do esperado, com a economia operando acima do potencial. O governo decide se comemora publicamente.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "outputGap", "op": "gt", "value": 0.004 }],
+    "probability": 0.15,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onFire": [{ "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "comunicar",
+      "label": "Comunicar os resultados",
+      "description": "Amplifica a boa notícia e melhora a aprovação, mas o otimismo aquece expectativas e pode pressionar a inflação.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "choque.inflacao", "delta": 0.002, "lagMonths": 0, "durationMonths": 3 }
+      ]
+    },
+    {
+      "id": "discreto",
+      "label": "Manter discrição",
+      "description": "Evita parecer triunfalista e ganha um pouco de credibilidade, mas perde a chance de capitalizar o bom momento.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": -0.002, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    }
+  ],
+  "defaultChoice": "discreto",
+  "dataStatus": "FICTICIO"
+}

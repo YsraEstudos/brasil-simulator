@@ -42,6 +42,28 @@ export const scenarioIndicatorsSchema = z
   })
   .strict();
 
+/**
+ * Estado econômico inicial (ECONOMIC_MODEL.md §3, subconjunto v0.1). Fluxos fiscais em fração do PIB anual.
+ * Opcional para cenários antigos: sem ele o motor usa valores padrão provisórios.
+ */
+export const scenarioEconomySchema = z
+  .object({
+    /** PIB nominal de 12 meses, R$ milhões (converte custos de políticas em fração do PIB). */
+    nominalGdpMillions: dataValueSchema,
+    outputGap: dataValueSchema,
+    selic: dataValueSchema,
+    inflationExpectation: dataValueSchema,
+    credibility: dataValueSchema,
+    grossDebt: dataValueSchema,
+    implicitRate: dataValueSchema,
+    /** Receita primária líquida do governo central, fração do PIB. */
+    revenue: dataValueSchema,
+    /** Despesa primária do governo central, fração do PIB. */
+    primarySpending: dataValueSchema,
+  })
+  .strict();
+export type ScenarioEconomy = z.infer<typeof scenarioEconomySchema>;
+
 export const scenarioSchema = z
   .object({
     /** Ex.: `brasil_2027_01` */
@@ -51,6 +73,7 @@ export const scenarioSchema = z
     /** Mês de posse = monthIndex 0 (jan/2027). */
     startPeriod: z.literal('2027-01'),
     indicators: scenarioIndicatorsSchema,
+    economy: scenarioEconomySchema.optional(),
     /** Parâmetros do modelo (ECONOMIC_MODEL.md §6), todos com status — `A_CALIBRAR` = `PROVISORIO`. */
     parameters: z.record(z.string().regex(/^[a-z][a-z0-9_.]*$/), dataValueSchema),
     blocs: z.array(blocSchema).min(2),

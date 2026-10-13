@@ -24,7 +24,7 @@ Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 | --- | --- | --- | --- | --- |
 | 00 | Pré-produção e regras | 1–2 sem | Explicar sem código o caminho decisão → Congresso → orçamento → execução → indicadores | ✅ Concluída em 13/10/2026 (documentos revisados, D1–D3 decididas, itens ⚠ verificados) |
 | 01 | Fundação técnica e interface | 2–3 sem | App instalado no Android, navegação funcional, partida salva após fechar e reabrir | ✅ Concluída em 13/10/2026 (rodando no Expo Go no moto g20; build própria adiada, ver item 11) |
-| 02 | Protótipo jogável | 3–4 sem | 12 meses jogáveis, decisões diferentes → consequências diferentes, salvar/retomar | ⬜ |
+| 02 | Protótipo jogável | 3–4 sem | 12 meses jogáveis, decisões diferentes → consequências diferentes, salvar/retomar | 🟡 Implementada em 13/10/2026 (itens 1–9); falta o teste com pessoas (item 10) |
 | 03 | Motor econômico | 4–6 sem | Campanhas automáticas de 20 anos sem inconsistências ou explosões injustificadas | ⬜ |
 | 04 | Congresso e instituições | 3–5 sem | Propor, negociar e acompanhar uma reforma com resultado plausível | ⬜ |
 | 05 | Mapa e federação | 3–4 sem | Decisões federais com efeitos regionais diferentes e explicáveis | ⬜ |
@@ -101,16 +101,18 @@ Decisão: a tela "Brasil" é um globo 3D (three.js + @react-three/fiber + expo-g
 
 ## 5. Fase 02 — plano de tarefas
 
-1. Cenário `brasil-2027-01` v0 com valores `PROVISORIO` e metadados.
-2. Motor mínimo: hiato, inflação, BC, desemprego, primário (subset de ECONOMIC_MODEL.md §5) + invariantes.
-3. Máquina de estados de propostas (GAME_DESIGN.md §9).
-4. Congresso em 5 blocos (POLITICAL_RULES.md §6).
-5. 8 políticas em `src/data/policies/`.
-6. 10 eventos em `src/data/events/`.
-7. Relatório mensal com decomposição "Por que mudou?" e mesa de despacho (GAME_DESIGN.md §4.4).
-8. Telas do protótipo: briefing, decisões, relatório, indicadores.
-9. Testes de campanha automática (12 meses × N sementes × estratégias-robô, incluindo inerte e populista fiscal) e `npm run sim:balance`.
-10. Teste com 3–5 pessoas: o jogo é interessante após vários meses?
+1. ✅ Cenário `brasil_2027_01` v0.1.0 com valores `PROVISORIO` (aprovação inicial `FICTICIO`) e bloco econômico; é o cenário padrão das novas campanhas.
+2. ✅ Motor mínimo (`src/engine/economy/`): hiato, inflação, Banco Central, desemprego, contas públicas, dívida e credibilidade, com invariantes §7.1–7.3, 7.5–7.6. Simplificações em ECONOMIC_MODEL.md §5.13; calibração centralizada em `calibration.ts`.
+3. ✅ Máquina de estados de propostas (`src/engine/proposals/`): ato do Executivo, tramitação, recesso, capacidade de pauta, votação, sanção, MP com vigência imediata, execução com riscos e anterioridade/noventena. Fila de impulsos agendados (ECONOMIC_MODEL.md §5.11).
+4. ✅ Congresso em 5 blocos (`src/engine/congress/`): apoio por ideologia, relação, interesse e opinião; quóruns de PL, PLP, PLN, MP e PEC (3/5 em dois turnos).
+5. ✅ 8 políticas em `src/data/policies/`.
+6. ✅ 10 eventos em `src/data/events/`, com condições, probabilidade, intervalo mínimo e escolha padrão.
+7. ✅ Relatório mensal com "Por que mudou?", manchetes e mesa de despacho (`src/engine/report/`); relatórios dos últimos 12 meses salvos no banco (migração 3). Lua de mel na opinião pública (`src/engine/politics/`).
+8. ✅ Telas: Presidência (briefing, caixa de entrada, agenda com mesa de despacho, propostas, relatório de legado), Economia, Congresso e Notícias. Verificado na web (criar, decidir, encerrar meses, retomar).
+9. ✅ Campanhas automáticas (`src/engine/sim/`, 5 estratégias-robô × sementes × 12 e 48 meses) e `npm run sim:balance`. Saves v1 são atualizados para o estado v2.
+10. ⬜ Teste com 3–5 pessoas: o jogo é interessante após vários meses?
+
+**Limitações conhecidas ao fim da implementação (para a Fase 03):** a dívida bruta sobe cerca de 5 p.p. do PIB ao ano em todas as estratégias (juros nominais ~9,7% do PIB: taxa implícita e Selic do cenário provisório); as estratégias-robô diferem pouco em inflação e dívida em 12 meses; sem câmbio, prêmio de risco e pressão sobre o BC; riscos de judicialização e escândalo das políticas não são modelados na execução; a pontuação do legado é uma média simples de sinais.
 
 ---
 

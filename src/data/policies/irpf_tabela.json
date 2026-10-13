@@ -1,0 +1,34 @@
+{
+  "id": "irpf_tabela",
+  "name": "Alteração da tabela e das deduções do IRPF",
+  "summary": "Amplia as deduções para rendas médias e cria tributação mínima para rendas muito altas, compensando a perda de arrecadação. Por força da anterioridade anual, passa a valer somente a partir de janeiro do exercício seguinte.",
+  "area": "tributacao",
+  "competence": "federal",
+  "instruments": ["projeto_lei"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": 15000,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["aumento_receita"],
+  "timeline": {
+    "planningMonths": 1,
+    "expectedLegislativeMonths": 4,
+    "executionMonths": 0,
+    "maturationMonths": 0
+  },
+  "conditions": ["anterioridade_anual", "compensacao_lrf"],
+  "impacts": [
+    { "channel": "desoneracao_renda", "magnitude": 25000, "lagMonths": 0 },
+    { "channel": "receita_tributaria", "magnitude": 10000, "lagMonths": 0 },
+    { "channel": "aprovacao", "magnitude": 0.015, "lagMonths": 0 }
+  ],
+  "risks": [{ "kind": "judicializacao", "probability": 0.1 }],
+  "affected": {
+    "groups": ["classe_media", "alta_renda"],
+    "sectors": ["servicos"],
+    "regions": ["nacional"]
+  },
+  "position": { "economic": -0.3, "social": -0.1 },
+  "dataStatus": "PROVISORIO"
+}
