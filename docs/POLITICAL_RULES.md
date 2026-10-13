@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.1 do documento • Fase 00 • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1)
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -179,6 +179,20 @@ O sorteio usa a semente da campanha. Resultados possíveis: aprovação, rejeiç
 - Os **presidentes da Câmara e do Senado** controlam a pauta. Uma relação ruim com eles atrasa propostas.
 - Instrumentos de negociação: ministérios, cargos, priorização de emendas, alterações no texto, apoio em pautas do bloco. Cada contrapartida tem custo (fiscal, de imagem ou risco de escândalo).
 - Tempo médio de tramitação por instrumento é parâmetro do cenário; PEC tende a levar vários meses.
+- **Capacidade de pauta.** Cada Casa tramita no máximo `capacidade_pauta` propostas **prioritárias** do governo ao mesmo tempo (parâmetro do cenário; PEC e reformas grandes ocupam mais de uma vaga). Acima disso, as propostas excedentes ficam paradas até abrir vaga. É diferente dos pontos de agenda: os pontos limitam o que o presidente **envia** no mês; a pauta limita o que **anda** ao mesmo tempo. Mandar duas reformas grandes juntas atrasa as duas.
+- **Emendas como pedágio.** Em votações difíceis (PEC, quórum qualificado, base insuficiente), os líderes cobram liberação ou antecipação de emendas. A liberação não aumenta o limite de despesas: sai do espaço das discricionárias ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.8), competindo com os programas e obras do próprio governo.
+
+### 6.3.1 Ministérios: quadro técnico ou indicação partidária
+Cada ministério relevante tem um ocupante com `origem`: **técnico/aliado** ou **indicação de bloco**.
+
+| Efeito | Técnico/aliado | Indicação de bloco |
+| --- | --- | --- |
+| Apoio do bloco no Congresso | nenhum ganho direto | `relacaoGoverno_b ↑` e contrapartida em `apoio_b` (§6.2), proporcional ao peso da pasta |
+| Execução do orçamento da pasta | `capacidade_adm` ↑ | `capacidade_adm` ↓ (parte do gasto rende menos) |
+| Risco de escândalo | baixo | maior, cresce com o tempo no cargo |
+| Agenda da pasta | segue o presidente | pode **travar** políticas contrárias à ideologia do bloco |
+
+Todos os pesos são parâmetros a calibrar (Fase 04). Demitir um ministro de bloco custa capital político e piora a relação com o bloco.
 
 ### 6.4 Evolução
 Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamentares individuais.
@@ -197,7 +211,7 @@ Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamenta
 
 - **STF**: legitimados (partidos com representação no Congresso, governadores, Mesas, PGR, OAB, entidades de classe nacionais) podem propor ADI/ADPF. Cada medida tem um `riscoJuridico` (0–1) calculado a partir de flags (ex.: renúncia sem compensação, MP sem urgência, invasão de competência estadual). Probabilidade mensal de ação e de liminar suspendendo a medida = f(riscoJuridico, interesse dos legitimados).
 - **TCU**: emite alertas sobre execução e contas. Parecer pela rejeição das contas aumenta o risco de impeachment e afeta a credibilidade. O julgamento das contas é feito pelo Congresso.
-- **Indicações**: vagas no STF e na diretoria do BC surgem conforme calendário do cenário; exigem aprovação do Senado (maioria absoluta para ministro do STF, CF art. 101; maioria simples em votação secreta após arguição para presidente e diretores do BC, CF art. 52, III, d ✔).
+- **Indicações**: vagas no STF e na diretoria do BC surgem conforme calendário do cenário (no STF, pela aposentadoria compulsória aos 75 anos — EC 88/2015 e LC 152/2015 —, ou por evento); exigem aprovação do Senado (maioria absoluta para ministro do STF, CF art. 101; maioria simples em votação secreta após arguição para presidente e diretores do BC, CF art. 52, III, d ✔).
 
 ---
 
@@ -222,6 +236,18 @@ Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamenta
 - 1º turno no primeiro domingo de outubro; 2º turno no último domingo de outubro, se nenhum candidato obtiver maioria absoluta dos votos válidos (CF art. 77).
 - Reeleição para um único período subsequente (CF art. 14 §5º). ✔ 13/10/2026: a PEC 12/2022 (fim da reeleição, mandatos de 5 anos) foi aprovada na CCJ do Senado em mai/2025 e desmembrada, sem aprovação em plenário; mesmo pelo texto da CCJ, o presidente eleito em 2026 ainda poderia disputar a reeleição em 2030. Fica como parâmetro do cenário e candidata a evento/PEC dentro do jogo.
 - Condutas vedadas (Lei 9.504/1997, art. 73): nos 3 meses anteriores à eleição ficam proibidas transferências voluntárias a estados e municípios (salvo obra em andamento e emergência), publicidade institucional e nomeações/demissões de servidores (com exceções); revisão geral de remuneração dos servidores acima da inflação é vedada a partir de 180 dias antes. Em ano eleitoral, programas sociais novos também são restringidos (art. 73 §10). ✔
+- **No jogo:** durante **todo o ano eleitoral** (2030) fica bloqueada a criação de benefício gratuito novo, salvo calamidade, estado de emergência ou programa autorizado em lei e já em execução orçamentária no ano anterior (art. 73 §10). O jogador pode forçar a brecha da emergência (regra quebrável, §1.1): a medida passa, mas abre risco de ação na Justiça Eleitoral por abuso de poder, com efeito sobre a candidatura.
+
+### 11.1 Ciclo do mandato (modelo de opinião)
+O peso que o eleitor dá a cada coisa muda ao longo do mandato (parâmetros a calibrar, valores de partida abaixo):
+
+| Fase | Meses (`monthIndex`) | Regra |
+| --- | --- | --- |
+| **Lua de mel** | 0–5 (jan–jun/2027) | Perda de aprovação por medidas impopulares reduzida (`fator_lua_de_mel` ≈ 0,6) e parte da culpa por indicadores ruins atribuída ao governo anterior. É a janela para medidas duras. |
+| **Meio do mandato** | 6–38 | Regras normais; o custo de manter a coalizão sobe com o tempo. |
+| **Pré-eleição** | 39–45 (abr–out/2030) | **Memória curta:** inflação de alimentos, desemprego e renda dos últimos 6 meses pesam mais na intenção de voto do que o desempenho acumulado (`peso_recente` ≈ 3×). Valem as vedações acima. |
+
+Válido também para mandatos seguintes, contando a partir de cada posse.
 
 ---
 

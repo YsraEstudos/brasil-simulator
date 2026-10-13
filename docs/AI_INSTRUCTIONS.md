@@ -1,6 +1,6 @@
 # Brasil Simulator — Instruções para Agentes de IA
 
-Versão 0.1 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 • v0.2: calibração centralizada, saturação, fila de efeitos, atualização de saves antigos
 Este arquivo vale para qualquer assistente de programação (Claude Code, Codex etc.) que trabalhe no repositório.
 
 ---
@@ -51,6 +51,11 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 - Toda alteração de variável relevante registra uma `contribution` com causa (para o "Por que mudou?").
 - Unidades conforme [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §2. Nunca misturar porcentagem inteira com fração.
 - O jogador nunca altera um indicador de resultado diretamente.
+- **Sem números mágicos.** Nenhum coeficiente, elasticidade, peso ou atraso escrito dentro de função de lógica (ex.: `gdp * 0.015`). Todo valor desse tipo mora no módulo de calibração (`src/engine/economy/calibration.ts` e equivalentes por área), com nome, faixa e justificativa. Exceções: constantes matemáticas e conversões de unidade (12 meses, 100 para porcentagem na exibição).
+- **Realimentações saturam.** Todo laço de realimentação usa saturação (`tanh`, logística ou limite explícito). Crise só acontece com causa registrada ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §1.8).
+- **Defasagens pela fila.** Efeitos futuros são agendados como `ScheduledImpulse` ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.11), não calculados com `if/else` sobre o histórico.
+- **Estado enxuto.** Séries históricas não vivem no `GameState`; ficam no banco ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §11).
+- **Saves antigos são atualizados, não recusados.** Mudou o formato do `GameState`? Suba `STATE_SCHEMA_VERSION` e escreva a função de atualização da versão anterior (ou um valor padrão no esquema Zod), com teste que carrega um save da versão anterior. Só saves de versão **mais nova** que o app são recusados.
 
 ---
 

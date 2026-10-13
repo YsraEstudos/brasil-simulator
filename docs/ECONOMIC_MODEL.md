@@ -1,6 +1,6 @@
 # Brasil Simulator — Modelo Econômico
 
-Versão 0.1 do documento • Fase 00 • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (pressão sobre o BC permitida; incerteza varia com a dificuldade)
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (pressão sobre o BC permitida; incerteza varia com a dificuldade) • v0.2: fila de efeitos agendados, distribuição regional a partir do agregado, retorno decrescente de tributos, compressão das discricionárias, retenção do histórico, saturação de realimentações
 
 > **Status:** especificação inicial. Todas as equações são **forma reduzida simplificada** e todos os parâmetros estão marcados como `A_CALIBRAR` até a Fase 03. Nenhum número deste documento é previsão.
 
@@ -13,8 +13,10 @@ Versão 0.1 do documento • Fase 00 • 13/10/2026 • ✅ Revisado pelo autor 
 3. **O jogador não altera resultados.** Ele altera **instrumentos** (alíquotas, dotações, programas, regras). O motor calcula PIB, preços, emprego e contas.
 4. **Contabilidade primeiro.** As identidades contábeis (§7) valem sempre, em qualquer dificuldade. Ruído e comportamento entram nas equações de comportamento, nunca nas identidades.
 5. **Efeitos dependem do estado.** Multiplicadores, repasse cambial e reação do mercado variam com hiato, dívida e credibilidade.
-6. **Auditoria.** Cada variação relevante é decomposta por causa (`contributions`) e gravada para o relatório "Por que mudou?".
-7. **Parâmetros como dados.** Coeficientes ficam em arquivos versionados de cenário (`src/data/scenarios/`), não espalhados no código.
+6. **Auditoria.** Cada variação relevante é decomposta por causa (`contributions`) e gravada para o relatório "Por que mudou?". Retenção em §11.
+7. **Parâmetros como dados.** Nenhum coeficiente numérico dentro das funções de lógica. Os valores padrão ficam num único módulo declarativo (`src/engine/economy/calibration.ts`), cada um com nome, faixa e justificativa; o cenário (`src/data/scenarios/`) pode sobrescrevê-los.
+8. **Realimentações saturam.** Todo laço de realimentação (ex.: dívida alta → prêmio de risco → juros → dívida) usa função de saturação (`tanh`, logística ou limite explícito), para não gerar espiral infinita por acidente numérico. Crises continuam possíveis, mas precisam de causa registrada (choque, decisão ou evento).
+9. **Agregado primeiro.** O motor calcula a economia nacional; estados e regiões são uma distribuição desse agregado (§5.12), nunca 27 motores somados.
 
 ---
 
@@ -153,6 +155,12 @@ Para cada grupo de tributos `j` (IR, contribuições sobre folha/previdência, t
 R_j,t = base_j(PIBnominal_t, componente) * aliquota_efetiva_j,t * (1 + elast_j * h_t)
 ```
 - Mudanças de alíquota só passam a valer após **anterioridade/noventena** aplicável (ver [POLITICAL_RULES.md](POLITICAL_RULES.md) §5).
+- **Retorno decrescente.** Acima de um limiar de carga, parte de cada aumento de alíquota se perde por sonegação, informalidade, elisão e menor investimento:
+  ```
+  aliquota_efetiva_j = aliquota_legal_j * (1 − perda_j(aliquota_legal_j))
+  perda_j(a)        = perda_max_j * tanh( max(0, a − limiar_carga_j) / escala_j )
+  ```
+  Aumentos grandes e rápidos sobre renda de capital também elevam a **saída de capital** (fluxo de capital ↓ → câmbio ↑ → inflação de importados ↑). Assim não existe "fonte infinita de dinheiro" no primeiro mês. Os parâmetros vêm de estimativas de elasticidade da base tributária, não de posição ideológica, e o "Por que mudou?" mostra a perda de arrecadação como causa própria.
 - Sazonalidade mensal da arrecadação vem do cenário.
 - Transferências constitucionais a estados e municípios (FPE/FPM) são deduzidas da receita líquida do governo central conforme as regras de repartição.
 
@@ -160,6 +168,7 @@ R_j,t = base_j(PIBnominal_t, componente) * aliquota_efetiva_j,t * (1 + elast_j *
 - **Obrigatórias** (previdência, pessoal, BPC, abono/seguro-desemprego, mínimos de saúde e educação, emendas impositivas): crescem por regra de indexação (inflação, salário mínimo, demografia, número de beneficiários).
 - **Discricionárias**: definidas pela LOA, limitadas pelo Regime Fiscal Sustentável e afetadas por contingenciamento.
 - **Execução:** `executado_t = min(autorizado_disponível, capacidade_execução_t)`; o saldo vira restos a pagar.
+- **Compressão das discricionárias.** Com o limite de despesas fixo, cada real a mais de obrigatória sai do espaço das discricionárias. O caso mais tentador é o aumento real do salário mínimo: aprovação imediata nas faixas de menor renda, mas ele reajusta automaticamente previdência, BPC, abono e seguro-desemprego. Abaixo de um piso de funcionamento (`piso_custeio`), o jogo dispara eventos de **paralisação da máquina** (emissão de passaportes, manutenção de rodovias, bolsas, fiscalização), com custo de aprovação e de capacidade administrativa.
 
 ### 5.9 Contas públicas e dívida (identidades — ver §7)
 ```
@@ -177,6 +186,36 @@ Cada projeto tem fases: `planejamento → licenciamento → licitacao → obra �
 - eventos (judicialização, escândalo).
 
 Ao entrar em `operacao`: `Kg += valor_ativo * eficiencia` e começa a despesa de manutenção (`manut_pct * valor_ativo` ao ano).
+
+### 5.11 Fila de efeitos agendados (`ScheduledImpulse`)
+Defasagens não são calculadas olhando para o passado com `if/else`. Quando uma decisão, lei, obra ou evento produz efeitos futuros, ele **agenda impulsos** numa fila que faz parte do `GameState`:
+
+```ts
+interface ScheduledImpulse {
+  sourceId: string; // decisão, lei, projeto ou evento de origem
+  label: string; // texto do "Por que mudou?", ex.: "Obras da ferrovia"
+  target: string; // variável afetada, ex.: 'spending.investment'
+  delta: number; // efeito por mês, na unidade da variável
+  startMonth: number; // monthIndex do primeiro mês com efeito
+  endMonth: number | null; // null = permanente
+}
+```
+
+- Em cada mês, o motor aplica os impulsos ativos **antes** das equações do §5 e registra cada um como `contribution` com o seu `label`. A auditoria sai de graça: o "Por que mudou?" lê os impulsos consumidos naquele mês.
+- Atrasos, sobrecustos e cancelamentos (§5.10) **reagendam ou removem** impulsos, sempre com causa registrada.
+- Efeitos permanentes já estabilizados são consolidados no estado (ex.: incorporados ao `Kg` ou ao potencial) e saem da fila, para ela não crescer sem limite.
+
+### 5.12 Distribuição regional (Fase 05+)
+Decisão de arquitetura D7 (13/10/2026, [ROADMAP.md](ROADMAP.md) §6.1): **o agregado nacional é calculado primeiro e distribuído às UFs.**
+
+```
+participacao_uf,t = normalizar( participacao_uf,t-1 * (1 + Σ_s sens_uf,s * crescimento_setor_s,t + bonus_regional_uf,t) )
+Y_uf,t            = Y_t * participacao_uf,t
+```
+
+- Cada UF tem apenas uma **matriz de participação e de sensibilidade setorial** (ex.: uma UF agrícola absorve mais do crescimento da agropecuária; uma UF industrial, mais da indústria). Fonte: Contas Regionais do IBGE.
+- Obras e programas regionais alteram `bonus_regional_uf` e a eficiência local, e geram efeito marginal no agregado via `Kg` (§5.1), sem motor macroeconômico por UF.
+- Desemprego, renda e aprovação regionais seguem a mesma lógica. A soma das UFs é igual ao total nacional por construção (invariante 9).
 
 ---
 
@@ -204,6 +243,9 @@ Valores de partida apenas para o protótipo funcionar; serão substituídos por 
 | `limiar_divida` | 0,80 | 0,70–0,90 | dívida/PIB a partir da qual o prêmio sobe |
 | `elast_kg` | 0,10 | 0,05–0,20 | elasticidade do potencial ao capital público |
 | `dep_kg` | 0,04 | 0,03–0,06 | depreciação anual do capital público |
+| `limiar_carga_j` | por grupo | a definir | alíquota a partir da qual a arrecadação perde eficiência |
+| `perda_max_j` | 0,30 | 0,10–0,50 | perda máxima de base (sonegação, informalidade, elisão) |
+| `piso_custeio` | a definir | — | discricionária mínima para a máquina funcionar sem paralisações |
 
 Cada parâmetro deverá ter, ao final da Fase 03: fonte ou justificativa, data, intervalo testado e resultado de sensibilidade (ver [DATA_SOURCES.md](DATA_SOURCES.md) §4).
 
@@ -221,6 +263,7 @@ Executados a cada mês em modo de teste e em toda simulação automatizada:
 6. Nenhum `NaN` ou `Infinity` em qualquer variável.
 7. Determinismo: duas execuções com a mesma semente geram estados idênticos.
 8. Mês sem decisões e sem choques: variáveis convergem para estado estacionário (sem explosão).
+9. Soma das variáveis regionais = total nacional (Fase 05+).
 
 ---
 
@@ -238,7 +281,8 @@ Executados a cada mês em modo de teste e em toda simulação automatizada:
 
 ## 9. Validação e testes de sensibilidade
 
-- **Campanhas automáticas:** 20 anos (240 meses), centenas de sementes, estratégias-robô diferentes (expansionista, austera, neutra, aleatória, distributiva, pró-oferta).
+- **Campanhas automáticas:** 20 anos (240 meses), centenas de sementes, estratégias-robô diferentes: populista fiscal (gasta no limite, aumento real do mínimo todo ano), austera extrema, **inerte** (não decide nada; linha de base), aleatória, distributiva, pró-oferta e **fisiológica** (entrega ministérios e emendas para aprovar tudo; Fase 04+).
+- **`npm run sim:balance`:** roda N campanhas de cada estratégia em Node, sem interface, e imprime uma tabela por estratégia: inflação média, PIB acumulado, dívida/PIB final, aprovação média e, quando existirem, taxas de reeleição e de impeachment. Roda a cada mudança de fórmula ou parâmetro. Se uma estratégia claramente explorável (ex.: populista fiscal) vencer sem crise, é um exploit a corrigir.
 - **Critérios de aceitação (Fase 03):** nenhuma violação de invariante; nenhuma explosão sem causa (ex.: inflação > 100% a.a. sem choque e política correspondentes); trajetórias dentro de faixas plausíveis definidas no teste.
 - **Testes de sentido (direção do efeito), não de valor exato:** por exemplo, "aumento de juros reais reduz o hiato em 6–12 meses, mantidas as demais condições".
 - **Teste de viés:** nenhuma estratégia-robô deve dominar todas as outras em todos os objetivos; cada estratégia deve ter trade-offs mensuráveis.
@@ -257,7 +301,17 @@ Executados a cada mês em modo de teste e em toda simulação automatizada:
 
 ---
 
-## 11. Limitações declaradas
+## 11. Retenção do histórico
+
+Para o estado não crescer sem limite em campanhas longas (240+ meses) em celulares de entrada:
+
+- O `GameState` em memória guarda só as **contribuições do mês corrente** e a fila de impulsos ativos (§5.11). Nenhuma série histórica vive dentro do estado.
+- O banco guarda, por mês, o snapshot e a decomposição causal. Nos **últimos 12 meses** a decomposição fica completa (alimenta o "Por que mudou?"); nos meses mais antigos ela é descartada e fica só o vetor de indicadores (alimenta os gráficos de longo prazo).
+- A compactação roda ao gravar o mês, na mesma transação.
+
+---
+
+## 12. Limitações declaradas
 
 - É um modelo de jogo. Reproduzir números reais iniciais não o torna uma previsão.
 - Formas reduzidas não capturam todas as interações; o objetivo é ser **plausível, consistente e explicável**.

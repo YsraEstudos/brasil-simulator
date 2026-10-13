@@ -1,6 +1,6 @@
 # Brasil Simulator — Documento de Design do Jogo (GDD)
 
-Versão 0.1 do documento • Fase 00 • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada)
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato
 Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RULES.md](POLITICAL_RULES.md) · [DATA_SOURCES.md](DATA_SOURCES.md) · [ROADMAP.md](ROADMAP.md) · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)
 
 ---
@@ -76,7 +76,7 @@ Quando o jogador tenta algo que não é sua competência, o jogo **explica o mot
 
 1. **Briefing do mês**: resumo do que aconteceu, indicadores, alertas dos ministérios e manchetes.
 2. **Caixa de entrada**: eventos que pedem decisão (crise, pedido de governador, votação marcada, escândalo).
-3. **Agenda presidencial**: o jogador escolhe ações até o limite de **pontos de agenda** do mês.
+3. **Agenda presidencial**: o jogador escolhe ações até o limite de **pontos de agenda** do mês. As decisões grandes passam pela **mesa de despacho** (§4.4).
 4. **Encerrar o mês**: o motor processa instituições, economia, sociedade e eventos.
 5. **Relatório de consequências**: o que mudou, por quê e o que está em andamento.
 
@@ -92,7 +92,20 @@ O presidente não faz tudo ao mesmo tempo. Cada mês oferece um número limitado
 | Decreto ou ato administrativo simples | 0 a 1 |
 | Responder evento crítico | 0 a 2 |
 
-Isso obriga o jogador a priorizar e impede que ele dispare todas as reformas no primeiro mês.
+Isso obriga o jogador a priorizar e impede que ele dispare todas as reformas no primeiro mês. Um segundo limite atua no Congresso: a **capacidade de pauta** ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.3) só deixa andar um número limitado de propostas prioritárias ao mesmo tempo. O **capital político** (§5) é gasto em negociações, MPs, demissões e votações forçadas.
+
+### 4.4 Mesa de despacho
+Antes de confirmar uma decisão grande (proposta ao Congresso, MP, corte, reforma, resposta a crise), o jogador vê um cartão de despacho com **três pareceres curtos** (até 2 linhas cada), que podem discordar entre si:
+
+| Voz | Olha para |
+| --- | --- |
+| **Fazenda** | meta fiscal, inflação, juros e reação do mercado |
+| **Articulação política** (Casa Civil / Relações Institucionais) | votos prováveis por bloco, presidentes das Casas, governadores |
+| **Comunicação** (SECOM) | aprovação, grupos afetados, risco de crise de imagem |
+
+- Os pareceres são **gerados a partir das previsões do próprio motor** (mesma fonte das previsões ministeriais, §6), não de texto fixo. Por isso a qualidade deles varia com a dificuldade: precisos no Casual, com margem de erro na Estratégica, com margem de erro e viés da pasta no Realismo Extremo.
+- Nenhum parecer diz "a resposta certa"; cada um mostra um custo diferente da mesma escolha (§13).
+- Entra no protótipo (Fase 02) para as 8 decisões, em versão simples.
 
 ---
 
@@ -216,6 +229,12 @@ Toda política do catálogo é um arquivo de dados (JSON validado por Zod em `sr
 | `riscos` (`risks`) | atraso, sobrecusto, judicialização, baixa adesão |
 | `afetados` (`affected`) | grupos de renda, setores, regiões |
 
+### 9.2 Dois níveis de política (Fase 06+)
+Administrar 30+ políticas uma a uma, mês a mês, cansa no celular. Por isso as políticas têm dois níveis:
+
+1. **Rotina, por diretriz.** Para cada ministério o jogador define o orçamento anual e escolhe uma **diretriz** entre opções curtas (ex.: Segurança — "inteligência e fronteiras" ou "apoio a equipamentos estaduais"). As políticas de rotina rodam sozinhas a partir disso e só pedem atenção por eventos.
+2. **Marcas de governo (até 3 por mandato).** Megaprojetos escolhidos e nomeados pelo jogador (ex.: um programa de habitação, uma ferrovia, uma meta de alfabetização). Ficam fixados na tela da Presidência, têm eventos próprios de acompanhamento e pesam no **Relatório de Legado** (§7.1) e na campanha eleitoral (Fase 08).
+
 ---
 
 ## 10. Exemplo completo: da decisão ao indicador
@@ -249,6 +268,7 @@ Este é o critério de conclusão da Fase 00: explicar, sem código, como uma de
 - Congresso em **5 blocos** (ver [POLITICAL_RULES.md](POLITICAL_RULES.md) §6).
 - Banco Central como agente automático.
 - 8 decisões, 10 eventos, relatório mensal, salvar e carregar.
+- Mesa de despacho simples (§4.4) e efeito de lua de mel no início do mandato ([POLITICAL_RULES.md](POLITICAL_RULES.md) §11.1).
 
 ### 11.2 As 8 decisões do protótipo
 
@@ -281,6 +301,8 @@ Os valores e o desenho exato de cada decisão serão especificados em `src/data/
 | 10 | Dados de emprego surpreendem | Condicionado ao hiato do produto | Comunicação (efeito na aprovação) |
 
 Eventos são determinados por **condições verificáveis + probabilidade configurada + sorteio com semente** (reprodutível).
+
+**Eventos candidatos para a Fase 03 (identidade de 2027):** calibragem da alíquota de referência da CBS no primeiro ano de cobrança integral; setores (agro, serviços, indústria) pressionando por regimes diferenciados; disputa com governadores pelo Fundo Nacional de Desenvolvimento Regional; "orçamento de transição" opcional no início do mandato (remanejamento ou crédito para dar margem fiscal em 2027, já que a LOA foi votada pelo governo anterior); paralisação da máquina por compressão das discricionárias ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.8).
 
 ### 11.4 Critério de conclusão do protótipo
 Jogar os 12 meses, tomar decisões diferentes em duas campanhas, observar consequências diferentes e explicáveis, e conseguir reiniciar ou retomar a campanha.

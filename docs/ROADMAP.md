@@ -1,6 +1,6 @@
 # Brasil Simulator — Roadmap
 
-Versão 0.1 do documento • 13/10/2026
+Versão 0.2 do documento • 13/10/2026 • v0.2: adições do plano v1.1 (§2.1) e decisão D7
 Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 
 ---
@@ -23,7 +23,7 @@ Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 | Fase | Nome | Estimativa | Critério de conclusão | Status |
 | --- | --- | --- | --- | --- |
 | 00 | Pré-produção e regras | 1–2 sem | Explicar sem código o caminho decisão → Congresso → orçamento → execução → indicadores | ✅ Concluída em 13/10/2026 (documentos revisados, D1–D3 decididas, itens ⚠ verificados) |
-| 01 | Fundação técnica e interface | 2–3 sem | App instalado no Android, navegação funcional, partida salva após fechar e reabrir | 🟡 Itens 1–10 prontos (motor, Zod, SQLite, design, salvar/retomar); falta build de desenvolvimento própria (item 11) e conferir o salvamento no aparelho |
+| 01 | Fundação técnica e interface | 2–3 sem | App instalado no Android, navegação funcional, partida salva após fechar e reabrir | 🟡 Itens 1–10 prontos (motor, Zod, SQLite, design, salvar/retomar); falta build de desenvolvimento própria (item 11). Salvamento conferido no aparelho em 13/10/2026 |
 | 02 | Protótipo jogável | 3–4 sem | 12 meses jogáveis, decisões diferentes → consequências diferentes, salvar/retomar | ⬜ |
 | 03 | Motor econômico | 4–6 sem | Campanhas automáticas de 20 anos sem inconsistências ou explosões injustificadas | ⬜ |
 | 04 | Congresso e instituições | 3–5 sem | Propor, negociar e acompanhar uma reforma com resultado plausível | ⬜ |
@@ -34,6 +34,27 @@ Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 | 09 | Realismo Extremo | 4–8 sem | Consistência e desempenho em campanhas de décadas; efeitos rastreáveis | ⬜ |
 | 10 | Testes e publicação | 4–6 sem | Versão estável aprovada na Play Store | ⬜ |
 | 11 | Expansões | contínuo | — | ⬜ |
+
+### 2.1 Adições do plano v1.1 (13/10/2026)
+
+Revisão externa avaliada em 13/10/2026. A ordem das fases não mudou (o motor já veio antes da interface, e o banco já guarda o estado como JSON). Entraram estas adições:
+
+| Fase | Adição | Documento |
+| --- | --- | --- |
+| 02 | Mesa de despacho simples (Fazenda, Articulação, Comunicação) nas 8 decisões | GAME_DESIGN.md §4.4 |
+| 02 | Lua de mel no modelo de opinião | POLITICAL_RULES.md §11.1 |
+| 02 | Estratégias-robô inerte e populista fiscal; `npm run sim:balance` | ECONOMIC_MODEL.md §9 |
+| 02 | Atualização de saves de versões antigas do estado | AI_INSTRUCTIONS.md §3 |
+| 03 | Fila de efeitos agendados (`ScheduledImpulse`) | ECONOMIC_MODEL.md §5.11 |
+| 03 | Retorno decrescente de tributos e saída de capital | ECONOMIC_MODEL.md §5.7 |
+| 03 | Compressão das discricionárias e paralisação da máquina | ECONOMIC_MODEL.md §5.8 |
+| 03 | Calibração centralizada e saturação de realimentações | ECONOMIC_MODEL.md §1, AI_INSTRUCTIONS.md §3 |
+| 03 | Retenção do histórico (12 meses detalhados, depois só indicadores) | ECONOMIC_MODEL.md §11 |
+| 03 | Eventos de 2027: CBS, regimes diferenciados, FNDR, orçamento de transição | GAME_DESIGN.md §11.3 |
+| 04 | Capacidade de pauta, emendas como pedágio, ministérios técnicos ou partidários, estratégia-robô fisiológica | POLITICAL_RULES.md §6.3 |
+| 05 | Estados como distribuição do agregado nacional (D7) | ECONOMIC_MODEL.md §5.12 |
+| 06 | Políticas de rotina por diretriz e até 3 marcas de governo | GAME_DESIGN.md §9.2 |
+| 08 | Memória curta do eleitor e vedações do ano eleitoral | POLITICAL_RULES.md §11 |
 
 ---
 
@@ -63,7 +84,7 @@ Ordem sugerida, uma tarefa por branch/PR:
 7. ✅ Banco SQLite: tabelas `campaigns`, `snapshots`, `decisions`, `events`, `schema_migrations`; sistema de migrações versionado com testes (expo-sqlite no app, `node:sqlite` nos testes).
 8. ✅ Sistema de design: tokens de cor (claro/escuro), tipografia, escala de texto ajustável, componentes base (Card, Indicator, Alert, Button). Vitrine em `/design`; a escala de texto passa a ser salva no item 10.
 9. ✅ Navegação: 5 abas — Presidência, Economia, Congresso, Brasil, Notícias.
-10. ✅ Criar, salvar, fechar e retomar uma partida fictícia (tela Presidência, store Zustand, cenário `prototipo_ficticio`, tamanho do texto salvo). Verificado na web; falta conferir no aparelho.
+10. ✅ Criar, salvar, fechar e retomar uma partida fictícia (tela Presidência, store Zustand, cenário `prototipo_ficticio`, tamanho do texto salvo). Verificado na web e no moto g20 via Expo Go (criar, encerrar meses, fechar à força o app, reabrir e continuar).
 11. 🟡 Rodando no Expo Go em aparelho Android físico (moto g20); falta build de desenvolvimento própria.
 
 ### 4.1 Globo 3D (antecipado da Fase 05 a pedido, 13/10/2026)
@@ -86,9 +107,9 @@ Decisão: a tela "Brasil" é um globo 3D (three.js + @react-three/fiber + expo-g
 4. Congresso em 5 blocos (POLITICAL_RULES.md §6).
 5. 8 políticas em `src/data/policies/`.
 6. 10 eventos em `src/data/events/`.
-7. Relatório mensal com decomposição "Por que mudou?".
+7. Relatório mensal com decomposição "Por que mudou?" e mesa de despacho (GAME_DESIGN.md §4.4).
 8. Telas do protótipo: briefing, decisões, relatório, indicadores.
-9. Testes de campanha automática (12 meses × N sementes × estratégias-robô).
+9. Testes de campanha automática (12 meses × N sementes × estratégias-robô, incluindo inerte e populista fiscal) e `npm run sim:balance`.
 10. Teste com 3–5 pessoas: o jogo é interessante após vários meses?
 
 ---
@@ -102,6 +123,7 @@ Decisão: a tela "Brasil" é um globo 3D (three.js + @react-three/fiber + expo-g
 | D1 | Partidos reais ou fictícios | **Fictícios**, agrupados em 5 blocos e calibrados pelas cadeiras reais agregadas de cada campo. Um pacote com nomes reais pode virar expansão (Fase 11). | 13/10/2026 |
 | D2 | Idioma dos identificadores | Código em **inglês**; textos de interface, rotas e IDs de conteúdo em **português** (AI_INSTRUCTIONS.md §4) | 13/10/2026 |
 | D3 | Biblioteca de gráficos | **Componentes SVG próprios** (`react-native-svg`): `LineChart`, `BarChart`, `Sparkline`, isolados para permitir troca por victory-native se o Realismo Extremo exigir | 13/10/2026 |
+| D7 | Economia regional | **Agregado nacional primeiro, distribuído às UFs** por matriz de participação e sensibilidade setorial; nunca 27 motores somados (ECONOMIC_MODEL.md §5.12) | 13/10/2026 |
 
 ### 6.2 Em aberto
 
