@@ -18,7 +18,7 @@ module.exports = defineConfig([
   },
   {
     // Motor de simulação: TypeScript puro e determinístico (AI_INSTRUCTIONS.md §3).
-    files: ['src/engine/**/*.ts'],
+    files: ['src/engine/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-globals': [
         'error',

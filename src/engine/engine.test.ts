@@ -93,6 +93,14 @@ describe('calendário', () => {
     expect(toCalendar(0)).toEqual({ year: 2027, month: 1 });
     expect(monthKey(TERM_MONTHS - 1)).toBe('2030-12');
     expect(toMonthIndex({ year: 2028, month: 7 })).toBe(18);
+    for (const bad of [
+      { year: 2027, month: 0 },
+      { year: 2027, month: 13 },
+      { year: 2027, month: 1.5 },
+      { year: 2026, month: 12 },
+    ]) {
+      expect(() => toMonthIndex(bad)).toThrow(RangeError);
+    }
   });
 });
 
@@ -140,6 +148,31 @@ describe('advanceMonth', () => {
       { monthIndex: 0, decision: decision('pec_reforma', 2) },
       { monthIndex: 0, decision: decision('decreto_iof', 1) },
     ]);
+  });
+
+  it('cada etapa vê o resultado das etapas anteriores do mesmo mês (ECONOMIC_MODEL.md §4)', () => {
+    const seen: number[] = [];
+    const bump: MonthStep = (s) => {
+      seen.push(s.indicators.approval);
+      return [{ indicator: 'approval', cause: 'teste', delta: 0.1 }];
+    };
+    const prev = campaign();
+    const r = advanceMonth(prev, [], [bump, bump]);
+    expect(seen[1]).toBeCloseTo(seen[0] + 0.1);
+    expect(r.state.indicators.approval).toBeCloseTo(prev.indicators.approval + 0.2);
+    expect(checkInvariants(prev, r.state, r.report)).toEqual([]);
+  });
+
+  it('o histórico guarda cópia das decisões (alterar o objeto depois não muda o save)', () => {
+    const d: Decision = { policyId: 'decreto_iof', agendaCost: 1, params: { aliquota: 0.01 } };
+    const { state } = advanceMonth(campaign(), [d]);
+    (d.params as Record<string, number>).aliquota = 0.5;
+    d.policyId = 'alterada';
+    expect(state.decisionLog[0].decision).toEqual({
+      policyId: 'decreto_iof',
+      agendaCost: 1,
+      params: { aliquota: 0.01 },
+    });
   });
 
   it('decidir não altera indicadores diretamente (GAME_DESIGN.md §9)', () => {

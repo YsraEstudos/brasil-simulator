@@ -2,8 +2,8 @@ import { createRng, type Rng } from './rng';
 import type { Contribution, Decision, DecisionRejection, GameState, Indicators, MonthResult } from './types';
 
 /**
- * Etapa do processamento mensal. Recebe o estado do início do mês (somente leitura) e o sorteador, e devolve
- * as variações que causa, cada uma com sua causa. Nunca altera o estado diretamente.
+ * Etapa do processamento mensal. Recebe o estado já atualizado pelas etapas anteriores do mês (somente leitura)
+ * e o sorteador, e devolve as variações que causa, cada uma com sua causa. Nunca altera o estado diretamente.
  */
 export type MonthStep = (state: Readonly<GameState>, rng: Rng) => Contribution[];
 
@@ -20,16 +20,26 @@ const STEPS: readonly MonthStep[] = [];
 export function advanceMonth(state: GameState, decisions: readonly Decision[], steps = STEPS): MonthResult {
   const { accepted, rejected } = screenDecisions(decisions, state.resources.agendaPointsPerMonth);
 
+  // Cada etapa vê o resultado das anteriores (ex.: inflação depois do hiato, ECONOMIC_MODEL.md §4).
   const rng = createRng(state.rng);
-  const contributions = steps.flatMap((step) => step(state, rng));
+  const contributions: Contribution[] = [];
+  let indicators = state.indicators;
+  for (const step of steps) {
+    const stepContributions = step({ ...state, indicators }, rng);
+    indicators = applyContributions(indicators, stepContributions);
+    contributions.push(...stepContributions);
+  }
 
   const next: GameState = {
     ...state,
     rng: rng.state(),
     monthIndex: state.monthIndex + 1,
-    indicators: applyContributions(state.indicators, contributions),
+    indicators: { ...indicators },
     resources: { ...state.resources },
-    decisionLog: [...state.decisionLog, ...accepted.map((decision) => ({ monthIndex: state.monthIndex, decision }))],
+    decisionLog: [
+      ...state.decisionLog,
+      ...accepted.map((decision) => ({ monthIndex: state.monthIndex, decision: copyDecision(decision) })),
+    ],
   };
 
   return { state: next, report: { monthIndex: state.monthIndex, accepted, rejected, contributions } };
@@ -51,6 +61,11 @@ function screenDecisions(decisions: readonly Decision[], budget: number) {
     }
   }
   return { accepted, rejected };
+}
+
+/** Cópia própria do motor: o histórico não pode mudar se quem chamou alterar o objeto depois. */
+function copyDecision(d: Decision): Decision {
+  return d.params ? { ...d, params: { ...d.params } } : { ...d };
 }
 
 function applyContributions(indicators: Indicators, contributions: readonly Contribution[]): Indicators {

@@ -21,6 +21,9 @@ export function toCalendar(monthIndex: number): CalendarMonth {
 }
 
 export function toMonthIndex({ year, month }: CalendarMonth): number {
+  if (!Number.isInteger(year) || year < START_YEAR || !Number.isInteger(month) || month < 1 || month > 12) {
+    throw new RangeError(`mês inválido: ${year}-${month}`);
+  }
   return (year - START_YEAR) * 12 + (month - 1);
 }
 

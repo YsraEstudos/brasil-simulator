@@ -1,0 +1,9 @@
+language: pt-BR
+
+reviews:
+  profile: chill
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 0
+    drafts: true

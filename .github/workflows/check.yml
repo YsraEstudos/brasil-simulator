@@ -8,11 +8,38 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run check
+      - name: Validate SonarCloud configuration
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+        run: |
+          missing=()
+          [[ -n "$SONAR_TOKEN" ]] || missing+=(SONAR_TOKEN secret)
+          [[ -n "$SONAR_ORGANIZATION" ]] || missing+=(SONAR_ORGANIZATION variable)
+          [[ -n "$SONAR_PROJECT_KEY" ]] || missing+=(SONAR_PROJECT_KEY variable)
+          if (( ${#missing[@]} )); then
+            printf 'Missing GitHub Actions configuration: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+      - name: SonarCloud analysis
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >-
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.qualitygate.wait=true
