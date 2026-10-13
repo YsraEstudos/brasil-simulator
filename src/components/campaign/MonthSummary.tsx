@@ -2,13 +2,13 @@ import { StyleSheet, View } from 'react-native';
 
 import { Alert, Card, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { pct, type GameContent, type MonthReport, type ProposalChange } from '@/engine';
+import { AGENDA_ACTIONS, pct, type GameContent, type MonthReport, type ProposalChange } from '@/engine';
 
 import { monthLabel, PROPOSAL_STATUS_LABEL, REJECTION_REASON_LABEL } from './labels';
 
 /** Resumo do último mês encerrado: Copom, propostas, avisos e decisões recusadas (GAME_DESIGN.md §4.2). */
 export function MonthSummary({ report, content }: { report: MonthReport; content: GameContent }) {
-  const policyName = (id: string) => content.policies[id]?.name ?? id;
+  const policyName = (id: string) => content.policies[id]?.name ?? AGENDA_ACTIONS[id]?.name ?? id;
   const copom = report.copom;
   let copomText: string | undefined;
   if (copom) {

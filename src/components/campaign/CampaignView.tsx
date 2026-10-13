@@ -4,10 +4,11 @@ import { StyleSheet, View } from 'react-native';
 import { PROTOTYPE_MONTHS, loadContent } from '@/content';
 import { Button, Indicator, formatNumber, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import type { IndicatorKey } from '@/engine';
+import { AGENDA_ACTIONS, type IndicatorKey } from '@/engine';
 import type { Policy } from '@/types/policy';
 import { gameStore, useGame, type ActiveCampaign } from '@/store';
 
+import { AgendaActions } from './AgendaActions';
 import { DecisionPanel } from './DecisionPanel';
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER, monthLabel } from './labels';
 import { EventInbox, type PendingItem } from './EventInbox';
@@ -36,7 +37,7 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
     return event ? [{ event, pending }] : [];
   });
 
-  const policyCost = (id: string): number => content.policies[id]?.agendaCost ?? 0;
+  const policyCost = (id: string): number => content.policies[id]?.agendaCost ?? AGENDA_ACTIONS[id]?.agendaCost ?? 0;
   const choiceCost = (eventId: string, choiceId: string | undefined): number =>
     eventsById.get(eventId)?.choices.find((c) => c.id === choiceId)?.agendaCost ?? 0;
 
@@ -61,6 +62,15 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
       setSelected((prev) => prev.filter((id) => id !== policy.id));
     } else if (canInclude(policy)) {
       setSelected((prev) => [...prev, policy.id]);
+    }
+  };
+
+  const toggleAction = (id: string) => {
+    const cost = policyCost(id);
+    if (selected.includes(id)) {
+      setSelected((prev) => prev.filter((x) => x !== id));
+    } else if (pointsUsed + cost <= pointsMax) {
+      setSelected((prev) => [...prev, id]);
     }
   };
 
@@ -147,6 +157,14 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
               if (policy) togglePolicy(policy);
             }}
             canInclude={canInclude}
+          />
+
+          <AgendaActions
+            state={state}
+            content={content}
+            selected={selected}
+            canInclude={(cost) => pointsUsed + cost <= pointsMax}
+            onToggle={toggleAction}
           />
 
           <ProposalList
