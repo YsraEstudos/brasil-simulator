@@ -133,6 +133,49 @@ describe('Estratégias-robô: campanhas de 48 meses sem explosão (ECONOMIC_MODE
   }
 });
 
+const SEEDS_TWENTY_YEARS = [1, 2, 3];
+const TWENTY_YEARS = 240;
+
+describe('Estratégias-robô: campanhas de 20 anos (Fase 03, ROADMAP.md §2; ECONOMIC_MODEL.md §9)', () => {
+  const c = content.calibration;
+  for (const s of STRATEGIES) {
+    for (const seed of SEEDS_TWENTY_YEARS) {
+      it(`${s.id}, semente ${seed}, ${TWENTY_YEARS} meses: sem inconsistência nem explosão sem causa`, () => {
+        const run = runCampaign(s, seed, TWENTY_YEARS, content);
+        expect(run.violations).toEqual([]);
+        expect(numbersAreFinite(run)).toBe(true);
+        // Faixas plausíveis: inflação sem hiperinflação, juros e prêmio dentro da saturação.
+        expect(run.max.inflation).toBeLessThan(0.2);
+        expect(run.max.selic).toBeLessThan(0.3);
+        expect(run.max.riskPremium).toBeLessThanOrEqual(c.premio_base + c.premio_extra_max + 1e-12);
+        // A dívida cresce com juros acima do crescimento e primário perto de zero (causa registrada no
+        // ECONOMIC_MODEL.md §5.14), mas sem espiral numérica: o prêmio satura. Pressionar o BC 80 vezes leva a
+        // credibilidade ao piso e o prêmio à saturação; é o pior caso (~310%).
+        expect(run.max.grossDebt).toBeLessThan(4);
+        expect(run.final.unemployment).toBeGreaterThan(0.02);
+        expect(run.final.unemployment).toBeLessThan(0.2);
+        expect(run.exchangeRateEnd).toBeGreaterThan(1);
+        expect(run.exchangeRateEnd).toBeLessThan(30);
+        // A fila de impulsos não cresce sem limite (ECONOMIC_MODEL.md §5.11).
+        expect(run.impulsesEnd).toBeLessThan(100);
+      });
+    }
+  }
+});
+
+describe('Pressão sobre o Banco Central (ECONOMIC_MODEL.md §5.4.1, teste de sentido obrigatório)', () => {
+  it('em 24 meses, pressionar todo trimestre dá inflação média maior e não dá crescimento sistematicamente maior', () => {
+    const pressured = SEEDS_SHORT.map((seed) => runCampaign(strategy('inerte_pressao_bc'), seed, 24, content));
+    const baseline = SEEDS_SHORT.map((seed) => runCampaign(strategy('inerte'), seed, 24, content));
+    const mean = (runs: readonly CampaignSummary[], pick: (r: CampaignSummary) => number) =>
+      runs.reduce((sum, r) => sum + pick(r), 0) / runs.length;
+    expect(mean(pressured, (r) => r.averages.inflation)).toBeGreaterThan(mean(baseline, (r) => r.averages.inflation));
+    expect(mean(pressured, (r) => r.cumulativeGrowth)).toBeLessThanOrEqual(
+      mean(baseline, (r) => r.cumulativeGrowth) + 1e-4,
+    );
+  });
+});
+
 describe('Estratégias-robô: direção dos efeitos (ECONOMIC_MODEL.md §9, testes de sentido)', () => {
   const mean = (runs: readonly CampaignSummary[], pick: (r: CampaignSummary) => number) =>
     runs.reduce((s, r) => s + pick(r), 0) / runs.length;

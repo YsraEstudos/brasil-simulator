@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkInvariants } from '@/engine/invariants';
 import { advanceMonth } from '@/engine/advanceMonth';
 import { DEFAULT_CALIBRATION } from '@/engine/economy/calibration';
 import { economyStep } from '@/engine/economy/economy';
+import { checkInvariants } from '@/engine/invariants';
 import type { GameState, MonthResult, ScheduledImpulse } from '@/engine/types';
 import { testContent, testState } from '@/tests/fixtures';
 
@@ -63,18 +63,64 @@ describe('economyStep', () => {
     expect(state.economy.selic).toBeLessThan(0.3);
   });
 
+  // ECONOMIC_MODEL.md §7.8: sem decisões, choques, ruído nem deriva fiscal, as variáveis convergem
+  it('converge para o estado estacionário sem choques, ruído nem deriva fiscal (ECONOMIC_MODEL.md §7.8)', () => {
+    const g = DEFAULT_CALIBRATION.g_pot_base;
+    const calibration = {
+      ...NO_NOISE,
+      ruido_cambio: 0,
+      ruido_juros_externos: 0,
+      ruido_termos_troca: 0,
+      cresc_real_previdencia: g,
+      cresc_real_beneficios: g,
+      cresc_real_pessoal: g,
+      cresc_real_outras: g,
+      limite_piso: g,
+      limite_teto: g,
+      sm_ganho_min: 0,
+      sm_ganho_max: 0,
+    };
+    const content = testContent({ calibration, events: [] });
+    let state = testState(42, 'estrategica', content);
+    const errors: string[] = [];
+    const snapshot: GameState[] = [];
+    for (let m = 0; m < 240; m++) {
+      const res = runMonth(state, content);
+      errors.push(...checkInvariants(state, res.state, res.report));
+      state = res.state;
+      snapshot.push(state);
+    }
+    expect(errors).toEqual([]);
+    const e = state.economy;
+    const i = state.indicators;
+    expect(Math.abs(e.outputGap)).toBeLessThan(0.003);
+    expect(Math.abs(i.inflation12m - calibration.meta_inflacao)).toBeLessThan(0.005);
+    expect(Math.abs(i.unemployment - calibration.nairu)).toBeLessThan(0.003);
+    expect(Math.abs(i.gdpGrowth12m - g)).toBeLessThan(0.003);
+    // Nos últimos 12 meses as variáveis já pararam de andar (sem explosão nem oscilação).
+    const before = snapshot[227]?.economy;
+    if (!before) throw new Error('histórico incompleto');
+    expect(Math.abs(e.selic - before.selic)).toBeLessThan(0.0026);
+    expect(Math.abs(e.fiscal.discretionary - before.fiscal.discretionary)).toBeLessThan(1e-4);
+    // A dívida não tem estado estacionário com juros acima do crescimento e primário nulo (ECONOMIC_MODEL.md §5.14):
+    // ela e o prêmio de risco andam devagar, sem explodir.
+    expect(Math.abs(e.riskPremium - before.riskPremium)).toBeLessThan(0.005);
+    expect(e.grossDebt - before.grossDebt).toBeLessThan(0.15);
+    expect(e.grossDebt).toBeLessThan(3);
+  });
+
   // ECONOMIC_MODEL.md §9 "testes de sentido": mais gasto de investimento aquece a economia
-  it('gasto de investimento permanente eleva o crescimento e reduz o desemprego e o primário (ECONOMIC_MODEL.md §9)', () => {
+  it('gasto de investimento permanente eleva o crescimento e reduz o desemprego, comprimindo as demais discricionárias (ECONOMIC_MODEL.md §5.8, §9)', () => {
     const base = testState(11);
     const boosted: GameState = {
       ...base,
       impulses: [permanent('gasto.investimento', 0.01, 'Obras de infraestrutura')],
     };
-    const b = runMonths(base, 6).state.indicators;
-    const s = runMonths(boosted, 6).state.indicators;
-    expect(s.gdpGrowth12m).toBeGreaterThan(b.gdpGrowth12m);
-    expect(s.unemployment).toBeLessThan(b.unemployment);
-    expect(s.primaryBalance12m).toBeLessThan(b.primaryBalance12m);
+    const b = runMonths(base, 6).state;
+    const s = runMonths(boosted, 6).state;
+    expect(s.indicators.gdpGrowth12m).toBeGreaterThan(b.indicators.gdpGrowth12m);
+    expect(s.indicators.unemployment).toBeLessThan(b.indicators.unemployment);
+    expect(s.economy.fiscal.discretionary).toBeLessThan(b.economy.fiscal.discretionary);
   });
 
   // ECONOMIC_MODEL.md §5.2: juro real acima do neutro esfria o hiato

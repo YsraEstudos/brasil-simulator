@@ -10,6 +10,8 @@ export default defineConfig({
   test: {
     include: ['scripts/sim/**/*.sim.ts'],
     environment: 'node',
+    // As tabelas são o resultado do script: mostrar o console mesmo com o teste passando.
+    disableConsoleIntercept: true,
     // 50 sementes × 12 meses + 20 × 48 meses para cada estratégia: bem acima do padrão de 5 s.
     testTimeout: 600_000,
   },
