@@ -217,6 +217,17 @@ Y_uf,t            = Y_t * participacao_uf,t
 - Obras e programas regionais alteram `bonus_regional_uf` e a eficiência local, e geram efeito marginal no agregado via `Kg` (§5.1), sem motor macroeconômico por UF.
 - Desemprego, renda e aprovação regionais seguem a mesma lógica. A soma das UFs é igual ao total nacional por construção (invariante 9).
 
+### 5.13 O que o protótipo 0.1 implementa (Fase 02)
+Código em `src/engine/economy/economy.ts`; coeficientes em `src/engine/economy/calibration.ts`. Simplificações em relação às equações acima, todas a revisar na Fase 03:
+
+- **Impulso fiscal como nível.** Um gasto ativo de `L` (fração do PIB ao ano) entra no hiato como `(1 − rho_h) · mult · L` por mês, de modo que o hiato estacionário seja `mult · L` (multiplicador acumulado). O §5.2 escrevia o impulso sem o fator `(1 − rho_h)`.
+- **Defasagem monetária por média móvel.** Em vez de `r_real_{t−lag_r}`, o motor guarda o juro real efetivo `effectiveRealRate`, que anda `1/lag_r` por mês em direção ao juro real ex ante (Selic − expectativa). Assim não há série histórica no estado (§11).
+- **Indicadores de 12 meses por suavização.** PIB 12m anda `(g_pot − g12)/12 + Δh` por mês; inflação 12m anda a fração `ajuste_inflacao` do caminho até `pe + kappa·h + choques`; o primário 12m anda 1/12 do caminho até o resultado do mês. Todas as parcelas são lineares, então a soma das contribuições fecha exatamente (§7.3).
+- **Sem câmbio nem prêmio de risco** (§5.5) no protótipo. O papel do risco fiscal fica com a **credibilidade** (0–1): cai com déficit abaixo da banda da meta, inflação acima do teto e dívida acima de `limiar_divida`; reduz o multiplicador e desancora as expectativas.
+- **Contas em razões ao PIB.** Receita e despesa partem das razões do cenário mais os impulsos ativos; a dívida segue `d_t = d_{t−1} + (juros − primário)/12 + ajuste`, com o ajuste do denominador `−d·(g + π)/12` (§7.2).
+- **Fila de impulsos** (§5.11) em uso por políticas e eventos. A consolidação de efeitos permanentes no estado ainda não é feita (a fila de 12 meses é pequena).
+- **Pressão sobre o BC** (§5.4.1), retorno decrescente de tributos (§5.7) e compressão das discricionárias (§5.8) ficam para a Fase 03.
+
 ---
 
 ## 6. Parâmetros iniciais (todos `A_CALIBRAR`)

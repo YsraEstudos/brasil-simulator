@@ -23,3 +23,4 @@ export {
 } from './state';
 export * from './types';
 export { SaveTooNewError, upgradeGameState } from './upgrade';
+export * from './report';
