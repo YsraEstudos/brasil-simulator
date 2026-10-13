@@ -1,6 +1,6 @@
 {
   "id": "brasil_2027_01",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "name": "Brasil, janeiro de 2027 (dados provisórios)",
   "startPeriod": "2027-01",
   "indicators": {
@@ -293,6 +293,91 @@
       "interests": ["seguranca"]
     }
   ],
+  "institutions": {
+    "housePresidents": {
+      "camara": "centro",
+      "senado": "centro"
+    },
+    "ministries": [
+      {
+        "id": "fazenda",
+        "name": "Fazenda",
+        "areas": ["economia", "tributacao", "fiscal"],
+        "weight": 1,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "gestao",
+        "name": "Gestão e Serviços Públicos",
+        "areas": ["estado"],
+        "weight": 0.4,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "previdencia",
+        "name": "Previdência Social",
+        "areas": ["previdencia"],
+        "weight": 0.5,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "desenvolvimento_social",
+        "name": "Desenvolvimento Social",
+        "areas": ["social"],
+        "weight": 0.8,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "transportes",
+        "name": "Transportes e Infraestrutura",
+        "areas": ["infraestrutura"],
+        "weight": 0.8,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "saude",
+        "name": "Saúde",
+        "areas": ["saude"],
+        "weight": 0.9,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "educacao",
+        "name": "Educação",
+        "areas": ["educacao"],
+        "weight": 0.7,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "justica_seguranca",
+        "name": "Justiça e Segurança Pública",
+        "areas": ["seguranca"],
+        "weight": 0.6,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "cidades",
+        "name": "Cidades",
+        "areas": ["cidades", "habitacao", "saneamento"],
+        "weight": 0.6,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "agricultura",
+        "name": "Agricultura",
+        "areas": ["agro"],
+        "weight": 0.5,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "minas_energia",
+        "name": "Minas e Energia",
+        "areas": ["energia"],
+        "weight": 0.6,
+        "occupant": "tecnico"
+      }
+    ]
+  },
   "copomMonths": [1, 3, 5, 6, 7, 9, 11, 12],
   "policies": [
     "infraestrutura_credito_adicional",
@@ -303,6 +388,7 @@
     "seguranca_cooperacao",
     "gastos_tributarios_revisao",
     "reforma_administrativa",
-    "salario_minimo_valorizacao"
+    "salario_minimo_valorizacao",
+    "reforma_previdencia"
   ]
 }

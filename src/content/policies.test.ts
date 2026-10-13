@@ -21,12 +21,12 @@ const PROTOTYPE_IDS = [
 ].sort();
 
 /** Catálogo completo: protótipo + valorização do salário mínimo (Fase 03, ECONOMIC_MODEL.md §5.8). */
-const EXPECTED_IDS = [...PROTOTYPE_IDS, 'salario_minimo_valorizacao'].sort();
+const EXPECTED_IDS = [...PROTOTYPE_IDS, 'salario_minimo_valorizacao', 'reforma_previdencia'].sort();
 
 const POLICIES_DIR = fileURLToPath(new URL('../data/policies', import.meta.url));
 
 describe('catálogo de políticas', () => {
-  it('contém as 8 políticas do protótipo e a valorização do salário mínimo', () => {
+  it('contém as 8 políticas do protótipo, a valorização do salário mínimo e a reforma da previdência', () => {
     expect(Object.keys(POLICIES).sort()).toEqual(EXPECTED_IDS);
   });
 
@@ -68,6 +68,16 @@ describe('catálogo de políticas', () => {
         expect(policy.timeline.expectedLegislativeMonths, policy.id).toBe(0);
       }
     }
+  });
+
+  it('reforma_previdencia: PEC de 2 pontos, economia que cresce com o tempo e custo de aprovação', () => {
+    const reforma = POLICIES.reforma_previdencia;
+    expect(reforma?.instruments[0]).toBe('pec');
+    expect(reforma?.agendaCost).toBe(2);
+    const cortes = (reforma?.impacts ?? []).filter((i) => i.channel === 'despesa_obrigatoria');
+    expect(cortes.every((i) => i.magnitude < 0)).toBe(true);
+    expect(cortes.map((i) => i.lagMonths)).toEqual([...cortes.map((i) => i.lagMonths)].sort((a, b) => a - b));
+    expect(reforma?.impacts.find((i) => i.channel === 'aprovacao')?.magnitude).toBeLessThan(0);
   });
 
   it('reforma_administrativa usa PEC e custa 2 pontos de agenda', () => {

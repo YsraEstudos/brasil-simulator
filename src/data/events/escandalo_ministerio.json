@@ -1,20 +1,24 @@
 {
   "id": "escandalo_ministerio",
   "title": "Escândalo em ministério",
-  "description": "Denúncias de irregularidades atingem uma pasta ocupada por indicação de um bloco parlamentar. A imprensa cobra uma resposta.",
-  "trigger": { "monthsOfYear": [], "conditions": [], "probability": 0.04, "cooldownMonths": 18, "maxOccurrences": 2 },
+  "description": "Denúncias de irregularidades atingem uma pasta ocupada por indicação de um bloco parlamentar. Quanto mais tempo os indicados ficam no cargo, maior o risco. A imprensa cobra uma resposta.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "partisanMinistries", "op": "gt", "value": 0 }],
+    "probability": 1,
+    "probabilityFactor": "cabinetScandalRisk",
+    "cooldownMonths": 12,
+    "maxOccurrences": 4
+  },
   "onFire": [{ "target": "aprovacao", "delta": -0.02, "lagMonths": 0, "durationMonths": 1 }],
   "choices": [
     {
       "id": "demitir_ministro",
       "label": "Demitir o ministro",
-      "description": "Corta o problema pela raiz e recupera parte da aprovação, mas perde apoio do bloco que indicou o ministro e gasta capital político.",
+      "description": "Demite o indicado há mais tempo no cargo e põe um técnico no lugar. Recupera parte da aprovação, mas o bloco perde a pasta, a relação com ele piora e a demissão gasta capital político.",
       "agendaCost": 1,
-      "effects": [
-        { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
-        { "target": "capital_politico", "delta": -3, "lagMonths": 0, "durationMonths": 1 },
-        { "target": "relacao_congresso", "delta": -5, "lagMonths": 0, "durationMonths": 1 }
-      ]
+      "effects": [{ "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 }],
+      "dismissMinister": true
     },
     {
       "id": "defender",

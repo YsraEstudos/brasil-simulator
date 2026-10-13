@@ -5,6 +5,7 @@ import prototipo from '@/data/scenarios/prototipo_ficticio.json';
 import { parseScenario, type Scenario } from '@/types/scenario';
 import type { DataValue } from '@/types/data';
 
+import { POLICIES } from './policies';
 import { DEFAULT_SCENARIO_ID, SCENARIOS } from './scenarios';
 
 function valuesOf(s: Scenario): [string, DataValue][] {
@@ -43,6 +44,34 @@ describe('cenários embutidos', () => {
       expect(['PROVISORIO', 'FICTICIO'], key).toContain(v.status);
       expect(v.note?.trim().length ?? 0, key).toBeGreaterThan(0);
     }
+  });
+
+  it('brasil_2027_01: toda política do cenário tem uma pasta que a executa (POLITICAL_RULES.md §6.3.1)', () => {
+    const scenario = SCENARIOS.brasil_2027_01;
+    const ministries = scenario?.institutions?.ministries ?? [];
+    expect(ministries.length).toBeGreaterThan(0);
+    for (const id of scenario?.policies ?? []) {
+      const area = POLICIES[id]?.area;
+      expect(
+        ministries.some((m) => area !== undefined && m.areas.includes(area)),
+        `${id} (${area})`,
+      ).toBe(true);
+    }
+    // Ninguém começa com pasta: o jogador decide a coalizão.
+    expect(ministries.every((m) => m.occupant === 'tecnico')).toBe(true);
+  });
+
+  it('instituições inválidas são recusadas: presidente ou ocupante que não é bloco', () => {
+    const base = structuredClone(brasil) as Record<string, unknown> & { institutions: Record<string, unknown> };
+    const presidente = {
+      ...base,
+      institutions: { ...base.institutions, housePresidents: { camara: 'x', senado: 'centro' } },
+    };
+    expect(parseScenario(presidente).ok).toBe(false);
+    const ministries = (base.institutions.ministries as Record<string, unknown>[]).map((m, i) =>
+      i === 0 ? { ...m, occupant: 'bloco_fantasma' } : m,
+    );
+    expect(parseScenario({ ...base, institutions: { ...base.institutions, ministries } }).ok).toBe(false);
   });
 
   it('bancadas somam 513 e 81 (validado pelo esquema)', () => {

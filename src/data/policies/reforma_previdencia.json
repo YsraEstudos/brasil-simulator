@@ -1,0 +1,64 @@
+{
+  "id": "reforma_previdencia",
+  "name": "Reforma da previdência (parâmetros)",
+  "summary": "Muda idade mínima, tempo de contribuição e regras de cálculo dos benefícios por emenda constitucional e lei. A economia de despesa obrigatória começa pequena e cresce por anos, abrindo espaço no limite de despesas; custa aprovação e exige 3/5 em dois turnos em cada Casa.",
+  "area": "previdencia",
+  "competence": "federal",
+  "instruments": ["pec", "projeto_lei"],
+  "agendaCost": 2,
+  "cost": {
+    "annualMillions": -45000,
+    "disbursementProfile": [0.2, 0.3, 0.5]
+  },
+  "fundingSources": ["sem_custo"],
+  "timeline": {
+    "planningMonths": 3,
+    "expectedLegislativeMonths": 8,
+    "executionMonths": 0,
+    "maturationMonths": 72
+  },
+  "conditions": [],
+  "impacts": [
+    {
+      "channel": "despesa_obrigatoria",
+      "magnitude": -10000,
+      "lagMonths": 12
+    },
+    {
+      "channel": "despesa_obrigatoria",
+      "magnitude": -15000,
+      "lagMonths": 36
+    },
+    {
+      "channel": "despesa_obrigatoria",
+      "magnitude": -20000,
+      "lagMonths": 72
+    },
+    {
+      "channel": "credibilidade_fiscal",
+      "magnitude": 0.05,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": -0.03,
+      "lagMonths": 0
+    }
+  ],
+  "risks": [
+    {
+      "kind": "judicializacao",
+      "probability": 0.2
+    }
+  ],
+  "affected": {
+    "groups": ["aposentados", "trabalhadores_formais", "servidores"],
+    "sectors": [],
+    "regions": ["nacional"]
+  },
+  "position": {
+    "economic": 0.6,
+    "social": 0.3
+  },
+  "dataStatus": "PROVISORIO"
+}
