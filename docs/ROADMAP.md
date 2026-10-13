@@ -25,7 +25,7 @@ Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 | 00 | Pré-produção e regras | 1–2 sem | Explicar sem código o caminho decisão → Congresso → orçamento → execução → indicadores | ✅ Concluída em 13/10/2026 (documentos revisados, D1–D3 decididas, itens ⚠ verificados) |
 | 01 | Fundação técnica e interface | 2–3 sem | App instalado no Android, navegação funcional, partida salva após fechar e reabrir | ✅ Concluída em 13/10/2026 (rodando no Expo Go no moto g20; build própria adiada, ver item 11) |
 | 02 | Protótipo jogável | 3–4 sem | 12 meses jogáveis, decisões diferentes → consequências diferentes, salvar/retomar | 🟡 Implementada em 13/10/2026 (itens 1–9); falta o teste com pessoas (item 10) |
-| 03 | Motor econômico | 4–6 sem | Campanhas automáticas de 20 anos sem inconsistências ou explosões injustificadas | ⬜ |
+| 03 | Motor econômico | 4–6 sem | Campanhas automáticas de 20 anos sem inconsistências ou explosões injustificadas | 🟡 Implementada em 13/10/2026 (itens 1–10 do §6); falta a revisão do autor da trajetória da dívida de longo prazo |
 | 04 | Congresso e instituições | 3–5 sem | Propor, negociar e acompanhar uma reforma com resultado plausível | ⬜ |
 | 05 | Mapa e federação | 3–4 sem | Decisões federais com efeitos regionais diferentes e explicáveis | ⬜ |
 | 06 | Sociedade e políticas públicas | 3–5 sem | ≥ 30 políticas com custos, efeitos e atrasos documentados | ⬜ |
@@ -118,16 +118,20 @@ Decisão: a tela "Brasil" é um globo 3D (three.js + @react-three/fiber + expo-g
 
 Branch `feat/fase-03-motor-economico`. Estado v3 (saves v2 atualizados), motor 0.3.0, cenário `brasil_2027_01` v0.2.0.
 
-1. ⬜ **Setor externo e risco** (`src/engine/economy/external.ts`): prêmio de risco saturado (dívida, meta, credibilidade, tributação do capital), câmbio em nível com retorno ao câmbio de equilíbrio, juros externos e termos de troca estocásticos com semente, repasse cambial à inflação e ajuste cambial da dívida (ECONOMIC_MODEL.md §5.5, §8).
-2. ⬜ **Banco Central v2**: juro neutro com prêmio de risco, passo maior em crise e **pressão pública** como ação de agenda, com diretoria indicada pela LC 179/2021 (§5.4, §5.4.1).
-3. ⬜ **Receitas por grupo** com repartição a estados e municípios e **retorno decrescente** das alíquotas (§5.7).
-4. ⬜ **Despesas por grupo, limite do arcabouço e compressão das discricionárias**: limite revisto em janeiro (70%/50% da receita real, faixa 0,6–2,5%), obrigatórias indexadas (benefícios, salário mínimo pela Lei 15.077/2024, vinculações à receita), discricionárias = limite − obrigatórias, piso de funcionamento e estouro registrado (§5.8; POLITICAL_RULES.md §4.2–4.3).
-5. ⬜ **Níveis e contas**: PIB potencial e nível de preços como índices, PIB nominal corrente para converter custos, crescimento nominal mensal na dívida, impulso fiscal estrutural que se dissipa.
-6. ⬜ **Conteúdo de 2027**: política de valorização do salário mínimo; eventos CBS, regimes diferenciados, FNDR, orçamento de transição e paralisação da máquina (GAME_DESIGN.md §11.3).
-7. ⬜ **Invariantes e validação**: §7.4 (limite com exceções registradas) e §7.8 (estado estacionário); campanhas de 240 meses; estratégias distributiva, pró-oferta e pressão sobre o BC; teste de sentido da pressão; cenários de estresse; `npm run sim:balance` com 240 meses.
-8. ⬜ **Sensibilidade e calibração documentada**: justificativa por parâmetro e `npm run sim:sensitivity` (cada parâmetro no mínimo e no máximo da faixa), gerando `docs/CALIBRATION.md`.
-9. ⬜ **Retenção do histórico** (migração 4): série de indicadores por mês; snapshots completos só dos últimos 12 meses (ECONOMIC_MODEL.md §11).
-10. ⬜ **Interface**: aba Economia com câmbio, risco, receitas, limite e discricionárias; ação "Pressionar o Banco Central".
+1. ✅ **Setor externo e risco** (`src/engine/economy/external.ts`): prêmio de risco saturado (dívida, meta, credibilidade, tributação do capital), câmbio em nível com retorno ao câmbio de equilíbrio, juros externos e termos de troca estocásticos com semente, repasse cambial à inflação e ajuste cambial da dívida (ECONOMIC_MODEL.md §5.5, §8).
+2. ✅ **Banco Central v2**: juro neutro com prêmio de risco, passo maior em crise e **pressão pública** como ação de agenda, com diretoria indicada pela LC 179/2021 (§5.4, §5.4.1).
+3. ✅ **Receitas por grupo** com repartição a estados e municípios e **retorno decrescente** das alíquotas (§5.7).
+4. ✅ **Despesas por grupo, limite do arcabouço e compressão das discricionárias**: limite revisto em janeiro (70%/50% da receita real, faixa 0,6–2,5%), obrigatórias indexadas (benefícios, salário mínimo pela Lei 15.077/2024, vinculações à receita), discricionárias = limite − obrigatórias, piso de funcionamento e estouro registrado (§5.8; POLITICAL_RULES.md §4.2–4.3).
+5. ✅ **Níveis e contas**: PIB potencial e nível de preços como índices, PIB nominal corrente para converter custos, crescimento nominal mensal na dívida, impulso fiscal estrutural que se dissipa.
+6. ✅ **Conteúdo de 2027**: política de valorização do salário mínimo; eventos CBS, regimes diferenciados, FNDR, orçamento de transição e paralisação da máquina (GAME_DESIGN.md §11.3).
+7. ✅ **Invariantes e validação**: §7.4 (limite com exceções registradas) e §7.8 (estado estacionário); campanhas de 240 meses; estratégias distributiva, pró-oferta e pressão sobre o BC; teste de sentido da pressão; cenários de estresse; `npm run sim:balance` com 240 meses.
+8. ✅ **Sensibilidade e calibração documentada**: justificativa por parâmetro e `npm run sim:sensitivity` (cada parâmetro no mínimo e no máximo da faixa), gerando `docs/CALIBRATION.md`.
+9. ✅ **Retenção do histórico** (migração 4): série de indicadores por mês; snapshots completos só do mês atual e dos 12 anteriores (ECONOMIC_MODEL.md §11).
+10. ✅ **Interface**: aba Economia com câmbio, risco, receitas, limite e discricionárias; ação "Pressionar o Banco Central".
+
+**Resultado (13/10/2026):** 342 testes; 8 estratégias-robô sem violação de invariantes em 12, 48 e 240 meses; todos os parâmetros nos extremos da faixa sem violação nem explosão ([CALIBRATION.md](CALIBRATION.md)). Verificado na web: ação de pressionar o BC, aba Economia com câmbio, risco, limite e receitas.
+
+**Limitações conhecidas (para revisão):** a dívida bruta termina entre ~185% e ~240% do PIB em 20 anos (~310% com pressão trimestral sobre o BC): juros reais de ~5% contra crescimento de 2% com primário perto de zero; estabilizar exige ~2,5% do PIB de primário, fora do alcance das 9 políticas atuais. Sem reformas, as discricionárias chegam ao mínimo por volta de 2029–2030 e o limite passa a ser estourado todo mês. A aprovação de longo prazo converge para perto da base em todas as estratégias. Riscos de judicialização e escândalo continuam sem efeito na execução.
 
 **Fora do escopo da Fase 03:** setores, quintis e 27 UFs (Fases 05–06); carteira de projetos e capital público explícito (§5.10, Fase 06); importação de dados oficiais (o cenário de jan/2027 só existirá depois de dez/2026).
 

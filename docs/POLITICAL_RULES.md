@@ -99,6 +99,8 @@ Prazos do ADCT art. 35 §2º. Em jan/2027 vigora a **LOA 2027 votada pelo Congre
 - Exceções ao limite (lista legal): parte delas é parâmetro do cenário. A exclusão de precatórios do limite (PEC 66/2023) e as ADIs 7064/7047 no STF tornam esse ponto instável: tratar como parâmetro.
 - Pacote de dez/2024: com déficit primário a partir de 2025, fica vedada no ano seguinte a criação, ampliação ou prorrogação de benefícios tributários (gatilho no cenário).
 - Limite de despesas primárias da LOA 2026: R$ 2,428 tri (referência para calibrar o cenário de 2027).
+- **No motor (Fase 03, ECONOMIC_MODEL.md §5.14):** o limite é revisto todo janeiro pela regra acima, com a receita do ano-calendário anterior como aproximação do período de apuração; a meta é considerada cumprida se o primário de 12 meses em dezembro ficou acima de meta − banda. As discricionárias recebem o espaço que sobra depois das obrigatórias e vinculadas; o que passa do limite é registrado como estouro (com perda de credibilidade), e créditos extraordinários (calamidades, CF art. 167 §3º) ficam fora dele. Os gatilhos de contenção não são modelados além do redutor de 50% e da perda de credibilidade.
+- **Salário mínimo (Lei 15.077/2024):** reajuste de janeiro com ganho real igual ao PIB de dois anos antes, na faixa de 0,6% a 2,5%, até 2030; depois, só a reposição da inflação (parâmetro). Propaga-se para previdência (parcela de um salário mínimo) e para BPC, abono e seguro-desemprego.
 
 ### 4.3 Mínimos constitucionais e despesas vinculadas
 - Saúde: mínimo de **15% da receita corrente líquida** da União (CF art. 198, redação da EC 86/2015), em vigor desde o fim do teto de gastos. ✔ 13/10/2026 (piso de 2026: R$ 254,9 bi). Há propostas de mudar a base de cálculo e o governo já sinalizou dificuldade para cumprir os pisos em 2027: bom gancho de evento.
@@ -212,6 +214,7 @@ Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamenta
 - **STF**: legitimados (partidos com representação no Congresso, governadores, Mesas, PGR, OAB, entidades de classe nacionais) podem propor ADI/ADPF. Cada medida tem um `riscoJuridico` (0–1) calculado a partir de flags (ex.: renúncia sem compensação, MP sem urgência, invasão de competência estadual). Probabilidade mensal de ação e de liminar suspendendo a medida = f(riscoJuridico, interesse dos legitimados).
 - **TCU**: emite alertas sobre execução e contas. Parecer pela rejeição das contas aumenta o risco de impeachment e afeta a credibilidade. O julgamento das contas é feito pelo Congresso.
 - **Indicações**: vagas no STF e na diretoria do BC surgem conforme calendário do cenário (no STF, pela aposentadoria compulsória aos 75 anos — EC 88/2015 e LC 152/2015 —, ou por evento); exigem aprovação do Senado (maioria absoluta para ministro do STF, CF art. 101; maioria simples em votação secreta após arguição para presidente e diretores do BC, CF art. 52, III, d ✔).
+- **Diretoria do BC (LC 179/2021):** mandatos fixos de 4 anos, não coincidentes com o do presidente da República. O presidente do BC começa no 3º ano do mandato presidencial; os 8 diretores entram 2 por ano. No motor, a fração indicada pelo governo é 2/9, 4/9, 7/9 e 9/9 do 1º ao 4º ano, e as indicações são consideradas aprovadas pelo Senado. Ela determina quanto o BC cede à pressão pública (ECONOMIC_MODEL.md §5.4.1).
 
 ---
 

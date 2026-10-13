@@ -128,6 +128,8 @@ scripts/data/
 | 13/10/2026 | Reforma tributária 2027 (CBS, IPI, IBS, IS) | Guias tributários e imprensa (fontes secundárias) | Confirmado em linhas gerais; reconferir LC 214/2025 compilada (LC 227/2026) na Fase 03 | Claude (pesquisa web) |
 | 13/10/2026 | Reeleição (PEC 12/2022) | Imprensa (CCJ do Senado, mai/2025) | Regra atual mantida; PEC não aprovada em plenário | Claude (pesquisa web) |
 | 13/10/2026 | Aprovação de diretores do BC e ministros do STF; condutas vedadas | CF arts. 52 e 101; Lei 9.504/1997 art. 73 | Confirmado pelo texto legal | Claude |
+| 13/10/2026 | Mandatos da diretoria do BC (LC 179/2021 art. 4º) | Texto da lei (Planalto/Câmara) e Agência Senado | Confirmado: presidente do BC a partir de 1º/jan do 3º ano do mandato presidencial; diretores 2 a 2, em 1º/mar do 1º ano e 1º/jan do 2º, 3º e 4º anos. O motor usa anos-calendário (2, 4, 7 e 9 de 9). Alterações posteriores da lei não verificadas | Claude (pesquisa web) |
+| 13/10/2026 | Cenário `brasil_2027_01` v0.2.0 | — | Estrutura fiscal (receitas por grupo, repartição, despesas por grupo), câmbio, prêmio de risco, juro externo e PIB de 2025 entram como `PROVISORIO` (ordens de grandeza do RTN 2024–2025); valores da v0.1.0 inalterados. Saves gravados com a v0.1.0 continuam carregando (o estado é atualizado pelo motor) | Claude |
 
 Itens marcados com ⚠ em [POLITICAL_RULES.md](POLITICAL_RULES.md) devem ser registrados aqui quando verificados.
 

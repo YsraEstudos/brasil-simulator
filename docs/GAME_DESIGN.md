@@ -91,6 +91,7 @@ O presidente não faz tudo ao mesmo tempo. Cada mês oferece um número limitado
 | Editar MP | 1 |
 | Decreto ou ato administrativo simples | 0 a 1 |
 | Responder evento crítico | 0 a 2 |
+| Pressionar o Banco Central (ação imediata, sem proposta; uma vez por mês) | 1 |
 
 Isso obriga o jogador a priorizar e impede que ele dispare todas as reformas no primeiro mês. Um segundo limite atua no Congresso: a **capacidade de pauta** ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.3) só deixa andar um número limitado de propostas prioritárias ao mesmo tempo. O **capital político** (§5) é gasto em negociações, MPs, demissões e votações forçadas.
 
@@ -285,6 +286,8 @@ Este é o critério de conclusão da Fase 00: explicar, sem código, como uma de
 
 Os valores e o desenho exato de cada decisão serão especificados em `src/data/policies/` na Fase 02, com referência às regras de [POLITICAL_RULES.md](POLITICAL_RULES.md).
 
+**Fase 03:** entrou uma 9ª política, "Valorização extra do salário mínimo" (PL; +1% real no próximo reajuste de janeiro): sobe a aprovação, mas o reajuste se propaga para previdência e benefícios e, com o limite fixo, comprime as discricionárias. Sob o limite do arcabouço, gasto novo (decisões 1 e 5) sai das discricionárias em vez de piorar o primário, a menos que não haja espaço (ECONOMIC_MODEL.md §5.14).
+
 ### 11.3 Os 10 eventos do protótipo
 
 | # | Evento | Gatilho (condições + probabilidade) | Escolhas típicas |
@@ -302,7 +305,7 @@ Os valores e o desenho exato de cada decisão serão especificados em `src/data/
 
 Eventos são determinados por **condições verificáveis + probabilidade configurada + sorteio com semente** (reprodutível).
 
-**Eventos candidatos para a Fase 03 (identidade de 2027):** calibragem da alíquota de referência da CBS no primeiro ano de cobrança integral; setores (agro, serviços, indústria) pressionando por regimes diferenciados; disputa com governadores pelo Fundo Nacional de Desenvolvimento Regional; "orçamento de transição" opcional no início do mandato (remanejamento ou crédito para dar margem fiscal em 2027, já que a LOA foi votada pelo governo anterior); paralisação da máquina por compressão das discricionárias ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.8).
+**Eventos de 2027 implementados na Fase 03** (`src/data/events/`): "Orçamento de transição" (sempre em fevereiro de 2027: executar a LOA votada, remanejar dotações ou pedir emenda de transição fora do limite), "Calibragem da alíquota da CBS", "Setores pedem regimes diferenciados", "Governadores disputam o Fundo de Desenvolvimento Regional" e "Serviços públicos começam a parar" (dispara quando as discricionárias ficam abaixo do piso de funcionamento). Eventos não criam efeitos permanentes: duram até 24 meses. Candidatos originais: calibragem da alíquota de referência da CBS no primeiro ano de cobrança integral; setores (agro, serviços, indústria) pressionando por regimes diferenciados; disputa com governadores pelo Fundo Nacional de Desenvolvimento Regional; "orçamento de transição" opcional no início do mandato (remanejamento ou crédito para dar margem fiscal em 2027, já que a LOA foi votada pelo governo anterior); paralisação da máquina por compressão das discricionárias ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.8).
 
 ### 11.4 Critério de conclusão do protótipo
 Jogar os 12 meses, tomar decisões diferentes em duas campanhas, observar consequências diferentes e explicáveis, e conseguir reiniciar ou retomar a campanha.

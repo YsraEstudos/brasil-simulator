@@ -1,8 +1,8 @@
 # Brasil Simulator — Modelo Econômico
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (pressão sobre o BC permitida; incerteza varia com a dificuldade) • v0.2: fila de efeitos agendados, distribuição regional a partir do agregado, retorno decrescente de tributos, compressão das discricionárias, retenção do histórico, saturação de realimentações
+Versão 0.3 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (pressão sobre o BC permitida; incerteza varia com a dificuldade) • v0.2: fila de efeitos agendados, distribuição regional a partir do agregado, retorno decrescente de tributos, compressão das discricionárias, retenção do histórico, saturação de realimentações • v0.3 (Fase 03): o que o motor 0.3.0 implementa (§5.14), regra aplicada da pressão sobre o BC (§5.4.1), calibração documentada (§6 e [CALIBRATION.md](CALIBRATION.md))
 
-> **Status:** especificação inicial. Todas as equações são **forma reduzida simplificada** e todos os parâmetros estão marcados como `A_CALIBRAR` até a Fase 03. Nenhum número deste documento é previsão.
+> **Status:** todas as equações são **forma reduzida simplificada**. Os parâmetros têm justificativa e faixa testada ([CALIBRATION.md](CALIBRATION.md)), mas continuam `PROVISORIO` até a importação das séries oficiais. Nenhum número deste documento é previsão.
 
 ---
 
@@ -134,6 +134,7 @@ rp_t       += custo_rp * n_pressoes_12m
 - O mercado reage no mesmo mês (prêmio de risco ↑, câmbio ↑). A aprovação pode subir no curto prazo.
 - O relatório "Por que mudou?" atribui explicitamente esses efeitos à pressão.
 - Parâmetros iniciais (`A_CALIBRAR`): `sub_base` 0,6; `pressao_max_bp` 50; `custo_cred` 0,05; `custo_rp` 0,002.
+- **Regra aplicada (Fase 03):** o corte não entra no `i_alvo` (a suavização de 70% e o arredondamento de 25 bp o anulariam sempre); ele é subtraído da Selic já suavizada, em passos de 25 bp (corte abaixo de 12,5 bp não muda a decisão). A diretoria indicada segue a LC 179/2021: 2, 4, 7 e 9 de 9 membros no 1º, 2º, 3º e 4º ano do mandato. Com `sub_base` 0,6 e autonomia percebida 0,5, o BC resiste nos três primeiros anos e cede 25 bp no quarto. O prêmio de risco sobe `custo_rp` por pressão nos últimos 12 meses (dentro da saturação do §5.5).
 - Teste de sentido obrigatório: em 24 meses, uma estratégia-robô que pressiona o BC todo trimestre deve ter inflação média **maior** e não deve ter crescimento acumulado sistematicamente maior que a mesma estratégia sem pressão.
 
 ### 5.5 Prêmio de risco e câmbio
@@ -228,11 +229,25 @@ Código em `src/engine/economy/economy.ts`; coeficientes em `src/engine/economy/
 - **Fila de impulsos** (§5.11) em uso por políticas e eventos. A consolidação de efeitos permanentes no estado ainda não é feita (a fila de 12 meses é pequena).
 - **Pressão sobre o BC** (§5.4.1), retorno decrescente de tributos (§5.7) e compressão das discricionárias (§5.8) ficam para a Fase 03.
 
+### 5.14 O que o motor 0.3.0 implementa (Fase 03)
+Código em `src/engine/economy/` (`economy.ts` orquestra; `external.ts`, `monetary.ts`, `fiscal.ts`). Estado v3; saves v2 são atualizados (`upgrade.ts`). Em relação ao §5.13:
+
+- **Setor externo e risco (§5.5, §8).** Juro externo e termos de troca são AR(1) com semente. O prêmio de risco anda `ajuste_risco` por mês até `premio_base + premio_extra_max · tanh(causas / premio_extra_max)`, com causas: dívida acima do limiar, déficit abaixo da banda, credibilidade abaixo da base, carga sobre a renda acima da margem (saída de capital, §5.7), pressões sobre o BC e choques `choque.risco`. O câmbio é escrito **em nível**: volta (`ajuste_cambio`) a um equilíbrio de paridade (câmbio inicial × preços internos ÷ externos), deslocado pelo diferencial de juros (saturado em `desvio_cambio_max`) e pelos termos de troca; o random walk da forma em diferenças do §5.5 acumularia ruído sem limite em 20 anos. O repasse usa a depreciação **real** de 12 meses.
+- **Banco Central.** Juro neutro do Copom = `juro_neutro + repasse_risco_neutro · (rp − premio_base)`; passo de 150 bp quando a inflação passa do teto em mais de `limiar_crise_inflacao` ou o prêmio passa da metade da saturação. O prêmio também encarece o crédito no hiato (causa "Prêmio de risco e juros de mercado") e entra na taxa implícita da dívida (`repasse_risco_divida`).
+- **Receitas por grupo (§5.7).** Renda, folha, consumo, outras e royalties, com repartição a estados e municípios (`transferShares` do cenário). Impulsos de receita mudam a carga legal do grupo; acima da carga inicial + margem do grupo, a perda é `perda_max · tanh(excesso / escala_perda)` e aparece no "Por que mudou?" como "Perda de arrecadação". Royalties seguem os termos de troca.
+- **Despesas, limite e compressão (§5.8; POLITICAL_RULES.md §4.2–4.3).** Obrigatórias por grupo crescem pela própria regra (beneficiários, folha) em relação ao PIB **potencial**; previdência (60%) e benefícios (100%) recebem em janeiro o ganho real do salário mínimo (Lei 15.077/2024 até 2030; depois `sm_ganho_apos_regra`). Vinculadas acompanham a receita sem a folha. O limite cresce em termos reais pela regra da LC 200/2023, revista em janeiro com a receita do ano anterior (ano-calendário como aproximação). As discricionárias livres ficam com o espaço que sobra (a LOA usa todo o limite), nunca abaixo de `discricionaria_minima`; gasto discricionário novo sai desse espaço; contingenciamento corta abaixo dele. O que passa do limite é **estouro registrado** (invariante §7.4) e derruba a credibilidade (`pena_cred_estouro`). Créditos extraordinários (`gasto.extraordinario`) ficam fora do limite. Abaixo de `piso_custeio` há paralisação: perda de aprovação e o evento "Serviços públicos começam a parar".
+- **Consequência:** sob o limite, despesa obrigatória nova **não aumenta o gasto total**: comprime as discricionárias (causa "Compressão das discricionárias"). O primário só piora com renúncia de receita, crédito extraordinário ou estouro do limite.
+- **Postura fiscal que se dissipa.** O impulso de demanda de cada política continua em nível (`(1 − rho_h) · mult · L`), mas a economia se acomoda: a referência `demandRef` anda `adaptacao_fiscal` por mês até a postura total, e a distância é o que move o hiato (causa "Economia se acomoda à política fiscal"). A deriva estrutural (limite caindo em % do PIB, compressão) entra com `mult_estrutural`. Sem isso, a queda do limite em 20 anos geraria hiato negativo permanente.
+- **Níveis.** PIB potencial e IPCA como índices; o PIB nominal corrente converte custos de políticas em R$ para fração do PIB; o ajuste do denominador da dívida usa o crescimento nominal **do mês**, e a variação cambial corrige a parcela `divida_cambial` da dívida.
+- **Dívida em 20 anos.** Com juro real neutro de 5%, crescimento potencial de 2% e primário perto de zero, `r − g ≈ 3` a `5 p.p.` e a dívida não tem estado estacionário: nas campanhas automáticas de 240 meses ela termina entre ~185% (austera) e ~240% (populista) do PIB, e ~310% com pressão trimestral sobre o BC. É trajetória com causa registrada (juros acima do crescimento, estouro do limite, prêmio de risco), não espiral numérica: o prêmio satura. Estabilizar a dívida exige primário de ~2,5% do PIB, fora do alcance das 9 políticas atuais (Fase 06). A dívida é a variável mais sensível a `g_pot_base` e `juro_neutro` ([CALIBRATION.md](CALIBRATION.md)).
+- **Ações de agenda** (`src/engine/actions.ts`): decisões sem proposta, no máximo uma por mês cada; hoje só "Pressionar o Banco Central".
+- **Não implementado ainda:** capital público explícito e carteira de projetos (§5.10, Fase 06), setores e quintis (0.5), distribuição regional (§5.12, Fase 05), consolidação de impulsos permanentes (a fila fica limitada porque cada política só tem uma execução ativa e os eventos não criam efeitos permanentes; testado em 240 meses).
+
 ---
 
-## 6. Parâmetros iniciais (todos `A_CALIBRAR`)
+## 6. Parâmetros
 
-Valores de partida apenas para o protótipo funcionar; serão substituídos por calibração documentada na Fase 03.
+Os valores, faixas, significados e justificativas estão em `src/engine/economy/calibration.ts`; a tabela completa, com a faixa testada e o resultado de sensibilidade de cada parâmetro em campanhas de 20 anos, é gerada em [CALIBRATION.md](CALIBRATION.md) por `npm run sim:sensitivity`. A tabela abaixo é a de partida da Fase 00, mantida como registro.
 
 | Parâmetro | Valor de partida | Faixa a testar | Significado |
 | --- | --- | --- | --- |
@@ -276,6 +291,8 @@ Executados a cada mês em modo de teste e em toda simulação automatizada:
 8. Mês sem decisões e sem choques: variáveis convergem para estado estacionário (sem explosão).
 9. Soma das variáveis regionais = total nacional (Fase 05+).
 
+Situação na Fase 03 (`src/engine/invariants.ts` e testes): 1–6 verificados a cada mês, incluindo receitas e despesas por grupo somando os totais e o §7.4 como "despesa sujeita ao limite ≤ limite + estouro registrado" (exceções legais e créditos extraordinários fora do limite); 7 nos testes de determinismo; 8 no teste de estado estacionário de `economy.test.ts`, com deriva fiscal neutralizada (hiato, inflação, desemprego e Selic convergem; a dívida só precisa não explodir, porque com `r > g` e primário nulo ela não tem ponto fixo, §5.14).
+
 ---
 
 ## 8. Choques
@@ -298,6 +315,7 @@ Executados a cada mês em modo de teste e em toda simulação automatizada:
 - **Testes de sentido (direção do efeito), não de valor exato:** por exemplo, "aumento de juros reais reduz o hiato em 6–12 meses, mantidas as demais condições".
 - **Teste de viés:** nenhuma estratégia-robô deve dominar todas as outras em todos os objetivos; cada estratégia deve ter trade-offs mensuráveis.
 - **Teste de cenários:** alta inflação, recessão, recuperação, déficit persistente, crescimento moderado, choque externo.
+- **Situação na Fase 03:** 8 estratégias-robô (inerte, populista fiscal, austera, reformista, distributiva, pró-oferta, inerte com pressão trimestral sobre o BC e aleatória; a fisiológica fica para a Fase 04). Testes: 12 e 48 meses × várias sementes, 240 meses × 3 sementes com faixas de explosão, teste de sentido da pressão sobre o BC (§5.4.1), cenários de estresse (`src/engine/sim/stress.test.ts`) e estado estacionário (§7.8). `npm run sim:balance` imprime 12, 48 e 240 meses com PIB acumulado, máximos de dívida e inflação, prêmio final e meses com estouro do limite e com discricionárias abaixo do piso. `npm run sim:sensitivity` leva cada parâmetro aos extremos da faixa em 20 anos e gera [CALIBRATION.md](CALIBRATION.md): nenhum extremo gera violação ou explosão. Trade-offs em 20 anos: a austera termina com menos dívida e menos aprovação; populista e distributiva, com mais dívida; nenhuma domina as outras. A aprovação de longo prazo converge para perto de `aprovacao_base` em todas (limitação conhecida até as eleições da Fase 08).
 
 ---
 
@@ -319,6 +337,7 @@ Para o estado não crescer sem limite em campanhas longas (240+ meses) em celula
 - O `GameState` em memória guarda só as **contribuições do mês corrente** e a fila de impulsos ativos (§5.11). Nenhuma série histórica vive dentro do estado.
 - O banco guarda, por mês, o snapshot e a decomposição causal. Nos **últimos 12 meses** a decomposição fica completa (alimenta o "Por que mudou?"); nos meses mais antigos ela é descartada e fica só o vetor de indicadores (alimenta os gráficos de longo prazo).
 - A compactação roda ao gravar o mês, na mesma transação.
+- Implementado na Fase 03 (migração 4 do banco): `month_reports` guarda os últimos 12 relatórios; `snapshots` guarda o estado completo só do mês atual e dos 12 anteriores; `indicator_history` guarda, para a campanha inteira, os indicadores, a Selic, a dívida, a credibilidade, o câmbio e o prêmio de risco (preenchida a partir dos snapshots existentes ao migrar).
 
 ---
 
