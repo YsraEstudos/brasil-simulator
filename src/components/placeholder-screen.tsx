@@ -1,18 +1,20 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Text } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 /** Tela provisória para áreas que serão implementadas nas próximas fases. */
 export function PlaceholderScreen({ title, phase }: { title: string; phase: string }) {
+  const { colors } = useTheme();
   return (
-    <ThemedView style={styles.root}>
-      <ThemedText type="subtitle">{title}</ThemedText>
-      <ThemedText themeColor="textSecondary">Em construção — {phase}</ThemedText>
-    </ThemedView>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <Text variant="title">{title}</Text>
+      <Text color="textSecondary">Em construção — {phase}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 24 },
+  root: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.two, padding: Spacing.four },
 });
