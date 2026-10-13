@@ -1,0 +1,8 @@
+node_modules/
+.expo/
+dist/
+data-raw/
+assets/
+src/globe/data/
+package-lock.json
+*.md
