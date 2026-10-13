@@ -1,5 +1,13 @@
 import type { EventChoiceDefinition, GameEvent } from '../../types/event';
-import { AGENDA_ACTIONS, PRESSURE_ACTION_ID } from '../actions';
+import {
+  AGENDA_ACTIONS,
+  AMENDMENTS_ACTION_ID,
+  APPOINT_ACTION_ID,
+  NEGOTIATE_ACTION_ID,
+  PRESSURE_ACTION_ID,
+} from '../actions';
+import { ministriesOf, ministryOccupant } from '../congress/cabinet';
+import { blocSupport, legislativeInstrument, predictVotes } from '../congress/congress';
 import { createRng, seedRng, type Rng } from '../rng';
 import {
   PROPOSAL_IN_PROGRESS,
@@ -121,6 +129,101 @@ const PRO_OFERTA_ORDER = [
 /** Pressão sobre o BC a cada trimestre (ECONOMIC_MODEL.md §5.4.1, teste de sentido). */
 const PRESSURE_EVERY_MONTHS = 3;
 
+/** Reformas que a estratégia fisiológica tenta aprovar, na ordem. */
+const FISIOLOGICA_ORDER = [
+  'reforma_previdencia',
+  'reforma_administrativa',
+  'gastos_tributarios_revisao',
+  'infraestrutura_credito_adicional',
+];
+
+/**
+ * Pastas que a estratégia fisiológica entrega, na ordem, e a quem: os blocos de centro e centro-direita, sem
+ * os quais não há 3/5 (POLITICAL_RULES.md §6.3.1). Pares cujo ministério ou bloco não existem no cenário são
+ * ignorados.
+ */
+const FISIOLOGICA_CABINET: readonly (readonly [string, string])[] = [
+  ['transportes', 'centro'],
+  ['cidades', 'centro'],
+  ['agricultura', 'centro_direita'],
+  ['minas_energia', 'centro_direita'],
+  ['saude', 'centro'],
+];
+
+/** A votação está a este número de meses ou menos: hora de pagar o pedágio e negociar. */
+const VOTACAO_PROXIMA_MESES = 1;
+/** Folga mínima, em fração das cadeiras, para não negociar mais. */
+const FOLGA_FISIOLOGICA = 0.05;
+
+/**
+ * Coalizão por cargos e emendas (POLITICAL_RULES.md §6.3, ROADMAP.md §2.1): entrega pastas aos blocos de
+ * centro, libera emendas antes de votações difíceis, negocia com o maior bloco indeciso quando faltam votos e
+ * envia as reformas. Eventos: escolha padrão.
+ */
+const fisiologica: Strategy = {
+  id: 'fisiologica',
+  name: 'Fisiológica',
+  decide(state, content) {
+    const events = answerEvents(state, content, useDefault);
+    let left = state.resources.agendaPointsPerMonth - events.spent;
+    const decisions: Decision[] = [];
+    const take = (decision: Decision): boolean => {
+      if (decision.agendaCost > left) return false;
+      decisions.push(decision);
+      left -= decision.agendaCost;
+      return true;
+    };
+    const cost = (id: string) => AGENDA_ACTIONS[id]?.agendaCost ?? 0;
+
+    for (const p of state.proposals) {
+      if (p.status !== 'em_tramitacao' || p.voteMonth === null) continue;
+      if (p.voteMonth - state.monthIndex > VOTACAO_PROXIMA_MESES) continue;
+      const policy = content.policies[p.policyId];
+      const instrument = policy ? legislativeInstrument(policy) : null;
+      if (!policy || instrument === null) continue;
+      if (!p.negotiation.amendments && (instrument === 'pec' || instrument === 'projeto_lei_complementar')) {
+        take({ policyId: AMENDMENTS_ACTION_ID, agendaCost: cost(AMENDMENTS_ACTION_ID), params: { proposalId: p.id } });
+      }
+      const next = predictVotes(state, policy, content, p)[0];
+      if (next && next.expectedYes < next.required + FOLGA_FISIOLOGICA * next.total) {
+        // Bloco com mais cadeiras entre os que ainda não apoiam e podem receber mais negociação.
+        const c = content.calibration;
+        const target = content.scenario.blocs
+          .filter((b) => (p.negotiation.blocs[b.id] ?? 0) < c.negociacao_apoio_max)
+          .filter((b) => blocSupport(state, policy, b, content, p) <= c.limiar_apoio)
+          .reduce<{ id: string; seats: number } | null>(
+            (best, b) => (best === null || b.chamberSeats > best.seats ? { id: b.id, seats: b.chamberSeats } : best),
+            null,
+          );
+        if (target) {
+          take({
+            policyId: NEGOTIATE_ACTION_ID,
+            agendaCost: cost(NEGOTIATE_ACTION_ID),
+            params: { proposalId: p.id, blocId: target.id },
+          });
+        }
+      }
+    }
+
+    const ministries = ministriesOf(content);
+    const pending = FISIOLOGICA_CABINET.find(([ministryId, blocId]) => {
+      const ministry = ministries.find((m) => m.id === ministryId);
+      const blocOk = content.scenario.blocs.some((b) => b.id === blocId);
+      return ministry !== undefined && blocOk && ministryOccupant(state, ministry) !== blocId;
+    });
+    if (pending) {
+      take({
+        policyId: APPOINT_ACTION_ID,
+        agendaCost: cost(APPOINT_ACTION_ID),
+        params: { ministryId: pending[0], occupant: pending[1] },
+      });
+    }
+
+    const sends = sendInOrder(state, content, FISIOLOGICA_ORDER, state.resources.agendaPointsPerMonth - left);
+    return { decisions: [...decisions, ...sends], eventChoices: events.choices };
+  },
+};
+
 /** Linha de base: não envia nada e não responde a eventos (os padrões entram sozinhos no prazo). */
 const inerte: Strategy = {
   id: 'inerte',
@@ -237,6 +340,7 @@ export const STRATEGIES: readonly Strategy[] = [
   reformista,
   distributiva,
   proOferta,
+  fisiologica,
   withQuarterlyPressure(inerte),
   aleatoria,
 ];

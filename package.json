@@ -59,7 +59,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "sim:balance": "vitest run --config vitest.balance.config.mts scripts/sim/balance.sim.ts",
-    "sim:sensitivity": "vitest run --config vitest.balance.config.mts scripts/sim/sensitivity.sim.ts"
+    "sim:sensitivity": "vitest run --config vitest.balance.config.mts scripts/sim/sensitivity.sim.ts",
+    "sim:reform": "vitest run --config vitest.balance.config.mts scripts/sim/reform.sim.ts"
   },
   "private": true
 }
