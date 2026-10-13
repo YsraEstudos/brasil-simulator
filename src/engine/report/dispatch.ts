@@ -11,16 +11,17 @@ import { pct, pp } from './format';
  * Limiares e margens dos pareceres da mesa de despacho (GAME_DESIGN.md §4.4, §6). Ficam aqui, e não na
  * calibração, porque descrevem a qualidade da previsão ministerial e o texto do parecer, não a economia.
  * - hotGap: hiato do produto acima do qual uma expansão fiscal recebe aviso de pressão inflacionária.
- * - marginEstrategica / marginRealismo: meia-largura, em votos, da faixa mostrada na Estratégica e no Realismo.
- * - biasRealismo: viés otimista da pasta de articulação no Realismo, em votos somados à previsão.
- * - folgaVotos: votos acima do exigido a partir dos quais o parecer diz que a aprovação é provável.
+ * As margens são frações das cadeiras da Casa (a mesma folga vale 15 votos na Câmara e 2 no Senado).
+ * - marginEstrategica / marginRealismo: meia-largura da faixa mostrada na Estratégica e no Realismo.
+ * - biasRealismo: viés otimista da pasta de articulação no Realismo, somado à previsão.
+ * - folgaVotos: folga acima do exigido a partir da qual o parecer diz que a aprovação é provável.
  */
 export const ADVICE_PARAMS = {
   hotGap: 0.01,
-  marginEstrategica: 15,
-  marginRealismo: 30,
-  biasRealismo: 10,
-  folgaVotos: 20,
+  marginEstrategica: 0.03,
+  marginRealismo: 0.06,
+  biasRealismo: 0.02,
+  folgaVotos: 0.04,
 } as const;
 
 export interface Opinion {
@@ -126,8 +127,11 @@ function votesOpinion(state: Readonly<GameState>, policyId: string, prediction: 
     text = `${label}: cerca de ${shown} votos para ${required} necessários.`;
   } else {
     const realismo = state.difficulty === 'realismo';
-    const margin = realismo ? ADVICE_PARAMS.marginRealismo : ADVICE_PARAMS.marginEstrategica;
-    const bias = realismo ? ADVICE_PARAMS.biasRealismo : 0;
+    const margin = Math.max(
+      1,
+      Math.round((realismo ? ADVICE_PARAMS.marginRealismo : ADVICE_PARAMS.marginEstrategica) * total),
+    );
+    const bias = realismo ? Math.round(ADVICE_PARAMS.biasRealismo * total) : 0;
     const rng = createRng(seedRng(adviceSeed(state, policyId)));
     const center = prediction.expectedYes + rng.int(-margin, margin) + bias;
     shown = Math.round(center);
@@ -137,7 +141,7 @@ function votesOpinion(state: Readonly<GameState>, policyId: string, prediction: 
   }
 
   const slack = shown - required;
-  if (slack >= ADVICE_PARAMS.folgaVotos) return { text: `${text} Aprovação provável.`, tone: 'favoravel' };
+  if (slack >= ADVICE_PARAMS.folgaVotos * total) return { text: `${text} Aprovação provável.`, tone: 'favoravel' };
   if (slack < 0) return { text: `${text} Tende a faltar votos.`, tone: 'desfavoravel' };
   return { text: `${text} Aprovação incerta.`, tone: 'neutro' };
 }

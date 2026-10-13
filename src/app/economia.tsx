@@ -1,5 +1,6 @@
-import { PlaceholderScreen } from '@/components/placeholder-screen';
+import { EconomyPanel } from '@/components/tabs/EconomyPanel';
+import { TabScreen } from '@/components/tabs/TabScreen';
 
 export default function EconomiaScreen() {
-  return <PlaceholderScreen title="Economia" phase="Fase 02" />;
+  return <TabScreen render={(campaign) => <EconomyPanel campaign={campaign} />} />;
 }

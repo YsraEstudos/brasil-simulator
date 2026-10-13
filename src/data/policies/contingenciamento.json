@@ -1,7 +1,7 @@
 {
   "id": "contingenciamento",
   "name": "Contingenciamento de despesas discricionárias",
-  "summary": "Bloqueia por decreto de programação parte das despesas discricionárias para cumprir a meta fiscal. Reduz o custeio e o investimento, com custo político e perda de credibilidade no curto prazo.",
+  "summary": "Bloqueia por decreto de programação parte das despesas discricionárias para cumprir a meta fiscal. Reduz o custeio e o investimento, com custo político e ganho de credibilidade fiscal.",
   "area": "fiscal",
   "competence": "federal",
   "instruments": ["decreto_programacao"],

@@ -400,7 +400,7 @@ function reject(run: Run, p: Proposal, instrument: Instrument, stages: readonly 
     p,
     'rejeitada',
     'votacao',
-    `Rejeitada na ${casaLabel(failed, stages)}: ${failed.yes} votos de ${failed.required} necessários.`,
+    `Rejeitada ${casaLabel(failed, stages, true)}: ${failed.yes} votos de ${failed.required} necessários.`,
   );
   addCapital(run, run.c.capital_derrota);
   if (instrument === 'medida_provisoria') {
@@ -415,9 +415,10 @@ function reject(run: Run, p: Proposal, instrument: Instrument, stages: readonly 
   }
 }
 
-/** Rótulo da Casa e, se houver turnos, do turno (PEC). */
-function casaLabel(v: VoteResult, stages: readonly VoteStage[]): string {
-  const casa = v.house === 'camara' ? 'Câmara' : 'Senado';
+/** Rótulo da Casa e, se houver turnos, do turno (PEC). `withPreposition`: "na Câmara" / "no Senado". */
+function casaLabel(v: VoteResult, stages: readonly VoteStage[], withPreposition = false): string {
+  const name = v.house === 'camara' ? 'Câmara' : 'Senado';
+  const casa = withPreposition ? `${v.house === 'camara' ? 'na' : 'no'} ${name}` : name;
   return stages.some((s) => s.round > 1) ? `${casa} (${v.round}º turno)` : casa;
 }
 

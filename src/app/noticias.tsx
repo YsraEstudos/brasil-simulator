@@ -1,5 +1,6 @@
-import { PlaceholderScreen } from '@/components/placeholder-screen';
+import { NewsPanel } from '@/components/tabs/NewsPanel';
+import { TabScreen } from '@/components/tabs/TabScreen';
 
 export default function NoticiasScreen() {
-  return <PlaceholderScreen title="Notícias" phase="Fase 07" />;
+  return <TabScreen render={(campaign) => <NewsPanel campaign={campaign} />} />;
 }

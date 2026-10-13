@@ -1,5 +1,6 @@
-import { PlaceholderScreen } from '@/components/placeholder-screen';
+import { CongressPanel } from '@/components/tabs/CongressPanel';
+import { TabScreen } from '@/components/tabs/TabScreen';
 
 export default function CongressoScreen() {
-  return <PlaceholderScreen title="Congresso" phase="Fase 02" />;
+  return <TabScreen render={(campaign) => <CongressPanel campaign={campaign} />} />;
 }
