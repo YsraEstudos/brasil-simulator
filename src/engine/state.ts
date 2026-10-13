@@ -1,3 +1,5 @@
+import type { Scenario } from '../types/scenario';
+
 import { seedRng } from './rng';
 import { ENGINE_VERSION, STATE_SCHEMA_VERSION, type Difficulty, type GameState, type Indicators } from './types';
 
@@ -34,5 +36,17 @@ export function createInitialState(c: NewCampaign): GameState {
       agendaPointsPerMonth: AGENDA_POINTS[c.difficulty],
     },
     decisionLog: [],
+  };
+}
+
+/** Indicadores iniciais do cenário (só os valores; status e fonte ficam no cenário). */
+export function indicatorsFromScenario(scenario: Scenario): Indicators {
+  const i = scenario.indicators;
+  return {
+    approval: i.approval.value,
+    gdpGrowth12m: i.gdpGrowth12m.value,
+    inflation12m: i.inflation12m.value,
+    unemployment: i.unemployment.value,
+    primaryBalance12m: i.primaryBalance12m.value,
   };
 }
