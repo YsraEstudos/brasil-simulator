@@ -83,6 +83,11 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 | Crédito adicional | `supplementaryCredit` |
 | Capital político | `politicalCapital` |
 | Aprovação | `approval` |
+| Relator | `rapporteur` |
+| Acréscimos do relator ("jabutis") | `rider` |
+| Sanção / veto | `sanction` / `veto` |
+| Ministério, gabinete | `ministry`, `cabinet` |
+| Pauta | `pauta` (sem tradução: termo do regimento) |
 
 ---
 

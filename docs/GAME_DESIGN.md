@@ -1,6 +1,6 @@
 # Brasil Simulator — Documento de Design do Jogo (GDD)
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato • v0.3 (Fase 04): negociação e nomeações na agenda, aba Congresso, sanção e veto
 Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RULES.md](POLITICAL_RULES.md) · [DATA_SOURCES.md](DATA_SOURCES.md) · [ROADMAP.md](ROADMAP.md) · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)
 
 ---
@@ -92,8 +92,14 @@ O presidente não faz tudo ao mesmo tempo. Cada mês oferece um número limitado
 | Decreto ou ato administrativo simples | 0 a 1 |
 | Responder evento crítico | 0 a 2 |
 | Pressionar o Banco Central (ação imediata, sem proposta; uma vez por mês) | 1 |
+| Negociar com um bloco, liberar emendas, ceder no texto ou pedir urgência numa proposta (uma vez por mês por alvo) | 1 |
+| Nomear ou demitir ministro | 1 |
+| Sancionar ou vetar projeto aprovado | 0 |
 
 Isso obriga o jogador a priorizar e impede que ele dispare todas as reformas no primeiro mês. Um segundo limite atua no Congresso: a **capacidade de pauta** ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.3) só deixa andar um número limitado de propostas prioritárias ao mesmo tempo. O **capital político** (§5) é gasto em negociações, MPs, demissões e votações forçadas.
+
+### 4.3.1 Aba Congresso (Fase 04)
+Mostra as Mesas (bloco que preside cada Casa e relação com ele), a ocupação da pauta de cada Casa, as propostas por etapa (Casa, turnos, data prevista, relator), o parecer de articulação para a próxima votação com as contrapartidas já negociadas, os blocos com as pastas que ocupam e os ministérios com ocupante e risco de escândalo. Negociações e nomeações marcadas ali entram na **mesma agenda do mês** da Presidência (mesmos pontos) e valem ao encerrar o mês. Projetos aprovados aparecem na caixa de entrada para sanção ou veto (POLITICAL_RULES.md §6.5, §7).
 
 ### 4.4 Mesa de despacho
 Antes de confirmar uma decisão grande (proposta ao Congresso, MP, corte, reforma, resposta a crise), o jogador vê um cartão de despacho com **três pareceres curtos** (até 2 linhas cada), que podem discordar entre si:
@@ -285,6 +291,8 @@ Este é o critério de conclusão da Fase 00: explicar, sem código, como uma de
 | 8 | Reforma administrativa | PEC | Sim (3/5, dois turnos) | Despesa de pessoal ↓ no longo prazo, alto custo político |
 
 Os valores e o desenho exato de cada decisão serão especificados em `src/data/policies/` na Fase 02, com referência às regras de [POLITICAL_RULES.md](POLITICAL_RULES.md).
+
+**Fase 04:** entrou uma 10ª política, "Reforma da previdência (parâmetros)" (PEC, catálogo nº 18): economia de despesa obrigatória que começa pequena e cresce por anos (abre espaço no limite de despesas), com custo de aprovação e 3/5 em dois turnos em cada Casa. A articulação da mesa de despacho passou a avisar pauta cheia, presidência da Casa insatisfeita e pedágio de emendas.
 
 **Fase 03:** entrou uma 9ª política, "Valorização extra do salário mínimo" (PL; +1% real no próximo reajuste de janeiro): sobe a aprovação, mas o reajuste se propaga para previdência e benefícios e, com o limite fixo, comprime as discricionárias. Sob o limite do arcabouço, gasto novo (decisões 1 e 5) sai das discricionárias em vez de piorar o primário, a menos que não haja espaço (ECONOMIC_MODEL.md §5.14).
 

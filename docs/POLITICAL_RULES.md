@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8)
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -197,7 +197,22 @@ Cada ministério relevante tem um ocupante com `origem`: **técnico/aliado** ou 
 Todos os pesos são parâmetros a calibrar (Fase 04). Demitir um ministro de bloco custa capital político e piora a relação com o bloco.
 
 ### 6.4 Evolução
-Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamentares individuais.
+Fase 04: Câmara e Senado separadas e relatores (feito, §6.5). Comissões permanentes individuais e parlamentares individuais: Fase 09.
+
+### 6.5 No motor (Fase 04, motor 0.4.0)
+Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRATION.md](CALIBRATION.md)); o cenário define quem preside cada Casa e os ministérios (`institutions`).
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Casas separadas | A proposta vota na Câmara e só depois vai ao Senado; o prazo esperado de tramitação é repartido (`fracao_tramitacao_camara`, mínimo de 1 mês em cada Casa). PEC vota os dois turnos da mesma Casa no mesmo mês (o interstício cabe no turno mensal). PLN tramita pela Comissão Mista e vota em sessão conjunta, contada por Casa, sem ocupar a pauta das Casas. Janeiro continua recesso. |
+| Capacidade de pauta (§6.3) | Cada Casa tem `capacidade_pauta` vagas; PEC ocupa `vagas_pec`. Sem vaga, a proposta fica **parada** e entra quando abrir vaga (pauta vazia sempre aceita). |
+| Relator | Sorteado ao entrar em cada Casa, com peso pelas cadeiras e peso extra para o bloco que preside a Casa. Se o bloco do relator não apoia o texto, ele o altera uma vez (escala `escala_alterada`; todos os blocos passam a apoiar mais, `bonus_texto_alterado`) e pode incluir **acréscimos estranhos ao projeto** (despesa extra, `custo_acrescimo` por `meses_acrescimo`), mais provável quando o relator é de bloco que cobra emendas. Na MP o relator só reduz o texto. |
+| Presidência da Casa | Relação com o bloco que preside a Casa abaixo de `limiar_presidente_casa`: a cada votação marcada, chance `prob_nao_pautar` de adiar um mês. |
+| Emendas como pedágio (§6.3) | Votação difícil (PEC, PLP ou "sim" esperado a menos de `folga_votacao_dificil` das cadeiras do exigido) sem emendas liberadas: chance `prob_adiamento_pedagio` de os líderes adiarem. Adiamentos por presidência e pedágio são limitados a `max_adiamentos` por Casa; depois, a votação acontece. |
+| Negociação (ações de agenda, 1 ponto cada) | **Negociar com um bloco** (apoio do bloco à proposta + `negociacao_apoio`, saturado; relação melhora; custa capital). **Liberar emendas** (todos apoiam mais, quem cobra emendas mais ainda; despesa `emendas_pedagio` por `emendas_meses` que sai das discricionárias, ECONOMIC_MODEL.md §5.8). **Ceder no texto** (escala × `escala_concessao`, todos apoiam mais). **Pedir urgência** (só PL e PLP, CF art. 64: votação em até 2 meses em cada Casa; o bloco que preside a Câmara não gosta). |
+| Ministérios (§6.3.1) | Cada pasta tem peso e áreas de política. Indicação de bloco: apoio do bloco em todas as votações (`apoio_ministerio` × peso, saturado), relação melhora na nomeação; a política da pasta rende menos (`perda_execucao_partidaria` no capital público e nos ganhos de aprovação), atrasa se o bloco for ideologicamente contrário a ela (`atraso_ministerio_contrario`) e o risco mensal de escândalo cresce com os anos no cargo (`escandalo_base_mes`, `escandalo_por_ano`, saturado). O evento "Escândalo em ministério" só dispara com pasta de bloco, com probabilidade igual a esse risco; a resposta "Demitir" troca o indicado mais antigo por um técnico. Demitir indicado custa capital e a relação com o bloco. |
+| Medida provisória (§3) | Vigência imediata; se não for convertida em 4 meses (120 dias), perde a eficácia e os efeitos param. A partir do 2º mês (mais de 45 dias) tranca a pauta da Casa em que está: as demais propostas dessa Casa esperam. |
+| Ainda não modelado | Comissões permanentes, emendas de plenário, destaques, obstrução, recesso de julho, convocação extraordinária, CPIs, impeachment e TCU. |
 
 ---
 
@@ -207,12 +222,15 @@ Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamenta
 3. O Congresso aprecia o veto em sessão conjunta; derrubada exige **maioria absoluta de cada Casa**.
 4. Derrubada de veto = derrota política (capital político ↓).
 
+**No motor (Fase 04):** aprovado no Congresso, o projeto fica **aguardando sanção** no mês seguinte; sem resposta, vale a sanção tácita. O jogador pode sancionar, vetar o projeto inteiro ou, quando o relator incluiu acréscimos, vetar só os acréscimos (o motor trata os acréscimos como dispositivos inteiros, então o veto parcial é sempre possível). O veto vai à sessão conjunta no mês seguinte; a derrubada exige maioria absoluta de cada Casa e depende do interesse dos blocos no texto, menos a lealdade ao governo (relação e pastas) e a popularidade do presidente. Veto derrubado: a lei (ou os acréscimos) entra em vigor e o capital cai; veto mantido rende um pouco de capital. **PEC** é promulgada pelas Mesas, sem sanção (CF art. 60 §3º); **MP** convertida segue em vigor sem nova sanção no motor.
+
 ---
 
 ## 8. Controle judicial e de contas (simplificado)
 
 - **STF**: legitimados (partidos com representação no Congresso, governadores, Mesas, PGR, OAB, entidades de classe nacionais) podem propor ADI/ADPF. Cada medida tem um `riscoJuridico` (0–1) calculado a partir de flags (ex.: renúncia sem compensação, MP sem urgência, invasão de competência estadual). Probabilidade mensal de ação e de liminar suspendendo a medida = f(riscoJuridico, interesse dos legitimados).
 - **TCU**: emite alertas sobre execução e contas. Parecer pela rejeição das contas aumenta o risco de impeachment e afeta a credibilidade. O julgamento das contas é feito pelo Congresso.
+- **No motor (Fase 04):** o risco `judicializacao` da política, mais `risco_juridico_flag` por regra quebrada (gasto acima do limite, renúncia ou despesa sem compensação na LRF; também para políticas sem esse risco previsto), decide no início da execução se haverá ação no STF. Havendo, uma liminar suspende a execução de 1 a `liminar_lag_max` meses depois, por `suspensao_min_meses`–`suspensao_max_meses`; no julgamento a medida volta a valer ou é declarada inconstitucional (`prob_inconstitucional`, maior com regra quebrada). Os efeitos da janela suspensa são retirados da fila (ECONOMIC_MODEL.md §5.11). TCU e indicações ao STF ainda não são modelados.
 - **Indicações**: vagas no STF e na diretoria do BC surgem conforme calendário do cenário (no STF, pela aposentadoria compulsória aos 75 anos — EC 88/2015 e LC 152/2015 —, ou por evento); exigem aprovação do Senado (maioria absoluta para ministro do STF, CF art. 101; maioria simples em votação secreta após arguição para presidente e diretores do BC, CF art. 52, III, d ✔).
 - **Diretoria do BC (LC 179/2021):** mandatos fixos de 4 anos, não coincidentes com o do presidente da República. O presidente do BC começa no 3º ano do mandato presidencial; os 8 diretores entram 2 por ano. No motor, a fração indicada pelo governo é 2/9, 4/9, 7/9 e 9/9 do 1º ao 4º ano, e as indicações são consideradas aprovadas pelo Senado. Ela determina quanto o BC cede à pressão pública (ECONOMIC_MODEL.md §5.4.1).
 

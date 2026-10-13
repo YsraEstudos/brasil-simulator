@@ -15,7 +15,8 @@ import type { GameContent } from '@/engine/types';
 
 const SEEDS = [1, 2, 3];
 const MONTHS = 240;
-const STRATEGY_IDS = ['inerte', 'populista_fiscal'];
+// A fisiológica exercita os parâmetros do Congresso e dos ministérios (Fase 04).
+const STRATEGY_IDS = ['inerte', 'populista_fiscal', 'fisiologica'];
 /** Faixas de explosão: acima disto a combinação é considerada instável (ECONOMIC_MODEL.md §9). */
 const MAX_INFLATION = 0.3;
 const MAX_DEBT = 5;
