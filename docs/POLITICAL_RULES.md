@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.1 do documento • Fase 00 • 13/10/2026
+Versão 0.1 do documento • Fase 00 • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1)
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -15,13 +15,28 @@ Versão 0.1 do documento • Fase 00 • 13/10/2026
 3. Atores autônomos simulados: Câmara, Senado, partidos/blocos, presidentes das Casas, Banco Central, STF (simplificado), TCU (simplificado), governadores, mercado e opinião pública.
 4. Quando a ação é inválida, o jogo explica o motivo e indica o instrumento correto.
 
+### 1.1 Fidelidade às regras por dificuldade (decisão de 13/10/2026)
+
+| Aspecto | Casual | Estratégica | Realismo Extremo |
+| --- | --- | --- | --- |
+| Regras aplicadas | Simplificadas: sem noventena/anterioridade, compensação da LRF automática, recesso parlamentar ignorado | Completas (quóruns, prazos, LRF, arcabouço, anterioridade, recesso) | Completas, mais regimentos internos, prazos de tramitação reais e calendário orçamentário detalhado |
+| Explicações | Sempre disponíveis em todos os modos: por que uma ação é inválida ou arriscada, e qual o instrumento correto | idem | idem |
+
+**Quebra de regras é permitida, com consequências.** Ações que violam a LRF, o arcabouço, a anterioridade ou a competência de outro ente não são bloqueadas de forma absoluta (exceto o fisicamente impossível, como votar sem quórum). O jogo mostra um **aviso explícito com os riscos** e, se o jogador confirmar, a ação segue marcada com flags de irregularidade que alimentam:
+- `riscoJuridico` (ADI/ADPF e liminares do STF, §8);
+- alertas e parecer do TCU pela rejeição das contas (§8);
+- `pressaoImpeachment` como possível crime de responsabilidade (§10);
+- credibilidade fiscal e prêmio de risco (ECONOMIC_MODEL.md §5.5).
+
+No modo Casual a quebra continua possível e com consequências, mas mais brandas.
+
 ---
 
 ## 2. Competências (quem pode fazer o quê)
 
 | Tema | União | Estados | Municípios | Base |
 | --- | --- | --- | --- | --- |
-| Moeda, câmbio, política monetária | Exclusiva (BC autônomo) | — | — | CF arts. 21, 22, 164; LC 179/2021 |
+| Moeda, câmbio, política monetária | Exclusiva (BC autônomo; o presidente só pode pressionar publicamente, com custo — ECONOMIC_MODEL.md §5.4.1) | — | — | CF arts. 21, 22, 164; LC 179/2021 |
 | Tributos federais (IR, IOF, IPI, CBS, II, IE, IS) | Sim | — | — | CF art. 153, 195; EC 132/2023 |
 | ICMS (até a transição) / IBS (compartilhado) | — | Sim | IBS compartilhado | CF art. 155, 156-A |
 | ISS (até a transição), IPTU | — | — | Sim | CF art. 156 |
@@ -75,19 +90,21 @@ Efetivo das Forças Armadas; criação de cargos e aumento de remuneração na a
 | LDO | Até 15/abr | Metas fiscais, prioridades e regras para a LOA |
 | LOA | Até 31/ago | Receitas e despesas do ano seguinte |
 
-Prazos do ADCT art. 35 §2º. Em jan/2027 vigora a **LOA 2027 votada pelo Congresso anterior**. Se ela não tiver sido aprovada, o jogo aplica a regra de execução provisória prevista na LDO (proporção mensal de despesas). ⚠
+Prazos do ADCT art. 35 §2º. Em jan/2027 vigora a **LOA 2027 votada pelo Congresso anterior**. Se ela não tiver sido aprovada, o jogo aplica a regra de execução provisória prevista na LDO (proporção mensal de despesas). ⚠ Reconferir na LDO 2027 quando aprovada (o PLOA 2027 foi enviado em 31/08/2026).
 
-### 4.2 Regime Fiscal Sustentável (LC 200/2023) ⚠
+### 4.2 Regime Fiscal Sustentável (LC 200/2023) — verificado em 13/10/2026
 - **Limite de despesa primária**: cresce em termos reais **70% da variação real da receita** (50% se a meta de primário do ano anterior não tiver sido cumprida), com piso de **0,6%** e teto de **2,5%** de crescimento real.
 - **Meta de resultado primário** definida na LDO, com **banda de tolerância de ±0,25 p.p. do PIB**.
 - Descumprimento aciona **gatilhos** de contenção (restrições a criação de despesas, reajustes e concursos) e reduz o crescimento permitido do limite.
-- Exceções ao limite (lista legal): parte delas é parâmetro do cenário.
+- Exceções ao limite (lista legal): parte delas é parâmetro do cenário. A exclusão de precatórios do limite (PEC 66/2023) e as ADIs 7064/7047 no STF tornam esse ponto instável: tratar como parâmetro.
+- Pacote de dez/2024: com déficit primário a partir de 2025, fica vedada no ano seguinte a criação, ampliação ou prorrogação de benefícios tributários (gatilho no cenário).
+- Limite de despesas primárias da LOA 2026: R$ 2,428 tri (referência para calibrar o cenário de 2027).
 
 ### 4.3 Mínimos constitucionais e despesas vinculadas
-- Saúde: mínimo de **15% da receita corrente líquida** da União (CF art. 198). ⚠
+- Saúde: mínimo de **15% da receita corrente líquida** da União (CF art. 198, redação da EC 86/2015), em vigor desde o fim do teto de gastos. ✔ 13/10/2026 (piso de 2026: R$ 254,9 bi). Há propostas de mudar a base de cálculo e o governo já sinalizou dificuldade para cumprir os pisos em 2027: bom gancho de evento.
 - Educação: mínimo de **18% da receita de impostos**, líquida de transferências (CF art. 212).
-- **Emendas parlamentares impositivas**: individuais (2% da RCL do exercício anterior) e de bancada estadual (1% da RCL) (CF art. 166). ⚠
-- Benefícios previdenciários e BPC vinculados ao **salário mínimo**, que segue regra legal de valorização com limite de crescimento real compatível com o arcabouço. ⚠
+- **Emendas parlamentares impositivas**: individuais **2% da RCL** do exercício anterior (1,55% deputados, 0,45% senadores; metade para saúde — EC 126/2022) e de bancada estadual **1% da RCL** (EC 100/2019) (CF art. 166). A LC 210/2024 passou a limitar o crescimento das emendas pelas regras do arcabouço (0,6%–2,5% reais). ✔ 13/10/2026 (LOA 2026: R$ 61 bi em emendas). A parcela de bancada para 2027 deve ser reconferida na LDO 2027.
+- Benefícios previdenciários e BPC vinculados ao **salário mínimo**. Regra (Lei 15.077/2024, até 2030): INPC de 12 meses até novembro + crescimento real do PIB de dois anos antes, **limitado à faixa do arcabouço (0,6%–2,5% reais)**. ✔ 13/10/2026 (2026: R$ 1.621; PLOA 2027 prevê ~R$ 1.741).
 
 ### 4.4 Execução
 - **Relatório bimestral de avaliação de receitas e despesas**: se a receita frustrar a meta → **contingenciamento**; se a despesa obrigatória crescer acima do limite → **bloqueio**.
@@ -112,14 +129,15 @@ Prazos do ADCT art. 35 §2º. Em jan/2027 vigora a **LOA 2027 votada pelo Congre
 | Imposto de Renda | Sim | Não | Não |
 | Contribuições sociais (CF 195 §6º) | Não | Sim (90 dias) | Não |
 | CIDE-combustíveis (redução e restabelecimento) | Não | Sim | Sim |
-| CBS / Imposto Seletivo | ⚠ verificar regras da EC 132/2023 e da LC 214/2025 | ⚠ | ⚠ |
+| CBS / IBS | Não (regra própria de transição; alíquota de referência fixada por resolução do Senado) | Sim | Não |
+| Imposto Seletivo | Não | Sim | Não (alíquotas por lei ordinária) |
 
 **Redução** de tributo pode valer de imediato; **aumento** respeita a tabela acima. MP que aumente impostos (exceto II, IE, IPI, IOF e extraordinário) só produz efeito no exercício seguinte se convertida em lei até o fim do ano (CF art. 62 §2º).
 
-### 5.2 Reforma tributária sobre o consumo (EC 132/2023, LC 214/2025) ⚠
-Situação esperada para o cenário de 2027, a confirmar na Fase 03:
+### 5.2 Reforma tributária sobre o consumo (EC 132/2023, LC 214/2025, alterada pela LC 227/2026) — verificado em 13/10/2026
+Situação para o cenário de 2027 (fontes secundárias; reconferir o texto compilado antes da Fase 03):
 - 2026: fase de teste da CBS e do IBS com alíquotas reduzidas.
-- **2027: CBS em vigor de forma integral; PIS/Cofins extintos; IPI reduzido a zero, exceto para produtos com industrialização incentivada na Zona Franca de Manaus; início do Imposto Seletivo.**
+- **2027: CBS cobrada integralmente (alíquota de referência estimada pela Fazenda em ~8,8%, com redutor de 0,1 p.p. em 2027–2028); PIS/Cofins extintos; IPI reduzido a zero, exceto para produtos da Zona Franca de Manaus; IBS simbólico de 0,1% (0,05% estadual + 0,05% municipal); início do Imposto Seletivo** (veículos, embarcações, aeronaves, fumo, bebidas alcoólicas e açucaradas, bens minerais, apostas), com alíquotas dependentes de lei ordinária ainda não aprovada — no jogo, a definição dessas alíquotas pode ser uma decisão do jogador em 2027.
 - 2029–2032: transição gradual de ICMS/ISS para IBS.
 - 2033: sistema novo integral.
 
@@ -179,7 +197,7 @@ Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamenta
 
 - **STF**: legitimados (partidos com representação no Congresso, governadores, Mesas, PGR, OAB, entidades de classe nacionais) podem propor ADI/ADPF. Cada medida tem um `riscoJuridico` (0–1) calculado a partir de flags (ex.: renúncia sem compensação, MP sem urgência, invasão de competência estadual). Probabilidade mensal de ação e de liminar suspendendo a medida = f(riscoJuridico, interesse dos legitimados).
 - **TCU**: emite alertas sobre execução e contas. Parecer pela rejeição das contas aumenta o risco de impeachment e afeta a credibilidade. O julgamento das contas é feito pelo Congresso.
-- **Indicações**: vagas no STF e na diretoria do BC surgem conforme calendário do cenário; exigem aprovação do Senado (maioria absoluta para ministro do STF; maioria simples após sabatina para diretores do BC ⚠).
+- **Indicações**: vagas no STF e na diretoria do BC surgem conforme calendário do cenário; exigem aprovação do Senado (maioria absoluta para ministro do STF, CF art. 101; maioria simples em votação secreta após arguição para presidente e diretores do BC, CF art. 52, III, d ✔).
 
 ---
 
@@ -202,8 +220,8 @@ Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamenta
 ## 11. Eleições (resumo; detalhamento na Fase 08)
 - Eleições gerais em out/2030 (presidente, governadores, Senado 2/3, Câmara); municipais em out/2028 (afetam bases parlamentares e governadores aliados).
 - 1º turno no primeiro domingo de outubro; 2º turno no último domingo de outubro, se nenhum candidato obtiver maioria absoluta dos votos válidos (CF art. 77).
-- Reeleição para um único período subsequente (CF art. 14 §5º). ⚠ Há propostas de alteração em discussão; a regra é parâmetro do cenário.
-- Desincompatibilização e propaganda eleitoral restringem ações nos meses anteriores à eleição (Lei 9.504/1997, condutas vedadas). ⚠
+- Reeleição para um único período subsequente (CF art. 14 §5º). ✔ 13/10/2026: a PEC 12/2022 (fim da reeleição, mandatos de 5 anos) foi aprovada na CCJ do Senado em mai/2025 e desmembrada, sem aprovação em plenário; mesmo pelo texto da CCJ, o presidente eleito em 2026 ainda poderia disputar a reeleição em 2030. Fica como parâmetro do cenário e candidata a evento/PEC dentro do jogo.
+- Condutas vedadas (Lei 9.504/1997, art. 73): nos 3 meses anteriores à eleição ficam proibidas transferências voluntárias a estados e municípios (salvo obra em andamento e emergência), publicidade institucional e nomeações/demissões de servidores (com exceções); revisão geral de remuneração dos servidores acima da inflação é vedada a partir de 180 dias antes. Em ano eleitoral, programas sociais novos também são restringidos (art. 73 §10). ✔
 
 ---
 
@@ -215,7 +233,7 @@ Este é o catálogo-semente. As 8 primeiras compõem o protótipo (ver [GAME_DES
 | --- | --- | --- | --- | --- |
 | 1 | Crédito adicional para infraestrutura | Infraestrutura | PLN + execução | Espaço no limite do arcabouço ou corte compensatório; capacidade de execução |
 | 2 | Redução do IOF sobre crédito | Economia | Decreto | Imediato; LRF art. 14 (compensação); efeito sobre o crédito e a arrecadação |
-| 3 | Alteração da tabela e das deduções do IRPF | Tributação | PL ordinário | Anterioridade anual; LRF art. 14 se houver perda de receita ⚠ partir da lei vigente em 2027 |
+| 3 | Alteração da tabela e das deduções do IRPF | Tributação | PL ordinário | Anterioridade anual; LRF art. 14 se houver perda de receita. Partir da Lei 15.270/2025 (isenção até R$ 5 mil/mês, desconto até R$ 7.350 e imposto mínimo para rendas acima de R$ 600 mil/ano, em vigor desde jan/2026) ✔ |
 | 4 | Contingenciamento de discricionárias | Fiscal | Decreto | Não atinge obrigatórias nem emendas impositivas além do limite legal |
 | 5 | Ampliação de programa de transferência de renda | Social | PL / crédito adicional + regulamento | LRF arts. 16–17 se for despesa continuada; limite do arcabouço |
 | 6 | Programa federal de segurança cooperativa | Segurança | PL ou MP + convênios | Adesão voluntária dos estados; competência estadual das polícias |

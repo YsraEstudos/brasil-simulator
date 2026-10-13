@@ -1,6 +1,6 @@
 # Brasil Simulator — Modelo Econômico
 
-Versão 0.1 do documento • Fase 00 • 13/10/2026
+Versão 0.1 do documento • Fase 00 • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (pressão sobre o BC permitida; incerteza varia com a dificuldade)
 
 > **Status:** especificação inicial. Todas as equações são **forma reduzida simplificada** e todos os parâmetros estão marcados como `A_CALIBRAR` até a Fase 03. Nenhum número deste documento é previsão.
 
@@ -114,7 +114,25 @@ Somente em meses com reunião do Copom (8 por ano, calendário no cenário):
 i_alvo = rn_t + pe_t + phi_pi * (pe_t − meta) + phi_h * h_t
 Selic_t = arredondar_25bp( suav * Selic_{t-1} + (1 − suav) * i_alvo )
 ```
-Limite de movimento por reunião: `max_passo` (ex.: 100 bp; 150 bp em crise). O jogador **não controla** esta regra; pode apenas influenciar indiretamente (política fiscal, comunicação, indicações para a diretoria quando houver vaga).
+Limite de movimento por reunião: `max_passo` (ex.: 100 bp; 150 bp em crise). O jogador **não controla** esta regra; pode influenciá-la indiretamente (política fiscal, comunicação, indicações para a diretoria quando houver vaga) ou por **pressão pública** (§5.4.1).
+
+#### 5.4.1 Pressão pública sobre o Banco Central
+
+Ação de agenda "Pressionar o Banco Central" (custo 1 ponto). Decisão de design de 13/10/2026: o jogador **pode** tentar forçar juros menores, mas paga em credibilidade.
+
+```
+submissao_t = sub_base * fracao_diretoria_indicada_t * (1 − autonomia_percebida_t)    // 0–1
+i_alvo'     = i_alvo − pressao_max_bp * submissao_t                                   // só na próxima reunião do Copom
+cred_t      = cred_{t-1} − custo_cred * (1 + n_pressoes_12m)                           // repetir custa cada vez mais
+rp_t       += custo_rp * n_pressoes_12m
+```
+
+- O BC pode **resistir** (submissão baixa): a diretoria indicada pelo governo anterior e a alta autonomia percebida reduzem o efeito. Nesse caso o jogador paga o custo e não ganha o corte.
+- A queda de `cred_t` desancora `pe_t` (§5.3): o juro cai agora, mas a inflação esperada sobe e, nos meses seguintes, o próprio BC tende a subir a Selic acima do que subiria sem a pressão.
+- O mercado reage no mesmo mês (prêmio de risco ↑, câmbio ↑). A aprovação pode subir no curto prazo.
+- O relatório "Por que mudou?" atribui explicitamente esses efeitos à pressão.
+- Parâmetros iniciais (`A_CALIBRAR`): `sub_base` 0,6; `pressao_max_bp` 50; `custo_cred` 0,05; `custo_rp` 0,002.
+- Teste de sentido obrigatório: em 24 meses, uma estratégia-robô que pressiona o BC todo trimestre deve ter inflação média **maior** e não deve ter crescimento acumulado sistematicamente maior que a mesma estratégia sem pressão.
 
 ### 5.5 Prêmio de risco e câmbio
 ```

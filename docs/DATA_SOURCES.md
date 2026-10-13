@@ -1,6 +1,6 @@
 # Brasil Simulator — Fontes de Dados
 
-Versão 0.1 do documento • Fase 00 • 13/10/2026
+Versão 0.1 do documento • Fase 00 • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (cenário de 2027 com dados reais mais recentes + projeções para fechar 2026; nova versão de cenário a cada atualização)
 
 ---
 
@@ -11,6 +11,7 @@ Versão 0.1 do documento • Fase 00 • 13/10/2026
 3. **Cenários congelados.** Cada cenário publicado tem versão e checksum. Uma atualização de dados gera **nova versão de cenário** e nunca altera campanhas salvas em andamento.
 4. **Real, projetado, estimado e fictício são separados** e identificáveis no próprio dado.
 5. **Licenças registradas.** Cada fonte tem seus termos de uso anotados antes da primeira importação.
+6. **Cenário inicial `brasil-2027-01`** (decisão de 13/10/2026): usa os dados oficiais mais recentes disponíveis (`REAL`) e fecha o restante de 2026 com projeções reconhecidas (Focus, PLOA 2027) marcadas como `PROJETADO`. Quando saírem os dados reais, publica-se nova versão do cenário.
 
 ---
 
@@ -119,7 +120,14 @@ scripts/data/
 
 | Data | Item | Fonte consultada | Resultado | Responsável |
 | --- | --- | --- | --- | --- |
-| _(vazio)_ | | | | |
+| 13/10/2026 | Regime Fiscal Sustentável (70%/50%, banda 0,6–2,5%, pacote dez/2024, PEC 66/2023) | Senado — Limites LC 200/2023; Consultoria de Orçamento da Câmara (Estudo 26/2025); IFI RAF 103 | Regra confirmada; precatórios instáveis (parâmetro) | Claude (pesquisa web) |
+| 13/10/2026 | Piso da saúde 15% RCL | Relatório da LOA 2026 / imprensa especializada | Confirmado (R$ 254,9 bi em 2026) | Claude (pesquisa web) |
+| 13/10/2026 | Emendas impositivas 2% + 1% RCL, LC 210/2024 | EC 126/2022, EC 100/2019, Portaria GM/MS 10.297/2026 | Confirmado; parcela de bancada 2027 a reconferir na LDO | Claude (pesquisa web) |
+| 13/10/2026 | Salário mínimo (Lei 15.077/2024) | Imprensa (valor 2026 R$ 1.621; PLOA 2027) | Confirmado | Claude (pesquisa web) |
+| 13/10/2026 | IRPF (Lei 15.270/2025) | Imprensa e guias tributários | Confirmado: isenção até R$ 5 mil desde jan/2026, imposto mínimo acima de R$ 600 mil/ano | Claude (pesquisa web) |
+| 13/10/2026 | Reforma tributária 2027 (CBS, IPI, IBS, IS) | Guias tributários e imprensa (fontes secundárias) | Confirmado em linhas gerais; reconferir LC 214/2025 compilada (LC 227/2026) na Fase 03 | Claude (pesquisa web) |
+| 13/10/2026 | Reeleição (PEC 12/2022) | Imprensa (CCJ do Senado, mai/2025) | Regra atual mantida; PEC não aprovada em plenário | Claude (pesquisa web) |
+| 13/10/2026 | Aprovação de diretores do BC e ministros do STF; condutas vedadas | CF arts. 52 e 101; Lei 9.504/1997 art. 73 | Confirmado pelo texto legal | Claude |
 
 Itens marcados com ⚠ em [POLITICAL_RULES.md](POLITICAL_RULES.md) devem ser registrados aqui quando verificados.
 

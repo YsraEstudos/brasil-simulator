@@ -1,6 +1,6 @@
 # Brasil Simulator — Instruções para Agentes de IA
 
-Versão 0.1 do documento • 13/10/2026
+Versão 0.1 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026
 Este arquivo vale para qualquer assistente de programação (Claude Code, Codex etc.) que trabalhe no repositório.
 
 ---

@@ -1,6 +1,6 @@
 # Brasil Simulator — Documento de Design do Jogo (GDD)
 
-Versão 0.1 do documento • Fase 00 • 13/10/2026
+Versão 0.1 do documento • Fase 00 • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada)
 Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RULES.md](POLITICAL_RULES.md) · [DATA_SOURCES.md](DATA_SOURCES.md) · [ROADMAP.md](ROADMAP.md) · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)
 
 ---
@@ -46,16 +46,16 @@ O jogador é um **presidente fictício** que toma posse em **5 de janeiro de 202
 | Sanção e veto | Sancionar, vetar total ou parcialmente | Congresso pode derrubar o veto |
 | Negociação política | Ceder ministérios, priorizar emendas, alterar texto, apoiar candidaturas | Sim: partidos e líderes |
 | Relação federativa | Propor convênios, transferências voluntárias, programas nacionais | Sim: governadores aderem ou não |
-| Comunicação | Pronunciamentos, campanhas, posicionamento em crises | Efeito sobre opinião pública e mercado |
+| Comunicação | Pronunciamentos, campanhas, posicionamento em crises, **pressão pública sobre o Banco Central** | Efeito sobre opinião pública e mercado; a pressão sobre o BC tem custo de credibilidade ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.4.1) |
 | Indicações | Diretoria do Banco Central quando houver vaga, ministros do STF quando houver vaga | Sabatina e aprovação no Senado |
 
 ### 3.2 O que o jogador NÃO PODE fazer
 
 - Definir diretamente PIB, inflação, desemprego, câmbio ou qualquer indicador de resultado.
-- Fixar a taxa Selic. O Banco Central é autônomo (LC 179/2021) e é simulado como agente próprio.
+- Fixar a taxa Selic. O Banco Central é autônomo (LC 179/2021) e é simulado como agente próprio. O jogador pode **pressioná-lo publicamente**, o que pode antecipar cortes de juros, mas cobra caro em credibilidade e expectativas de inflação.
 - Comandar o orçamento de estados e municípios.
 - Ignorar decisões judiciais ou o resultado de votações.
-- Gastar além das autorizações orçamentárias sem consequência legal e política.
+- Gastar além das autorizações orçamentárias ou descumprir a LRF **sem consequência**: é possível quebrar regras, mas isso gera risco jurídico, alertas do TCU e pressão por impeachment.
 
 Quando o jogador tenta algo que não é sua competência, o jogo **explica o motivo** e sugere o instrumento correto (por exemplo, "Segurança pública estadual é competência do governador. Você pode propor um convênio ou um programa federal de cooperação.").
 
@@ -124,6 +124,10 @@ As três dificuldades usam **o mesmo motor**. Elas mudam parâmetros, visibilida
 | Explicações | Detalhadas e com dica | Detalhadas | Cadeia causal estimada, com incerteza |
 | Previsões dos ministérios | Precisas | Com margem de erro | Com margem de erro e viés institucional |
 | Eventos negativos | Menos frequentes | Calibrados | Calibrados, encadeados |
+| Regras legais | Simplificadas | Completas | Completas e detalhadas |
+| Quebra de regras | Permitida, consequências brandas | Permitida, com STF/TCU/impeachment | idem, mais severas |
+
+Detalhes em [POLITICAL_RULES.md](POLITICAL_RULES.md) §1.1. Explicações estão sempre disponíveis, em qualquer modo.
 
 ---
 
