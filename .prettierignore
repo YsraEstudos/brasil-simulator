@@ -6,3 +6,6 @@ assets/
 src/globe/data/
 package-lock.json
 *.md
+
+# Gerado por npm run sim:sensitivity
+docs/CALIBRATION.md
