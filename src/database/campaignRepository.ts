@@ -46,9 +46,15 @@ export async function createCampaign(
 
 /**
  * Grava o resultado de um mês: decisões enviadas (aceitas primeiro, depois recusadas, cada grupo na ordem
- * de envio) e o novo estado. Tudo numa transação: fechar o app no meio não deixa o save pela metade.
+ * de envio), o novo estado e, se `finish`, o encerramento da campanha. Tudo numa transação: fechar o app no
+ * meio não deixa o save pela metade (nem um último mês gravado com a campanha ainda "ativa").
  */
-export async function recordMonth(db: SqlDatabase, campaignId: string, result: MonthResult): Promise<void> {
+export async function recordMonth(
+  db: SqlDatabase,
+  campaignId: string,
+  result: MonthResult,
+  options: { finish?: boolean } = {},
+): Promise<void> {
   const { report, state } = result;
   const rows: { decision: Decision; accepted: boolean; reason: string | null }[] = [
     ...report.accepted.map((decision) => ({ decision, accepted: true, reason: null })),
@@ -57,9 +63,10 @@ export async function recordMonth(db: SqlDatabase, campaignId: string, result: M
   await db.transaction(async () => {
     const updated = await db.run(
       `UPDATE campaigns SET current_month = ?, engine_version = ?,
+         status = CASE WHEN ? THEN 'encerrada' ELSE status END,
          updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
        WHERE id = ? AND current_month = ?`,
-      [state.monthIndex, state.engineVersion, campaignId, report.monthIndex],
+      [state.monthIndex, state.engineVersion, options.finish ? 1 : 0, campaignId, report.monthIndex],
     );
     if (updated.changes !== 1) {
       throw new Error(`campanha ${campaignId} não está no mês ${report.monthIndex}`);
@@ -119,6 +126,23 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }));
+}
+
+/** Estado salvo de um mês específico (ex.: o anterior, para mostrar variações). `null` se não existir. */
+export async function loadStateAt(db: SqlDatabase, campaignId: string, monthIndex: number): Promise<GameState | null> {
+  const row = await db.first<{ state_schema_version: number; state_json: string }>(
+    'SELECT state_schema_version, state_json FROM snapshots WHERE campaign_id = ? AND month_index = ?',
+    [campaignId, monthIndex],
+  );
+  return row ? upgradeState(row.state_schema_version, row.state_json) : null;
+}
+
+/** Marca a campanha como encerrada (fim do protótipo, do mandato, impeachment…). */
+export async function finishCampaign(db: SqlDatabase, campaignId: string): Promise<void> {
+  await db.run(
+    `UPDATE campaigns SET status = 'encerrada', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
+    [campaignId],
+  );
 }
 
 /** Apaga a campanha e, em cascata, snapshots, decisões e eventos. */

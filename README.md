@@ -19,3 +19,7 @@ Jogo de estratégia e simulação política por turnos para Android (e, depois, 
 
 ## Tecnologia planejada
 React Native + Expo + TypeScript · Expo Router · Zustand · Expo SQLite · Zod · Vitest · Maestro · EAS Build
+
+## Web (somente desenvolvimento)
+
+A versão web serve para testar telas durante o desenvolvimento; o jogo é publicado para Android e iOS. O salvamento na web usa o SQLite em WebAssembly, que exige os cabeçalhos `Cross-Origin-Embedder-Policy: credentialless` e `Cross-Origin-Opener-Policy: same-origin`. O servidor de desenvolvimento (`npx expo start --web`) já os envia (`metro.config.js`); uma exportação web publicada precisaria configurá-los na hospedagem.

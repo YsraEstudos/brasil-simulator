@@ -1,4 +1,5 @@
 export * from './campaignRepository';
+export { getSetting, setSetting } from './settingsRepository';
 export { currentVersion, DatabaseTooNewError, migrate } from './migrate';
 export { LATEST_DB_VERSION, MIGRATIONS, type Migration } from './migrations';
 export { DATABASE_NAME, openDatabase } from './openDatabase';

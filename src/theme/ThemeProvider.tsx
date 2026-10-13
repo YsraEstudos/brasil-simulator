@@ -1,7 +1,8 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
 import { Colors, type ColorScheme, type TextScale, type ThemeColors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { gameStore, useGame } from '@/store';
 
 export interface Theme {
   scheme: ColorScheme;
@@ -13,11 +14,13 @@ export interface Theme {
 
 const ThemeContext = createContext<Theme | null>(null);
 
-/** Fornece cores do esquema do sistema e a escala de texto (persistida nas configurações a partir do item 10). */
+const setTextScale = (scale: TextScale) => void gameStore.getState().setTextScale(scale);
+
+/** Cores do esquema do sistema e escala de texto (salva nas configurações do banco). */
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
   const scheme: ColorScheme = system === 'dark' ? 'dark' : 'light';
-  const [textScale, setTextScale] = useState<TextScale>(1);
+  const textScale = useGame((s) => s.textScale);
   const value = useMemo(() => ({ scheme, colors: Colors[scheme], textScale, setTextScale }), [scheme, textScale]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

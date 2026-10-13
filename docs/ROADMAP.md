@@ -23,7 +23,7 @@ Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 | Fase | Nome | Estimativa | Critério de conclusão | Status |
 | --- | --- | --- | --- | --- |
 | 00 | Pré-produção e regras | 1–2 sem | Explicar sem código o caminho decisão → Congresso → orçamento → execução → indicadores | ✅ Concluída em 13/10/2026 (documentos revisados, D1–D3 decididas, itens ⚠ verificados) |
-| 01 | Fundação técnica e interface | 2–3 sem | App instalado no Android, navegação funcional, partida salva após fechar e reabrir | 🟡 Expo SDK 57, 5 abas, globo 3D, repositório e CI prontos; faltam motor, SQLite, salvamento |
+| 01 | Fundação técnica e interface | 2–3 sem | App instalado no Android, navegação funcional, partida salva após fechar e reabrir | 🟡 Itens 1–10 prontos (motor, Zod, SQLite, design, salvar/retomar); falta build de desenvolvimento própria (item 11) e conferir o salvamento no aparelho |
 | 02 | Protótipo jogável | 3–4 sem | 12 meses jogáveis, decisões diferentes → consequências diferentes, salvar/retomar | ⬜ |
 | 03 | Motor econômico | 4–6 sem | Campanhas automáticas de 20 anos sem inconsistências ou explosões injustificadas | ⬜ |
 | 04 | Congresso e instituições | 3–5 sem | Propor, negociar e acompanhar uma reforma com resultado plausível | ⬜ |
@@ -63,7 +63,7 @@ Ordem sugerida, uma tarefa por branch/PR:
 7. ✅ Banco SQLite: tabelas `campaigns`, `snapshots`, `decisions`, `events`, `schema_migrations`; sistema de migrações versionado com testes (expo-sqlite no app, `node:sqlite` nos testes).
 8. ✅ Sistema de design: tokens de cor (claro/escuro), tipografia, escala de texto ajustável, componentes base (Card, Indicator, Alert, Button). Vitrine em `/design`; a escala de texto passa a ser salva no item 10.
 9. ✅ Navegação: 5 abas — Presidência, Economia, Congresso, Brasil, Notícias.
-10. Criar, salvar, fechar e retomar uma partida fictícia.
+10. ✅ Criar, salvar, fechar e retomar uma partida fictícia (tela Presidência, store Zustand, cenário `prototipo_ficticio`, tamanho do texto salvo). Verificado na web; falta conferir no aparelho.
 11. 🟡 Rodando no Expo Go em aparelho Android físico (moto g20); falta build de desenvolvimento própria.
 
 ### 4.1 Globo 3D (antecipado da Fase 05 a pedido, 13/10/2026)

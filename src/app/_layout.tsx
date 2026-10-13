@@ -6,12 +6,12 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useTheme } from '@/hooks/use-theme';
+import { gameStore } from '@/store';
 import { AppThemeProvider } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync();
 
-// Enquanto o protótipo do globo é a única tela pronta, o app abre nele.
-export const unstable_settings = { initialRouteName: 'brasil' };
+export const unstable_settings = { initialRouteName: 'index' };
 
 const ICONS: Record<string, SymbolViewProps['name']> = {
   index: { ios: 'building.columns', android: 'account_balance', web: 'account_balance' },
@@ -31,7 +31,11 @@ const TITLES: Record<string, string> = {
 
 export default function RootLayout() {
   useEffect(() => {
-    SplashScreen.hideAsync();
+    // Abre o banco (migra se preciso) e carrega preferências e partidas salvas.
+    void gameStore
+      .getState()
+      .init()
+      .finally(() => SplashScreen.hideAsync());
   }, []);
 
   return (
