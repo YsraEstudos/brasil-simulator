@@ -201,20 +201,20 @@ RASCUNHO
 Em cada transição o motor grava: data, causa, atores envolvidos e valores. Essa trilha de auditoria alimenta o relatório de consequências.
 
 ### 9.1 Campos estruturados de uma política
-Toda política do catálogo é um arquivo de dados (JSON validado por Zod) com:
+Toda política do catálogo é um arquivo de dados (JSON validado por Zod em `src/types/policy.ts`). As chaves ficam em inglês no JSON (decisão D2) e os valores em português; correspondência entre parênteses:
 
 | Campo | Exemplo |
 | --- | --- |
 | `id` | `infraestrutura_ferrovias` |
-| `competencia` | `federal` |
-| `instrumento` | `credito_adicional` + `ato_execucao` |
-| `custo` | valor por mês/ano e perfil de desembolso |
-| `fonteFinanciamento` | dotação existente, remanejamento, crédito adicional, operação de crédito |
-| `prazos` | planejamento, tramitação esperada, execução, maturação |
-| `condicoes` | espaço no limite de despesas, quórum, vedações |
-| `impactos` | canais afetados (demanda, capital público, renda de grupos, receita) e parâmetros |
-| `riscos` | atraso, sobrecusto, judicialização, baixa adesão |
-| `afetados` | grupos de renda, setores, regiões |
+| `competencia` (`competence`) | `federal` |
+| `instrumento` (`instruments`) | `credito_adicional` + `ato_execucao` |
+| `custo` (`cost`) | valor por mês/ano e perfil de desembolso |
+| `fonteFinanciamento` (`fundingSources`) | dotação existente, remanejamento, crédito adicional, operação de crédito |
+| `prazos` (`timeline`) | planejamento, tramitação esperada, execução, maturação |
+| `condicoes` (`conditions`) | espaço no limite de despesas, quórum, vedações |
+| `impactos` (`impacts`) | canais afetados (demanda, capital público, renda de grupos, receita) e parâmetros |
+| `riscos` (`risks`) | atraso, sobrecusto, judicialização, baixa adesão |
+| `afetados` (`affected`) | grupos de renda, setores, regiões |
 
 ---
 

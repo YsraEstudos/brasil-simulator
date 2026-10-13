@@ -59,7 +59,7 @@ Ordem sugerida, uma tarefa por branch/PR:
 3. ✅ ESLint + Prettier + Vitest; script `npm run check` (tipos, lint, testes).
 4. ✅ GitHub Actions: rodar `check` em todo PR.
 5. ✅ Esqueleto do motor: `src/engine/` com tipos `GameState`, `Decision`, `MonthResult`, PRNG com semente e `advanceMonth()` vazio, com testes de determinismo. **Sem React** (garantido pelo ESLint).
-6. Esquemas Zod para cenário e políticas (`src/types/`).
+6. ✅ Esquemas Zod para cenário e políticas (`src/types/`): valor com fonte/status, política, cenário com blocos e Copom.
 7. Banco SQLite: tabelas `campaigns`, `snapshots`, `decisions`, `events`, `schema_migrations`; sistema de migrações versionado com testes.
 8. Sistema de design: tokens de cor (claro/escuro), tipografia, escala de texto ajustável, componentes base (Card, Indicator, Alert, Button).
 9. ✅ Navegação: 5 abas — Presidência, Economia, Congresso, Brasil, Notícias.
