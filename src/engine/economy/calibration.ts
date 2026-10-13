@@ -117,7 +117,7 @@ export const PARAMS = {
   w_rel: { value: 0.4, min: 0.2, max: 0.6, note: 'peso da relação com o governo (/100)' },
   w_int: { value: 0.2, min: 0.1, max: 0.4, note: 'peso de interesses atendidos (0 ou 1)' },
   w_opiniao: { value: 0.4, min: 0.1, max: 0.8, note: 'peso de (aprovação − 0,5)' },
-  limiar_apoio: { value: 0.3, min: 0.2, max: 0.5, note: 'apoio acima do qual o bloco orienta "sim"' },
+  limiar_apoio: { value: 0.2, min: 0.1, max: 0.4, note: 'apoio acima do qual o bloco orienta "sim"' },
   inclinacao_apoio: { value: 8, min: 4, max: 12, note: 'inclinação da logística dos votos dissidentes' },
   ruido_apoio: { value: 0.08, min: 0.02, max: 0.15, note: 'desvio do sorteio de apoio por bloco e votação' },
   bonus_casual: { value: 0.1, min: 0, max: 0.2, note: 'Congresso mais receptivo no Casual (GAME_DESIGN.md §6)' },
@@ -146,6 +146,9 @@ export const PARAMS = {
     max: 0.06,
     note: 'credibilidade perdida ao executar acima do limite de despesas',
   },
+
+  // ── Eventos (GAME_DESIGN.md §11.3) ──────────────────────────────────────────────────────────────
+  max_eventos_mes: { value: 2, min: 1, max: 3, note: 'eventos novos por mês, no máximo' },
 } as const satisfies Record<string, ParamSpec>;
 
 export type ParamName = keyof typeof PARAMS;
