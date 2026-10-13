@@ -23,7 +23,7 @@ Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 | Fase | Nome | Estimativa | Critério de conclusão | Status |
 | --- | --- | --- | --- | --- |
 | 00 | Pré-produção e regras | 1–2 sem | Explicar sem código o caminho decisão → Congresso → orçamento → execução → indicadores | ✅ Concluída em 13/10/2026 (documentos revisados, D1–D3 decididas, itens ⚠ verificados) |
-| 01 | Fundação técnica e interface | 2–3 sem | App instalado no Android, navegação funcional, partida salva após fechar e reabrir | 🟡 Itens 1–10 prontos (motor, Zod, SQLite, design, salvar/retomar); falta build de desenvolvimento própria (item 11). Salvamento conferido no aparelho em 13/10/2026 |
+| 01 | Fundação técnica e interface | 2–3 sem | App instalado no Android, navegação funcional, partida salva após fechar e reabrir | ✅ Concluída em 13/10/2026 (rodando no Expo Go no moto g20; build própria adiada, ver item 11) |
 | 02 | Protótipo jogável | 3–4 sem | 12 meses jogáveis, decisões diferentes → consequências diferentes, salvar/retomar | ⬜ |
 | 03 | Motor econômico | 4–6 sem | Campanhas automáticas de 20 anos sem inconsistências ou explosões injustificadas | ⬜ |
 | 04 | Congresso e instituições | 3–5 sem | Propor, negociar e acompanhar uma reforma com resultado plausível | ⬜ |
@@ -85,7 +85,7 @@ Ordem sugerida, uma tarefa por branch/PR:
 8. ✅ Sistema de design: tokens de cor (claro/escuro), tipografia, escala de texto ajustável, componentes base (Card, Indicator, Alert, Button). Vitrine em `/design`; a escala de texto passa a ser salva no item 10.
 9. ✅ Navegação: 5 abas — Presidência, Economia, Congresso, Brasil, Notícias.
 10. ✅ Criar, salvar, fechar e retomar uma partida fictícia (tela Presidência, store Zustand, cenário `prototipo_ficticio`, tamanho do texto salvo). Verificado na web e no moto g20 via Expo Go (criar, encerrar meses, fechar à força o app, reabrir e continuar).
-11. 🟡 Rodando no Expo Go em aparelho Android físico (moto g20); falta build de desenvolvimento própria.
+11. ⏸ Rodando no Expo Go em aparelho Android físico (moto g20). Build de desenvolvimento própria **adiada** (decisão de 13/10/2026: o lançamento está distante). Fazer quando acontecer o primeiro destes gatilhos: (a) adicionar biblioteca nativa que não existe no Expo Go; (b) o Expo Go da Play Store passar a exigir um SDK mais novo que o do projeto (atualizar o SDK ou gerar a build); (c) medir FPS e memória de verdade, que exige build de release; (d) preparação da Fase 10.
 
 ### 4.1 Globo 3D (antecipado da Fase 05 a pedido, 13/10/2026)
 
