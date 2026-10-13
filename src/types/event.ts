@@ -59,6 +59,10 @@ export const conditionVariableSchema = z.enum([
   'limitExcess',
   /** Mês do jogo (0 = jan/2027), para eventos de início de mandato. */
   'monthIndex',
+  /** Ministérios ocupados por indicação de bloco (POLITICAL_RULES.md §6.3.1). */
+  'partisanMinistries',
+  /** Probabilidade mensal (0–1) de escândalo em algum ministério de bloco; cresce com o tempo no cargo. */
+  'cabinetScandalRisk',
 ]);
 export type ConditionVariable = z.infer<typeof conditionVariableSchema>;
 
@@ -94,6 +98,11 @@ export const eventChoiceSchema = z
     /** Pontos de agenda (GAME_DESIGN.md §4.3: responder evento crítico custa 0 a 2). */
     agendaCost: z.number().int().min(0).max(2),
     effects: z.array(eventEffectSchema),
+    /**
+     * Demite o ministro de bloco há mais tempo no cargo e põe um técnico no lugar, com o custo de demissão
+     * (POLITICAL_RULES.md §6.3.1). Sem ministro de bloco, não faz nada.
+     */
+    dismissMinister: z.boolean().optional(),
   })
   .strict();
 export type EventChoiceDefinition = z.infer<typeof eventChoiceSchema>;
@@ -112,6 +121,8 @@ export const gameEventSchema = z
         conditions: z.array(eventConditionSchema),
         /** Probabilidade mensal quando as condições valem. */
         probability: z.number().min(0).max(1),
+        /** Se presente, a probabilidade é multiplicada pelo valor desta variável, limitado a [0, 1]. */
+        probabilityFactor: conditionVariableSchema.optional(),
         /** Meses mínimos entre duas ocorrências. */
         cooldownMonths: z.number().int().min(0).max(120),
         maxOccurrences: z.number().int().min(1).max(100),

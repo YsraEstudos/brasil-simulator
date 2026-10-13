@@ -13,6 +13,9 @@ export class SaveTooNewError extends Error {
 
 type Raw = Record<string, unknown>;
 
+/** Etapa de quem já passou pelo Congresso: maior que qualquer plano de votação (PEC tem 4 etapas). */
+const FINAL_STAGE = 4;
+
 /**
  * Atualiza um estado salvo para a estrutura atual (AI_INSTRUCTIONS.md §3: saves antigos são atualizados, não
  * recusados). Cada passo converte uma versão na seguinte; só saves **mais novos** que o app são recusados.
@@ -22,6 +25,7 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   let state = raw as Raw;
   if (version < 2) state = v1ToV2(state);
   if (version < 3) state = v2ToV3(state);
+  if (version < 4) state = v3ToV4(state);
   return state as unknown as GameState;
 }
 
@@ -60,6 +64,31 @@ function v2EconomyFallback(): Raw {
     interest: e.interest,
     debtAdjustment: e.debtAdjustment,
   };
+}
+
+/**
+ * v3 (Fase 03) → v4 (Fase 04): entram o gabinete (vazio = ocupantes do cenário) e, nas propostas, etapa,
+ * relator, negociação, acréscimos, veto e ação no STF. Propostas em tramitação recomeçam pela Câmara, com a
+ * votação no mês que já estava marcado; as demais ficam com a etapa final. Texto com escala < 1 conta como
+ * alterado pelo relator.
+ */
+function v3ToV4(s: Raw): Raw {
+  const congress = (s.congress ?? {}) as Raw;
+  const proposals = ((s.proposals ?? []) as Raw[]).map((p) => {
+    const inCongress = p.status === 'em_tramitacao' || p.status === 'parada';
+    return {
+      ...p,
+      stage: inCongress ? 0 : FINAL_STAGE,
+      rapporteur: null,
+      textAltered: typeof p.scale === 'number' && p.scale < 1,
+      postponements: 0,
+      negotiation: { blocs: {}, amendments: false, textConceded: false, urgency: false },
+      rider: 0,
+      veto: null,
+      judicial: null,
+    };
+  });
+  return { ...s, schemaVersion: 4, congress: { ...congress, cabinet: [] }, proposals };
 }
 
 /**

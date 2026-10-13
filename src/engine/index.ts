@@ -8,7 +8,47 @@ export {
   type ParamName,
   type ParamSpec,
 } from './economy/calibration';
-export { AGENDA_ACTIONS, isAgendaAction, PRESSURE_ACTION_ID, type AgendaAction } from './actions';
+export {
+  actionKey,
+  AGENDA_ACTIONS,
+  AMENDMENTS_ACTION_ID,
+  APPOINT_ACTION_ID,
+  CONCEDE_ACTION_ID,
+  isAgendaAction,
+  NEGOTIATE_ACTION_ID,
+  PRESSURE_ACTION_ID,
+  SANCTION_ACTION_ID,
+  SANCTION_CHOICES,
+  URGENCY_ACTION_ID,
+  type AgendaAction,
+  type SanctionChoice,
+} from './actions';
+export { validateActionTarget } from './agenda';
+export {
+  cabinetScandalRisk,
+  cabinetSupport,
+  isPartisan,
+  ministriesOf,
+  ministryOccupant,
+  ministryScandalChance,
+  ministrySince,
+  partisanMinistries,
+  policyMinistry,
+} from './congress/cabinet';
+export {
+  blocRelation,
+  blocSupport,
+  housePresident,
+  legislativeInstrument,
+  predictVotes,
+  sessionAt,
+  sessionsOf,
+  votingPlan,
+  type Session,
+  type VotePrediction,
+  type VoteStage,
+} from './congress/congress';
+export { currentHouse, pautaOccupancy, pautaSlots } from './proposals/proposals';
 export { fiscalRoom } from './economy/fiscal';
 export { BC_BOARD_SIZE, boardShare } from './economy/monetary';
 export { activeImpulses, isActive, pruneImpulses, sumActive } from './impulses';

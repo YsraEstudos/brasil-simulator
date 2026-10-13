@@ -1,4 +1,6 @@
-import { AGENDA_ACTIONS } from './actions';
+import { actionKey, AGENDA_ACTIONS } from './actions';
+import { validateActionTarget } from './agenda';
+import { cabinetStep } from './congress/cabinet';
 import { congressStep } from './congress/congress';
 import { economyStep } from './economy/economy';
 import { resolveEventsStep, triggerEventsStep } from './events/events';
@@ -6,36 +8,35 @@ import { pruneImpulses } from './impulses';
 import { opinionStep } from './politics/opinion';
 import { proposalsStep } from './proposals/proposals';
 import { createRng } from './rng';
-import type {
-  Contribution,
-  Decision,
-  DecisionRejection,
-  EventChoice,
-  GameContent,
-  GameState,
-  Indicators,
-  MonthInput,
-  MonthResult,
-  MonthStep,
-  ReportDraft,
+import {
+  PROPOSAL_IN_PROGRESS,
+  type Contribution,
+  type Decision,
+  type DecisionRejection,
+  type EventChoice,
+  type GameContent,
+  type GameState,
+  type Indicators,
+  type MonthInput,
+  type MonthResult,
+  type MonthStep,
+  type ReportDraft,
 } from './types';
 
 /**
- * Etapas do mês, na ordem do pipeline (ECONOMIC_MODEL.md §4): respostas a eventos, propostas e Congresso
- * (votações, execução), relações com os blocos, economia, opinião pública e, por fim, sorteio dos eventos
- * que chegam à caixa de entrada do mês seguinte.
+ * Etapas do mês, na ordem do pipeline (ECONOMIC_MODEL.md §4): respostas a eventos, nomeações de ministros,
+ * propostas e Congresso (negociação, votações, sanção, execução), relações com os blocos, economia, opinião
+ * pública e, por fim, sorteio dos eventos que chegam à caixa de entrada do mês seguinte.
  */
 export const DEFAULT_STEPS: readonly MonthStep[] = [
   resolveEventsStep,
+  cabinetStep,
   proposalsStep,
   congressStep,
   economyStep,
   opinionStep,
   triggerEventsStep,
 ];
-
-/** Propostas que ainda ocupam a política (não pode enviar de novo). */
-const IN_PROGRESS = new Set(['em_tramitacao', 'parada', 'aprovada', 'em_execucao']);
 
 /**
  * Processa um mês: valida as escolhas pelos pontos de agenda, roda as etapas e aplica as contribuições.
@@ -108,19 +109,23 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
 
   const accepted: Decision[] = [];
   const rejected: { decision: Decision; reason: DecisionRejection }[] = [];
-  const sent = new Set(state.proposals.filter((p) => IN_PROGRESS.has(p.status)).map((p) => p.policyId));
+  const sent = new Set(state.proposals.filter((p) => PROPOSAL_IN_PROGRESS.has(p.status)).map((p) => p.policyId));
   const actionsDone = new Set<string>();
   for (const decision of input.decisions) {
-    // Ação de agenda (sem proposta): no máximo uma vez por mês, custo do catálogo de ações.
+    // Ação de agenda (sem proposta): uma vez por mês para cada alvo, custo do catálogo de ações.
     const action = Object.hasOwn(AGENDA_ACTIONS, decision.policyId) ? AGENDA_ACTIONS[decision.policyId] : undefined;
     if (action) {
-      if (actionsDone.has(action.id)) {
+      const key = actionKey(action, decision.params);
+      const invalid = validateActionTarget(action, decision, state, content);
+      if (invalid) {
+        rejected.push({ decision, reason: invalid });
+      } else if (actionsDone.has(key)) {
         rejected.push({ decision, reason: 'acao_repetida' });
       } else if (action.agendaCost > left) {
         rejected.push({ decision, reason: 'sem_pontos_de_agenda' });
       } else {
         left -= action.agendaCost;
-        actionsDone.add(action.id);
+        actionsDone.add(key);
         accepted.push({ ...copyDecision(decision), agendaCost: action.agendaCost });
       }
       continue;

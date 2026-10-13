@@ -1,5 +1,20 @@
 import type { ConditionVariable, EventCondition, EventEffect, GameEvent } from '../../types/event';
-import type { GameContent, GameState, MonthStep, PendingEvent, ScheduledImpulse, StepContext } from '../types';
+import {
+  appointMinister,
+  applyAppointment,
+  cabinetScandalRisk,
+  longestServingPartisan,
+  partisanMinistries,
+} from '../congress/cabinet';
+import {
+  TECHNICAL_OCCUPANT,
+  type GameContent,
+  type GameState,
+  type MonthStep,
+  type PendingEvent,
+  type ScheduledImpulse,
+  type StepContext,
+} from '../types';
 
 /**
  * Eventos (GAME_DESIGN.md §11.3; ECONOMIC_MODEL.md §5.11). Duas etapas do mês:
@@ -61,6 +76,8 @@ export function conditionValue(state: Readonly<GameState>, variable: ConditionVa
     discretionarySpending: () => state.economy.fiscal.discretionary,
     limitExcess: () => state.economy.fiscal.limitExcess,
     monthIndex: () => state.monthIndex,
+    partisanMinistries: () => partisanMinistries(state, content).length,
+    cabinetScandalRisk: () => cabinetScandalRisk(state, content),
   };
   return reader[variable]();
 }
@@ -79,6 +96,15 @@ export const resolveEventsStep: MonthStep = (state, ctx: StepContext) => {
   const impulses = [...state.impulses];
   let pending: PendingEvent[] = [...state.events.pending];
   const findEvent = (eventId: string): GameEvent | undefined => ctx.content.events.find((e) => e.id === eventId);
+  // Escolhas que demitem ministro (POLITICAL_RULES.md §6.3.1) alteram o gabinete e as relações.
+  let current: GameState = state;
+  const dismiss = () => {
+    const ministry = longestServingPartisan(current, ctx.content);
+    if (!ministry) return;
+    const appointment = appointMinister(current, ctx.content, ministry, TECHNICAL_OCCUPANT);
+    current = applyAppointment(current, appointment);
+    ctx.draft.notes.push(appointment.note);
+  };
 
   for (const choice of ctx.eventChoices) {
     const index = pending.findIndex((p) => p.eventId === choice.eventId);
@@ -90,6 +116,7 @@ export const resolveEventsStep: MonthStep = (state, ctx: StepContext) => {
     impulses.push(
       ...effectsToImpulses(definition.effects, t, `evento:${choice.eventId}_${entry.monthIndex}`, event.title),
     );
+    if (definition.dismissMinister) dismiss();
     ctx.draft.eventsResolved.push({ eventId: choice.eventId, choiceId: choice.choiceId, automatic: false });
   }
 
@@ -106,15 +133,24 @@ export const resolveEventsStep: MonthStep = (state, ctx: StepContext) => {
       impulses.push(
         ...effectsToImpulses(definition.effects, t, `evento:${entry.eventId}_${entry.monthIndex}`, event.title),
       );
+      if (definition.dismissMinister) dismiss();
       ctx.draft.eventsResolved.push({ eventId: entry.eventId, choiceId: event.defaultChoice, automatic: true });
     }
   }
 
   return {
-    state: { ...state, impulses, events: { ...state.events, pending: remaining } },
+    state: { ...current, impulses, events: { ...state.events, pending: remaining } },
     contributions: [],
   };
 };
+
+/** Probabilidade do evento neste estado: a base, multiplicada pelo fator (limitado a [0, 1]) se houver. */
+export function eventProbability(state: Readonly<GameState>, event: GameEvent, content: GameContent): number {
+  const { probability, probabilityFactor } = event.trigger;
+  if (probabilityFactor === undefined) return probability;
+  const factor = Math.min(1, Math.max(0, conditionValue(state, probabilityFactor, content)));
+  return probability * factor;
+}
 
 /**
  * Sorteia os eventos que aparecem na caixa de entrada do próximo mês (`n = monthIndex + 1`), na ordem do
@@ -141,7 +177,7 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
       (last === undefined || n - last >= trigger.cooldownMonths) &&
       (trigger.monthsOfYear.length === 0 || trigger.monthsOfYear.includes(monthOfYear)) &&
       trigger.conditions.every((c) => conditionHolds(state, c, ctx.content));
-    if (!eligible || !ctx.rng.chance(trigger.probability)) continue;
+    if (!eligible || !ctx.rng.chance(eventProbability(state, event, ctx.content))) continue;
 
     pending.push({ eventId: id, monthIndex: n });
     lastFired[id] = n;

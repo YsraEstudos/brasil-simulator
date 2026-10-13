@@ -109,6 +109,36 @@ export const scenarioFiscalSchema = z
   .strict();
 export type ScenarioFiscal = z.infer<typeof scenarioFiscalSchema>;
 
+/** Ocupante técnico/aliado de um ministério (POLITICAL_RULES.md §6.3.1); os demais ocupantes são ids de bloco. */
+export const TECHNICAL_MINISTER = 'tecnico';
+
+/** Ministério relevante para a coalizão (POLITICAL_RULES.md §6.3.1). */
+export const ministrySchema = z
+  .object({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    /** Áreas de política (`Policy.area`) executadas pela pasta. */
+    areas: z.array(contentIdSchema).min(1),
+    /** Peso político da pasta (0–1): apoio do bloco que a ocupa e relação ganha na nomeação. */
+    weight: unitInterval,
+    /** Ocupante no início: `tecnico` ou id de bloco. */
+    occupant: contentIdSchema,
+  })
+  .strict();
+export type Ministry = z.infer<typeof ministrySchema>;
+
+/**
+ * Instituições do cenário (POLITICAL_RULES.md §6.3, §13): blocos que presidem a Câmara e o Senado e
+ * ministérios. Opcional: sem ele, cada Casa é presidida pelo maior bloco nela e não há ministérios.
+ */
+export const scenarioInstitutionsSchema = z
+  .object({
+    housePresidents: z.object({ camara: contentIdSchema, senado: contentIdSchema }).strict(),
+    ministries: z.array(ministrySchema),
+  })
+  .strict();
+export type ScenarioInstitutions = z.infer<typeof scenarioInstitutionsSchema>;
+
 export const scenarioSchema = z
   .object({
     /** Ex.: `brasil_2027_01` */
@@ -120,6 +150,7 @@ export const scenarioSchema = z
     indicators: scenarioIndicatorsSchema,
     economy: scenarioEconomySchema.optional(),
     fiscal: scenarioFiscalSchema.optional(),
+    institutions: scenarioInstitutionsSchema.optional(),
     /** Parâmetros do modelo (ECONOMIC_MODEL.md §6), todos com status — `A_CALIBRAR` = `PROVISORIO`. */
     parameters: z.record(z.string().regex(/^[a-z][a-z0-9_.]*$/), dataValueSchema),
     blocs: z.array(blocSchema).min(2),
@@ -154,6 +185,31 @@ export const scenarioSchema = z
       'blocs',
     );
     unique(s.policies, 'policies');
+    if (s.institutions) {
+      const blocIds = new Set(s.blocs.map((b) => b.id));
+      for (const house of ['camara', 'senado'] as const) {
+        if (!blocIds.has(s.institutions.housePresidents[house])) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['institutions', 'housePresidents', house],
+            message: `bloco inexistente: ${s.institutions.housePresidents[house]}`,
+          });
+        }
+      }
+      unique(
+        s.institutions.ministries.map((m) => m.id),
+        'institutions',
+      );
+      for (const m of s.institutions.ministries) {
+        if (m.occupant !== TECHNICAL_MINISTER && !blocIds.has(m.occupant)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['institutions', 'ministries', m.id],
+            message: `ocupante deve ser "${TECHNICAL_MINISTER}" ou um bloco: ${m.occupant}`,
+          });
+        }
+      }
+    }
     unique(s.copomMonths.map(String), 'copomMonths');
     const u = s.indicators.unemployment.value;
     if (!(u > 0 && u < 1))

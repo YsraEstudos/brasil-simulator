@@ -27,7 +27,7 @@ function report(overrides: Partial<MonthReport> = {}): MonthReport {
 function withRelation(state: GameState, relation: number): GameState {
   return {
     ...state,
-    congress: { blocs: state.congress.blocs.map((b) => ({ ...b, governmentRelation: relation })) },
+    congress: { ...state.congress, blocs: state.congress.blocs.map((b) => ({ ...b, governmentRelation: relation })) },
   };
 }
 
@@ -87,13 +87,26 @@ describe('headlines', () => {
         {
           proposalId: 'teste_pl_transferencia_0',
           policyId: TEST_BILL.id,
-          transition: { monthIndex: 2, status: 'aprovada', cause: 'votacao_camara', detail: 'Câmara aprovou' },
+          transition: { monthIndex: 2, status: 'aprovada', cause: 'votacao', detail: 'Câmara aprovou' },
+        },
+        {
+          proposalId: 'teste_pl_transferencia_0',
+          policyId: TEST_BILL.id,
+          transition: { monthIndex: 2, status: 'em_tramitacao', cause: 'negociacao', detail: 'Negociação' },
+        },
+        {
+          proposalId: 'teste_pl_transferencia_0',
+          policyId: TEST_BILL.id,
+          transition: { monthIndex: 2, status: 'vetada', cause: 'veto_mantido', detail: 'Veto mantido' },
         },
       ],
     });
     const lines = headlines(r, content);
     expect(lines[0]).toBe('Copom mantém a Selic em 13,00%');
+    // A manchete da votação depende do status final; negociação não vira manchete (causa fora da lista).
     expect(lines).toContain('Congresso aprova: Ampliar transferência de renda (Câmara aprovou)');
+    expect(lines).toContain('Congresso mantém veto: Ampliar transferência de renda (Veto mantido)');
+    expect(lines.some((l) => l.includes('Negociação'))).toBe(false);
     expect(lines).toContain('Urgente: Choque de teste');
     expect(lines).toContain('Sem resposta do governo: Choque de teste');
   });

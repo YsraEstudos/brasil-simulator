@@ -66,6 +66,9 @@ export const PROPOSAL_STATUS_LABEL: Record<ProposalStatus, string> = {
   parada: 'Parada (sem pauta)',
   rejeitada: 'Rejeitada',
   aprovada: 'Aprovada',
+  aguardando_sancao: 'Aguardando sanção',
+  apreciacao_veto: 'Veto em apreciação',
+  vetada: 'Vetada',
   em_execucao: 'Em execução',
   concluida: 'Concluída',
   suspensa: 'Suspensa',
@@ -73,14 +76,10 @@ export const PROPOSAL_STATUS_LABEL: Record<ProposalStatus, string> = {
 };
 
 /** Situações em que a política já está em andamento e não pode ser enviada de novo (motor: advanceMonth). */
-export const PROPOSAL_IN_PROGRESS: ReadonlySet<ProposalStatus> = new Set<ProposalStatus>([
-  'em_tramitacao',
-  'parada',
-  'aprovada',
-  'em_execucao',
-]);
+export { PROPOSAL_IN_PROGRESS } from '@/engine';
 
 export const REJECTION_REASON_LABEL: Record<DecisionRejection, string> = {
+  alvo_invalido: 'alvo da ação indisponível',
   sem_pontos_de_agenda: 'sem pontos de agenda suficientes',
   custo_invalido: 'custo inválido',
   politica_desconhecida: 'política indisponível neste cenário',

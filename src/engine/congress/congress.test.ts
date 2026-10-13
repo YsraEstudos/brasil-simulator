@@ -1,18 +1,30 @@
 import { describe, expect, it } from 'vitest';
 
 import { createRng, seedRng } from '@/engine/rng';
-import { TEST_BILL, TEST_DECREE, TEST_PEC, testContent, testState } from '@/tests/fixtures';
+import { TEST_BILL, TEST_DECREE, TEST_PEC, TEST_SCENARIO, testContent, testState } from '@/tests/fixtures';
 import type { GameState, ScheduledImpulse } from '@/engine/types';
 import type { Policy } from '@/types/policy';
 
-import { congressStep, legislativeInstrument, predictVotes, voteStage, votingPlan, type VoteStage } from './congress';
+import {
+  blocSupport,
+  congressStep,
+  housePresident,
+  legislativeInstrument,
+  predictVotes,
+  sessionsOf,
+  vetoOverrideSupport,
+  vetoPlan,
+  voteStage,
+  votingPlan,
+  type VoteStage,
+} from './congress';
 
 const content = testContent();
 
 function withRelations(state: GameState, relation: number): GameState {
   return {
     ...state,
-    congress: { blocs: content.scenario.blocs.map((b) => ({ id: b.id, governmentRelation: relation })) },
+    congress: { blocs: content.scenario.blocs.map((b) => ({ id: b.id, governmentRelation: relation })), cabinet: [] },
   };
 }
 
@@ -154,7 +166,7 @@ describe('congressStep (POLITICAL_RULES.md §6.1)', () => {
   });
 
   it('sem estado de blocos, parte da relação do cenário', () => {
-    const state = withImpulse({ ...testState(), congress: { blocs: [] } }, 10);
+    const state = withImpulse({ ...testState(), congress: { blocs: [], cabinet: [] } }, 10);
     const { state: next } = congressStep(state, ctxOf(state));
     expect(next.congress.blocs).toHaveLength(content.scenario.blocs.length);
     expect(next.congress.blocs.find((b) => b.id === 'centro')?.governmentRelation).toBe(20);
@@ -170,3 +182,77 @@ function ctxOf(state: GameState) {
     draft: { proposalChanges: [], eventsResolved: [], eventsFired: [], notes: [], copom: null },
   };
 }
+
+describe('sessões e presidências (POLITICAL_RULES.md §6.3–6.4)', () => {
+  it('PEC: uma sessão por Casa, com os dois turnos juntos', () => {
+    const sessions = sessionsOf('pec');
+    expect(sessions.map((s) => [s.house, s.start, s.stages.length])).toEqual([
+      ['camara', 0, 2],
+      ['senado', 2, 2],
+    ]);
+  });
+
+  it('PL: Câmara e depois Senado; PLN: uma sessão conjunta', () => {
+    expect(sessionsOf('projeto_lei').map((s) => s.house)).toEqual(['camara', 'senado']);
+    const pln = sessionsOf('pln');
+    expect(pln).toHaveLength(1);
+    expect(pln[0]?.house).toBeNull();
+    expect(pln[0]?.stages.map((s) => s.house)).toEqual(['camara', 'senado']);
+  });
+
+  it('veto: derrubada por maioria absoluta de cada Casa (CF art. 66 §4º: 257 / 41)', () => {
+    expect(vetoPlan().map((s) => s.required)).toEqual([257, 41]);
+  });
+
+  it('presidente da Casa: o do cenário ou, sem instituições, o maior bloco', () => {
+    expect(housePresident(content, 'camara')?.id).toBe('centro');
+    const sem = testContent({ scenario: { ...TEST_SCENARIO, institutions: undefined } });
+    expect(housePresident(sem, 'camara')?.id).toBe('centro');
+    expect(housePresident(sem, 'senado')?.id).toBe('centro');
+  });
+});
+
+describe('apoio negociado e veto (POLITICAL_RULES.md §6.2, §7)', () => {
+  const centro = TEST_SCENARIO.blocs[1];
+  const esquerda = TEST_SCENARIO.blocs[0];
+  const proposal = {
+    id: 'p',
+    policyId: TEST_PEC.id,
+    createdMonth: 0,
+    status: 'em_tramitacao' as const,
+    scale: 1,
+    voteMonth: 2,
+    stage: 0,
+    rapporteur: null,
+    textAltered: false,
+    postponements: 0,
+    negotiation: { blocs: {}, amendments: false, textConceded: false, urgency: false },
+    rider: 0,
+    veto: null,
+    judicial: null,
+    executionStart: null,
+    executionEnd: null,
+    votes: [],
+    history: [],
+  };
+
+  it('emendas liberadas valem mais para o bloco que cobra emendas', () => {
+    const s = testState();
+    const c = content.calibration;
+    const comEmendas = { ...proposal, negotiation: { ...proposal.negotiation, amendments: true } };
+    const ganho = (bloc: typeof centro) =>
+      blocSupport(s, TEST_PEC, bloc, content, comEmendas) - blocSupport(s, TEST_PEC, bloc, content, proposal);
+    expect(ganho(centro)).toBeCloseTo(c.apoio_emendas + c.apoio_emendas_interesse, 12);
+    expect(ganho(esquerda)).toBeCloseTo(c.apoio_emendas, 12);
+  });
+
+  it('base fiel não derruba veto: relação maior, menos apoio à derrubada', () => {
+    const fiel = withRelations(testState(), 100);
+    const hostil = withRelations(testState(), -100);
+    for (const kind of ['total', 'acrescimos'] as const) {
+      expect(vetoOverrideSupport(fiel, TEST_BILL, centro, kind, content)).toBeLessThan(
+        vetoOverrideSupport(hostil, TEST_BILL, centro, kind, content),
+      );
+    }
+  });
+});

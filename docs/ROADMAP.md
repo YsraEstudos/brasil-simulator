@@ -66,7 +66,7 @@ Revisão externa avaliada em 13/10/2026. A ordem das fases não mudou (o motor j
 - [x] `DATA_SOURCES.md`: status dos dados, metadados, fontes, variáveis do cenário, pipeline
 - [x] `AI_INSTRUCTIONS.md`: regras obrigatórias para agentes de IA
 - [x] Revisão humana dos cinco documentos (13/10/2026)
-- [x] Resolver as decisões que bloqueiam as Fases 01–02 (D1, D2, D3 — §7.1)
+- [x] Resolver as decisões que bloqueiam as Fases 01–02 (D1, D2, D3 — §8.1)
 - [x] Verificar os itens ⚠ de POLITICAL_RULES.md que afetam o protótipo (13/10/2026; registro em DATA_SOURCES.md §6). Restam: execução provisória da LOA (aguarda LDO 2027) e texto compilado da LC 214/2025.
 
 ---
@@ -135,11 +135,29 @@ Branch `feat/fase-03-motor-economico`. Estado v3 (saves v2 atualizados), motor 0
 
 **Fora do escopo da Fase 03:** setores, quintis e 27 UFs (Fases 05–06); carteira de projetos e capital público explícito (§5.10, Fase 06); importação de dados oficiais (o cenário de jan/2027 só existirá depois de dez/2026).
 
+## 7. Fase 04 — plano de tarefas
+
+Branch `feat/fase-04-congresso` (a partir da Fase 03). Estado v4 (saves v3 atualizados), motor 0.4.0, cenário `brasil_2027_01` v0.3.0. Critério: propor, negociar e acompanhar uma reforma com resultado plausível.
+
+1. ⬜ **Câmara e Senado separadas** (POLITICAL_RULES.md §6.4): a proposta vota numa Casa e só depois segue para a outra, com prazo próprio em cada uma; PEC vota os dois turnos na mesma Casa. **Capacidade de pauta por Casa**, com PEC ocupando 2 vagas (§6.3).
+2. ⬜ **Relator e presidentes das Casas**: relator sorteado por Casa (peso das cadeiras e do bloco que preside a Casa); relator com pouco apoio altera o texto e pode incluir acréscimos estranhos ao projeto; presidente da Casa com relação ruim deixa de pautar (adiamento registrado).
+3. ⬜ **Negociação por proposta** (ações de agenda com alvo): negociar com um bloco, liberar emendas, ceder no texto e pedir urgência constitucional (PL e PLP). **Emendas como pedágio**: em votação difícil sem emendas liberadas, os líderes adiam a votação; as emendas saem do espaço das discricionárias (ECONOMIC_MODEL.md §5.8).
+4. ⬜ **Ministérios técnicos ou partidários** (POLITICAL_RULES.md §6.3.1): nomear e demitir, com apoio do bloco nas votações, execução pior das políticas da pasta, pasta que trava políticas contrárias ao bloco e risco de escândalo que cresce com o tempo no cargo (evento "Escândalo em ministério").
+5. ⬜ **Sanção e veto** (§7): aprovação final → sanção no mês seguinte (silêncio = sanção tácita); veto total ou só dos acréscimos; apreciação do veto em sessão conjunta (derrubada por maioria absoluta de cada Casa).
+6. ⬜ **Medida provisória** (§3, CF art. 62): perde a eficácia se não for convertida em 120 dias; depois de 45 dias tranca a pauta da Casa onde está.
+7. ⬜ **STF e escândalo na execução** (§8): os riscos `judicializacao` e `escandalo` das políticas passam a ter efeito (liminar que suspende a execução, julgamento que pode derrubar a medida; perda de aprovação), com risco jurídico maior quando há quebra de regra (LRF, limite).
+8. ⬜ **Conteúdo**: política "Reforma da previdência (parâmetros)" (PEC, catálogo nº 18); ministérios e presidências das Casas no cenário v0.3.0.
+9. ⬜ **Estratégia-robô fisiológica** (cede ministérios, libera emendas e negocia para aprovar reformas) e teste de plausibilidade da reforma: sem negociação a PEC costuma cair; com negociação passa, com custo fiscal, de texto e de escândalo.
+10. ⬜ **Interface**: aba Congresso com as duas Casas, presidentes, pauta, ministérios e propostas por etapa com votos previstos; negociação e nomeações entram na agenda do mês; sanção e veto na caixa de entrada.
+11. ⬜ **Documentos e calibração**: POLITICAL_RULES, GAME_DESIGN, ECONOMIC_MODEL, DATA_SOURCES; `npm run sim:sensitivity` regenerando docs/CALIBRATION.md.
+
+**Fora do escopo da Fase 04:** impeachment, CPIs e parecer do TCU (proposta: Fase 07, com eventos encadeados); comissões permanentes individuais, emendas de plenário e parlamentares individuais (Fase 09); recesso de julho e convocação extraordinária (o turno é mensal: só janeiro é recesso); indicações ao STF.
+
 ---
 
-## 7. Decisões
+## 8. Decisões
 
-### 7.1 Tomadas
+### 8.1 Tomadas
 
 | # | Decisão | Escolha | Data |
 | --- | --- | --- | --- |
@@ -148,7 +166,7 @@ Branch `feat/fase-03-motor-economico`. Estado v3 (saves v2 atualizados), motor 0
 | D3 | Biblioteca de gráficos | **Componentes SVG próprios** (`react-native-svg`): `LineChart`, `BarChart`, `Sparkline`, isolados para permitir troca por victory-native se o Realismo Extremo exigir | 13/10/2026 |
 | D7 | Economia regional | **Agregado nacional primeiro, distribuído às UFs** por matriz de participação e sensibilidade setorial; nunca 27 motores somados (ECONOMIC_MODEL.md §5.12) | 13/10/2026 |
 
-### 7.2 Em aberto
+### 8.2 Em aberto
 
 | # | Decisão | Opções | Recomendação | Bloqueia |
 | --- | --- | --- | --- | --- |
@@ -158,7 +176,7 @@ Branch `feat/fase-03-motor-economico`. Estado v3 (saves v2 atualizados), motor 0
 
 ---
 
-## 8. Riscos principais
+## 9. Riscos principais
 
 | Risco | Medida preventiva |
 | --- | --- |

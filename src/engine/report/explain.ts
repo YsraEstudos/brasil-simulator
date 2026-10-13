@@ -61,13 +61,31 @@ export function explainIndicator(report: MonthReport, key: IndicatorKey): CauseC
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
 }
 
-/** Prefixo da notícia por status de proposta. */
+/** Prefixo da notícia por causa da transição da proposta; causas fora da lista não viram manchete. */
 const PROPOSAL_HEADLINE_PREFIX: Readonly<Record<string, string>> = {
+  enviada: 'Em tramitação',
+  capacidade_pauta: 'Tramitação parada',
+  parecer_relator: 'Relator muda o texto',
+  pedagio_emendas: 'Líderes cobram emendas',
+  presidente_nao_pautou: 'Votação adiada',
+  pauta_trancada_mp: 'Pauta trancada',
+  veto_total: 'Presidente veta',
+  veto_parcial: 'Presidente veta acréscimos',
+  veto_derrubado: 'Congresso derruba veto',
+  veto_mantido: 'Congresso mantém veto',
+  caducidade: 'Medida provisória perde a validade',
+  liminar_stf: 'STF suspende',
+  inconstitucional: 'STF derruba',
+  escandalo_execucao: 'Denúncia',
+  execucao_concluida: 'Concluída',
+};
+
+/** Votação: o prefixo depende de onde a proposta foi parar. */
+const VOTE_HEADLINE_PREFIX: Readonly<Record<string, string>> = {
   aprovada: 'Congresso aprova',
   rejeitada: 'Congresso rejeita',
-  parada: 'Tramitação parada',
-  concluida: 'Concluída',
-  em_tramitacao: 'Em tramitação',
+  em_tramitacao: 'Avança no Congresso',
+  parada: 'Avança no Congresso',
 };
 
 function copomHeadline(copom: NonNullable<MonthReport['copom']>): string {
@@ -91,7 +109,8 @@ export function headlines(report: MonthReport, content: GameContent): string[] {
   if (report.copom) lines.push(copomHeadline(report.copom));
 
   for (const change of report.proposalChanges) {
-    const prefix = PROPOSAL_HEADLINE_PREFIX[change.transition.status];
+    const { cause, status } = change.transition;
+    const prefix = cause === 'votacao' ? VOTE_HEADLINE_PREFIX[status] : PROPOSAL_HEADLINE_PREFIX[cause];
     if (!prefix) continue;
     const name = content.policies[change.policyId]?.name ?? change.policyId;
     const detail = change.transition.detail ? ` (${change.transition.detail})` : '';

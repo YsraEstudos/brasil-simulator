@@ -1,7 +1,14 @@
 import type { EventChoiceDefinition, GameEvent } from '../../types/event';
 import { AGENDA_ACTIONS, PRESSURE_ACTION_ID } from '../actions';
 import { createRng, seedRng, type Rng } from '../rng';
-import type { Decision, EventChoice, GameContent, GameState, MonthInput } from '../types';
+import {
+  PROPOSAL_IN_PROGRESS,
+  type Decision,
+  type EventChoice,
+  type GameContent,
+  type GameState,
+  type MonthInput,
+} from '../types';
 
 /**
  * Estratégias-robô para campanhas automáticas (ECONOMIC_MODEL.md §9). Cada uma é uma função pura do estado:
@@ -12,9 +19,6 @@ export interface Strategy {
   name: string;
   decide(state: GameState, content: GameContent): MonthInput;
 }
-
-/** Propostas que ainda ocupam a política: não se envia de novo (ver `advanceMonth.ts`). */
-const IN_PROGRESS = new Set(['em_tramitacao', 'parada', 'aprovada', 'em_execucao']);
 
 /** Escolhe a resposta de um evento entre as que cabem nos pontos restantes (sempre há a padrão, custo 0). */
 type EventChooser = (event: GameEvent, affordable: readonly EventChoiceDefinition[]) => string;
@@ -47,7 +51,7 @@ const useDefault: EventChooser = (event) => event.defaultChoice;
 
 /** Políticas do cenário que podem ser enviadas agora (existem no catálogo e não estão em andamento). */
 function sendablePolicies(state: GameState, content: GameContent): Set<string> {
-  const busy = new Set(state.proposals.filter((p) => IN_PROGRESS.has(p.status)).map((p) => p.policyId));
+  const busy = new Set(state.proposals.filter((p) => PROPOSAL_IN_PROGRESS.has(p.status)).map((p) => p.policyId));
   return new Set(content.scenario.policies.filter((id) => content.policies[id] !== undefined && !busy.has(id)));
 }
 

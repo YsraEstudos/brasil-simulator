@@ -79,6 +79,26 @@ export const TEST_PEC: Policy = {
   dataStatus: 'PROVISORIO',
 };
 
+/** Medida provisória: vigência imediata; Câmara em 3 meses e Senado em mais 3 (passa dos 120 dias). */
+export const TEST_MP: Policy = {
+  id: 'teste_mp',
+  name: 'MP de teste',
+  summary: 'Medida provisória de teste.',
+  area: 'seguranca',
+  competence: 'federal',
+  instruments: ['medida_provisoria'],
+  agendaCost: 1,
+  cost: { annualMillions: 6000, disbursementProfile: [1] },
+  fundingSources: ['remanejamento'],
+  timeline: { planningMonths: 0, expectedLegislativeMonths: 6, executionMonths: 24, maturationMonths: 0 },
+  conditions: [],
+  impacts: [{ channel: 'custeio', magnitude: 6000, lagMonths: 0 }],
+  risks: [],
+  affected: { groups: [], sectors: [], regions: ['nacional'] },
+  position: { economic: 0, social: 0.3 },
+  dataStatus: 'PROVISORIO',
+};
+
 /** Evento que sempre dispara em março (para testes determinísticos). */
 export const TEST_EVENT: GameEvent = {
   id: 'teste_choque',
@@ -159,14 +179,27 @@ export const TEST_SCENARIO: Scenario = {
       interests: ['agro'],
     },
   ],
+  institutions: {
+    housePresidents: { camara: 'centro', senado: 'centro' },
+    ministries: [
+      { id: 'fazenda', name: 'Fazenda', areas: ['fiscal', 'tributacao'], weight: 1, occupant: 'tecnico' },
+      { id: 'social', name: 'Desenvolvimento Social', areas: ['social'], weight: 0.7, occupant: 'tecnico' },
+      { id: 'gestao', name: 'Gestão', areas: ['estado'], weight: 0.5, occupant: 'tecnico' },
+    ],
+  },
   copomMonths: [1, 3, 5, 6, 7, 9, 11, 12],
-  policies: [TEST_DECREE.id, TEST_BILL.id, TEST_PEC.id],
+  policies: [TEST_DECREE.id, TEST_BILL.id, TEST_PEC.id, TEST_MP.id],
 };
 
 export function testContent(overrides: Partial<GameContent> = {}): GameContent {
   return {
     scenario: TEST_SCENARIO,
-    policies: { [TEST_DECREE.id]: TEST_DECREE, [TEST_BILL.id]: TEST_BILL, [TEST_PEC.id]: TEST_PEC },
+    policies: {
+      [TEST_DECREE.id]: TEST_DECREE,
+      [TEST_BILL.id]: TEST_BILL,
+      [TEST_PEC.id]: TEST_PEC,
+      [TEST_MP.id]: TEST_MP,
+    },
     events: [TEST_EVENT],
     calibration: DEFAULT_CALIBRATION,
     ...overrides,

@@ -5,10 +5,10 @@ import type { Calibration } from './economy/calibration';
 import type { Rng, RngState } from './rng';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 3;
+export const STATE_SCHEMA_VERSION = 4;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.3.0';
+export const ENGINE_VERSION = '0.4.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -207,17 +207,37 @@ export interface ScheduledImpulse {
   endMonth: number | null;
 }
 
-/** Estados da proposta (GAME_DESIGN.md §9). RASCUNHO, VALIDAÇÃO e ENVIADA são transitórios no mesmo mês. */
+/**
+ * Estados da proposta (GAME_DESIGN.md §9). RASCUNHO, VALIDAÇÃO e ENVIADA são transitórios no mesmo mês;
+ * `aprovada` também (no mesmo mês vira `aguardando_sancao` ou, para MP, `em_execucao`).
+ */
 export type ProposalStatus =
   | 'bloqueada'
   | 'em_tramitacao'
   | 'parada'
   | 'rejeitada'
   | 'aprovada'
+  | 'aguardando_sancao'
+  | 'apreciacao_veto'
+  | 'vetada'
   | 'em_execucao'
   | 'concluida'
   | 'suspensa'
   | 'abandonada';
+
+/** Situações em que a política ainda está em andamento: não pode ser enviada de novo. */
+export const PROPOSAL_IN_PROGRESS: ReadonlySet<ProposalStatus> = new Set<ProposalStatus>([
+  'em_tramitacao',
+  'parada',
+  'aprovada',
+  'aguardando_sancao',
+  'apreciacao_veto',
+  'em_execucao',
+  'suspensa',
+]);
+
+/** Situações em que a proposta está no Congresso, antes da votação final (negociação possível). */
+export const PROPOSAL_IN_CONGRESS: ReadonlySet<ProposalStatus> = new Set<ProposalStatus>(['em_tramitacao', 'parada']);
 
 /** Transição registrada na trilha de auditoria da proposta. */
 export interface ProposalTransition {
@@ -252,16 +272,63 @@ export interface VoteResult {
   blocs: BlocVote[];
 }
 
+/** Contrapartidas negociadas para uma proposta (POLITICAL_RULES.md §6.3). */
+export interface ProposalNegotiation {
+  /** Apoio extra por bloco obtido em negociação intensiva (sem unidade, mesma escala de `BlocVote.support`). */
+  blocs: Record<string, number>;
+  /** Emendas liberadas para esta votação (o pedágio foi pago). */
+  amendments: boolean;
+  /** O governo cedeu no texto (a escala já foi reduzida). */
+  textConceded: boolean;
+  /** Urgência constitucional pedida (CF art. 64 §§1º–2º). */
+  urgency: boolean;
+}
+
+/** Ação no STF contra a medida (POLITICAL_RULES.md §8), sorteada quando a execução começa. */
+export interface ProposalJudicial {
+  /** Primeiro mês suspenso pela liminar. */
+  suspendFrom: number;
+  /** Último mês suspenso (o julgamento sai no mês seguinte). */
+  suspendTo: number;
+  /** O julgamento derruba a medida: a execução não volta. */
+  struckDown: boolean;
+}
+
+/** `total`: veto ao projeto inteiro. `acrescimos`: veto parcial só aos acréscimos do relator. */
+export type VetoKind = 'total' | 'acrescimos';
+
+export interface ProposalVeto {
+  kind: VetoKind;
+  /** `null` enquanto o Congresso não apreciou; `true` = veto derrubado. */
+  overridden: boolean | null;
+}
+
 export interface Proposal {
   /** `${policyId}_${createdMonth}` */
   id: string;
   policyId: string;
   createdMonth: number;
   status: ProposalStatus;
-  /** Fração do texto original que sobreviveu (1 = original; < 1 = alterado pelo relator). */
+  /** Fração do texto original que sobreviveu (1 = original; < 1 = alterado pelo relator ou cedido pelo governo). */
   scale: number;
-  /** Mês previsto da votação (só propostas legislativas). */
+  /**
+   * Mês da próxima etapa: votação na Casa atual (em tramitação), sanção (aguardando sanção) ou sessão do veto
+   * pendente (veto total em apreciação, ou veto aos acréscimos de uma lei já em execução). `null` sem etapa marcada.
+   */
   voteMonth: number | null;
+  /** Índice, em `votingPlan`, da próxima etapa a votar (= número de etapas depois da votação final). */
+  stage: number;
+  /** Bloco do relator na Casa atual (`null` fora da tramitação). */
+  rapporteur: string | null;
+  /** O relator alterou o texto (uma vez por proposta; o texto alterado ganha apoio de todos os blocos). */
+  textAltered: boolean;
+  /** Adiamentos na etapa atual (pedágio, presidente da Casa); limitados por `max_adiamentos`. */
+  postponements: number;
+  negotiation: ProposalNegotiation;
+  /** Acréscimos estranhos ao projeto incluídos pelo relator: despesa extra, fração do PIB ao ano (0 = nenhum). */
+  rider: number;
+  veto: ProposalVeto | null;
+  judicial: ProposalJudicial | null;
   /** Primeiro e último mês de execução (null antes de executar; last null = permanente). */
   executionStart: number | null;
   executionEnd: number | null;
@@ -276,8 +343,21 @@ export interface BlocState {
   governmentRelation: number;
 }
 
+/** Ocupante de ministério: quadro técnico/aliado ou indicação de bloco (POLITICAL_RULES.md §6.3.1). */
+export const TECHNICAL_OCCUPANT = 'tecnico';
+
+export interface MinistryState {
+  id: string;
+  /** `TECHNICAL_OCCUPANT` ou o id do bloco que indicou o ministro. */
+  occupant: string;
+  /** Mês da nomeação (o risco de escândalo cresce com o tempo no cargo). */
+  since: number;
+}
+
 export interface CongressState {
   blocs: BlocState[];
+  /** Ministérios cujo ocupante mudou desde o início; os demais seguem o cenário. */
+  cabinet: MinistryState[];
 }
 
 /** Evento à espera de resposta do jogador (GAME_DESIGN.md §4.2, caixa de entrada). */
@@ -320,6 +400,7 @@ export interface MonthInput {
 }
 
 export type DecisionRejection =
+  | 'alvo_invalido'
   | 'sem_pontos_de_agenda'
   | 'custo_invalido'
   | 'politica_desconhecida'

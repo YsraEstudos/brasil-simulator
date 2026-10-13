@@ -93,7 +93,10 @@ export function createInitialState(c: NewCampaign): GameState {
       agendaPointsPerMonth: AGENDA_POINTS[c.difficulty],
     },
     economy: initialEconomy(scenario, calibration),
-    congress: { blocs: scenario.blocs.map((b) => ({ id: b.id, governmentRelation: b.governmentRelation })) },
+    congress: {
+      blocs: scenario.blocs.map((b) => ({ id: b.id, governmentRelation: b.governmentRelation })),
+      cabinet: [],
+    },
     proposals: [],
     impulses: [],
     events: { pending: [], lastFired: {}, count: {} },

@@ -6,7 +6,7 @@ import { TEST_EVENT, testContent, testState } from '@/tests/fixtures';
 import type { GameContent, GameState, MonthInput, MonthResult, MonthStep, ReportDraft } from '@/engine/types';
 import type { GameEvent } from '@/types/event';
 
-import { conditionValue, resolveEventsStep, triggerEventsStep } from './events';
+import { conditionValue, eventProbability, resolveEventsStep, triggerEventsStep } from './events';
 
 /** GAME_DESIGN.md §11.3: eventos aparecem na caixa de entrada, pedem escolha e têm escolha padrão. */
 
@@ -130,9 +130,70 @@ describe('eventos: condições (GAME_DESIGN.md §11.3)', () => {
 
   it('congressRelation usa a relação inicial do cenário quando não há blocos no estado', () => {
     const content = testContent();
-    const state = { ...testState(), congress: { blocs: [] } };
+    const state = { ...testState(), congress: { blocs: [], cabinet: [] } };
     // Cenário: esquerda 40, centro 10, direita −30 → média 20/3.
     expect(conditionValue(state, 'congressRelation', content)).toBeCloseTo(20 / 3, 10);
+  });
+});
+
+describe('eventos: escândalo em ministério (POLITICAL_RULES.md §6.3.1)', () => {
+  /** Evento que só dispara com pasta de bloco, com probabilidade escalada pelo risco do gabinete. */
+  const SCANDAL: GameEvent = {
+    ...TEST_EVENT,
+    id: 'teste_escandalo',
+    trigger: {
+      monthsOfYear: [],
+      conditions: [{ variable: 'partisanMinistries', op: 'gt', value: 0 }],
+      probability: 1,
+      probabilityFactor: 'cabinetScandalRisk',
+      cooldownMonths: 0,
+      maxOccurrences: 1,
+    },
+    choices: [
+      { id: 'defender', label: 'Defender', description: 'Defende.', agendaCost: 0, effects: [] },
+      { id: 'demitir', label: 'Demitir', description: 'Demite.', agendaCost: 1, effects: [], dismissMinister: true },
+    ],
+    defaultChoice: 'defender',
+  };
+
+  function withMinister(state: GameState, occupant: string, since = 0): GameState {
+    return { ...state, congress: { ...state.congress, cabinet: [{ id: 'fazenda', occupant, since }] } };
+  }
+
+  it('gabinete técnico: o evento nunca dispara (condição partisanMinistries)', () => {
+    const content = testContent({ events: [SCANDAL] });
+    const { firedByMonth } = runMonths(testState(42, 'estrategica', content), content, 48);
+    expect(firedByMonth).toEqual([]);
+  });
+
+  it('a probabilidade é a base vezes o risco do gabinete, limitado a [0, 1]', () => {
+    const content = testContent({ events: [SCANDAL] });
+    const state = withMinister(testState(), 'centro');
+    expect(eventProbability(state, SCANDAL, content)).toBeCloseTo(
+      conditionValue(state, 'cabinetScandalRisk', content),
+      12,
+    );
+    expect(conditionValue(state, 'partisanMinistries', content)).toBe(1);
+    expect(eventProbability(state, TEST_EVENT, content)).toBe(TEST_EVENT.trigger.probability);
+  });
+
+  it('com pasta de bloco por muitos anos, o evento acaba disparando', () => {
+    const content = testContent({ events: [SCANDAL] });
+    const { firedByMonth } = runMonths(withMinister(testState(), 'centro'), content, 240);
+    expect(firedByMonth.length).toBe(1);
+  });
+
+  it('escolha que demite troca o ministro de bloco por técnico, com custo de capital e relação', () => {
+    const content = testContent({ events: [SCANDAL] });
+    const base = withMinister(testState(), 'centro');
+    const state: GameState = { ...base, events: { ...base.events, pending: [{ eventId: SCANDAL.id, monthIndex: 0 }] } };
+    const out = step(state, content, { decisions: [], eventChoices: [{ eventId: SCANDAL.id, choiceId: 'demitir' }] });
+    expect(out.state.congress.cabinet.find((m) => m.id === 'fazenda')?.occupant).toBe('tecnico');
+    expect(out.state.resources.politicalCapital).toBe(
+      state.resources.politicalCapital + content.calibration.capital_demissao,
+    );
+    const centro = (s: GameState) => s.congress.blocs.find((b) => b.id === 'centro')?.governmentRelation ?? 0;
+    expect(centro(out.state)).toBeCloseTo(centro(state) + content.calibration.relacao_demissao, 10);
   });
 });
 
