@@ -43,6 +43,34 @@ module.exports = defineConfig([
       ],
     },
   },
+  {
+    // Persistência: só motor (tipos) e src/types; nunca a interface (AI_INSTRUCTIONS.md §3).
+    files: ['src/database/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'react',
+                'react-native',
+                '@/app/*',
+                '@/components/*',
+                '@/store/*',
+                '@/globe/*',
+                '../app/*',
+                '../components/*',
+                '../store/*',
+                '../globe/*',
+              ],
+              message: 'Persistência não depende da interface.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Formatação é do Prettier; desliga regras de estilo do ESLint que conflitam.
   prettierConfig,
 ]);
