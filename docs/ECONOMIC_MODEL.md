@@ -206,7 +206,7 @@ interface ScheduledImpulse {
 - Efeitos permanentes já estabilizados são consolidados no estado (ex.: incorporados ao `Kg` ou ao potencial) e saem da fila, para ela não crescer sem limite.
 
 ### 5.12 Distribuição regional (Fase 05+)
-Decisão de arquitetura D7 (13/10/2026, [ROADMAP.md](ROADMAP.md) §6.1): **o agregado nacional é calculado primeiro e distribuído às UFs.**
+Decisão de arquitetura D7 (13/10/2026, [ROADMAP.md](ROADMAP.md) §7.1): **o agregado nacional é calculado primeiro e distribuído às UFs.**
 
 ```
 participacao_uf,t = normalizar( participacao_uf,t-1 * (1 + Σ_s sens_uf,s * crescimento_setor_s,t + bonus_regional_uf,t) )

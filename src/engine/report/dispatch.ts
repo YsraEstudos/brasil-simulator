@@ -2,7 +2,8 @@ import type { Policy } from '../../types/policy';
 import { TERM_MONTHS } from '../calendar';
 import { legislativeInstrument, predictVotes, type VotePrediction } from '../congress/congress';
 import { createRng, seedRng } from '../rng';
-import { nominalGdpMillions } from '../state';
+import { fiscalRoom } from '../economy/fiscal';
+import { currentNominalGdpMillions } from '../state';
 import type { GameContent, GameState } from '../types';
 
 import { pct, pp } from './format';
@@ -49,7 +50,7 @@ const SPENDING_CHANNELS: ReadonlySet<string> = new Set([
   'despesa_obrigatoria',
 ]);
 const RELIEF_CHANNELS: ReadonlySet<string> = new Set(['desoneracao_consumo', 'desoneracao_renda']);
-const REVENUE_CHANNEL = 'receita_tributaria';
+const REVENUE_CHANNELS: ReadonlySet<string> = new Set(['receita_tributaria', 'receita_renda', 'receita_consumo']);
 const APPROVAL_CHANNEL = 'aprovacao';
 
 /** Constantes do FNV-1a, usadas para misturar a semente do parecer. */
@@ -82,7 +83,7 @@ function sumMagnitude(policy: Policy, channels: ReadonlySet<string>): number {
 function fiscalParts(policy: Policy, gdpMillions: number): FiscalParts {
   const spending = sumMagnitude(policy, SPENDING_CHANNELS) / gdpMillions;
   const relief = sumMagnitude(policy, RELIEF_CHANNELS) / gdpMillions;
-  const revenue = sumMagnitude(policy, new Set([REVENUE_CHANNEL])) / gdpMillions;
+  const revenue = sumMagnitude(policy, REVENUE_CHANNELS) / gdpMillions;
   return { fiscal: spending + relief - revenue, spending, expansion: spending + relief };
 }
 
@@ -93,9 +94,12 @@ function fazendaOpinion(state: Readonly<GameState>, content: GameContent, parts:
 
   if (fiscal > 0) {
     sentences.push(`Custo de ${pct(fiscal, 2)} do PIB ao ano; piora o resultado primário.`);
-    const limit = content.calibration.limite_despesa;
-    if (spending > 0 && state.economy.primarySpending + spending > limit) {
+    const { room, aboveFloor } = fiscalRoom(state.economy.fiscal, content.calibration);
+    if (spending > room) {
       sentences.push('Estoura o limite de despesas: exige corte compensatório.');
+      tone = 'desfavoravel';
+    } else if (spending > aboveFloor) {
+      sentences.push('Cabe no limite, mas comprime as discricionárias abaixo do piso: risco de paralisação.');
       tone = 'desfavoravel';
     }
   } else if (fiscal < 0) {
@@ -173,7 +177,7 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
   const policy = content.policies[policyId];
   if (!policy) throw new RangeError(`política desconhecida: ${policyId}`);
 
-  const parts = fiscalParts(policy, nominalGdpMillions(content));
+  const parts = fiscalParts(policy, currentNominalGdpMillions(state, content));
   const approvalImpact = sumMagnitude(policy, new Set([APPROVAL_CHANNEL]));
 
   let articulacao: Opinion = { text: 'Ato do Executivo: não depende do Congresso.', tone: 'neutro' };

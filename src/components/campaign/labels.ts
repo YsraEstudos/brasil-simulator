@@ -84,6 +84,7 @@ export const REJECTION_REASON_LABEL: Record<DecisionRejection, string> = {
   sem_pontos_de_agenda: 'sem pontos de agenda suficientes',
   custo_invalido: 'custo inválido',
   politica_desconhecida: 'política indisponível neste cenário',
+  acao_repetida: 'ação já feita neste mês',
   ja_em_andamento: 'já está em andamento',
   evento_nao_pendente: 'o evento não está mais pendente',
   escolha_invalida: 'escolha inválida',

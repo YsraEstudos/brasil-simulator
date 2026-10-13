@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { TEST_BILL, TEST_DECREE, TEST_PEC, testContent, testState } from '@/tests/fixtures';
 
-import { advanceMonth, type GameState, type MonthResult, type MonthStep } from '../engine';
+import { advanceMonth, STATE_SCHEMA_VERSION, type GameState, type MonthResult, type MonthStep } from '../engine';
 import {
   CampaignNotFoundError,
   createCampaign,
@@ -237,7 +237,7 @@ describe('campanhas', () => {
     ]);
   });
 
-  it('carrega um save da v1 (Fase 01) atualizado para a v2, sem recusá-lo', async () => {
+  it('carrega um save da v1 (Fase 01) atualizado para a versão atual, sem recusá-lo', async () => {
     // Save real da Fase 01 gravado por SQL, como estava no banco antes da migração (AI_INSTRUCTIONS.md §2.10).
     const v1State =
       '{"schemaVersion":1,"engineVersion":"0.1.0","scenarioId":"prototipo_ficticio","difficulty":"casual","seed":1,"rng":[1,2,3,4],"monthIndex":3,"indicators":{"approval":0.45,"gdpGrowth12m":0.02,"inflation12m":0.045,"unemployment":0.06,"primaryBalance12m":-0.004},"resources":{"politicalCapital":70,"agendaPointsPerMonth":4},"decisionLog":[]}';
@@ -251,7 +251,7 @@ describe('campanhas', () => {
     );
 
     const state = await loadLatestState(db, 'antiga');
-    expect(state.schemaVersion).toBe(2);
+    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
     expect(state.monthIndex).toBe(3);
     expect(state.indicators).toEqual({
       approval: 0.45,

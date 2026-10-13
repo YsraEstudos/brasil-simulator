@@ -54,7 +54,13 @@ export const impactChannelSchema = z.enum([
   'desoneracao_consumo',
   'desoneracao_renda',
   'receita_tributaria',
+  /** Carga sobre a renda (IR): sujeita a repartição com estados e municípios e a saída de capital. */
+  'receita_renda',
+  /** Carga sobre o consumo (CBS, Imposto Seletivo). */
+  'receita_consumo',
   'despesa_obrigatoria',
+  /** Ganho real extra do salário mínimo no próximo reajuste de janeiro (fração). */
+  'salario_minimo_real',
   'credito',
   'capital_publico',
   'aprovacao',

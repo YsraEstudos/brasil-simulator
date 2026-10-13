@@ -15,12 +15,17 @@ export const impulseTargetSchema = z.enum([
   'gasto.transferencia_alta_renda',
   'gasto.obrigatoria',
   'receita.tributaria',
+  'receita.renda',
+  'receita.consumo',
   'receita.desoneracao_consumo',
   'receita.desoneracao_renda',
   'demanda.credito',
   'oferta.potencial',
   'choque.hiato',
   'choque.inflacao',
+  'choque.risco',
+  'choque.cambio',
+  'salario_minimo',
   'credibilidade',
   'aprovacao',
   'capital_politico',
@@ -43,6 +48,16 @@ export const conditionVariableSchema = z.enum([
   'congressRelation',
   /** Propostas do governo em tramitação no Congresso. */
   'proposalsInCongress',
+  /** Câmbio R$/US$. */
+  'exchangeRate',
+  /** Prêmio de risco soberano (fração). */
+  'riskPremium',
+  /** Discricionárias livres executadas no mês (fração do PIB). */
+  'discretionarySpending',
+  /** Despesa acima do limite do arcabouço no mês (fração do PIB). */
+  'limitExcess',
+  /** Mês do jogo (0 = jan/2027), para eventos de início de mandato. */
+  'monthIndex',
 ]);
 export type ConditionVariable = z.infer<typeof conditionVariableSchema>;
 

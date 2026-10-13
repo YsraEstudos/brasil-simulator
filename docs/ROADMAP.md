@@ -66,7 +66,7 @@ Revisão externa avaliada em 13/10/2026. A ordem das fases não mudou (o motor j
 - [x] `DATA_SOURCES.md`: status dos dados, metadados, fontes, variáveis do cenário, pipeline
 - [x] `AI_INSTRUCTIONS.md`: regras obrigatórias para agentes de IA
 - [x] Revisão humana dos cinco documentos (13/10/2026)
-- [x] Resolver as decisões que bloqueiam as Fases 01–02 (D1, D2, D3 — §6.1)
+- [x] Resolver as decisões que bloqueiam as Fases 01–02 (D1, D2, D3 — §7.1)
 - [x] Verificar os itens ⚠ de POLITICAL_RULES.md que afetam o protótipo (13/10/2026; registro em DATA_SOURCES.md §6). Restam: execução provisória da LOA (aguarda LDO 2027) e texto compilado da LC 214/2025.
 
 ---
@@ -114,11 +114,28 @@ Decisão: a tela "Brasil" é um globo 3D (three.js + @react-three/fiber + expo-g
 
 **Limitações conhecidas ao fim da implementação (para a Fase 03):** a dívida bruta sobe cerca de 5 p.p. do PIB ao ano em todas as estratégias (juros nominais ~9,7% do PIB: taxa implícita e Selic do cenário provisório); as estratégias-robô diferem pouco em inflação e dívida em 12 meses; sem câmbio, prêmio de risco e pressão sobre o BC; riscos de judicialização e escândalo das políticas não são modelados na execução; a pontuação do legado é uma média simples de sinais.
 
+## 6. Fase 03 — plano de tarefas
+
+Branch `feat/fase-03-motor-economico`. Estado v3 (saves v2 atualizados), motor 0.3.0, cenário `brasil_2027_01` v0.2.0.
+
+1. ⬜ **Setor externo e risco** (`src/engine/economy/external.ts`): prêmio de risco saturado (dívida, meta, credibilidade, tributação do capital), câmbio em nível com retorno ao câmbio de equilíbrio, juros externos e termos de troca estocásticos com semente, repasse cambial à inflação e ajuste cambial da dívida (ECONOMIC_MODEL.md §5.5, §8).
+2. ⬜ **Banco Central v2**: juro neutro com prêmio de risco, passo maior em crise e **pressão pública** como ação de agenda, com diretoria indicada pela LC 179/2021 (§5.4, §5.4.1).
+3. ⬜ **Receitas por grupo** com repartição a estados e municípios e **retorno decrescente** das alíquotas (§5.7).
+4. ⬜ **Despesas por grupo, limite do arcabouço e compressão das discricionárias**: limite revisto em janeiro (70%/50% da receita real, faixa 0,6–2,5%), obrigatórias indexadas (benefícios, salário mínimo pela Lei 15.077/2024, vinculações à receita), discricionárias = limite − obrigatórias, piso de funcionamento e estouro registrado (§5.8; POLITICAL_RULES.md §4.2–4.3).
+5. ⬜ **Níveis e contas**: PIB potencial e nível de preços como índices, PIB nominal corrente para converter custos, crescimento nominal mensal na dívida, impulso fiscal estrutural que se dissipa.
+6. ⬜ **Conteúdo de 2027**: política de valorização do salário mínimo; eventos CBS, regimes diferenciados, FNDR, orçamento de transição e paralisação da máquina (GAME_DESIGN.md §11.3).
+7. ⬜ **Invariantes e validação**: §7.4 (limite com exceções registradas) e §7.8 (estado estacionário); campanhas de 240 meses; estratégias distributiva, pró-oferta e pressão sobre o BC; teste de sentido da pressão; cenários de estresse; `npm run sim:balance` com 240 meses.
+8. ⬜ **Sensibilidade e calibração documentada**: justificativa por parâmetro e `npm run sim:sensitivity` (cada parâmetro no mínimo e no máximo da faixa), gerando `docs/CALIBRATION.md`.
+9. ⬜ **Retenção do histórico** (migração 4): série de indicadores por mês; snapshots completos só dos últimos 12 meses (ECONOMIC_MODEL.md §11).
+10. ⬜ **Interface**: aba Economia com câmbio, risco, receitas, limite e discricionárias; ação "Pressionar o Banco Central".
+
+**Fora do escopo da Fase 03:** setores, quintis e 27 UFs (Fases 05–06); carteira de projetos e capital público explícito (§5.10, Fase 06); importação de dados oficiais (o cenário de jan/2027 só existirá depois de dez/2026).
+
 ---
 
-## 6. Decisões
+## 7. Decisões
 
-### 6.1 Tomadas
+### 7.1 Tomadas
 
 | # | Decisão | Escolha | Data |
 | --- | --- | --- | --- |
@@ -127,7 +144,7 @@ Decisão: a tela "Brasil" é um globo 3D (three.js + @react-three/fiber + expo-g
 | D3 | Biblioteca de gráficos | **Componentes SVG próprios** (`react-native-svg`): `LineChart`, `BarChart`, `Sparkline`, isolados para permitir troca por victory-native se o Realismo Extremo exigir | 13/10/2026 |
 | D7 | Economia regional | **Agregado nacional primeiro, distribuído às UFs** por matriz de participação e sensibilidade setorial; nunca 27 motores somados (ECONOMIC_MODEL.md §5.12) | 13/10/2026 |
 
-### 6.2 Em aberto
+### 7.2 Em aberto
 
 | # | Decisão | Opções | Recomendação | Bloqueia |
 | --- | --- | --- | --- | --- |
@@ -137,7 +154,7 @@ Decisão: a tela "Brasil" é um globo 3D (three.js + @react-three/fiber + expo-g
 
 ---
 
-## 7. Riscos principais
+## 8. Riscos principais
 
 | Risco | Medida preventiva |
 | --- | --- |

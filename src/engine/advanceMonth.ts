@@ -1,3 +1,4 @@
+import { AGENDA_ACTIONS } from './actions';
 import { congressStep } from './congress/congress';
 import { economyStep } from './economy/economy';
 import { resolveEventsStep, triggerEventsStep } from './events/events';
@@ -108,7 +109,22 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
   const accepted: Decision[] = [];
   const rejected: { decision: Decision; reason: DecisionRejection }[] = [];
   const sent = new Set(state.proposals.filter((p) => IN_PROGRESS.has(p.status)).map((p) => p.policyId));
+  const actionsDone = new Set<string>();
   for (const decision of input.decisions) {
+    // Ação de agenda (sem proposta): no máximo uma vez por mês, custo do catálogo de ações.
+    const action = Object.hasOwn(AGENDA_ACTIONS, decision.policyId) ? AGENDA_ACTIONS[decision.policyId] : undefined;
+    if (action) {
+      if (actionsDone.has(action.id)) {
+        rejected.push({ decision, reason: 'acao_repetida' });
+      } else if (action.agendaCost > left) {
+        rejected.push({ decision, reason: 'sem_pontos_de_agenda' });
+      } else {
+        left -= action.agendaCost;
+        actionsDone.add(action.id);
+        accepted.push({ ...copyDecision(decision), agendaCost: action.agendaCost });
+      }
+      continue;
+    }
     const policy = content.policies[decision.policyId];
     const cost = policy ? policy.agendaCost : decision.agendaCost;
     if (!policy || !content.scenario.policies.includes(decision.policyId)) {

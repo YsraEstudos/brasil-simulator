@@ -21,6 +21,15 @@ export const CAUSE_LABELS: Readonly<Record<string, string>> = {
   desemprego: 'Desemprego',
   crescimento: 'Crescimento do PIB',
   saturacao: 'Limite de saturação',
+  premio_risco: 'Prêmio de risco',
+  termos_troca: 'Termos de troca',
+  postura_fiscal: 'Limite de despesas e obrigatórias',
+  acomodacao_fiscal: 'Acomodação à política fiscal',
+  cambio: 'Câmbio',
+  pressao_bc: 'Pressão sobre o Banco Central',
+  perda_arrecadacao: 'Perda de arrecadação',
+  compressao_discricionarias: 'Compressão das discricionárias',
+  paralisacao: 'Paralisação de serviços públicos',
 };
 
 /** Uma causa agregada para o "Por que mudou?" de um indicador. */
@@ -62,9 +71,15 @@ const PROPOSAL_HEADLINE_PREFIX: Readonly<Record<string, string>> = {
 };
 
 function copomHeadline(copom: NonNullable<MonthReport['copom']>): string {
-  if (copom.next === copom.previous) return `Copom mantém a Selic em ${pct(copom.next, 2)}`;
+  const pressure =
+    copom.pressureCut !== undefined
+      ? copom.pressureCut > 0
+        ? `; pressão do governo tirou ${pct(copom.pressureCut, 2)} da decisão`
+        : '; o Copom resistiu à pressão do governo'
+      : '';
+  if (copom.next === copom.previous) return `Copom mantém a Selic em ${pct(copom.next, 2)}${pressure}`;
   const verb = copom.next < copom.previous ? 'corta' : 'eleva';
-  return `Copom ${verb} a Selic de ${pct(copom.previous, 2)} para ${pct(copom.next, 2)}`;
+  return `Copom ${verb} a Selic de ${pct(copom.previous, 2)} para ${pct(copom.next, 2)}${pressure}`;
 }
 
 /**

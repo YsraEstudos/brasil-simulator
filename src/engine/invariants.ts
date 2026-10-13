@@ -1,11 +1,12 @@
-import type { GameState, IndicatorKey, MonthReport } from './types';
+import { MANDATORY_GROUPS, REVENUE_GROUPS, type GameState, type IndicatorKey, type MonthReport } from './types';
 
 /** Tolerância numérica para somas de contribuições (indicadores são frações). */
 const EPSILON = 1e-9;
 
 /**
- * Invariantes do ECONOMIC_MODEL.md §7: 1 e 2 (contas públicas), 3 (contribuições), 5 (valores possíveis) e
- * 6 (finitude). O 4 não se aplica ainda. Retorna a lista de violações; vazia = tudo certo.
+ * Invariantes do ECONOMIC_MODEL.md §7: 1 e 2 (contas públicas), 3 (contribuições), 4 (limite de despesas com
+ * exceções registradas), 5 (valores possíveis) e 6 (finitude). O 7 (determinismo) e o 8 (estado estacionário)
+ * são testados nas simulações; o 9 é da Fase 05. Retorna a lista de violações; vazia = tudo certo.
  */
 export function checkInvariants(prev: GameState, next: GameState, report: MonthReport): string[] {
   const errors: string[] = [];
@@ -34,6 +35,32 @@ export function checkInvariants(prev: GameState, next: GameState, report: MonthR
     errors.push(`credibilidade fora de [0, 1]: ${eco.credibility}`);
   }
   if (!(eco.grossDebt > 0)) errors.push(`dívida bruta não positiva: ${eco.grossDebt}`);
+  if (!(eco.exchangeRate > 0)) errors.push(`câmbio não positivo: ${eco.exchangeRate}`);
+  if (!(eco.priceLevel > 0)) errors.push(`nível de preços não positivo: ${eco.priceLevel}`);
+  if (!(eco.potentialIndex > 0)) errors.push(`PIB potencial não positivo: ${eco.potentialIndex}`);
+  if (!(eco.riskPremium >= 0)) errors.push(`prêmio de risco negativo: ${eco.riskPremium}`);
+
+  // Contas por grupo fecham com os totais (ECONOMIC_MODEL.md §5.7–5.8)
+  const f = eco.fiscal;
+  const revenueSum = REVENUE_GROUPS.reduce((s, g) => s + f.revenueByGroup[g], 0);
+  if (Math.abs(revenueSum - eco.revenue) > EPSILON) {
+    errors.push(`receita por grupo não fecha com a receita total: diferença ${revenueSum - eco.revenue}`);
+  }
+  const spendingSum =
+    MANDATORY_GROUPS.reduce((s, g) => s + f.mandatory[g], 0) +
+    f.linked +
+    f.policyMandatory +
+    f.discretionary +
+    f.policyDiscretionary +
+    f.exceptions;
+  if (Math.abs(spendingSum - eco.primarySpending) > EPSILON) {
+    errors.push(`despesa por grupo não fecha com a despesa total: diferença ${spendingSum - eco.primarySpending}`);
+  }
+  if (f.discretionary < 0) errors.push(`discricionárias negativas: ${f.discretionary}`);
+
+  // §7.4: despesa sujeita ao limite ≤ limite + estouro registrado como exceção
+  const overLimit = eco.primarySpending - f.exceptions - f.spendingLimit - f.limitExcess;
+  if (overLimit > EPSILON) errors.push(`despesa acima do limite sem registro: ${overLimit}`);
 
   // §7.1: resultado primário do mês = receita − despesa
   const primaryGap = eco.monthlyPrimary - (eco.revenue - eco.primarySpending);

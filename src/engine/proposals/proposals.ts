@@ -1,8 +1,10 @@
 import { monthKey } from '../calendar';
 import { blocRelation, legislativeInstrument, voteStage, votingPlan } from '../congress/congress';
 import type { VoteStage } from '../congress/congress';
+import { isAgendaAction } from '../actions';
 import type { Calibration } from '../economy/calibration';
-import { nominalGdpMillions } from '../state';
+import { fiscalRoom } from '../economy/fiscal';
+import { currentNominalGdpMillions } from '../state';
 import type { Instrument, Policy } from '../../types/policy';
 import type {
   GameContent,
@@ -49,6 +51,9 @@ const IMPULSE_TARGET: Record<Policy['impacts'][number]['channel'], ImpulseTarget
   desoneracao_consumo: 'receita.desoneracao_consumo',
   desoneracao_renda: 'receita.desoneracao_renda',
   receita_tributaria: 'receita.tributaria',
+  receita_renda: 'receita.renda',
+  receita_consumo: 'receita.consumo',
+  salario_minimo_real: 'salario_minimo',
   credito: 'demanda.credito',
   capital_publico: 'oferta.potencial',
   aprovacao: 'aprovacao',
@@ -91,7 +96,7 @@ export const proposalsStep: MonthStep = (state, ctx) => {
   };
 
   concludeExecutions(run);
-  for (const decision of ctx.decisions) sendPolicy(run, decision.policyId);
+  for (const decision of ctx.decisions) if (!isAgendaAction(decision.policyId)) sendPolicy(run, decision.policyId);
   releaseParked(run);
   runVotes(run);
 
@@ -125,7 +130,7 @@ export function scheduleImpulses(
 ): ImpulseSchedule {
   const c = ctx.content.calibration;
   const t = state.monthIndex;
-  const gdp = nominalGdpMillions(ctx.content);
+  const gdp = currentNominalGdpMillions(state, ctx.content);
   const sourceId = `proposta:${proposalId}`;
   const { executionMonths } = policy.timeline;
   const notes: string[] = [];
@@ -141,6 +146,11 @@ export function scheduleImpulses(
       impulses.push({ ...common, delta: (impact.magnitude / gdp) * scale, startMonth, endMonth });
     } else if (target === 'oferta.potencial') {
       impulses.push({ ...common, delta: impact.magnitude * scale, startMonth, endMonth: null });
+    } else if (target === 'salario_minimo') {
+      // Ganho real extra entra no reajuste de janeiro (o deste mês, se for janeiro; senão o do ano seguinte).
+      // Jan/2027 (mês 0) já vem do cenário: o primeiro reajuste possível é o de jan/2028.
+      const january = Math.max(MESES_POR_ANO, Math.ceil(startMonth / MESES_POR_ANO) * MESES_POR_ANO);
+      impulses.push({ ...common, delta: impact.magnitude * scale, startMonth: january, endMonth: january });
     } else {
       // aprovacao e credibilidade: efeito de um único mês.
       impulses.push({ ...common, delta: impact.magnitude * scale, startMonth, endMonth: startMonth });
@@ -156,10 +166,11 @@ export function scheduleImpulses(
       impulses = impulses.map((i) => (isRevenue(i.target) ? adiar(i, t + NOVENTENA_MESES) : i));
     }
     if (policy.conditions.includes('espaco_no_limite_de_despesas')) {
+      // O gasto novo sai das discricionárias livres (ECONOMIC_MODEL.md §5.8); sem espaço até o mínimo, estoura.
       const gastoAdicional = impulses
         .filter((i) => i.target.startsWith('gasto.') && i.delta > 0)
         .reduce((soma, i) => soma + i.delta, 0);
-      if (state.economy.primarySpending + gastoAdicional > c.limite_despesa) {
+      if (gastoAdicional > fiscalRoom(state.economy.fiscal, c).room) {
         impulses.push({
           sourceId,
           label: 'Gasto acima do limite do arcabouço',
@@ -474,7 +485,7 @@ function semCompensacao(policy: Policy): boolean {
         i.channel.startsWith('transferencia_') ||
         i.channel === 'despesa_obrigatoria'),
   );
-  return cria && !policy.impacts.some((i) => i.channel === 'receita_tributaria');
+  return cria && !policy.impacts.some((i) => i.channel.startsWith('receita_'));
 }
 
 function clamp(valor: number, min: number, max: number): number {

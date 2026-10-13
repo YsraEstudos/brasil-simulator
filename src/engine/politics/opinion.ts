@@ -49,6 +49,15 @@ export const opinionStep: MonthStep = (state, ctx) => {
       label: 'Crescimento da economia',
       delta: scaled(adj * c.peso_crescimento * (i.gdpGrowth12m - c.g_pot_base)),
     },
+    // ECONOMIC_MODEL.md §5.8: discricionárias abaixo do piso de funcionamento paralisam serviços.
+    {
+      indicator: 'approval',
+      cause: 'paralisacao',
+      label: 'Paralisação de serviços públicos',
+      delta: scaled(
+        -adj * c.peso_paralisacao * (Math.max(0, c.piso_custeio - state.economy.fiscal.discretionary) / c.piso_custeio),
+      ),
+    },
   ];
 
   for (const impulse of activeImpulses(state.impulses, t, ['aprovacao'])) {

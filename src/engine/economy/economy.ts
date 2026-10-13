@@ -1,33 +1,41 @@
 import { activeImpulses, sumActive } from '../impulses';
-import { scenarioEconomyValues } from '../state';
+import { fiscalValues, scenarioEconomyValues } from '../state';
 import type {
-  Contribution,
-  Difficulty,
   EconomyState,
+  FiscalState,
   GameState,
   ImpulseTarget,
-  IndicatorKey,
   MonthStep,
   ScheduledImpulse,
   StepContext,
 } from '../types';
 
 import type { Calibration, ParamName } from './calibration';
+import { externalMonth, NOISE_PARAM, riskDrivers } from './external';
+import {
+  annualReview,
+  DISCRETIONARY_TARGETS,
+  fiscalStructure,
+  MANDATORY_TARGETS,
+  REVENUE_TARGETS,
+  revenueMonth,
+  spendingMonth,
+  spendingPieces,
+} from './fiscal';
+import { BC_BOARD_SIZE, boardShare, copomRate, pressureMonth } from './monetary';
+import { clamp, impulsePiece, scalePieces, sumOf, toContributions, type Piece } from './pieces';
 
 /**
- * Etapa econômica do mês (ECONOMIC_MODEL.md §4–5, versão simplificada v0.1).
+ * Etapa econômica do mês (ECONOMIC_MODEL.md §4–5; o que a Fase 03 implementa está em §5.14).
  *
- * Calcula, nesta ordem: potencial, fluxos fiscais, credibilidade, hiato, inflação, Copom, juro real efetivo
- * e dívida. Devolve o novo bloco `economy` e as contribuições dos indicadores; os indicadores em si só mudam
- * quando o `advanceMonth` soma as contribuições (ECONOMIC_MODEL.md §7.3).
+ * Ordem: revisão anual (janeiro), pressão sobre o BC, potencial, receitas, despesas e limite, credibilidade,
+ * prêmio de risco e câmbio, hiato, inflação, Copom, juro real efetivo, preços, nível do PIB e dívida.
+ * Devolve o novo bloco `economy` e as contribuições dos indicadores; os indicadores em si só mudam quando o
+ * `advanceMonth` soma as contribuições (ECONOMIC_MODEL.md §7.3).
  */
 
-/** Uma parcela de variação de um indicador, antes de virar `Contribution`. */
-interface Piece {
-  cause: string;
-  label: string;
-  delta: number;
-}
+const MONTHS_PER_YEAR = 12;
+const PRESSURE_LABEL = 'Pressão sobre o Banco Central';
 
 /** Multiplicador e sinal de um impulso de demanda sobre o hiato (ECONOMIC_MODEL.md §5.2). */
 interface DemandGain {
@@ -44,67 +52,20 @@ const DEMAND_GAIN: Partial<Record<ImpulseTarget, DemandGain>> = {
   'receita.desoneracao_consumo': { mult: 'mult_desoneracao_consumo', sign: 1 },
   'receita.desoneracao_renda': { mult: 'mult_desoneracao_renda', sign: 1 },
   'receita.tributaria': { mult: 'mult_receita', sign: -1 },
+  'receita.renda': { mult: 'mult_receita', sign: -1 },
+  'receita.consumo': { mult: 'mult_receita', sign: -1 },
   'demanda.credito': { mult: 'mult_credito', sign: 1 },
 };
-
-const GASTO_TARGETS: readonly ImpulseTarget[] = [
-  'gasto.investimento',
-  'gasto.custeio',
-  'gasto.transferencia_baixa_renda',
-  'gasto.transferencia_alta_renda',
-  'gasto.obrigatoria',
-];
-
-const DESONERACAO_TARGETS: readonly ImpulseTarget[] = ['receita.desoneracao_consumo', 'receita.desoneracao_renda'];
-
-/** Impulsos com efeito no resultado primário (ECONOMIC_MODEL.md §5.9). */
-const FISCAL_TARGETS: readonly ImpulseTarget[] = [...GASTO_TARGETS, 'receita.tributaria', ...DESONERACAO_TARGETS];
 
 /** Impulsos de demanda que entram no hiato (ECONOMIC_MODEL.md §5.2). */
 const DEMAND_TARGETS = Object.keys(DEMAND_GAIN) as ImpulseTarget[];
 
-/** Desvio do ruído mensal do hiato por dificuldade (GAME_DESIGN.md §6). */
-const NOISE_PARAM: Record<Difficulty, ParamName> = {
-  casual: 'ruido_hiato_casual',
-  estrategica: 'ruido_hiato_estrategica',
-  realismo: 'ruido_hiato_realismo',
-};
-
-const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x));
-
-const sumOf = (pieces: readonly Piece[]): number => pieces.reduce((s, p) => s + p.delta, 0);
-
-const impulsePiece = (impulse: ScheduledImpulse, delta: number): Piece => ({
-  cause: impulse.sourceId,
-  label: impulse.label,
-  delta,
-});
-
-/** Converte parcelas em contribuições, sem as de variação exatamente zero (AI_INSTRUCTIONS.md §3). */
-function toContributions(indicator: IndicatorKey, pieces: readonly Piece[]): Contribution[] {
-  return pieces
-    .filter((p) => p.delta !== 0)
-    .map((p) => ({ indicator, cause: p.cause, label: p.label, delta: p.delta }));
-}
-
-/**
- * Receita, despesa e resultado primário do mês, em fração do PIB anualizada (ECONOMIC_MODEL.md §5.7–5.9).
- * A receita depende do hiato anterior; a despesa parte da base do cenário mais os gastos agendados.
- */
-function fiscalFlows(state: GameState, base: { revenue: number; primarySpending: number }, h0: number, c: Calibration) {
-  const t = state.monthIndex;
-  const sum = (target: ImpulseTarget) => sumActive(state.impulses, t, target);
-  const lostRevenue = DESONERACAO_TARGETS.reduce((s, target) => s + sum(target), 0);
-  const revenue = base.revenue * (1 + c.elast_receita_hiato * h0) + sum('receita.tributaria') - lostRevenue;
-  const spending = base.primarySpending + GASTO_TARGETS.reduce((s, target) => s + sum(target), 0);
-  return { revenue, spending, monthlyPrimary: revenue - spending };
-}
-
 /**
  * Credibilidade do mês, 0–1 (ECONOMIC_MODEL.md §5.3): volta à base aos poucos e cai com déficit abaixo da
- * banda, inflação acima do teto e dívida acima do limiar. Choques de `credibilidade` somam por cima.
+ * banda, inflação acima do teto, dívida acima do limiar e estouro do limite de despesas. Choques de
+ * `credibilidade` e a pressão sobre o BC somam por cima. Devolve também o valor sem a pressão (atribuição).
  */
-function nextCredibility(state: GameState, c: Calibration): number {
+function nextCredibility(state: GameState, c: Calibration, pressureCost: number) {
   const e = state.economy;
   const i = state.indicators;
   const recovery = c.recuperacao_cred * (c.credibilidade_base - e.credibility);
@@ -112,95 +73,139 @@ function nextCredibility(state: GameState, c: Calibration): number {
   const inflationGap = Math.max(0, i.inflation12m - (c.meta_inflacao + c.tolerancia_meta));
   const debtGap = Math.max(0, e.grossDebt - c.limiar_divida);
   const penalties =
-    (c.pena_cred_fiscal * fiscalGap + c.pena_cred_inflacao * inflationGap + c.pena_cred_divida * debtGap) / 12;
+    (c.pena_cred_fiscal * fiscalGap +
+      c.pena_cred_inflacao * inflationGap +
+      c.pena_cred_divida * debtGap +
+      c.pena_cred_estouro * e.fiscal.limitExcess) /
+    MONTHS_PER_YEAR;
   const shocks = sumActive(state.impulses, state.monthIndex, 'credibilidade');
-  return clamp(e.credibility + recovery - penalties + shocks, c.cred_min, c.cred_max);
+  const raw = e.credibility + recovery - penalties + shocks;
+  return {
+    value: clamp(raw - pressureCost, c.cred_min, c.cred_max),
+    withoutPressure: clamp(raw, c.cred_min, c.cred_max),
+  };
 }
 
 /**
- * Parcelas da variação do hiato no mês (ECONOMIC_MODEL.md §5.2): inércia, juro real, impulsos fiscais e de
- * demanda (com multiplicador que cresce na ociosidade e cai com risco fiscal), choques e ruído.
- * Sorteia exatamente uma normal por mês, mesmo com desvio zero, para manter a sequência do RNG estável.
+ * Parcelas da variação do hiato no mês (ECONOMIC_MODEL.md §5.2): inércia, juro real, prêmio de risco, termos de
+ * troca, impulsos fiscais e de demanda (multiplicador maior na ociosidade e menor com risco fiscal), postura
+ * fiscal estrutural, acomodação da economia à postura fiscal, choques e ruído. Devolve também a postura de
+ * demanda `F` do mês (para atualizar a referência). Sorteia exatamente uma normal por mês.
  */
-function gapPieces(state: GameState, ctx: StepContext): Piece[] {
+function gapPieces(state: GameState, ctx: StepContext, structuralStance: number, riskPremium: number, terms: number) {
   const t = state.monthIndex;
   const e = state.economy;
   const c = ctx.content.calibration;
   const h0 = e.outputGap;
+  const damp = 1 - c.rho_h;
   const pieces: Piece[] = [
     { cause: 'inercia_hiato', label: 'Acomodação da atividade', delta: (c.rho_h - 1) * h0 },
     { cause: 'juros_bc', label: 'Juros do Banco Central', delta: -c.beta_r * (e.effectiveRealRate - c.juro_neutro) },
+    {
+      cause: 'premio_risco',
+      label: 'Prêmio de risco e juros de mercado',
+      delta: -c.beta_r * c.repasse_risco_neutro * (riskPremium - c.premio_base),
+    },
+    { cause: 'termos_troca', label: 'Preços das exportações (termos de troca)', delta: c.efeito_termos_troca * terms },
   ];
 
   const risk = (1 + c.sens_hiato * Math.max(0, -h0)) * (1 - c.sens_risco * (1 - e.credibility));
+  let stance = 0;
   for (const impulse of activeImpulses(state.impulses, t, DEMAND_TARGETS)) {
     const gain = DEMAND_GAIN[impulse.target];
-    if (gain) pieces.push(impulsePiece(impulse, (1 - c.rho_h) * c[gain.mult] * risk * gain.sign * impulse.delta));
+    if (!gain) continue;
+    const level = c[gain.mult] * risk * gain.sign * impulse.delta;
+    stance += level;
+    pieces.push(impulsePiece(impulse, damp * level));
   }
+  const structural = c.mult_estrutural * risk * structuralStance;
+  stance += structural;
+  pieces.push({ cause: 'postura_fiscal', label: 'Limite de despesas e obrigatórias', delta: damp * structural });
+  pieces.push({
+    cause: 'acomodacao_fiscal',
+    label: 'Economia se acomoda à política fiscal',
+    delta: -damp * e.fiscal.demandRef,
+  });
   for (const impulse of activeImpulses(state.impulses, t, ['choque.hiato'])) {
     pieces.push(impulsePiece(impulse, impulse.delta));
   }
 
   const sigma = c[NOISE_PARAM[state.difficulty]];
   pieces.push({ cause: 'flutuacoes', label: 'Flutuações da economia', delta: ctx.rng.normal() * sigma });
-  return pieces;
-}
-
-/**
- * Selic decidida pelo Copom (ECONOMIC_MODEL.md §5.4): regra de Taylor suavizada, movimento limitado por
- * reunião, arredondamento a 25 pontos-base e piso operacional.
- */
-function copomRate(selicPrev: number, pe1: number, h1: number, c: Calibration): number {
-  const target = c.juro_neutro + pe1 + c.phi_pi * (pe1 - c.meta_inflacao) + c.phi_h * h1;
-  const raw = c.suav * selicPrev + (1 - c.suav) * target;
-  const limited = clamp(raw, selicPrev - c.max_passo, selicPrev + c.max_passo);
-  const rounded = Math.round(limited / c.passo_selic) * c.passo_selic;
-  return Math.max(c.selic_piso, rounded);
-}
-
-/**
- * Dívida e juros (ECONOMIC_MODEL.md §5.9): a taxa implícita segue a Selic com defasagem; a dívida sobe com os
- * juros, cai com o resultado primário e cai com o crescimento do PIB nominal (ajuste do denominador).
- */
-function debtDynamics(e: EconomyState, selic1: number, monthlyPrimary: number, nominalGrowth: number, c: Calibration) {
-  const implicitRate = e.implicitRate + c.transmissao_selic_divida * (selic1 - e.implicitRate);
-  const interest = implicitRate * e.grossDebt;
-  const debtAdjustment = (-e.grossDebt * nominalGrowth) / 12;
-  const grossDebt = e.grossDebt + (interest - monthlyPrimary) / 12 + debtAdjustment;
-  return { implicitRate, interest, debtAdjustment, grossDebt };
+  return { pieces, stance };
 }
 
 /** Etapa econômica do pipeline mensal (ECONOMIC_MODEL.md §4–5). */
-export const economyStep: MonthStep = (state, ctx) => {
-  const t = state.monthIndex;
-  const e = state.economy;
+export const economyStep: MonthStep = (input, ctx) => {
+  const t = input.monthIndex;
   const c = ctx.content.calibration;
+  const scenario = ctx.content.scenario;
+  const anchor = scenarioEconomyValues(scenario);
+  const structure = fiscalStructure(fiscalValues(scenario, anchor));
+
+  // Revisão anual em janeiro (não no mês 0: o cenário já traz os valores de jan/2027).
+  let state: GameState = input;
+  if (t > 0 && t % MONTHS_PER_YEAR === 0) {
+    const review = annualReview(state, c);
+    state = { ...state, economy: { ...state.economy, fiscal: review.fiscal } };
+    ctx.draft.notes.push(review.note);
+  }
+  const e = state.economy;
   const i = state.indicators;
   const impulses = state.impulses;
-  const base = scenarioEconomyValues(ctx.content.scenario);
   const h0 = e.outputGap;
+
+  // §5.4.1: pressão pública sobre o Banco Central
+  const pressure = pressureMonth(state, ctx);
+  const extraImpulses: ScheduledImpulse[] = [];
+  if (pressure.pressed) {
+    extraImpulses.push({
+      sourceId: `acao:pressionar_banco_central_${t}`,
+      label: PRESSURE_LABEL,
+      target: 'aprovacao',
+      delta: c.aprovacao_pressao,
+      startMonth: t,
+      endMonth: t,
+    });
+    const indicated = Math.round(boardShare(t, c) * BC_BOARD_SIZE);
+    ctx.draft.notes.push(
+      `Pressão pública sobre o Banco Central: este governo indicou ${indicated} de ${BC_BOARD_SIZE} membros da diretoria; ` +
+        'a credibilidade cai e o mercado cobra prêmio maior.',
+    );
+  }
 
   // §5.1: potencial
   const gPot = c.g_pot_base + sumActive(impulses, t, 'oferta.potencial');
 
-  // §5.7–5.9: fluxos fiscais
-  const flows = fiscalFlows(state, base, h0, c);
-  if (flows.spending > c.limite_despesa) {
-    ctx.draft.notes.push('Despesa primária acima do limite do arcabouço fiscal.');
+  // §5.7–5.8: receitas, despesas e limite
+  const revenue = revenueMonth(state, structure, h0, c);
+  const spending = spendingMonth(state, e.fiscal, structure, revenue.linkedBase, gPot, c);
+  const monthlyPrimary = revenue.total - spending.total;
+  if (spending.limitExcess > 0 && e.fiscal.limitExcess === 0) {
+    ctx.draft.notes.push('Despesa primária acima do limite do arcabouço fiscal: estouro registrado como exceção.');
+  }
+  if (spending.discretionary < c.piso_custeio && e.fiscal.discretionary >= c.piso_custeio) {
+    ctx.draft.notes.push('Discricionárias abaixo do piso de funcionamento: risco de paralisação de serviços.');
   }
 
   // §5.3: credibilidade e expectativas
-  const cred1 = nextCredibility(state, c);
+  const cred = nextCredibility(state, c, pressure.credibilityCost);
+  const cred1 = cred.value;
   const pe1 = cred1 * c.meta_inflacao + (1 - cred1) * i.inflation12m;
+  const peWithoutPressure = cred.withoutPressure * c.meta_inflacao + (1 - cred.withoutPressure) * i.inflation12m;
+
+  // §5.5: prêmio de risco e câmbio
+  const drivers = riskDrivers(state, cred1, revenue.incomeOverload, pressure.last12m, c);
+  const ext = externalMonth(state, ctx, drivers, anchor);
 
   // §5.2: hiato
-  const gap = gapPieces(state, ctx);
-  const h1 = h0 + sumOf(gap);
+  const gap = gapPieces(state, ctx, spending.structuralStance, ext.riskPremium, ext.termsOfTrade);
+  const h1 = h0 + sumOf(gap.pieces);
 
   // §5.2, §5.3, §5.6, §5.9: contribuições de cada indicador (somas exatas, ECONOMIC_MODEL.md §7.3)
   const gdpPieces: Piece[] = [
-    { cause: 'tendencia_potencial', label: 'Crescimento potencial', delta: (gPot - i.gdpGrowth12m) / 12 },
-    ...gap,
+    { cause: 'tendencia_potencial', label: 'Crescimento potencial', delta: (gPot - i.gdpGrowth12m) / MONTHS_PER_YEAR },
+    ...gap.pieces,
   ];
   const unemploymentPieces: Piece[] = [
     {
@@ -208,26 +213,29 @@ export const economyStep: MonthStep = (state, ctx) => {
       label: 'Ajuste do mercado de trabalho',
       delta: c.ajuste_u * (c.nairu - i.unemployment - c.theta * h0),
     },
-    ...gap.map((p) => ({ ...p, delta: -c.ajuste_u * c.theta * p.delta })),
+    ...scalePieces(gap.pieces, -c.ajuste_u * c.theta),
   ];
+  const realDepreciation = ext.depreciation12m - (i.inflation12m - c.inflacao_externa);
   const inflationPieces: Piece[] = [
-    { cause: 'expectativas', label: 'Expectativas de inflação', delta: c.ajuste_inflacao * (pe1 - i.inflation12m) },
+    {
+      cause: 'expectativas',
+      label: 'Expectativas de inflação',
+      delta: c.ajuste_inflacao * (peWithoutPressure - i.inflation12m),
+    },
+    { cause: 'pressao_bc', label: PRESSURE_LABEL, delta: c.ajuste_inflacao * (pe1 - peWithoutPressure) },
     { cause: 'atividade', label: 'Aquecimento da economia', delta: c.ajuste_inflacao * c.kappa * h0 },
-    ...gap.map((p) => ({ ...p, delta: c.ajuste_inflacao * c.kappa * p.delta })),
+    ...scalePieces(gap.pieces, c.ajuste_inflacao * c.kappa),
+    { cause: 'cambio', label: 'Câmbio', delta: c.ajuste_inflacao * c.repasse_cambial * realDepreciation },
     ...activeImpulses(impulses, t, ['choque.inflacao']).map((s) => impulsePiece(s, c.ajuste_inflacao * s.delta)),
   ];
   const primaryPieces: Piece[] = [
     {
       cause: 'tendencia_fiscal',
       label: 'Receitas e despesas correntes',
-      delta: (base.revenue - base.primarySpending - i.primaryBalance12m) / 12,
+      delta: (revenue.base - spending.withoutPolicies - i.primaryBalance12m) / MONTHS_PER_YEAR,
     },
-    {
-      cause: 'ciclo_receita',
-      label: 'Arrecadação e atividade',
-      delta: (base.revenue * c.elast_receita_hiato * h0) / 12,
-    },
-    ...activeImpulses(impulses, t, FISCAL_TARGETS).map((s) => impulsePiece(s, (primarySign(s.target) * s.delta) / 12)),
+    ...scalePieces(revenue.pieces, 1 / MONTHS_PER_YEAR),
+    ...scalePieces(spendingPieces(spending), -1 / MONTHS_PER_YEAR),
   ];
 
   const contributions = [
@@ -236,40 +244,95 @@ export const economyStep: MonthStep = (state, ctx) => {
     ...toContributions('inflation12m', inflationPieces),
     ...toContributions('primaryBalance12m', primaryPieces),
   ];
-  const g12n = i.gdpGrowth12m + sumOf(gdpPieces);
   const pi12n = i.inflation12m + sumOf(inflationPieces);
 
   // §5.4: Banco Central, só nas reuniões do Copom
-  const isCopomMonth = ctx.content.scenario.copomMonths.includes((t % 12) + 1);
-  const selic1 = isCopomMonth ? copomRate(e.selic, pe1, h1, c) : e.selic;
-  if (isCopomMonth) ctx.draft.copom = { previous: e.selic, next: selic1 };
+  let selic1 = e.selic;
+  let pendingCut = pressure.state.pendingCut;
+  if (scenario.copomMonths.includes((t % MONTHS_PER_YEAR) + 1)) {
+    const inputs = {
+      selicPrev: e.selic,
+      expectation: pe1,
+      gap: h1,
+      riskPremium: ext.riskPremium,
+      inflation12m: pi12n,
+      pendingCut,
+    };
+    selic1 = copomRate(inputs, c);
+    const withoutPressure = pendingCut > 0 ? copomRate({ ...inputs, pendingCut: 0 }, c) : selic1;
+    ctx.draft.copom = { previous: e.selic, next: selic1 };
+    if (pendingCut > 0) {
+      ctx.draft.copom.pressureCut = withoutPressure - selic1;
+      pendingCut = 0;
+    }
+  }
 
   // §5.2: juro real que chega à economia, com média móvel de lag_r meses
   const rEff1 = e.effectiveRealRate + (selic1 - pe1 - e.effectiveRealRate) / c.lag_r;
 
-  // §5.9: dívida
-  const debt = debtDynamics(e, selic1, flows.monthlyPrimary, g12n + pi12n, c);
+  // Níveis: potencial e preços (índices); crescimento nominal do mês para a dívida
+  const potentialIndex = e.potentialIndex * (1 + gPot) ** (1 / MONTHS_PER_YEAR);
+  const priceLevel = e.priceLevel * (1 + pi12n) ** (1 / MONTHS_PER_YEAR);
+  const nominalGrowth = Math.log(potentialIndex / e.potentialIndex) + (h1 - h0) + Math.log(priceLevel / e.priceLevel);
+
+  // §5.9: dívida — a taxa implícita segue a Selic (com parte do prêmio) com defasagem; o ajuste inclui o
+  // efeito do crescimento nominal (denominador) e a variação cambial sobre a dívida em moeda estrangeira.
+  const implicitTarget = selic1 + c.repasse_risco_divida * (ext.riskPremium - c.premio_base);
+  const implicitRate = e.implicitRate + c.transmissao_selic_divida * (implicitTarget - e.implicitRate);
+  const interest = implicitRate * e.grossDebt;
+  const debtAdjustment = -e.grossDebt * nominalGrowth + c.divida_cambial * e.grossDebt * ext.exchangeChange;
+  const grossDebt = e.grossDebt + (interest - monthlyPrimary) / MONTHS_PER_YEAR + debtAdjustment;
+
+  const fiscal: FiscalState = {
+    ...e.fiscal,
+    mandatory: spending.mandatory,
+    linked: spending.linked,
+    policyMandatory: spending.policyMandatory,
+    discretionary: spending.discretionary,
+    policyDiscretionary: spending.policyDiscretionary,
+    exceptions: spending.exceptions,
+    spendingLimit: spending.spendingLimit,
+    limitExcess: spending.limitExcess,
+    revenueByGroup: revenue.byGroup,
+    revenueLoss: revenue.loss,
+    revenue12m: e.fiscal.revenue12m + (revenue.total - e.fiscal.revenue12m) / MONTHS_PER_YEAR,
+    demandRef: e.fiscal.demandRef + c.adaptacao_fiscal * (gap.stance - e.fiscal.demandRef),
+  };
 
   const economy: EconomyState = {
     outputGap: h1,
     potentialGrowth: gPot,
+    potentialIndex,
+    priceLevel,
     selic: selic1,
     effectiveRealRate: rEff1,
     inflationExpectation: pe1,
     credibility: cred1,
-    grossDebt: debt.grossDebt,
-    implicitRate: debt.implicitRate,
-    revenue: flows.revenue,
-    primarySpending: flows.spending,
-    monthlyPrimary: flows.monthlyPrimary,
-    interest: debt.interest,
-    debtAdjustment: debt.debtAdjustment,
+    riskPremium: ext.riskPremium,
+    exchangeRate: ext.exchangeRate,
+    depreciation12m: ext.depreciation12m,
+    externalRate: ext.externalRate,
+    termsOfTrade: ext.termsOfTrade,
+    grossDebt,
+    implicitRate,
+    revenue: revenue.total,
+    primarySpending: spending.total,
+    monthlyPrimary,
+    interest,
+    debtAdjustment,
+    fiscal,
+    bcPressure: { months: pressure.state.months, pendingCut },
   };
 
-  return { state: { ...state, economy }, contributions };
+  return {
+    state: { ...state, economy, impulses: extraImpulses.length > 0 ? [...impulses, ...extraImpulses] : impulses },
+    contributions,
+  };
 };
 
-/** Sinal do impulso no primário: receita tributária sobe o resultado; gasto e desoneração o reduzem. */
-function primarySign(target: ImpulseTarget): number {
-  return target === 'receita.tributaria' ? 1 : -1;
-}
+/** Alvos com efeito direto no resultado primário (para pareceres e testes). */
+export const FISCAL_TARGETS: readonly ImpulseTarget[] = [
+  ...MANDATORY_TARGETS,
+  ...DISCRETIONARY_TARGETS,
+  ...(Object.keys(REVENUE_TARGETS) as ImpulseTarget[]),
+];

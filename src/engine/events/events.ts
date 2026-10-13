@@ -56,6 +56,11 @@ export function conditionValue(state: Readonly<GameState>, variable: ConditionVa
     },
     proposalsInCongress: () =>
       state.proposals.filter((p) => p.status === 'em_tramitacao' || p.status === 'parada').length,
+    exchangeRate: () => state.economy.exchangeRate,
+    riskPremium: () => state.economy.riskPremium,
+    discretionarySpending: () => state.economy.fiscal.discretionary,
+    limitExcess: () => state.economy.fiscal.limitExcess,
+    monthIndex: () => state.monthIndex,
   };
   return reader[variable]();
 }

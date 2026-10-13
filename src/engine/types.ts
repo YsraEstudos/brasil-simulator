@@ -5,10 +5,10 @@ import type { Calibration } from './economy/calibration';
 import type { Rng, RngState } from './rng';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 2;
+export const STATE_SCHEMA_VERSION = 3;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.2.0';
+export const ENGINE_VERSION = '0.3.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -39,8 +39,64 @@ export interface Resources {
   agendaPointsPerMonth: number;
 }
 
+/** Grupos de receita federal (ECONOMIC_MODEL.md §5.7). */
+export const REVENUE_GROUPS = ['renda', 'folha', 'consumo', 'outras', 'royalties'] as const;
+export type RevenueGroup = (typeof REVENUE_GROUPS)[number];
+
+/** Grupos de despesa obrigatória indexados por regra própria (ECONOMIC_MODEL.md §5.8). */
+export const MANDATORY_GROUPS = ['previdencia', 'beneficios', 'pessoal', 'outras'] as const;
+export type MandatoryGroup = (typeof MANDATORY_GROUPS)[number];
+
 /**
- * Variáveis econômicas que não são indicadores do protótipo (ECONOMIC_MODEL.md §3, subconjunto v0.1).
+ * Contas do governo central por grupo (ECONOMIC_MODEL.md §5.7–5.8; POLITICAL_RULES.md §4.2–4.3).
+ * Fluxos em fração do PIB anualizada. Despesa primária = obrigatórias + vinculadas + obrigatórias de políticas
+ * + discricionárias livres + discricionárias de políticas + exceções (invariante em `checkInvariants`).
+ */
+export interface FiscalState {
+  /** Obrigatórias indexadas: previdência, BPC/abono/seguro, pessoal, demais. */
+  mandatory: Record<MandatoryGroup, number>;
+  /** Vinculadas à receita: mínimos de saúde e educação, emendas impositivas. */
+  linked: number;
+  /** Obrigatórias criadas por políticas e eventos (impulsos `gasto.obrigatoria` e `gasto.transferencia_*`). */
+  policyMandatory: number;
+  /** Discricionárias livres executadas (funcionamento da máquina), depois de compressão e contingenciamento. */
+  discretionary: number;
+  /** Discricionárias adicionais de políticas e eventos (impulsos positivos de investimento e custeio). */
+  policyDiscretionary: number;
+  /** Despesas fora do limite do arcabouço (exceções legais, LC 200/2023 art. 3º §2º). */
+  exceptions: number;
+  /** Limite de despesas primárias sujeitas ao arcabouço. */
+  spendingLimit: number;
+  /** Crescimento real anual do limite no ano corrente (revisto em janeiro). */
+  limitRealGrowth: number;
+  /** Despesa acima do limite no mês, registrada como exceção com causa (invariante §7.4). */
+  limitExcess: number;
+  /** Receita líquida de transferências a estados e municípios, por grupo. */
+  revenueByGroup: Record<RevenueGroup, number>;
+  /** Arrecadação perdida por retorno decrescente (sonegação, elisão, informalidade), líquida. */
+  revenueLoss: number;
+  /** Receita líquida acumulada em 12 meses (suavizada), para a revisão anual do limite. */
+  revenue12m: number;
+  /** `revenue12m` na última revisão do limite (janeiro). */
+  revenue12mAtReview: number;
+  /** Crescimento real do PIB nos dois últimos anos-calendário fechados: [ano − 2, ano − 1]. */
+  gdpGrowthHistory: [number, number];
+  /** Salário mínimo real, índice (1 = jan/2027). */
+  minimumWageIndex: number;
+  /** Postura fiscal à qual a economia já se acomodou (o impulso de demanda é a distância até ela). */
+  demandRef: number;
+}
+
+/** Pressão pública sobre o Banco Central (ECONOMIC_MODEL.md §5.4.1). */
+export interface BcPressureState {
+  /** Meses com pressão nos últimos 12 meses. */
+  months: number[];
+  /** Corte extra (fração) a aplicar na próxima reunião do Copom. */
+  pendingCut: number;
+}
+
+/**
+ * Variáveis econômicas que não são indicadores do protótipo (ECONOMIC_MODEL.md §3).
  * Fluxos fiscais em fração do PIB **anualizada** (o fluxo do mês × 12 / PIB anual).
  */
 export interface EconomyState {
@@ -48,6 +104,10 @@ export interface EconomyState {
   outputGap: number;
   /** Crescimento potencial anual (fração). */
   potentialGrowth: number;
+  /** PIB potencial, índice (1 = início do cenário). */
+  potentialIndex: number;
+  /** Nível de preços (IPCA), índice (1 = início do cenário). */
+  priceLevel: number;
   /** Selic meta anual. */
   selic: number;
   /** Juro real que já chegou à economia: média móvel do juro real ex ante com a defasagem `lagR` (§5.2). */
@@ -56,6 +116,16 @@ export interface EconomyState {
   inflationExpectation: number;
   /** Credibilidade fiscal e monetária, 0–1 (§5.3). */
   credibility: number;
+  /** Prêmio de risco soberano anual (§5.5). */
+  riskPremium: number;
+  /** Câmbio nominal, R$ por US$ (§5.5). */
+  exchangeRate: number;
+  /** Depreciação nominal acumulada em 12 meses (soma dos logs mensais, suavizada). */
+  depreciation12m: number;
+  /** Juro externo anual (§8). */
+  externalRate: number;
+  /** Termos de troca, desvio em log da média (§8). */
+  termsOfTrade: number;
   /** Dívida bruta do governo geral / PIB. */
   grossDebt: number;
   /** Taxa implícita anual da dívida (§5.9). */
@@ -68,8 +138,10 @@ export interface EconomyState {
   monthlyPrimary: number;
   /** Juros nominais do mês, fração do PIB anualizada (= implicitRate × dívida anterior). */
   interest: number;
-  /** Ajuste da dívida no mês (efeito denominador: crescimento do PIB nominal), em fração do PIB (§7.2). */
+  /** Ajuste da dívida no mês: crescimento do PIB nominal e variação cambial, em fração do PIB (§7.2). */
   debtAdjustment: number;
+  fiscal: FiscalState;
+  bcPressure: BcPressureState;
 }
 
 /**
@@ -78,12 +150,16 @@ export interface EconomyState {
  * | alvo | unidade de `delta` | quem consome |
  * | --- | --- | --- |
  * | `gasto.*` | despesa primária adicional enquanto ativo, fração do PIB anualizada (negativo = corte) | economia |
- * | `receita.tributaria` | receita adicional enquanto ativo, fração do PIB anualizada | economia |
+ * | `receita.tributaria` | carga adicional sobre os demais tributos enquanto ativo, fração do PIB anualizada | economia |
+ * | `receita.renda` / `receita.consumo` | idem, sobre a renda / o consumo (sujeito a repartição e retorno decrescente) | economia |
  * | `receita.desoneracao_*` | receita **perdida** enquanto ativo, fração do PIB anualizada (positivo = perda) | economia |
  * | `demanda.credito` | impulso de demanda sem efeito fiscal, fração do PIB anualizada | economia |
  * | `oferta.potencial` | crescimento potencial anual adicional enquanto ativo (fração) | economia |
  * | `choque.hiato` | soma ao hiato em cada mês ativo (fração) | economia |
  * | `choque.inflacao` | soma ao alvo da inflação 12m enquanto ativo (fração) | economia |
+ * | `choque.risco` | soma ao alvo do prêmio de risco enquanto ativo (fração) | economia |
+ * | `choque.cambio` | variação do câmbio (log) em cada mês ativo | economia |
+ * | `salario_minimo` | ganho real extra do salário mínimo aplicado no reajuste de janeiro (fração) | economia |
  * | `credibilidade` | variação da credibilidade em cada mês ativo (0–1) | economia |
  * | `aprovacao` | variação da aprovação em cada mês ativo (fração) | opinião |
  * | `capital_politico` | variação do capital político em cada mês ativo (pontos 0–100) | opinião |
@@ -96,12 +172,17 @@ export type ImpulseTarget =
   | 'gasto.transferencia_alta_renda'
   | 'gasto.obrigatoria'
   | 'receita.tributaria'
+  | 'receita.renda'
+  | 'receita.consumo'
   | 'receita.desoneracao_consumo'
   | 'receita.desoneracao_renda'
   | 'demanda.credito'
   | 'oferta.potencial'
   | 'choque.hiato'
   | 'choque.inflacao'
+  | 'choque.risco'
+  | 'choque.cambio'
+  | 'salario_minimo'
   | 'credibilidade'
   | 'aprovacao'
   | 'capital_politico'
@@ -215,7 +296,7 @@ export interface EventsState {
  * que o motor processa (GAME_DESIGN.md §9).
  */
 export interface Decision {
-  /** ID de conteúdo em português, ex.: `infraestrutura_credito_adicional`. */
+  /** ID de conteúdo em português: política (`infraestrutura_credito_adicional`) ou ação de agenda (`actions.ts`). */
   policyId: string;
   /** Custo em pontos de agenda. O motor usa o custo do catálogo quando a política existe. */
   agendaCost: number;
@@ -238,6 +319,7 @@ export type DecisionRejection =
   | 'sem_pontos_de_agenda'
   | 'custo_invalido'
   | 'politica_desconhecida'
+  | 'acao_repetida'
   | 'ja_em_andamento'
   | 'evento_nao_pendente'
   | 'escolha_invalida';
@@ -288,6 +370,8 @@ export interface ProposalChange {
 export interface CopomDecision {
   previous: number;
   next: number;
+  /** Corte extra obtido por pressão do governo nesta reunião (ECONOMIC_MODEL.md §5.4.1); ausente = nenhum. */
+  pressureCut?: number;
 }
 
 export interface MonthReport {
