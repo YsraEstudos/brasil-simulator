@@ -52,14 +52,15 @@ export function checkInvariants(prev: GameState, next: GameState, report: MonthR
     f.policyMandatory +
     f.discretionary +
     f.policyDiscretionary +
-    f.exceptions;
+    f.exceptions +
+    f.extraordinary;
   if (Math.abs(spendingSum - eco.primarySpending) > EPSILON) {
     errors.push(`despesa por grupo não fecha com a despesa total: diferença ${spendingSum - eco.primarySpending}`);
   }
   if (f.discretionary < 0) errors.push(`discricionárias negativas: ${f.discretionary}`);
 
   // §7.4: despesa sujeita ao limite ≤ limite + estouro registrado como exceção
-  const overLimit = eco.primarySpending - f.exceptions - f.spendingLimit - f.limitExcess;
+  const overLimit = eco.primarySpending - f.exceptions - f.extraordinary - f.spendingLimit - f.limitExcess;
   if (overLimit > EPSILON) errors.push(`despesa acima do limite sem registro: ${overLimit}`);
 
   // §7.1: resultado primário do mês = receita − despesa

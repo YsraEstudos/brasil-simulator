@@ -483,7 +483,8 @@ function semCompensacao(policy: Policy): boolean {
       i.magnitude > 0 &&
       (i.channel.startsWith('desoneracao_') ||
         i.channel.startsWith('transferencia_') ||
-        i.channel === 'despesa_obrigatoria'),
+        i.channel === 'despesa_obrigatoria' ||
+        i.channel === 'salario_minimo_real'),
   );
   return cria && !policy.impacts.some((i) => i.channel.startsWith('receita_'));
 }

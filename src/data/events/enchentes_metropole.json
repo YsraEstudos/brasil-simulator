@@ -9,7 +9,14 @@
     "cooldownMonths": 12,
     "maxOccurrences": 2
   },
-  "onFire": [{ "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }],
+  "onFire": [
+    {
+      "target": "aprovacao",
+      "delta": -0.01,
+      "lagMonths": 0,
+      "durationMonths": 1
+    }
+  ],
   "choices": [
     {
       "id": "credito_extraordinario",
@@ -17,9 +24,24 @@
       "description": "Acelera a reconstrução e melhora a aprovação, mas abre despesa fora do limite do orçamento e arranha a credibilidade.",
       "agendaCost": 1,
       "effects": [
-        { "target": "gasto.custeio", "delta": 0.002, "lagMonths": 0, "durationMonths": 6 },
-        { "target": "aprovacao", "delta": 0.012, "lagMonths": 0, "durationMonths": 1 },
-        { "target": "credibilidade", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }
+        {
+          "target": "gasto.extraordinario",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 6
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.012,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
       ]
     },
     {
@@ -28,8 +50,18 @@
       "description": "Atende com recursos já previstos e reforça a responsabilidade institucional, mas a resposta é lenta e a aprovação sofre.",
       "agendaCost": 0,
       "effects": [
-        { "target": "aprovacao", "delta": -0.008, "lagMonths": 0, "durationMonths": 1 },
-        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+        {
+          "target": "aprovacao",
+          "delta": -0.008,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
       ]
     }
   ],

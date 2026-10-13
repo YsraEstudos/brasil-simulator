@@ -15,6 +15,7 @@ import { externalMonth, NOISE_PARAM, riskDrivers } from './external';
 import {
   annualReview,
   DISCRETIONARY_TARGETS,
+  EXTRAORDINARY_TARGETS,
   fiscalStructure,
   MANDATORY_TARGETS,
   REVENUE_TARGETS,
@@ -49,6 +50,7 @@ const DEMAND_GAIN: Partial<Record<ImpulseTarget, DemandGain>> = {
   'gasto.transferencia_baixa_renda': { mult: 'mult_transf_baixa_renda', sign: 1 },
   'gasto.transferencia_alta_renda': { mult: 'mult_transf_alta_renda', sign: 1 },
   'gasto.obrigatoria': { mult: 'mult_obrigatoria', sign: 1 },
+  'gasto.extraordinario': { mult: 'mult_custeio', sign: 1 },
   'receita.desoneracao_consumo': { mult: 'mult_desoneracao_consumo', sign: 1 },
   'receita.desoneracao_renda': { mult: 'mult_desoneracao_renda', sign: 1 },
   'receita.tributaria': { mult: 'mult_receita', sign: -1 },
@@ -291,6 +293,7 @@ export const economyStep: MonthStep = (input, ctx) => {
     discretionary: spending.discretionary,
     policyDiscretionary: spending.policyDiscretionary,
     exceptions: spending.exceptions,
+    extraordinary: spending.extraordinary,
     spendingLimit: spending.spendingLimit,
     limitExcess: spending.limitExcess,
     revenueByGroup: revenue.byGroup,
@@ -334,5 +337,6 @@ export const economyStep: MonthStep = (input, ctx) => {
 export const FISCAL_TARGETS: readonly ImpulseTarget[] = [
   ...MANDATORY_TARGETS,
   ...DISCRETIONARY_TARGETS,
+  ...EXTRAORDINARY_TARGETS,
   ...(Object.keys(REVENUE_TARGETS) as ImpulseTarget[]),
 ];

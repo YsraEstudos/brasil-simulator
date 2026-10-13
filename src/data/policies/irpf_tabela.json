@@ -19,16 +19,36 @@
   },
   "conditions": ["anterioridade_anual", "compensacao_lrf"],
   "impacts": [
-    { "channel": "desoneracao_renda", "magnitude": 25000, "lagMonths": 0 },
-    { "channel": "receita_tributaria", "magnitude": 10000, "lagMonths": 0 },
-    { "channel": "aprovacao", "magnitude": 0.015, "lagMonths": 0 }
+    {
+      "channel": "desoneracao_renda",
+      "magnitude": 25000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "receita_renda",
+      "magnitude": 10000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": 0.015,
+      "lagMonths": 0
+    }
   ],
-  "risks": [{ "kind": "judicializacao", "probability": 0.1 }],
+  "risks": [
+    {
+      "kind": "judicializacao",
+      "probability": 0.1
+    }
+  ],
   "affected": {
     "groups": ["classe_media", "alta_renda"],
     "sectors": ["servicos"],
     "regions": ["nacional"]
   },
-  "position": { "economic": -0.3, "social": -0.1 },
+  "position": {
+    "economic": -0.3,
+    "social": -0.1
+  },
   "dataStatus": "PROVISORIO"
 }

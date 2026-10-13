@@ -14,6 +14,7 @@ export const impulseTargetSchema = z.enum([
   'gasto.transferencia_baixa_renda',
   'gasto.transferencia_alta_renda',
   'gasto.obrigatoria',
+  'gasto.extraordinario',
   'receita.tributaria',
   'receita.renda',
   'receita.consumo',

@@ -50,7 +50,7 @@ export type MandatoryGroup = (typeof MANDATORY_GROUPS)[number];
 /**
  * Contas do governo central por grupo (ECONOMIC_MODEL.md §5.7–5.8; POLITICAL_RULES.md §4.2–4.3).
  * Fluxos em fração do PIB anualizada. Despesa primária = obrigatórias + vinculadas + obrigatórias de políticas
- * + discricionárias livres + discricionárias de políticas + exceções (invariante em `checkInvariants`).
+ * + discricionárias livres + discricionárias de políticas + exceções + créditos extraordinários (invariante em `checkInvariants`).
  */
 export interface FiscalState {
   /** Obrigatórias indexadas: previdência, BPC/abono/seguro, pessoal, demais. */
@@ -63,8 +63,10 @@ export interface FiscalState {
   discretionary: number;
   /** Discricionárias adicionais de políticas e eventos (impulsos positivos de investimento e custeio). */
   policyDiscretionary: number;
-  /** Despesas fora do limite do arcabouço (exceções legais, LC 200/2023 art. 3º §2º). */
+  /** Despesas fora do limite do arcabouço por regra permanente (exceções legais, LC 200/2023 art. 3º §2º). */
   exceptions: number;
+  /** Créditos extraordinários do mês (calamidades; fora do limite, CF art. 167 §3º). */
+  extraordinary: number;
   /** Limite de despesas primárias sujeitas ao arcabouço. */
   spendingLimit: number;
   /** Crescimento real anual do limite no ano corrente (revisto em janeiro). */
@@ -150,6 +152,7 @@ export interface EconomyState {
  * | alvo | unidade de `delta` | quem consome |
  * | --- | --- | --- |
  * | `gasto.*` | despesa primária adicional enquanto ativo, fração do PIB anualizada (negativo = corte) | economia |
+ * | `gasto.extraordinario` | idem, por crédito extraordinário: fica fora do limite do arcabouço | economia |
  * | `receita.tributaria` | carga adicional sobre os demais tributos enquanto ativo, fração do PIB anualizada | economia |
  * | `receita.renda` / `receita.consumo` | idem, sobre a renda / o consumo (sujeito a repartição e retorno decrescente) | economia |
  * | `receita.desoneracao_*` | receita **perdida** enquanto ativo, fração do PIB anualizada (positivo = perda) | economia |
@@ -171,6 +174,7 @@ export type ImpulseTarget =
   | 'gasto.transferencia_baixa_renda'
   | 'gasto.transferencia_alta_renda'
   | 'gasto.obrigatoria'
+  | 'gasto.extraordinario'
   | 'receita.tributaria'
   | 'receita.renda'
   | 'receita.consumo'

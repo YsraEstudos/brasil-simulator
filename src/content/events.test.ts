@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { EVENTS } from './events';
 import { parseGameEvent, type EventEffect } from '@/types/event';
 
-/** Limites de magnitude por alvo (tarefa de conteúdo de eventos; unidades em src/engine/types.ts). */
+/**
+ * Limites de magnitude por alvo (tarefa de conteúdo de eventos; unidades em src/engine/types.ts). Eventos não
+ * criam efeitos permanentes: mudanças permanentes passam por políticas. Fase 03: gastos e receitas aceitam
+ * cortes e remanejamentos (sinal negativo) e até 24 meses; alvos novos de risco, câmbio e potencial.
+ */
 interface Limit {
   min: number;
   max: number;
@@ -11,11 +15,14 @@ interface Limit {
 }
 
 function limitFor(target: string): Limit | undefined {
-  if (target === 'choque.inflacao') return { min: 0.002, max: 0.012, duration: [3, 9] };
+  if (target === 'choque.inflacao') return { min: -0.004, max: 0.012, duration: [3, 9] };
+  if (target === 'choque.risco') return { min: 0.001, max: 0.015, duration: [1, 6] };
+  if (target === 'choque.cambio') return { min: -0.05, max: 0.05, duration: [1, 3] };
+  if (target === 'oferta.potencial') return { min: -0.002, max: 0.002, duration: [6, 24] };
   if (target === 'choque.hiato') return { min: -0.004, max: 0.002, duration: [1, 6] };
   if (target === 'aprovacao') return { min: -0.03, max: 0.02, duration: 'one-shot' };
   if (target.startsWith('gasto.') || target.startsWith('receita.')) {
-    return { min: 0.0005, max: 0.003, duration: [3, 12] };
+    return { min: -0.003, max: 0.005, duration: [3, 24] };
   }
   if (target === 'credibilidade') return { min: -0.05, max: 0.03, duration: 'one-shot' };
   if (target === 'capital_politico') return { min: -10, max: 6, duration: 'one-shot' };
@@ -42,7 +49,7 @@ function checkEffect(effect: EventEffect, where: string): string[] {
   return problems;
 }
 
-describe('eventos do protótipo (GAME_DESIGN.md §11.3)', () => {
+describe('eventos (GAME_DESIGN.md §11.3)', () => {
   it('todos os eventos são válidos pelo esquema Zod', () => {
     for (const event of EVENTS) {
       const r = parseGameEvent(event);
@@ -50,8 +57,8 @@ describe('eventos do protótipo (GAME_DESIGN.md §11.3)', () => {
     }
   });
 
-  it('há exatamente 10 eventos com ids únicos', () => {
-    expect(EVENTS).toHaveLength(10);
+  it('há os 10 eventos do protótipo e os 5 de 2027, com ids únicos', () => {
+    expect(EVENTS).toHaveLength(15);
     const ids = EVENTS.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
   });

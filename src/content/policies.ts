@@ -6,6 +6,7 @@ import infraestruturaCreditoAdicional from '@/data/policies/infraestrutura_credi
 import iofCreditoReducao from '@/data/policies/iof_credito_reducao.json';
 import irpfTabela from '@/data/policies/irpf_tabela.json';
 import reformaAdministrativa from '@/data/policies/reforma_administrativa.json';
+import salarioMinimoValorizacao from '@/data/policies/salario_minimo_valorizacao.json';
 import segurancaCooperacao from '@/data/policies/seguranca_cooperacao.json';
 import transferenciaRendaAmpliacao from '@/data/policies/transferencia_renda_ampliacao.json';
 
@@ -19,6 +20,7 @@ const RAW: readonly unknown[] = [
   segurancaCooperacao,
   gastosTributariosRevisao,
   reformaAdministrativa,
+  salarioMinimoValorizacao,
 ];
 
 function loadPolicies(raw: readonly unknown[]): Record<string, Policy> {

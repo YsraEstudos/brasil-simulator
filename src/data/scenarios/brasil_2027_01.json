@@ -1,6 +1,6 @@
 {
   "id": "brasil_2027_01",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": "Brasil, janeiro de 2027 (dados provisórios)",
   "startPeriod": "2027-01",
   "indicators": {
@@ -89,6 +89,140 @@
       "unit": "fração do PIB",
       "status": "PROVISORIO",
       "note": "Placeholder: despesa primária ainda não importada (Tesouro, RTN). Diferença com a receita coincide com o resultado primário placeholder."
+    },
+    "exchangeRate": {
+      "value": 5.4,
+      "unit": "R$/US$",
+      "status": "PROVISORIO",
+      "note": "Placeholder: câmbio ainda não importado (BCB, PTAX). Ordem de grandeza de 2026."
+    },
+    "riskPremium": {
+      "value": 0.025,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: prêmio de risco soberano (CDS de 5 anos) ainda não importado. Ordem de grandeza de períodos calmos."
+    },
+    "externalRate": {
+      "value": 0.04,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: juro externo de referência (Fed funds) ainda não importado."
+    },
+    "gdpGrowthTwoYearsAgo": {
+      "value": 0.023,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: crescimento real do PIB de 2025 (IBGE) ainda não importado; usado no reajuste do salário mínimo de 2027 (Lei 15.077/2024)."
+    }
+  },
+  "fiscal": {
+    "revenueShares": {
+      "renda": {
+        "value": 0.36,
+        "unit": "fração da receita bruta",
+        "status": "PROVISORIO",
+        "note": "IR e CSLL. Placeholder: participação na receita bruta do governo central, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027."
+      },
+      "folha": {
+        "value": 0.23,
+        "unit": "fração da receita bruta",
+        "status": "PROVISORIO",
+        "note": "Contribuições previdenciárias (RGPS). Placeholder: participação na receita bruta do governo central, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027."
+      },
+      "consumo": {
+        "value": 0.2,
+        "unit": "fração da receita bruta",
+        "status": "PROVISORIO",
+        "note": "CBS, Imposto Seletivo e IPI residual (Zona Franca). Placeholder: participação na receita bruta do governo central, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027."
+      },
+      "outras": {
+        "value": 0.15,
+        "unit": "fração da receita bruta",
+        "status": "PROVISORIO",
+        "note": "IOF, comércio exterior e demais receitas. Placeholder: participação na receita bruta do governo central, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027."
+      },
+      "royalties": {
+        "value": 0.06,
+        "unit": "fração da receita bruta",
+        "status": "PROVISORIO",
+        "note": "Royalties, participações especiais e dividendos. Placeholder: participação na receita bruta do governo central, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027."
+      }
+    },
+    "transferShares": {
+      "renda": {
+        "value": 0.43,
+        "unit": "fração do grupo",
+        "status": "PROVISORIO",
+        "note": "FPE (21,5%), FPM (25,5%) e fundos regionais (3%) incidem sobre o IR, não sobre a CSLL (CF art. 159). Aproximação do grupo."
+      },
+      "folha": {
+        "value": 0,
+        "unit": "fração do grupo",
+        "status": "PROVISORIO",
+        "note": "Contribuições previdenciárias não são repartidas."
+      },
+      "consumo": {
+        "value": 0,
+        "unit": "fração do grupo",
+        "status": "PROVISORIO",
+        "note": "A CBS não é repartida; o IPI residual é desprezado."
+      },
+      "outras": {
+        "value": 0,
+        "unit": "fração do grupo",
+        "status": "PROVISORIO",
+        "note": "Aproximação: repartição desprezada."
+      },
+      "royalties": {
+        "value": 0.5,
+        "unit": "fração do grupo",
+        "status": "PROVISORIO",
+        "note": "Placeholder: parcela de royalties e participações destinada a estados e municípios (Lei 9.478/1997)."
+      }
+    },
+    "spending": {
+      "previdencia": {
+        "value": 0.0831,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Benefícios do RGPS. Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "beneficios": {
+        "value": 0.0191,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "BPC, abono salarial e seguro-desemprego. Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "pessoal": {
+        "value": 0.0309,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Pessoal e encargos. Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "outras": {
+        "value": 0.0099,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Demais obrigatórias (subsídios, sentenças e outras). Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "linked": {
+        "value": 0.0269,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Vinculadas à receita: mínimos de saúde e educação e emendas impositivas (CF arts. 166, 198 e 212). Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "discretionary": {
+        "value": 0.0161,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Discricionárias do Executivo (custeio e investimento). Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "exceptions": {
+        "value": 0.005,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Despesas fora do limite (complementação do Fundeb e demais exceções da LC 200/2023). Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      }
     }
   },
   "parameters": {},
@@ -98,7 +232,10 @@
       "name": "Esquerda",
       "chamberSeats": 110,
       "senateSeats": 14,
-      "ideology": { "economic": -0.7, "social": -0.6 },
+      "ideology": {
+        "economic": -0.7,
+        "social": -0.6
+      },
       "cohesion": 0.85,
       "governmentRelation": 0,
       "interests": ["social"]
@@ -108,7 +245,10 @@
       "name": "Centro-Esquerda",
       "chamberSeats": 70,
       "senateSeats": 10,
-      "ideology": { "economic": -0.3, "social": -0.2 },
+      "ideology": {
+        "economic": -0.3,
+        "social": -0.2
+      },
       "cohesion": 0.7,
       "governmentRelation": 0,
       "interests": ["educacao"]
@@ -118,7 +258,10 @@
       "name": "Centro",
       "chamberSeats": 150,
       "senateSeats": 24,
-      "ideology": { "economic": 0.1, "social": 0.2 },
+      "ideology": {
+        "economic": 0.1,
+        "social": 0.2
+      },
       "cohesion": 0.5,
       "governmentRelation": 10,
       "interests": ["emendas", "infraestrutura"]
@@ -128,7 +271,10 @@
       "name": "Centro-Direita",
       "chamberSeats": 98,
       "senateSeats": 18,
-      "ideology": { "economic": 0.5, "social": 0.4 },
+      "ideology": {
+        "economic": 0.5,
+        "social": 0.4
+      },
       "cohesion": 0.65,
       "governmentRelation": 0,
       "interests": ["agro", "industria"]
@@ -138,7 +284,10 @@
       "name": "Direita",
       "chamberSeats": 85,
       "senateSeats": 15,
-      "ideology": { "economic": 0.7, "social": 0.8 },
+      "ideology": {
+        "economic": 0.7,
+        "social": 0.8
+      },
       "cohesion": 0.8,
       "governmentRelation": 0,
       "interests": ["seguranca"]
@@ -153,6 +302,7 @@
     "transferencia_renda_ampliacao",
     "seguranca_cooperacao",
     "gastos_tributarios_revisao",
-    "reforma_administrativa"
+    "reforma_administrativa",
+    "salario_minimo_valorizacao"
   ]
 }

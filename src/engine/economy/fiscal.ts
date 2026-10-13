@@ -84,6 +84,7 @@ export function initialFiscal(v: FiscalValues, gdpGrowth: number, gdpGrowthTwoYe
     discretionary: s.discretionary,
     policyDiscretionary: 0,
     exceptions: s.exceptions,
+    extraordinary: 0,
     spendingLimit: v.primarySpending - s.exceptions,
     limitRealGrowth: clamp(c.limite_fracao_receita * gdpGrowth, c.limite_piso, c.limite_teto),
     limitExcess: 0,
@@ -262,6 +263,9 @@ export const MANDATORY_TARGETS: readonly ImpulseTarget[] = [
 /** Impulsos de despesa discricionária (crédito adicional, contingenciamento). */
 export const DISCRETIONARY_TARGETS: readonly ImpulseTarget[] = ['gasto.investimento', 'gasto.custeio'];
 
+/** Créditos extraordinários: despesa fora do limite (CF art. 167 §3º; LC 200/2023 art. 3º §2º). */
+export const EXTRAORDINARY_TARGETS: readonly ImpulseTarget[] = ['gasto.extraordinario'];
+
 export interface SpendingMonth {
   total: number;
   mandatory: Record<MandatoryGroup, number>;
@@ -271,6 +275,7 @@ export interface SpendingMonth {
   discretionary: number;
   policyDiscretionary: number;
   exceptions: number;
+  extraordinary: number;
   spendingLimit: number;
   limitExcess: number;
   /** Despesa que haveria sem nenhuma política ou evento (parte da tendência fiscal). */
@@ -308,6 +313,8 @@ export function spendingMonth(
 
   const mandatoryImpulses = activeImpulses(state.impulses, t, MANDATORY_TARGETS);
   const discretionaryImpulses = activeImpulses(state.impulses, t, DISCRETIONARY_TARGETS);
+  const extraordinaryImpulses = activeImpulses(state.impulses, t, EXTRAORDINARY_TARGETS);
+  const extraordinary = extraordinaryImpulses.reduce((s, i) => s + i.delta, 0);
   const policyMandatory = mandatoryImpulses.reduce((s, i) => s + i.delta, 0);
   const plus = discretionaryImpulses.reduce((s, i) => s + Math.max(0, i.delta), 0);
   const minus = discretionaryImpulses.reduce((s, i) => s + Math.min(0, i.delta), 0);
@@ -316,11 +323,11 @@ export function spendingMonth(
   const room = spendingLimit - ruled - policyMandatory;
   const planned = Math.max(c.discricionaria_minima, room - plus);
   const discretionary = Math.max(0, planned + minus);
-  const total = ruled + policyMandatory + discretionary + plus + exceptions;
-  const limitExcess = Math.max(0, total - exceptions - spendingLimit);
+  const total = ruled + policyMandatory + discretionary + plus + exceptions + extraordinary;
+  const limitExcess = Math.max(0, total - exceptions - extraordinary - spendingLimit);
 
   const withoutPolicies = ruled + Math.max(c.discricionaria_minima, spendingLimit - ruled) + exceptions;
-  const compression = total - withoutPolicies - policyMandatory - plus - minus;
+  const compression = total - withoutPolicies - policyMandatory - plus - minus - extraordinary;
 
   return {
     total,
@@ -330,12 +337,13 @@ export function spendingMonth(
     discretionary,
     policyDiscretionary: plus,
     exceptions,
+    extraordinary,
     spendingLimit,
     limitExcess,
     withoutPolicies,
     compression,
     structuralStance: ruled + planned + exceptions - structure.initialSpending,
-    impulses: [...mandatoryImpulses, ...discretionaryImpulses],
+    impulses: [...mandatoryImpulses, ...discretionaryImpulses, ...extraordinaryImpulses],
   };
 }
 

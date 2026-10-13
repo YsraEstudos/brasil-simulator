@@ -1,0 +1,44 @@
+{
+  "id": "salario_minimo_valorizacao",
+  "name": "Valorização extra do salário mínimo",
+  "summary": "Concede por lei ganho real de 1% acima da regra de valorização no próximo reajuste de janeiro. A aprovação sobe nas faixas de menor renda, mas o reajuste se propaga para previdência, BPC, abono e seguro-desemprego e, com o limite de despesas fixo, comprime as despesas discricionárias.",
+  "area": "social",
+  "competence": "federal",
+  "instruments": ["projeto_lei"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": 9400,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": {
+    "planningMonths": 1,
+    "expectedLegislativeMonths": 3,
+    "executionMonths": 12,
+    "maturationMonths": 0
+  },
+  "conditions": ["compensacao_lrf"],
+  "impacts": [
+    {
+      "channel": "salario_minimo_real",
+      "magnitude": 0.01,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": 0.02,
+      "lagMonths": 0
+    }
+  ],
+  "risks": [],
+  "affected": {
+    "groups": ["aposentados", "trabalhadores_salario_minimo", "baixa_renda"],
+    "sectors": ["comercio", "servicos"],
+    "regions": ["nordeste", "norte", "nacional"]
+  },
+  "position": {
+    "economic": -0.5,
+    "social": -0.2
+  },
+  "dataStatus": "PROVISORIO"
+}
