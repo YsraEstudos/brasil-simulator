@@ -1,0 +1,49 @@
+{
+  "id": "greve_servidores",
+  "title": "Greve de servidores federais",
+  "description": "Categorias do funcionalismo federal paralisam as atividades após reajuste abaixo da inflação acumulada. A pressão cresce a cada semana de paralisação.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "inflation12m", "op": "gt", "value": 0.045 }],
+    "probability": 0.08,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onFire": [{ "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "negociar",
+      "label": "Negociar reajuste",
+      "description": "Encerra a greve com um acordo parcial e melhora a aprovação, mas cria despesa obrigatória por um ano.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "gasto.obrigatoria", "delta": 0.001, "lagMonths": 0, "durationMonths": 12 },
+        { "target": "aprovacao", "delta": 0.008, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "endurecer",
+      "label": "Endurecer a posição",
+      "description": "Mantém o orçamento e reforça a imagem de rigor fiscal, mas desgasta a aprovação e o capital político.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": -0.015, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "capital_politico", "delta": -4, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "ceder",
+      "label": "Ceder às categorias",
+      "description": "Acaba com a paralisação rapidamente, mas a despesa obrigatória sobe forte e a credibilidade sofre.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "gasto.obrigatoria", "delta": 0.002, "lagMonths": 0, "durationMonths": 12 },
+        { "target": "credibilidade", "delta": -0.02, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    }
+  ],
+  "defaultChoice": "endurecer",
+  "dataStatus": "FICTICIO"
+}

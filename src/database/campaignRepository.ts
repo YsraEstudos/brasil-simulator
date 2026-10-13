@@ -4,9 +4,13 @@ import {
   type Decision,
   type Difficulty,
   type GameState,
+  type MonthReport,
   type MonthResult,
 } from '../engine';
 import type { SqlDatabase } from './types';
+
+/** Quantos meses de decomposição causal (`MonthReport`) ficam no banco (ECONOMIC_MODEL.md §11). */
+export const REPORT_RETENTION_MONTHS = 12;
 
 export interface CampaignSummary {
   id: string;
@@ -47,8 +51,9 @@ export async function createCampaign(
 
 /**
  * Grava o resultado de um mês: decisões enviadas (aceitas primeiro, depois recusadas, cada grupo na ordem
- * de envio), o novo estado e, se `finish`, o encerramento da campanha. Tudo numa transação: fechar o app no
- * meio não deixa o save pela metade (nem um último mês gravado com a campanha ainda "ativa").
+ * de envio), o relatório do mês, os eventos disparados e resolvidos, o novo estado e, se `finish`, o
+ * encerramento da campanha. Descarta relatórios além de `REPORT_RETENTION_MONTHS`. Tudo numa transação: fechar
+ * o app no meio não deixa o save pela metade (nem um último mês gravado com a campanha ainda "ativa").
  */
 export async function recordMonth(
   db: SqlDatabase,
@@ -89,8 +94,46 @@ export async function recordMonth(
         ],
       );
     }
+    await db.run('INSERT INTO month_reports (campaign_id, month_index, report_json) VALUES (?, ?, ?)', [
+      campaignId,
+      report.monthIndex,
+      JSON.stringify(report),
+    ]);
+    // Evento disparado neste mês aguarda resposta: linha no mês seguinte, sem escolha ainda.
+    for (const eventId of report.eventsFired) {
+      await db.run(
+        'INSERT INTO events (campaign_id, month_index, event_id, choice_id, payload_json) VALUES (?, ?, ?, NULL, NULL)',
+        [campaignId, report.monthIndex + 1, eventId],
+      );
+    }
+    // Escolha aplicada neste mês (do jogador ou automática, quando o prazo venceu).
+    for (const resolved of report.eventsResolved) {
+      await db.run(
+        'INSERT INTO events (campaign_id, month_index, event_id, choice_id, payload_json) VALUES (?, ?, ?, ?, ?)',
+        [
+          campaignId,
+          report.monthIndex,
+          resolved.eventId,
+          resolved.choiceId,
+          JSON.stringify({ automatic: resolved.automatic }),
+        ],
+      );
+    }
+    await db.run('DELETE FROM month_reports WHERE campaign_id = ? AND month_index < ?', [
+      campaignId,
+      report.monthIndex - (REPORT_RETENTION_MONTHS - 1),
+    ]);
     await insertSnapshot(db, campaignId, state);
   });
+}
+
+/** Relatório mensal salvo (decomposição causal); `null` se o mês saiu da retenção ou não existe. */
+export async function loadReport(db: SqlDatabase, campaignId: string, monthIndex: number): Promise<MonthReport | null> {
+  const row = await db.first<{ report_json: string }>(
+    'SELECT report_json FROM month_reports WHERE campaign_id = ? AND month_index = ?',
+    [campaignId, monthIndex],
+  );
+  return row ? (JSON.parse(row.report_json) as MonthReport) : null;
 }
 
 /** Estado mais recente da campanha, pronto para continuar jogando. */
@@ -146,7 +189,7 @@ export async function finishCampaign(db: SqlDatabase, campaignId: string): Promi
   );
 }
 
-/** Apaga a campanha e, em cascata, snapshots, decisões e eventos. */
+/** Apaga a campanha e, em cascata, snapshots, decisões, eventos e relatórios. */
 export async function deleteCampaign(db: SqlDatabase, campaignId: string): Promise<void> {
   await db.run('DELETE FROM campaigns WHERE id = ?', [campaignId]);
 }

@@ -7,6 +7,7 @@ import {
   finishCampaign,
   listCampaigns,
   loadLatestState,
+  loadReport,
   loadStateAt,
   recordMonth,
   type CampaignSummary,
@@ -124,6 +125,8 @@ export function createGameStore(deps: GameStoreDeps) {
           const state = await loadLatestState(d, id);
           const previous =
             state.monthIndex > 0 ? (await loadStateAt(d, id, state.monthIndex - 1))?.indicators : undefined;
+          const lastReport =
+            state.monthIndex > 0 ? ((await loadReport(d, id, state.monthIndex - 1)) ?? undefined) : undefined;
           // Saves anteriores à gravação atômica podem ter o último mês com status "ativa": corrige ao carregar.
           const finished = summary?.status === 'encerrada' || state.monthIndex >= PROTOTYPE_MONTHS;
           if (finished && summary?.status !== 'encerrada') {
@@ -136,6 +139,7 @@ export function createGameStore(deps: GameStoreDeps) {
               name: summary?.name ?? id,
               state,
               previous,
+              lastReport,
               finished,
             },
           });

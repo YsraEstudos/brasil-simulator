@@ -43,9 +43,12 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     await app.getState().newCampaign({ name: '  Governo Teste  ', difficulty: 'casual' });
     const id = app.getState().active!.id;
     expect(app.getState().active!.name).toBe('Governo Teste');
-    for (let m = 0; m < 3; m++)
-      await app.getState().endMonth({ decisions: [{ policyId: 'contingenciamento', agendaCost: 1 }] });
+    for (const policyId of ['contingenciamento', 'iof_credito_reducao', 'irpf_tabela']) {
+      await app.getState().endMonth({ decisions: [{ policyId, agendaCost: 1 }] });
+    }
     const before = app.getState().active!.state;
+    const beforePrevious = app.getState().active!.previous;
+    const lastReport = app.getState().active!.lastReport;
     expect(before.monthIndex).toBe(3);
 
     // Fecha o app: nova store, nada em memória.
@@ -56,8 +59,9 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     await app.getState().continueCampaign(id);
     const resumed = app.getState().active!;
     expect(resumed.state).toEqual(before);
-    expect(resumed.previous).toEqual(before.indicators); // mês anterior carregado do snapshot
+    expect(resumed.previous).toEqual(beforePrevious); // mês anterior carregado do snapshot
     expect(resumed.state.decisionLog).toHaveLength(3);
+    expect(resumed.lastReport).toEqual(lastReport); // relatório do mês anterior vem do banco
   });
 
   it('encerra a campanha no fim do protótipo e não avança mais', async () => {
@@ -130,8 +134,8 @@ describe('migração 2 (configurações)', () => {
       scenarioVersion: '0.1.0',
       state: createInitialState({ content: loadContent('prototipo_ficticio'), difficulty: 'casual', seed: 1 }),
     });
-    expect(await migrate(db)).toEqual([2]);
-    expect(LATEST_DB_VERSION).toBe(2);
+    expect(await migrate(db)).toEqual([2, 3]);
+    expect(LATEST_DB_VERSION).toBe(3);
     await v1.getState().init();
     expect(v1.getState().campaigns.map((c) => c.name)).toEqual(['Campanha da v1']);
   });

@@ -74,6 +74,20 @@ export const MIGRATIONS: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 3,
+    name: 'relatorios_mensais',
+    sql: `
+      -- Decomposição causal completa dos últimos 12 meses (MonthReport em JSON), alimenta o "Por que mudou?".
+      -- Meses mais antigos são descartados ao gravar um novo mês (ECONOMIC_MODEL.md §11).
+      CREATE TABLE month_reports (
+        campaign_id TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+        month_index INTEGER NOT NULL CHECK (month_index >= 0),
+        report_json TEXT NOT NULL,
+        PRIMARY KEY (campaign_id, month_index)
+      );
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

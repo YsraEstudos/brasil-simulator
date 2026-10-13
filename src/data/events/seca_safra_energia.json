@@ -1,0 +1,48 @@
+{
+  "id": "seca_safra_energia",
+  "title": "Seca afeta safra e energia",
+  "description": "A estiagem reduz a safra e afeta os reservatórios de energia. Alimentos e tarifas tendem a subir.",
+  "trigger": {
+    "monthsOfYear": [7, 8, 9, 10],
+    "conditions": [],
+    "probability": 0.15,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onFire": [
+    { "target": "choque.inflacao", "delta": 0.004, "lagMonths": 0, "durationMonths": 6 },
+    { "target": "choque.hiato", "delta": -0.002, "lagMonths": 0, "durationMonths": 3 }
+  ],
+  "choices": [
+    {
+      "id": "nada",
+      "label": "Não intervir",
+      "description": "Preserva o caixa, mas o desgaste político cresce com a falta de resposta à crise.",
+      "agendaCost": 0,
+      "effects": [{ "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }]
+    },
+    {
+      "id": "credito_emergencial",
+      "label": "Crédito emergencial",
+      "description": "Socorre produtores e famílias e melhora a aprovação, mas aumenta a despesa de custeio por meses.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "gasto.custeio", "delta": 0.0015, "lagMonths": 0, "durationMonths": 6 },
+        { "target": "aprovacao", "delta": 0.012, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "bandeira_tarifaria",
+      "label": "Bandeira tarifária cheia",
+      "description": "Cobre o custo da energia sem gasto público, mas a conta mais alta pressiona a inflação e a aprovação.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "choque.inflacao", "delta": 0.003, "lagMonths": 0, "durationMonths": 4 },
+        { "target": "credibilidade", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    }
+  ],
+  "defaultChoice": "nada",
+  "dataStatus": "FICTICIO"
+}

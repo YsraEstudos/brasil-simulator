@@ -1,0 +1,37 @@
+{
+  "id": "seguranca_cooperacao",
+  "name": "Cooperação federativa em segurança pública",
+  "summary": "Institui programa de cooperação entre União e estados para segurança pública, por medida provisória e convênios. O efeito depende da adesão dos estados e tem execução lenta, com resultados previstos após alguns anos.",
+  "area": "seguranca",
+  "competence": "comum",
+  "instruments": ["medida_provisoria", "convenio"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": 6000,
+    "disbursementProfile": [0.3, 0.4, 0.3]
+  },
+  "fundingSources": ["remanejamento"],
+  "timeline": {
+    "planningMonths": 2,
+    "expectedLegislativeMonths": 2,
+    "executionMonths": 24,
+    "maturationMonths": 12
+  },
+  "conditions": ["adesao_estadual"],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 3000, "lagMonths": 2 },
+    { "channel": "investimento_publico", "magnitude": 3000, "lagMonths": 4 },
+    { "channel": "aprovacao", "magnitude": 0.01, "lagMonths": 9 }
+  ],
+  "risks": [
+    { "kind": "baixa_adesao", "probability": 0.3 },
+    { "kind": "atraso", "probability": 0.3 }
+  ],
+  "affected": {
+    "groups": ["populacao_urbana"],
+    "sectors": ["seguranca"],
+    "regions": ["nacional"]
+  },
+  "position": { "economic": 0, "social": 0.4 },
+  "dataStatus": "PROVISORIO"
+}
