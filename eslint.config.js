@@ -16,6 +16,33 @@ module.exports = defineConfig([
       'react-hooks/immutability': 'off',
     },
   },
+  {
+    // Motor de simulação: TypeScript puro e determinístico (AI_INSTRUCTIONS.md §3).
+    files: ['src/engine/**/*.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        { name: 'Date', message: 'Motor: use monthIndex (src/engine/calendar.ts), nunca Date.' },
+      ],
+      'no-restricted-properties': [
+        'error',
+        { object: 'Math', property: 'random', message: 'Motor: use o Rng com semente (src/engine/rng.ts).' },
+        { object: 'console', message: 'Motor: sem console; devolva informações no relatório do mês.' },
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['react', 'react-*', 'expo', 'expo-*', '@expo/*'], message: 'Motor não importa React/Expo.' },
+            {
+              group: ['@/app/*', '@/components/*', '@/database/*', '@/store/*', '@/globe/*'],
+              message: 'Motor não depende da interface nem da persistência.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Formatação é do Prettier; desliga regras de estilo do ESLint que conflitam.
   prettierConfig,
 ]);
