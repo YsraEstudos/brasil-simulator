@@ -19,19 +19,45 @@
   },
   "conditions": ["adesao_estadual"],
   "impacts": [
-    { "channel": "custeio", "magnitude": 3000, "lagMonths": 2 },
-    { "channel": "investimento_publico", "magnitude": 3000, "lagMonths": 4 },
-    { "channel": "aprovacao", "magnitude": 0.01, "lagMonths": 9 }
+    {
+      "channel": "custeio",
+      "magnitude": 3000,
+      "lagMonths": 2
+    },
+    {
+      "channel": "investimento_publico",
+      "magnitude": 3000,
+      "lagMonths": 4
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": 0.01,
+      "lagMonths": 9
+    }
   ],
   "risks": [
-    { "kind": "baixa_adesao", "probability": 0.3 },
-    { "kind": "atraso", "probability": 0.3 }
+    {
+      "kind": "baixa_adesao",
+      "probability": 0.3
+    },
+    {
+      "kind": "atraso",
+      "probability": 0.3
+    }
   ],
   "affected": {
     "groups": ["populacao_urbana"],
     "sectors": ["seguranca"],
     "regions": ["nacional"]
   },
-  "position": { "economic": 0, "social": 0.4 },
+  "regional": {
+    "key": "populacao",
+    "scope": [],
+    "boost": {}
+  },
+  "position": {
+    "economic": 0,
+    "social": 0.4
+  },
   "dataStatus": "PROVISORIO"
 }

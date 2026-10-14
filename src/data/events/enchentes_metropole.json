@@ -1,7 +1,7 @@
 {
   "id": "enchentes_metropole",
   "title": "Enchentes em região metropolitana",
-  "description": "Chuvas fortes deixam bairros alagados e famílias desabrigadas em uma região metropolitana. Estados e municípios pedem apoio federal.",
+  "description": "Chuvas fortes deixam bairros alagados e famílias desabrigadas em uma região metropolitana do Sudeste. Estados e municípios pedem apoio federal.",
   "trigger": {
     "monthsOfYear": [1, 2, 3, 12],
     "conditions": [],
@@ -15,6 +15,14 @@
       "delta": -0.01,
       "lagMonths": 0,
       "durationMonths": 1
+    },
+    {
+      "target": "regiao.atividade",
+      "delta": -0.004,
+      "lagMonths": 0,
+      "durationMonths": 2,
+      "label": "Enchentes",
+      "regions": ["sudeste"]
     }
   ],
   "choices": [
@@ -28,7 +36,8 @@
           "target": "gasto.extraordinario",
           "delta": 0.002,
           "lagMonths": 0,
-          "durationMonths": 6
+          "durationMonths": 6,
+          "regions": ["sudeste"]
         },
         {
           "target": "aprovacao",
@@ -41,6 +50,13 @@
           "delta": -0.005,
           "lagMonths": 0,
           "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 6,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["sudeste"]
         }
       ]
     },
@@ -61,6 +77,14 @@
           "delta": 0.005,
           "lagMonths": 0,
           "durationMonths": 1
+        },
+        {
+          "target": "regiao.aprovacao",
+          "delta": -0.015,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "label": "Resposta lenta às enchentes",
+          "regions": ["sudeste"]
         }
       ]
     }

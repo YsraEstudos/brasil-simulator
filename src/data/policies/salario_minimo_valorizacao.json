@@ -36,6 +36,11 @@
     "sectors": ["comercio", "servicos"],
     "regions": ["nordeste", "norte", "nacional"]
   },
+  "regional": {
+    "key": "pobreza",
+    "scope": [],
+    "boost": {}
+  },
   "position": {
     "economic": -0.5,
     "social": -0.2

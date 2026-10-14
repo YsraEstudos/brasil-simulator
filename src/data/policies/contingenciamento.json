@@ -19,10 +19,26 @@
   },
   "conditions": [],
   "impacts": [
-    { "channel": "custeio", "magnitude": -20000, "lagMonths": 0 },
-    { "channel": "investimento_publico", "magnitude": -10000, "lagMonths": 0 },
-    { "channel": "aprovacao", "magnitude": -0.015, "lagMonths": 1 },
-    { "channel": "credibilidade_fiscal", "magnitude": 0.03, "lagMonths": 0 }
+    {
+      "channel": "custeio",
+      "magnitude": -20000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "investimento_publico",
+      "magnitude": -10000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": -0.015,
+      "lagMonths": 1
+    },
+    {
+      "channel": "credibilidade_fiscal",
+      "magnitude": 0.03,
+      "lagMonths": 0
+    }
   ],
   "risks": [],
   "affected": {
@@ -30,6 +46,16 @@
     "sectors": ["servicos", "construcao"],
     "regions": ["nacional"]
   },
-  "position": { "economic": 0.5, "social": 0 },
+  "regional": {
+    "key": "populacao",
+    "scope": [],
+    "boost": {
+      "DF": 2
+    }
+  },
+  "position": {
+    "economic": 0.5,
+    "social": 0
+  },
   "dataStatus": "PROVISORIO"
 }

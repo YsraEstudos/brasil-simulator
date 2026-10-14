@@ -4,12 +4,31 @@
   "description": "Governadores de vários estados alegam queda de receita e pedem mais transferências da União. Ameaçam obstruir votações no Congresso.",
   "trigger": {
     "monthsOfYear": [],
-    "conditions": [{ "variable": "gdpGrowth12m", "op": "lt", "value": 0.015 }],
+    "conditions": [
+      {
+        "variable": "gdpGrowth12m",
+        "op": "lt",
+        "value": 0.015
+      }
+    ],
     "probability": 0.1,
     "cooldownMonths": 12,
     "maxOccurrences": 2
   },
-  "onFire": [{ "target": "relacao_congresso", "delta": -5, "lagMonths": 0, "durationMonths": 1 }],
+  "onFire": [
+    {
+      "target": "relacao_congresso",
+      "delta": -5,
+      "lagMonths": 0,
+      "durationMonths": 1
+    },
+    {
+      "target": "governadores.relacao",
+      "delta": -5,
+      "lagMonths": 0,
+      "durationMonths": 1
+    }
+  ],
   "choices": [
     {
       "id": "negociar_transferencias",
@@ -17,8 +36,24 @@
       "description": "Recompõe a base de governadores no Congresso, mas aumenta a despesa de custeio por um ano.",
       "agendaCost": 1,
       "effects": [
-        { "target": "gasto.custeio", "delta": 0.001, "lagMonths": 0, "durationMonths": 12 },
-        { "target": "relacao_congresso", "delta": 6, "lagMonths": 0, "durationMonths": 1 }
+        {
+          "target": "gasto.custeio",
+          "delta": 0.001,
+          "lagMonths": 0,
+          "durationMonths": 12
+        },
+        {
+          "target": "relacao_congresso",
+          "delta": 6,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 12,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
       ]
     },
     {
@@ -27,8 +62,24 @@
       "description": "Preserva a responsabilidade fiscal e ganha um pouco de credibilidade, mas aumenta a hostilidade dos governadores no Congresso.",
       "agendaCost": 0,
       "effects": [
-        { "target": "relacao_congresso", "delta": -6, "lagMonths": 0, "durationMonths": 1 },
-        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+        {
+          "target": "relacao_congresso",
+          "delta": -6,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": -8,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
       ]
     }
   ],

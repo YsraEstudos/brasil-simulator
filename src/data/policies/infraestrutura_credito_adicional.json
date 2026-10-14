@@ -19,19 +19,45 @@
   },
   "conditions": ["espaco_no_limite_de_despesas"],
   "impacts": [
-    { "channel": "investimento_publico", "magnitude": 5000, "lagMonths": 3 },
-    { "channel": "capital_publico", "magnitude": 0.0008, "lagMonths": 24 },
-    { "channel": "aprovacao", "magnitude": 0.005, "lagMonths": 6 }
+    {
+      "channel": "investimento_publico",
+      "magnitude": 5000,
+      "lagMonths": 3
+    },
+    {
+      "channel": "capital_publico",
+      "magnitude": 0.0008,
+      "lagMonths": 24
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": 0.005,
+      "lagMonths": 6
+    }
   ],
   "risks": [
-    { "kind": "atraso", "probability": 0.3 },
-    { "kind": "sobrecusto", "probability": 0.2 }
+    {
+      "kind": "atraso",
+      "probability": 0.3
+    },
+    {
+      "kind": "sobrecusto",
+      "probability": 0.2
+    }
   ],
   "affected": {
     "groups": ["trabalhadores_construcao"],
     "sectors": ["construcao"],
     "regions": ["nacional"]
   },
-  "position": { "economic": -0.3, "social": 0 },
+  "regional": {
+    "key": "populacao",
+    "scope": [],
+    "boost": {}
+  },
+  "position": {
+    "economic": -0.3,
+    "social": 0
+  },
   "dataStatus": "PROVISORIO"
 }

@@ -19,16 +19,43 @@
   },
   "conditions": ["noventena"],
   "impacts": [
-    { "channel": "receita_tributaria", "magnitude": 20000, "lagMonths": 3 },
-    { "channel": "credibilidade_fiscal", "magnitude": 0.02, "lagMonths": 0 },
-    { "channel": "aprovacao", "magnitude": -0.005, "lagMonths": 0 }
+    {
+      "channel": "receita_tributaria",
+      "magnitude": 20000,
+      "lagMonths": 3
+    },
+    {
+      "channel": "credibilidade_fiscal",
+      "magnitude": 0.02,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": -0.005,
+      "lagMonths": 0
+    }
   ],
-  "risks": [{ "kind": "judicializacao", "probability": 0.2 }],
+  "risks": [
+    {
+      "kind": "judicializacao",
+      "probability": 0.2
+    }
+  ],
   "affected": {
     "groups": ["empresas_beneficiadas"],
     "sectors": ["industria", "agro"],
     "regions": ["nacional"]
   },
-  "position": { "economic": 0.1, "social": 0 },
+  "regional": {
+    "key": "pib",
+    "scope": [],
+    "boost": {
+      "AM": 3
+    }
+  },
+  "position": {
+    "economic": 0.1,
+    "social": 0
+  },
   "dataStatus": "PROVISORIO"
 }

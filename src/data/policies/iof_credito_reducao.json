@@ -19,9 +19,21 @@
   },
   "conditions": ["compensacao_lrf"],
   "impacts": [
-    { "channel": "desoneracao_consumo", "magnitude": 8000, "lagMonths": 0 },
-    { "channel": "credito", "magnitude": 20000, "lagMonths": 1 },
-    { "channel": "aprovacao", "magnitude": 0.003, "lagMonths": 0 }
+    {
+      "channel": "desoneracao_consumo",
+      "magnitude": 8000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "credito",
+      "magnitude": 20000,
+      "lagMonths": 1
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": 0.003,
+      "lagMonths": 0
+    }
   ],
   "risks": [],
   "affected": {
@@ -29,6 +41,14 @@
     "sectors": ["comercio", "servicos"],
     "regions": ["nacional"]
   },
-  "position": { "economic": 0.3, "social": 0 },
+  "regional": {
+    "key": "pib",
+    "scope": [],
+    "boost": {}
+  },
+  "position": {
+    "economic": 0.3,
+    "social": 0
+  },
   "dataStatus": "PROVISORIO"
 }

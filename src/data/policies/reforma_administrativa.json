@@ -19,16 +19,43 @@
   },
   "conditions": [],
   "impacts": [
-    { "channel": "despesa_obrigatoria", "magnitude": -15000, "lagMonths": 24 },
-    { "channel": "credibilidade_fiscal", "magnitude": 0.04, "lagMonths": 0 },
-    { "channel": "aprovacao", "magnitude": -0.01, "lagMonths": 0 }
+    {
+      "channel": "despesa_obrigatoria",
+      "magnitude": -15000,
+      "lagMonths": 24
+    },
+    {
+      "channel": "credibilidade_fiscal",
+      "magnitude": 0.04,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": -0.01,
+      "lagMonths": 0
+    }
   ],
-  "risks": [{ "kind": "judicializacao", "probability": 0.3 }],
+  "risks": [
+    {
+      "kind": "judicializacao",
+      "probability": 0.3
+    }
+  ],
   "affected": {
     "groups": ["servidores"],
     "sectors": ["servicos"],
     "regions": ["nacional"]
   },
-  "position": { "economic": 0.6, "social": 0.2 },
+  "regional": {
+    "key": "populacao",
+    "scope": [],
+    "boost": {
+      "DF": 6
+    }
+  },
+  "position": {
+    "economic": 0.6,
+    "social": 0.2
+  },
   "dataStatus": "PROVISORIO"
 }

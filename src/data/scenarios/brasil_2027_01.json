@@ -1,6 +1,6 @@
 {
   "id": "brasil_2027_01",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "name": "Brasil, janeiro de 2027 (dados provisórios)",
   "startPeriod": "2027-01",
   "indicators": {
@@ -375,6 +375,555 @@
         "areas": ["energia"],
         "weight": 0.6,
         "occupant": "tecnico"
+      }
+    ]
+  },
+  "regions": {
+    "meta": {
+      "population": {
+        "unit": "milhares de pessoas",
+        "status": "PROVISORIO",
+        "note": "Ordem de grandeza do Censo 2022 (IBGE), arredondada; conferir na importação (DATA_SOURCES.md §4.2). População fixa durante a campanha."
+      },
+      "gdpShare": {
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Ordem de grandeza das Contas Regionais do IBGE (início da década de 2020), arredondada a 0,1 p.p.; soma 1. Substituir pela série importada."
+      },
+      "sectors": {
+        "unit": "fração do valor adicionado da UF",
+        "status": "PROVISORIO",
+        "note": "Peso aproximado de agropecuária, indústria extrativa, demais indústrias (transformação, construção, energia) e serviços, a partir da ordem de grandeza das Contas Regionais do IBGE; soma 1 por UF."
+      },
+      "unemployment": {
+        "unit": "fração da força de trabalho",
+        "status": "PROVISORIO",
+        "note": "Ordem de grandeza da PNAD Contínua por UF (2024–2025). O motor usa só a diferença relativa entre as UFs: a média ponderada é sempre a taxa nacional."
+      },
+      "poverty": {
+        "unit": "fração da população",
+        "status": "PROVISORIO",
+        "note": "Ordem de grandeza da Síntese de Indicadores Sociais do IBGE (linha de pobreza internacional); usada só como chave de distribuição de transferências."
+      },
+      "governors": {
+        "unit": "bloco e relação −100…100",
+        "status": "FICTICIO",
+        "note": "Governadores fictícios: o bloco de cada um e a relação inicial com o presidente fictício são de design e não reproduzem os eleitos em 2026 (GAME_DESIGN.md §13)."
+      }
+    },
+    "ufs": [
+      {
+        "id": "RO",
+        "name": "Rondônia",
+        "region": "norte",
+        "population": 1581,
+        "gdpShare": 0.006,
+        "sectors": {
+          "agropecuaria": 0.2,
+          "extrativa": 0.01,
+          "industria": 0.14,
+          "servicos": 0.65
+        },
+        "unemployment": 0.035,
+        "poverty": 0.25,
+        "governor": {
+          "bloc": "direita",
+          "relation": -10
+        }
+      },
+      {
+        "id": "AC",
+        "name": "Acre",
+        "region": "norte",
+        "population": 830,
+        "gdpShare": 0.002,
+        "sectors": {
+          "agropecuaria": 0.12,
+          "extrativa": 0,
+          "industria": 0.1,
+          "servicos": 0.78
+        },
+        "unemployment": 0.075,
+        "poverty": 0.42,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": 0
+        }
+      },
+      {
+        "id": "AM",
+        "name": "Amazonas",
+        "region": "norte",
+        "population": 3941,
+        "gdpShare": 0.014,
+        "sectors": {
+          "agropecuaria": 0.06,
+          "extrativa": 0.03,
+          "industria": 0.3,
+          "servicos": 0.61
+        },
+        "unemployment": 0.08,
+        "poverty": 0.45,
+        "governor": {
+          "bloc": "centro",
+          "relation": 10
+        }
+      },
+      {
+        "id": "RR",
+        "name": "Roraima",
+        "region": "norte",
+        "population": 636,
+        "gdpShare": 0.002,
+        "sectors": {
+          "agropecuaria": 0.08,
+          "extrativa": 0,
+          "industria": 0.1,
+          "servicos": 0.82
+        },
+        "unemployment": 0.065,
+        "poverty": 0.38,
+        "governor": {
+          "bloc": "direita",
+          "relation": -15
+        }
+      },
+      {
+        "id": "PA",
+        "name": "Pará",
+        "region": "norte",
+        "population": 8121,
+        "gdpShare": 0.026,
+        "sectors": {
+          "agropecuaria": 0.12,
+          "extrativa": 0.3,
+          "industria": 0.12,
+          "servicos": 0.46
+        },
+        "unemployment": 0.075,
+        "poverty": 0.42,
+        "governor": {
+          "bloc": "centro",
+          "relation": 15
+        }
+      },
+      {
+        "id": "AP",
+        "name": "Amapá",
+        "region": "norte",
+        "population": 733,
+        "gdpShare": 0.002,
+        "sectors": {
+          "agropecuaria": 0.04,
+          "extrativa": 0.03,
+          "industria": 0.1,
+          "servicos": 0.83
+        },
+        "unemployment": 0.09,
+        "poverty": 0.4,
+        "governor": {
+          "bloc": "centro_esquerda",
+          "relation": 10
+        }
+      },
+      {
+        "id": "TO",
+        "name": "Tocantins",
+        "region": "norte",
+        "population": 1511,
+        "gdpShare": 0.005,
+        "sectors": {
+          "agropecuaria": 0.18,
+          "extrativa": 0.01,
+          "industria": 0.15,
+          "servicos": 0.66
+        },
+        "unemployment": 0.05,
+        "poverty": 0.3,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": 0
+        }
+      },
+      {
+        "id": "MA",
+        "name": "Maranhão",
+        "region": "nordeste",
+        "population": 6775,
+        "gdpShare": 0.014,
+        "sectors": {
+          "agropecuaria": 0.14,
+          "extrativa": 0.02,
+          "industria": 0.15,
+          "servicos": 0.69
+        },
+        "unemployment": 0.075,
+        "poverty": 0.5,
+        "governor": {
+          "bloc": "centro_esquerda",
+          "relation": 20
+        }
+      },
+      {
+        "id": "PI",
+        "name": "Piauí",
+        "region": "nordeste",
+        "population": 3271,
+        "gdpShare": 0.007,
+        "sectors": {
+          "agropecuaria": 0.1,
+          "extrativa": 0,
+          "industria": 0.14,
+          "servicos": 0.76
+        },
+        "unemployment": 0.08,
+        "poverty": 0.43,
+        "governor": {
+          "bloc": "esquerda",
+          "relation": 25
+        }
+      },
+      {
+        "id": "CE",
+        "name": "Ceará",
+        "region": "nordeste",
+        "population": 8794,
+        "gdpShare": 0.022,
+        "sectors": {
+          "agropecuaria": 0.05,
+          "extrativa": 0,
+          "industria": 0.18,
+          "servicos": 0.77
+        },
+        "unemployment": 0.07,
+        "poverty": 0.43,
+        "governor": {
+          "bloc": "esquerda",
+          "relation": 20
+        }
+      },
+      {
+        "id": "RN",
+        "name": "Rio Grande do Norte",
+        "region": "nordeste",
+        "population": 3302,
+        "gdpShare": 0.009,
+        "sectors": {
+          "agropecuaria": 0.04,
+          "extrativa": 0.04,
+          "industria": 0.18,
+          "servicos": 0.74
+        },
+        "unemployment": 0.085,
+        "poverty": 0.38,
+        "governor": {
+          "bloc": "centro",
+          "relation": 0
+        }
+      },
+      {
+        "id": "PB",
+        "name": "Paraíba",
+        "region": "nordeste",
+        "population": 3974,
+        "gdpShare": 0.009,
+        "sectors": {
+          "agropecuaria": 0.04,
+          "extrativa": 0,
+          "industria": 0.18,
+          "servicos": 0.78
+        },
+        "unemployment": 0.085,
+        "poverty": 0.42,
+        "governor": {
+          "bloc": "centro_esquerda",
+          "relation": 15
+        }
+      },
+      {
+        "id": "PE",
+        "name": "Pernambuco",
+        "region": "nordeste",
+        "population": 9058,
+        "gdpShare": 0.024,
+        "sectors": {
+          "agropecuaria": 0.04,
+          "extrativa": 0,
+          "industria": 0.2,
+          "servicos": 0.76
+        },
+        "unemployment": 0.1,
+        "poverty": 0.45,
+        "governor": {
+          "bloc": "centro",
+          "relation": 5
+        }
+      },
+      {
+        "id": "AL",
+        "name": "Alagoas",
+        "region": "nordeste",
+        "population": 3127,
+        "gdpShare": 0.008,
+        "sectors": {
+          "agropecuaria": 0.08,
+          "extrativa": 0.01,
+          "industria": 0.15,
+          "servicos": 0.76
+        },
+        "unemployment": 0.085,
+        "poverty": 0.46,
+        "governor": {
+          "bloc": "centro",
+          "relation": 10
+        }
+      },
+      {
+        "id": "SE",
+        "name": "Sergipe",
+        "region": "nordeste",
+        "population": 2210,
+        "gdpShare": 0.006,
+        "sectors": {
+          "agropecuaria": 0.05,
+          "extrativa": 0.04,
+          "industria": 0.18,
+          "servicos": 0.73
+        },
+        "unemployment": 0.09,
+        "poverty": 0.42,
+        "governor": {
+          "bloc": "centro_esquerda",
+          "relation": 5
+        }
+      },
+      {
+        "id": "BA",
+        "name": "Bahia",
+        "region": "nordeste",
+        "population": 14141,
+        "gdpShare": 0.039,
+        "sectors": {
+          "agropecuaria": 0.09,
+          "extrativa": 0.02,
+          "industria": 0.22,
+          "servicos": 0.67
+        },
+        "unemployment": 0.1,
+        "poverty": 0.43,
+        "governor": {
+          "bloc": "esquerda",
+          "relation": 20
+        }
+      },
+      {
+        "id": "MG",
+        "name": "Minas Gerais",
+        "region": "sudeste",
+        "population": 20539,
+        "gdpShare": 0.094,
+        "sectors": {
+          "agropecuaria": 0.08,
+          "extrativa": 0.09,
+          "industria": 0.22,
+          "servicos": 0.61
+        },
+        "unemployment": 0.05,
+        "poverty": 0.2,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": -15
+        }
+      },
+      {
+        "id": "ES",
+        "name": "Espírito Santo",
+        "region": "sudeste",
+        "population": 3834,
+        "gdpShare": 0.021,
+        "sectors": {
+          "agropecuaria": 0.05,
+          "extrativa": 0.12,
+          "industria": 0.2,
+          "servicos": 0.63
+        },
+        "unemployment": 0.04,
+        "poverty": 0.21,
+        "governor": {
+          "bloc": "centro",
+          "relation": 5
+        }
+      },
+      {
+        "id": "RJ",
+        "name": "Rio de Janeiro",
+        "region": "sudeste",
+        "population": 16055,
+        "gdpShare": 0.107,
+        "sectors": {
+          "agropecuaria": 0.01,
+          "extrativa": 0.16,
+          "industria": 0.14,
+          "servicos": 0.69
+        },
+        "unemployment": 0.08,
+        "poverty": 0.22,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": -5
+        }
+      },
+      {
+        "id": "SP",
+        "name": "São Paulo",
+        "region": "sudeste",
+        "population": 44412,
+        "gdpShare": 0.304,
+        "sectors": {
+          "agropecuaria": 0.02,
+          "extrativa": 0,
+          "industria": 0.22,
+          "servicos": 0.76
+        },
+        "unemployment": 0.055,
+        "poverty": 0.16,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": -20
+        }
+      },
+      {
+        "id": "PR",
+        "name": "Paraná",
+        "region": "sul",
+        "population": 11444,
+        "gdpShare": 0.065,
+        "sectors": {
+          "agropecuaria": 0.11,
+          "extrativa": 0,
+          "industria": 0.24,
+          "servicos": 0.65
+        },
+        "unemployment": 0.04,
+        "poverty": 0.15,
+        "governor": {
+          "bloc": "direita",
+          "relation": -20
+        }
+      },
+      {
+        "id": "SC",
+        "name": "Santa Catarina",
+        "region": "sul",
+        "population": 7610,
+        "gdpShare": 0.048,
+        "sectors": {
+          "agropecuaria": 0.07,
+          "extrativa": 0,
+          "industria": 0.28,
+          "servicos": 0.65
+        },
+        "unemployment": 0.03,
+        "poverty": 0.1,
+        "governor": {
+          "bloc": "direita",
+          "relation": -25
+        }
+      },
+      {
+        "id": "RS",
+        "name": "Rio Grande do Sul",
+        "region": "sul",
+        "population": 10883,
+        "gdpShare": 0.063,
+        "sectors": {
+          "agropecuaria": 0.1,
+          "extrativa": 0,
+          "industria": 0.22,
+          "servicos": 0.68
+        },
+        "unemployment": 0.05,
+        "poverty": 0.15,
+        "governor": {
+          "bloc": "centro",
+          "relation": -5
+        }
+      },
+      {
+        "id": "MS",
+        "name": "Mato Grosso do Sul",
+        "region": "centro_oeste",
+        "population": 2757,
+        "gdpShare": 0.016,
+        "sectors": {
+          "agropecuaria": 0.22,
+          "extrativa": 0.01,
+          "industria": 0.18,
+          "servicos": 0.59
+        },
+        "unemployment": 0.035,
+        "poverty": 0.18,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": -10
+        }
+      },
+      {
+        "id": "MT",
+        "name": "Mato Grosso",
+        "region": "centro_oeste",
+        "population": 3659,
+        "gdpShare": 0.025,
+        "sectors": {
+          "agropecuaria": 0.3,
+          "extrativa": 0.01,
+          "industria": 0.12,
+          "servicos": 0.57
+        },
+        "unemployment": 0.028,
+        "poverty": 0.18,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": -10
+        }
+      },
+      {
+        "id": "GO",
+        "name": "Goiás",
+        "region": "centro_oeste",
+        "population": 7056,
+        "gdpShare": 0.03,
+        "sectors": {
+          "agropecuaria": 0.12,
+          "extrativa": 0.01,
+          "industria": 0.2,
+          "servicos": 0.67
+        },
+        "unemployment": 0.05,
+        "poverty": 0.2,
+        "governor": {
+          "bloc": "centro",
+          "relation": -5
+        }
+      },
+      {
+        "id": "DF",
+        "name": "Distrito Federal",
+        "region": "centro_oeste",
+        "population": 2817,
+        "gdpShare": 0.032,
+        "sectors": {
+          "agropecuaria": 0,
+          "extrativa": 0,
+          "industria": 0.05,
+          "servicos": 0.95
+        },
+        "unemployment": 0.085,
+        "poverty": 0.15,
+        "governor": {
+          "bloc": "centro_esquerda",
+          "relation": 0
+        }
       }
     ]
   },

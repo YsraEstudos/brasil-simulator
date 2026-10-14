@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { contentIdSchema, dataValueSchema } from './data';
+import { contentIdSchema, dataSeriesSchema, dataValueSchema } from './data';
+import { regionIdSchema, ufIdSchema } from './regions';
 
 /**
  * Cenário inicial de campanha, gravado como JSON versionado em `src/data/scenarios/` (DATA_SOURCES.md §1).
@@ -139,6 +140,57 @@ export const scenarioInstitutionsSchema = z
   .strict();
 export type ScenarioInstitutions = z.infer<typeof scenarioInstitutionsSchema>;
 
+/** Quantidade de UFs (26 estados e o Distrito Federal). */
+export const UF_COUNT = 27;
+
+const shareSchema = z.number().gt(0).lt(1);
+
+/** UF no cenário (ECONOMIC_MODEL.md §5.12, §5.15): só a matriz de participação e de sensibilidade setorial. */
+export const scenarioUfSchema = z
+  .object({
+    /** Sigla, igual à do globo (`src/globe/data/ufs.json`). */
+    id: ufIdSchema,
+    name: z.string().min(1),
+    region: regionIdSchema,
+    /** Milhares de pessoas (ECONOMIC_MODEL.md §2). */
+    population: z.number().positive(),
+    /** Participação no PIB nacional no início do cenário; soma 1 entre as UFs. */
+    gdpShare: shareSchema,
+    /** Peso de cada setor no valor adicionado da UF; soma 1. */
+    sectors: z
+      .object({ agropecuaria: unitInterval, extrativa: unitInterval, industria: unitInterval, servicos: unitInterval })
+      .strict(),
+    /** Desemprego inicial da UF (só a diferença relativa entre as UFs é usada). */
+    unemployment: shareSchema,
+    /** População abaixo da linha de pobreza (chave de distribuição de transferências). */
+    poverty: unitInterval,
+    /** Governador fictício: bloco a que pertence e relação inicial com o presidente (−100…100). */
+    governor: z.object({ bloc: contentIdSchema, relation: z.number().min(-100).max(100) }).strict(),
+  })
+  .strict();
+export type ScenarioUf = z.infer<typeof scenarioUfSchema>;
+
+/**
+ * Dados regionais do cenário (DATA_SOURCES.md §4.2): uma linha por UF e os metadados de cada série (os números
+ * de uma série têm a mesma origem e o mesmo status). Opcional: sem ele, o motor não distribui o agregado.
+ */
+export const scenarioRegionsSchema = z
+  .object({
+    meta: z
+      .object({
+        population: dataSeriesSchema,
+        gdpShare: dataSeriesSchema,
+        sectors: dataSeriesSchema,
+        unemployment: dataSeriesSchema,
+        poverty: dataSeriesSchema,
+        governors: dataSeriesSchema,
+      })
+      .strict(),
+    ufs: z.array(scenarioUfSchema).length(UF_COUNT),
+  })
+  .strict();
+export type ScenarioRegions = z.infer<typeof scenarioRegionsSchema>;
+
 export const scenarioSchema = z
   .object({
     /** Ex.: `brasil_2027_01` */
@@ -151,6 +203,7 @@ export const scenarioSchema = z
     economy: scenarioEconomySchema.optional(),
     fiscal: scenarioFiscalSchema.optional(),
     institutions: scenarioInstitutionsSchema.optional(),
+    regions: scenarioRegionsSchema.optional(),
     /** Parâmetros do modelo (ECONOMIC_MODEL.md §6), todos com status — `A_CALIBRAR` = `PROVISORIO`. */
     parameters: z.record(z.string().regex(/^[a-z][a-z0-9_.]*$/), dataValueSchema),
     blocs: z.array(blocSchema).min(2),
@@ -206,6 +259,35 @@ export const scenarioSchema = z
             code: 'custom',
             path: ['institutions', 'ministries', m.id],
             message: `ocupante deve ser "${TECHNICAL_MINISTER}" ou um bloco: ${m.occupant}`,
+          });
+        }
+      }
+    }
+    if (s.regions) {
+      const blocIds = new Set(s.blocs.map((b) => b.id));
+      const ufs = s.regions.ufs;
+      unique(
+        ufs.map((u) => u.id),
+        'regions',
+      );
+      const shares = ufs.reduce((n, u) => n + u.gdpShare, 0);
+      if (Math.abs(shares - 1) > 1e-6) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['regions', 'ufs'],
+          message: `participações somam ${shares}, esperado 1`,
+        });
+      }
+      for (const u of ufs) {
+        const sectors = Object.values(u.sectors).reduce((n, v) => n + v, 0);
+        if (Math.abs(sectors - 1) > 1e-6) {
+          ctx.addIssue({ code: 'custom', path: ['regions', u.id, 'sectors'], message: `setores somam ${sectors}` });
+        }
+        if (!blocIds.has(u.governor.bloc)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['regions', u.id, 'governor'],
+            message: `bloco inexistente: ${u.governor.bloc}`,
           });
         }
       }

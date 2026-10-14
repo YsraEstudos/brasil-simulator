@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { contentIdSchema, dataStatusSchema } from './data';
+import { regionalScopeSchema } from './regions';
 
 /**
  * Evento do jogo (GAME_DESIGN.md §11.3), gravado como JSON em `src/data/events/`.
@@ -31,6 +32,9 @@ export const impulseTargetSchema = z.enum([
   'aprovacao',
   'capital_politico',
   'relacao_congresso',
+  'regiao.atividade',
+  'regiao.aprovacao',
+  'governadores.relacao',
 ]);
 
 /** Variáveis que uma condição de gatilho pode ler. */
@@ -63,6 +67,8 @@ export const conditionVariableSchema = z.enum([
   'partisanMinistries',
   /** Probabilidade mensal (0–1) de escândalo em algum ministério de bloco; cresce com o tempo no cargo. */
   'cabinetScandalRisk',
+  /** Média das relações dos governadores com o governo, ponderada pela população (−100…100). */
+  'governorRelation',
 ]);
 export type ConditionVariable = z.infer<typeof conditionVariableSchema>;
 
@@ -86,6 +92,11 @@ export const eventEffectSchema = z
     durationMonths: z.number().int().min(1).max(120).nullable(),
     /** Texto do "Por que mudou?"; se ausente, usa o título do evento. */
     label: z.string().min(1).optional(),
+    /**
+     * Regiões ou UFs atingidas (ECONOMIC_MODEL.md §5.15). Nos alvos `regiao.*` e `governadores.relacao`, ausente =
+     * todas as UFs; nos demais, concentra o efeito nessas UFs (por população) sem mudar o total nacional.
+     */
+    regions: z.array(regionalScopeSchema).min(1).optional(),
   })
   .strict();
 export type EventEffect = z.infer<typeof eventEffectSchema>;

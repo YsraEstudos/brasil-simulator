@@ -19,8 +19,16 @@
   },
   "conditions": ["espaco_no_limite_de_despesas", "compensacao_lrf"],
   "impacts": [
-    { "channel": "transferencia_baixa_renda", "magnitude": 30000, "lagMonths": 1 },
-    { "channel": "aprovacao", "magnitude": 0.02, "lagMonths": 1 }
+    {
+      "channel": "transferencia_baixa_renda",
+      "magnitude": 30000,
+      "lagMonths": 1
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": 0.02,
+      "lagMonths": 1
+    }
   ],
   "risks": [],
   "affected": {
@@ -28,6 +36,14 @@
     "sectors": ["comercio"],
     "regions": ["nordeste", "norte", "nacional"]
   },
-  "position": { "economic": -0.6, "social": -0.3 },
+  "regional": {
+    "key": "pobreza",
+    "scope": [],
+    "boost": {}
+  },
+  "position": {
+    "economic": -0.6,
+    "social": -0.3
+  },
   "dataStatus": "PROVISORIO"
 }

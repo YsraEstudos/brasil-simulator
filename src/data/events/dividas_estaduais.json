@@ -1,0 +1,119 @@
+{
+  "id": "dividas_estaduais",
+  "title": "Estados endividados pedem alívio nas parcelas",
+  "description": "Com os juros altos, os governadores dos estados mais endividados com a União pedem para pagar menos nas parcelas da dívida renegociada e ameaçam cortar investimentos.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "monthIndex",
+        "op": "gt",
+        "value": 3
+      },
+      {
+        "variable": "selic",
+        "op": "gt",
+        "value": 0.1
+      }
+    ],
+    "probability": 0.05,
+    "cooldownMonths": 24,
+    "maxOccurrences": 1
+  },
+  "onFire": [
+    {
+      "target": "governadores.relacao",
+      "delta": -6,
+      "lagMonths": 0,
+      "durationMonths": 1,
+      "regions": ["SP", "RJ", "MG", "RS"]
+    }
+  ],
+  "choices": [
+    {
+      "id": "manter_contratos",
+      "label": "Manter os contratos",
+      "description": "Preserva as regras de renegociação e um pouco de credibilidade, mas os governadores desses estados se afastam.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "governadores.relacao",
+          "delta": -10,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["SP", "RJ", "MG", "RS"]
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "aliviar_parcelas",
+      "label": "Aliviar as parcelas",
+      "description": "Os estados ganham fôlego para investir e os governadores se aproximam, mas o mercado vê a flexibilização como risco fiscal.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "governadores.relacao",
+          "delta": 15,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["SP", "RJ", "MG", "RS"]
+        },
+        {
+          "target": "regiao.atividade",
+          "delta": 0.004,
+          "lagMonths": 1,
+          "durationMonths": 12,
+          "label": "Alívio na dívida estadual",
+          "regions": ["SP", "RJ", "MG", "RS"]
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "choque.risco",
+          "delta": 0.001,
+          "lagMonths": 0,
+          "durationMonths": 6
+        }
+      ]
+    },
+    {
+      "id": "exigir_contrapartidas",
+      "label": "Trocar alívio por ajuste",
+      "description": "Oferece prazo maior em troca de metas de gasto nos estados: custa capital político, mas acalma os governadores sem afetar o caixa.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "governadores.relacao",
+          "delta": 5,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["SP", "RJ", "MG", "RS"]
+        },
+        {
+          "target": "capital_politico",
+          "delta": -3,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "manter_contratos",
+  "dataStatus": "FICTICIO"
+}

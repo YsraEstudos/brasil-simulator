@@ -46,6 +46,11 @@
     "sectors": ["servicos"],
     "regions": ["nacional"]
   },
+  "regional": {
+    "key": "renda_alta",
+    "scope": [],
+    "boost": {}
+  },
   "position": {
     "economic": -0.3,
     "social": -0.1

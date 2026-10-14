@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { contentIdSchema, dataStatusSchema } from './data';
+import { regionalProfileSchema } from './regions';
 
 /**
  * Política do catálogo (GAME_DESIGN.md §9.1), gravada como JSON em `src/data/policies/`.
@@ -126,6 +127,11 @@ export const policySchema = z
         regions: z.array(z.enum(['norte', 'nordeste', 'centro_oeste', 'sudeste', 'sul', 'nacional'])),
       })
       .strict(),
+    /**
+     * Incidência regional (ECONOMIC_MODEL.md §5.15): como o gasto e o tributo da política se repartem entre as
+     * UFs. Ausente = proporcional ao PIB de cada UF (sem efeito regional diferente).
+     */
+    regional: regionalProfileSchema.optional(),
     /**
      * Posição da proposta nos eixos dos blocos (POLITICAL_RULES.md §6.2: afinidade ideológica).
      * Econômico: −1 estado … 1 mercado. Social: −1 progressista … 1 conservador.

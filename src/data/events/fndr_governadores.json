@@ -26,6 +26,13 @@
       "delta": -4,
       "lagMonths": 0,
       "durationMonths": 1
+    },
+    {
+      "target": "governadores.relacao",
+      "delta": -4,
+      "lagMonths": 0,
+      "durationMonths": 1,
+      "regions": ["norte", "nordeste", "centro_oeste"]
     }
   ],
   "choices": [
@@ -46,6 +53,13 @@
           "delta": 0.005,
           "lagMonths": 0,
           "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": -8,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["norte", "nordeste", "centro_oeste"]
         }
       ]
     },
@@ -60,7 +74,8 @@
           "delta": 0.0006,
           "lagMonths": 0,
           "durationMonths": 24,
-          "label": "Antecipação de aportes ao FNDR"
+          "label": "Antecipação de aportes ao FNDR",
+          "regions": ["norte", "nordeste", "centro_oeste"]
         },
         {
           "target": "relacao_congresso",
@@ -73,6 +88,13 @@
           "delta": -0.005,
           "lagMonths": 0,
           "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 12,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["norte", "nordeste", "centro_oeste"]
         }
       ]
     },
@@ -93,6 +115,13 @@
           "delta": -3,
           "lagMonths": 0,
           "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 5,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["norte", "nordeste", "centro_oeste"]
         }
       ]
     }
