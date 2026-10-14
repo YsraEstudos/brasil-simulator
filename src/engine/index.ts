@@ -56,6 +56,7 @@ export { activeImpulses, isActive, pruneImpulses, sumActive } from './impulses';
 export { checkInvariants } from './invariants';
 export {
   expectedAdhesion,
+  initialRegions,
   inScope,
   keyWeights,
   meanGovernorRelation,

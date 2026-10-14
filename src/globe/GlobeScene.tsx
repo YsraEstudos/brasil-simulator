@@ -5,11 +5,14 @@ import * as THREE from 'three';
 import { cameraPose, verticalFovDeg } from './camera';
 import { EARTH_RADIUS_M, TILE_GRID, terrainExaggeration } from './config';
 import type { GlobeController } from './controller';
+import { ufFillGeometries } from './fills';
 import { lonLatToVec3, raySphere, tileBounds, vec3ToLonLat, type Vec3 } from './geo';
 import { selectTiles } from './lod';
 import {
   atmosphereFragmentShader,
   atmosphereVertexShader,
+  fillFragmentShader,
+  fillVertexShader,
   globeFragmentShader,
   globeVertexShader,
   tileFragmentShader,
@@ -94,13 +97,59 @@ function Atmosphere() {
   );
 }
 
+/** Opacidade do mapa de calor: o relevo continua visível por baixo. */
+const FILL_OPACITY = 0.8;
+
+/** Mapa de calor: uma malha por UF, colorida pela sigla; UFs sem cor ficam ocultas. */
+function UfFills({ fills, invalidate }: { fills: Readonly<Record<string, string>>; invalidate: () => void }) {
+  'use no memo'; // materiais three.js mutados fora do React
+  const meshes = useMemo(() => {
+    const out = new Map<string, THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>>();
+    for (const [sigla, geometry] of ufFillGeometries()) {
+      const material = new THREE.ShaderMaterial({
+        vertexShader: fillVertexShader,
+        fragmentShader: fillFragmentShader,
+        uniforms: { uColor: { value: new THREE.Color('#000000') }, uOpacity: { value: FILL_OPACITY } },
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.renderOrder = 4;
+      mesh.frustumCulled = false;
+      out.set(sigla, mesh);
+    }
+    return out;
+  }, []);
+  useEffect(() => () => meshes.forEach((m) => m.material.dispose()), [meshes]);
+  useEffect(() => {
+    for (const [sigla, mesh] of meshes) {
+      const color = fills[sigla];
+      mesh.visible = color !== undefined;
+      // O Canvas é `linear`: a cor vai para o shader sem conversão de espaço de cor (fica igual à da legenda).
+      if (color) (mesh.material.uniforms.uColor.value as THREE.Color).setStyle(color, THREE.LinearSRGBColorSpace);
+    }
+    invalidate();
+  }, [fills, meshes, invalidate]);
+  return (
+    <>
+      {[...meshes.entries()].map(([sigla, mesh]) => (
+        <primitive key={sigla} object={mesh} />
+      ))}
+    </>
+  );
+}
+
 type Props = {
   controller: GlobeController;
   selectedUf: { polygons: number[][][] } | null;
+  /** Cor de cada UF (sigla → hex) no mapa de calor; `null` = sem mapa. */
+  fills?: Readonly<Record<string, string>> | null;
   onStats?: (s: SceneStats) => void;
 };
 
-export function GlobeScene({ controller, selectedUf, onStats }: Props) {
+export function GlobeScene({ controller, selectedUf, fills, onStats }: Props) {
   'use no memo'; // objetos three.js são mutados a cada quadro; fora do React Compiler
   const { camera, gl, size, invalidate } = useThree();
   const group = useRef<THREE.Group>(null);
@@ -306,6 +355,7 @@ export function GlobeScene({ controller, selectedUf, onStats }: Props) {
         </mesh>
       )}
       <group ref={group} />
+      {fills && <UfFills fills={fills} invalidate={invalidate} />}
       {highlight && <primitive object={highlight} />}
       <Atmosphere />
     </>

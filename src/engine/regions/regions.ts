@@ -182,7 +182,7 @@ function distribute(
   const approvalRaw: RegionalPiece[][] = ufs.map((u, i) => [
     {
       cause: 'governador',
-      label: relations[i] >= 0 ? 'Governador aliado' : 'Governador hostil',
+      label: 'Relação com o governador',
       delta: (c.aprovacao_governador * relations[i]) / RELACAO_ESCALA,
     },
   ]);
@@ -371,7 +371,7 @@ function visitImpulses(state: Readonly<GameState>, content: GameContent, ufId: s
   const uf = regionsOf(content).find((u) => u.id === ufId);
   const sourceId = `acao:${VISIT_ACTION_ID}_${ufId}_${t}`;
   const regional: ImpulseRegional = { key: 'populacao', scope: [ufId] };
-  const label = `Visita presidencial a ${uf?.name ?? ufId}`;
+  const label = `Visita presidencial: ${uf?.name ?? ufId}`;
   return [
     {
       sourceId,

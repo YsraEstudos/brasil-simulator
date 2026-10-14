@@ -5,6 +5,8 @@ import { CAMERA, MAX_LEVEL, ROOT } from './config';
 import { lonLatToVec3, pointInRing, raySphere, tileBounds, tileChildren, tileId, vec3ToLonLat, type Vec3 } from './geo';
 import { blockOf, pickEvictions } from './cache';
 import { selectTiles, type LodInput } from './lod';
+import { ufFillGeometries } from './fills';
+import { findUf, UFS } from './ufs';
 
 describe('geo', () => {
   it('converte lon/lat ↔ vetor (ida e volta)', () => {
@@ -195,5 +197,22 @@ describe('cache + lod durante zoom contínuo', () => {
     for (const cap of [14, 20]) {
       expect(simulate(true, cap).reloadsWhileStill).toBe(0);
     }
+  });
+});
+
+describe('UFs no globo (Fase 05)', () => {
+  it('toque no DF acha o DF, não GO (o contorno de GO envolve o DF)', () => {
+    expect(findUf(-47.88, -15.79)?.sigla).toBe('DF');
+    expect(findUf(-49.25, -16.68)?.sigla).toBe('GO');
+  });
+
+  it('preenchimento: uma geometria triangulada por UF, com o DF como buraco de GO', () => {
+    const fills = ufFillGeometries();
+    expect(fills.size).toBe(27);
+    for (const g of fills.values()) expect(g.getIndex()?.count ?? 0).toBeGreaterThan(0);
+    // GO com buraco tem mais vértices que o próprio contorno.
+    const go = fills.get('GO');
+    const ring = UFS.find((u) => u.sigla === 'GO')?.polygons[0].length ?? 0;
+    expect(go?.getAttribute('position').count).toBeGreaterThan(ring);
   });
 });

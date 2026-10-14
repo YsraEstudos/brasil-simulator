@@ -92,3 +92,25 @@ void main() {
   float a = pow(clamp(d / 0.35, 0.0, 1.0), 1.6) * 0.85;
   gl_FragColor = vec4(vec3(0.38, 0.64, 1.0) * a, a);
 }`;
+
+/**
+ * Mapa de calor das UFs: cor chapada translúcida, desenhada por cima do relevo (sem teste de profundidade) e
+ * descartada no hemisfério de trás do globo, que de outra forma apareceria através da Terra.
+ */
+export const fillVertexShader = /* glsl */ `
+varying float vFacing;
+void main() {
+  vec4 wp = modelMatrix * vec4(position, 1.0);
+  vFacing = dot(normalize(wp.xyz), normalize(cameraPosition - wp.xyz));
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}`;
+
+export const fillFragmentShader = /* glsl */ `
+precision mediump float;
+uniform vec3 uColor;
+uniform float uOpacity;
+varying float vFacing;
+void main() {
+  if (vFacing < 0.0) discard;
+  gl_FragColor = vec4(uColor, uOpacity);
+}`;

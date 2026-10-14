@@ -1,5 +1,5 @@
 import { Canvas } from './r3f';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,11 +9,29 @@ import type { CameraState } from './camera';
 import { clampCamera } from './camera';
 import { GlobeController } from './controller';
 import { GlobeScene, type SceneStats } from './GlobeScene';
-import { findUf, type Uf } from './ufs';
+import { findUf, ufBySigla, type Uf } from './ufs';
 
 const BRASIL_VIEW = { lon: -52, lat: -14, altitude: 0.75 };
+/** Altitude da câmera ao ir até uma UF. */
+const UF_ALTITUDE = 0.08;
 
-export function GlobeView({ initial }: { initial?: CameraState }) {
+export interface GlobeViewProps {
+  initial?: CameraState;
+  /** Cor de cada UF no mapa de calor (sigla → hex). */
+  fills?: Readonly<Record<string, string>> | null;
+  /**
+   * UF selecionada (sigla). Com `onSelect`, a seleção é controlada por quem usa o globo e o cartão padrão some;
+   * sem ele, o globo mostra o próprio cartão da UF tocada.
+   */
+  selectedId?: string | null;
+  onSelect?: (sigla: string | null) => void;
+  /** Recebe a função que leva a câmera até uma UF (lista da aba Brasil). */
+  onReady?: (api: { flyToUf: (sigla: string) => void }) => void;
+  /** Camadas da interface por cima do globo (legenda, cartão, lista). */
+  children?: ReactNode;
+}
+
+export function GlobeView({ initial, fills, selectedId, onSelect, onReady, children }: GlobeViewProps) {
   const controller = useMemo(() => {
     const c = new GlobeController();
     if (initial) c.state = clampCamera(initial);
@@ -22,7 +40,27 @@ export function GlobeView({ initial }: { initial?: CameraState }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState<Uf | null>(null);
+  // Último toque no globo (o contador distingue dois toques seguidos na mesma UF).
+  const [tap, setTap] = useState<{ uf: Uf | null; n: number }>({ uf: null, n: 0 });
+  const controlled = onSelect !== undefined;
+  const selected = controlled ? (selectedId ? (ufBySigla(selectedId) ?? null) : null) : tap.uf;
+
+  useEffect(() => {
+    if (controlled && tap.n > 0) onSelect?.(tap.uf?.sigla ?? null);
+    // só reage ao toque, não a uma nova função `onSelect`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tap]);
+
+  useEffect(() => {
+    onReady?.({
+      flyToUf: (sigla) => {
+        const uf = ufBySigla(sigla);
+        if (uf) controller.flyTo({ lon: uf.centroid[0], lat: uf.centroid[1], altitude: UF_ALTITUDE });
+      },
+    });
+    // só na montagem: o controlador não muda
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controller]);
   const [stats, setStats] = useState<SceneStats | null>(null);
   const container = useRef<View>(null);
 
@@ -41,7 +79,8 @@ export function GlobeView({ initial }: { initial?: CameraState }) {
       .runOnJS(true)
       .onEnd((e) => {
         const p = controller.pick(e.x, e.y);
-        setSelected(p ? findUf(p.lon, p.lat) : null);
+        const uf = p ? findUf(p.lon, p.lat) : null;
+        setTap((t) => ({ uf, n: t.n + 1 }));
       });
     const doubleTap = Gesture.Tap()
       .runOnJS(true)
@@ -79,7 +118,12 @@ export function GlobeView({ initial }: { initial?: CameraState }) {
               flat
               linear
               camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}>
-              <GlobeScene controller={controller} selectedUf={selected} onStats={__DEV__ ? setStats : undefined} />
+              <GlobeScene
+                controller={controller}
+                selectedUf={selected}
+                fills={fills}
+                onStats={__DEV__ ? setStats : undefined}
+              />
             </Canvas>
           </View>
         </View>
@@ -96,7 +140,9 @@ export function GlobeView({ initial }: { initial?: CameraState }) {
         </Pressable>
       </View>
 
-      {selected && (
+      {children}
+
+      {!controlled && selected && (
         <View style={styles.card}>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>
@@ -106,7 +152,9 @@ export function GlobeView({ initial }: { initial?: CameraState }) {
           </View>
           <Pressable
             style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-            onPress={() => controller.flyTo({ lon: selected.centroid[0], lat: selected.centroid[1], altitude: 0.08 })}>
+            onPress={() =>
+              controller.flyTo({ lon: selected.centroid[0], lat: selected.centroid[1], altitude: UF_ALTITUDE })
+            }>
             <Text style={styles.buttonText}>Ir</Text>
           </Pressable>
         </View>
