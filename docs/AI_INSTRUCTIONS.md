@@ -88,6 +88,10 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 | Sanção / veto | `sanction` / `veto` |
 | Ministério, gabinete | `ministry`, `cabinet` |
 | Pauta | `pauta` (sem tradução: termo do regimento) |
+| Unidade da Federação (UF) | `uf` (id = sigla, ex.: `BA`) |
+| Participação no PIB / de tendência | `share` / `structuralShare` |
+| Governador, adesão (a convênio) | `governor`, `adherents` |
+| Chave de distribuição | `RegionalKey` (`populacao`, `pobreza`, `pib`, `renda_alta`) |
 
 ---
 

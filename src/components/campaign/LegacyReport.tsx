@@ -2,7 +2,15 @@ import { StyleSheet, View } from 'react-native';
 
 import { Card, formatNumber, formatPercent, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import type { GameContent, GameState, IndicatorKey, Proposal } from '@/engine';
+import {
+  regionalDispersion,
+  regionsOf,
+  regionsView,
+  type GameContent,
+  type GameState,
+  type IndicatorKey,
+  type Proposal,
+} from '@/engine';
 
 import { INDICATOR_META, INDICATOR_ORDER, PROPOSAL_STATUS_LABEL } from './labels';
 
@@ -84,10 +92,40 @@ export function LegacyReport({ state, content }: LegacyReportProps) {
         </Text>
       </Card>
 
+      <RegionalCard state={state} content={content} />
+
       <ProposalGroup title="Propostas aprovadas" proposals={approved} content={content} />
       <ProposalGroup title="Propostas rejeitadas" proposals={rejected} content={content} />
       <ProposalGroup title="Propostas executadas" proposals={executed} content={content} />
     </View>
+  );
+}
+
+/**
+ * Desenvolvimento regional (GAME_DESIGN.md §7.2): dispersão da renda per capita entre as UFs, da posse ao fim.
+ * Fica fora da pontuação do protótipo; menor dispersão = regiões mais parecidas.
+ */
+function RegionalCard({ state, content }: { state: GameState; content: GameContent }) {
+  const ufs = regionsView(state, content);
+  if (ufs.length === 0) return null;
+  // Na posse: as participações do cenário.
+  const start = regionalDispersion(
+    regionsOf(content).map((u) => ({ share: u.gdpShare })),
+    content,
+  );
+  const end = regionalDispersion(ufs, content);
+  return (
+    <Card
+      title="Desenvolvimento regional"
+      subtitle="Dispersão da renda per capita entre as UFs (coeficiente de variação ponderado pela população).">
+      <Text variant="body" tabular color="textSecondary">
+        {formatNumber(start, 3)} → <Text variant="label">{formatNumber(end, 3)}</Text>
+      </Text>
+      <Text variant="caption" color="textMuted">
+        {end < start ? 'As regiões ficaram mais parecidas.' : 'A distância entre as regiões não diminuiu.'} Não entra na
+        pontuação do protótipo.
+      </Text>
+    </Card>
   );
 }
 

@@ -1,6 +1,6 @@
 # Brasil Simulator — Documento de Design do Jogo (GDD)
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato • v0.3 (Fase 04): negociação e nomeações na agenda, aba Congresso, sanção e veto
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato • v0.3 (Fase 04): negociação e nomeações na agenda, aba Congresso, sanção e veto • v0.4 (Fase 05): aba Brasil com o mapa da federação e visita a estado
 Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RULES.md](POLITICAL_RULES.md) · [DATA_SOURCES.md](DATA_SOURCES.md) · [ROADMAP.md](ROADMAP.md) · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)
 
 ---
@@ -94,6 +94,7 @@ O presidente não faz tudo ao mesmo tempo. Cada mês oferece um número limitado
 | Pressionar o Banco Central (ação imediata, sem proposta; uma vez por mês) | 1 |
 | Negociar com um bloco, liberar emendas, ceder no texto ou pedir urgência numa proposta (uma vez por mês por alvo) | 1 |
 | Nomear ou demitir ministro | 1 |
+| Visitar um estado (uma vez por mês por estado) | 1 |
 | Sancionar ou vetar projeto aprovado | 0 |
 
 Isso obriga o jogador a priorizar e impede que ele dispare todas as reformas no primeiro mês. Um segundo limite atua no Congresso: a **capacidade de pauta** ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.3) só deixa andar um número limitado de propostas prioritárias ao mesmo tempo. O **capital político** (§5) é gasto em negociações, MPs, demissões e votações forçadas.
@@ -113,6 +114,11 @@ Antes de confirmar uma decisão grande (proposta ao Congresso, MP, corte, reform
 - Os pareceres são **gerados a partir das previsões do próprio motor** (mesma fonte das previsões ministeriais, §6), não de texto fixo. Por isso a qualidade deles varia com a dificuldade: precisos no Casual, com margem de erro na Estratégica, com margem de erro e viés da pasta no Realismo Extremo.
 - Nenhum parecer diz "a resposta certa"; cada um mostra um custo diferente da mesma escolha (§13).
 - Entra no protótipo (Fase 02) para as 8 decisões, em versão simples.
+
+### 4.5 Aba Brasil (Fase 05)
+O globo vira o mapa da federação: cada UF pintada pelo indicador escolhido — crescimento em 12 meses, desemprego e aprovação comparados à média nacional, PIB per capita (Brasil = 1) e relação com o governador. As escalas comparativas vão do vermelho (pior que a média) ao azul (melhor), com cinza na média; a renda usa um só azul. A legenda fica sempre visível e a **lista** mostra as 27 UFs ordenadas com o número (a mesma informação sem depender da cor). Tocar numa UF abre o cartão com os números da UF e do Brasil, o governador (bloco e relação), **"Por que esta UF está diferente da média?"** (as maiores causas do mês, do relatório) e o botão de **visita presidencial**, que entra na mesma agenda do mês. Não há decisão "estadual": o presidente só age por políticas federais, convênios e visitas (§3.2). Regras em [POLITICAL_RULES.md](POLITICAL_RULES.md) §2.1 e modelo em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.15.
+
+A mesa de despacho (§4.4) passou a dizer onde a política pesa mais por habitante (Comunicação: "Favorece mais o Nordeste e o Norte") e, nos programas por convênio, quantos estados devem aderir (Articulação).
 
 ---
 
@@ -174,7 +180,7 @@ O jogador escolhe de 1 a 3 objetivos de legado. Cada um tem meta mensurável e p
 | Aumentar a renda | Renda média real per capita |
 | Equilibrar as contas | Resultado primário e trajetória da dívida bruta/PIB |
 | Industrializar o país | Participação da indústria de transformação no valor adicionado |
-| Desenvolver as regiões | Redução da dispersão de renda entre UFs (Fase 05+) |
+| Desenvolver as regiões | Redução da dispersão de renda entre UFs (Fase 05+; já aparece no relatório de legado, fora da pontuação) |
 | Reeleição | Vencer a eleição de 2030 (Fase 08+) |
 
 O protótipo 0.1 usa apenas pontuação simples sobre os 5 indicadores básicos.

@@ -1,6 +1,6 @@
 # Brasil Simulator — Modelo Econômico
 
-Versão 0.3 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (pressão sobre o BC permitida; incerteza varia com a dificuldade) • v0.2: fila de efeitos agendados, distribuição regional a partir do agregado, retorno decrescente de tributos, compressão das discricionárias, retenção do histórico, saturação de realimentações • v0.3 (Fase 03): o que o motor 0.3.0 implementa (§5.14), regra aplicada da pressão sobre o BC (§5.4.1), calibração documentada (§6 e [CALIBRATION.md](CALIBRATION.md)) • v0.4 (Fase 04): emendas, acréscimos do relator e suspensão pelo STF na fila de efeitos (§5.11), estratégia fisiológica (§9)
+Versão 0.3 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (pressão sobre o BC permitida; incerteza varia com a dificuldade) • v0.2: fila de efeitos agendados, distribuição regional a partir do agregado, retorno decrescente de tributos, compressão das discricionárias, retenção do histórico, saturação de realimentações • v0.3 (Fase 03): o que o motor 0.3.0 implementa (§5.14), regra aplicada da pressão sobre o BC (§5.4.1), calibração documentada (§6 e [CALIBRATION.md](CALIBRATION.md)) • v0.4 (Fase 04): emendas, acréscimos do relator e suspensão pelo STF na fila de efeitos (§5.11), estratégia fisiológica (§9) • v0.5 (Fase 05): distribuição regional implementada (§5.15), invariante §7.9 e alvos regionais na fila de efeitos
 
 > **Status:** todas as equações são **forma reduzida simplificada**. Os parâmetros têm justificativa e faixa testada ([CALIBRATION.md](CALIBRATION.md)), mas continuam `PROVISORIO` até a importação das séries oficiais. Nenhum número deste documento é previsão.
 
@@ -218,6 +218,7 @@ Y_uf,t            = Y_t * participacao_uf,t
 - Cada UF tem apenas uma **matriz de participação e de sensibilidade setorial** (ex.: uma UF agrícola absorve mais do crescimento da agropecuária; uma UF industrial, mais da indústria). Fonte: Contas Regionais do IBGE.
 - Obras e programas regionais alteram `bonus_regional_uf` e a eficiência local, e geram efeito marginal no agregado via `Kg` (§5.1), sem motor macroeconômico por UF.
 - Desemprego, renda e aprovação regionais seguem a mesma lógica. A soma das UFs é igual ao total nacional por construção (invariante 9).
+- O que o motor 0.5.0 implementa está em §5.15.
 
 ### 5.13 O que o protótipo 0.1 implementa (Fase 02)
 Código em `src/engine/economy/economy.ts`; coeficientes em `src/engine/economy/calibration.ts`. Simplificações em relação às equações acima, todas a revisar na Fase 03:
@@ -243,6 +244,23 @@ Código em `src/engine/economy/` (`economy.ts` orquestra; `external.ts`, `moneta
 - **Dívida em 20 anos.** Com juro real neutro de 5%, crescimento potencial de 2% e primário perto de zero, `r − g ≈ 3` a `5 p.p.` e a dívida não tem estado estacionário: nas campanhas automáticas de 240 meses ela termina entre ~185% (austera) e ~240% (populista) do PIB, e ~310% com pressão trimestral sobre o BC. É trajetória com causa registrada (juros acima do crescimento, estouro do limite, prêmio de risco), não espiral numérica: o prêmio satura. Estabilizar a dívida exige primário de ~2,5% do PIB, fora do alcance das 9 políticas atuais (Fase 06). A dívida é a variável mais sensível a `g_pot_base` e `juro_neutro` ([CALIBRATION.md](CALIBRATION.md)).
 - **Ações de agenda** (`src/engine/actions.ts`): decisões sem proposta, no máximo uma por mês cada; hoje só "Pressionar o Banco Central".
 - **Não implementado ainda:** capital público explícito e carteira de projetos (§5.10, Fase 06), setores e quintis (0.5), distribuição regional (§5.12, Fase 05), consolidação de impulsos permanentes (a fila fica limitada porque cada política só tem uma execução ativa e os eventos não criam efeitos permanentes; testado em 240 meses).
+
+### 5.15 O que o motor 0.5.0 implementa (Fase 05)
+Código em `src/engine/regions/regions.ts` (etapa `regionsStep`, depois da opinião pública); estado v5 (saves v4 atualizados: a etapa parte do cenário no primeiro mês jogado). Dados das 27 UFs no cenário `brasil_2027_01` v0.4.0 ([DATA_SOURCES.md](DATA_SOURCES.md) §6). O motor nacional **não muda**: a etapa só distribui o mês já calculado.
+
+- **Participação de cada UF.** `participação = tendência × exp(desvio) / Σ`, com o desvio (log) saturado em `desvio_atividade_max` e decomposto por causa:
+  - **ciclo dos setores** em relação ao agregado: `(peso do setor na UF − peso nacional) × ciclo do setor`, com agropecuária `ciclo_agro_termos × termos de troca`, extrativa `ciclo_extrativa_termos × termos de troca` e indústria `ciclo_industria_hiato × hiato` (serviços acompanham o agregado);
+  - **gasto e tributo federal pela chave de distribuição** (`populacao`, `pobreza`, `pib`, `renda_alta`, com escopo e peso extra por UF; campo `regional` da política): para cada impulso de demanda ativo, `concentracao_regional × multiplicador × impulso × (peso da UF na chave ÷ participação − 1)`. A média ponderada é zero: o gasto não muda o total, só onde ele acontece;
+  - **choques regionais** (`regiao.atividade`, de eventos), em nível enquanto ativos.
+  A normalização ("desempenho das demais UFs") faz as participações somarem 1. A diferença explicada no relatório é `participação ÷ tendência − 1`.
+- **Tendência.** Impulsos de `oferta.potencial` com incidência regional (capital público) fazem a UF que recebe crescer `concentracao_regional × impulso × (peso ÷ participação − 1)` ao ano acima da média enquanto ativos; é o único canal que muda a participação de tendência.
+- **Crescimento em 12 meses da UF** = nacional + `growthGap12m`, suavizado como o PIB 12m nacional (§5.13).
+- **Desemprego.** Razão em log: estrutura local (desemprego inicial da UF ÷ média ponderada) − `okun_regional × atividade relativa`, normalizada para que a média ponderada pela população seja a taxa nacional (multiplicativa: nunca negativa).
+- **Aprovação.** Desvio saturado em `desvio_aprovacao_max` com quatro causas: relação com o governador (`aprovacao_governador × relação/100`), gasto ou tributo federal per capita acima da média (`aprovacao_gasto_regional × impulso × (peso ÷ população − 1)`, com sinal de benefício para gasto e desoneração e de custo para tributo e corte), atividade local (`aprovacao_atividade_regional`) e choques `regiao.aprovacao` (eventos, visita presidencial). Centrado na média nacional e encolhido por igual, se preciso, para caber em [0, 1].
+- **Governadores** (POLITICAL_RULES.md §2.1): a relação anda `ajuste_governador` por mês até `posição própria + governador_alinhamento × relação do bloco do governador + governador_aprovacao × (aprovação local − base)`, mais os impulsos `governadores.relacao`.
+- **Explicação.** Cada mês o relatório traz, por UF, as parcelas de atividade, desemprego e aprovação; elas somam exatamente as diferenças (verificado com o invariante §7.9).
+- **Alvos novos da fila (§5.11):** `regiao.atividade`, `regiao.aprovacao`, `governadores.relacao`, com escopo em regiões ou UFs. Efeitos de eventos com `regions` em alvos fiscais concentram o gasto nas UFs atingidas, por população.
+- **Não implementado:** finanças estaduais (receita, dívida e folha dos estados), municípios, migração e população variável, setores no motor nacional (o ciclo setorial é só relativo), efeito regional do reajuste do salário mínimo (ele não passa pela fila de impulsos) e efeito das UFs sobre o agregado além do capital público.
 
 ---
 
@@ -294,6 +312,8 @@ Executados a cada mês em modo de teste e em toda simulação automatizada:
 
 Situação na Fase 03 (`src/engine/invariants.ts` e testes): 1–6 verificados a cada mês, incluindo receitas e despesas por grupo somando os totais e o §7.4 como "despesa sujeita ao limite ≤ limite + estouro registrado" (exceções legais e créditos extraordinários fora do limite); 7 nos testes de determinismo; 8 no teste de estado estacionário de `economy.test.ts`, com deriva fiscal neutralizada (hiato, inflação, desemprego e Selic convergem; a dívida só precisa não explodir, porque com `r > g` e primário nulo ela não tem ponto fixo, §5.14).
 
+Situação na Fase 05: o 9 é verificado a cada mês em todas as campanhas automáticas (participações e participações de tendência somam 1; desemprego e aprovação das UFs, ponderados pela população, iguais aos nacionais; aprovação das UFs em [0, 1]; relação dos governadores em −100…100; explicações por UF somando as diferenças).
+
 ---
 
 ## 8. Choques
@@ -318,6 +338,7 @@ Situação na Fase 03 (`src/engine/invariants.ts` e testes): 1–6 verificados a
 - **Teste de cenários:** alta inflação, recessão, recuperação, déficit persistente, crescimento moderado, choque externo.
 - **Situação na Fase 03:** 8 estratégias-robô (inerte, populista fiscal, austera, reformista, distributiva, pró-oferta, inerte com pressão trimestral sobre o BC e aleatória; a fisiológica fica para a Fase 04). Testes: 12 e 48 meses × várias sementes, 240 meses × 3 sementes com faixas de explosão, teste de sentido da pressão sobre o BC (§5.4.1), cenários de estresse (`src/engine/sim/stress.test.ts`) e estado estacionário (§7.8). `npm run sim:balance` imprime 12, 48 e 240 meses com PIB acumulado, máximos de dívida e inflação, prêmio final e meses com estouro do limite e com discricionárias abaixo do piso. `npm run sim:sensitivity` leva cada parâmetro aos extremos da faixa em 20 anos e gera [CALIBRATION.md](CALIBRATION.md): nenhum extremo gera violação ou explosão. Trade-offs em 20 anos: a austera termina com menos dívida e menos aprovação; populista e distributiva, com mais dívida; nenhuma domina as outras. A aprovação de longo prazo converge para perto de `aprovacao_base` em todas (limitação conhecida até as eleições da Fase 08).
 - **Situação na Fase 04:** 9 estratégias-robô (entra a **fisiológica**: entrega pastas aos blocos de centro, libera emendas antes de votações difíceis, negocia quando faltam votos e envia as reformas). Sem violações em 12, 48 e 240 meses. Teste de plausibilidade da reforma (`src/engine/sim/reform.test.ts`) e `npm run sim:reform` (20 sementes, 36 meses): sem negociação, a reforma administrativa por PEC passou em 13 de 20 campanhas, em ~10 meses, com adiamentos e texto alterado; com a coalizão fisiológica, a reforma da previdência passou nas 20 (8 meses) e a administrativa em 19 (12 meses), ao custo de 5 pastas de bloco, emendas pagas e ~0,8 escândalo por campanha. Em 20 anos, a fisiológica (com a reforma da previdência) termina com a menor dívida (~178% do PIB) entre as estratégias.
+- **Situação na Fase 05:** invariante §7.9 em todas as campanhas; testes de sentido regionais (`src/engine/regions/regions.test.ts`): transferência à baixa renda eleva atividade e aprovação relativas do Nordeste; tributo sobre a renda pesa mais no Sudeste e no DF; a seca concentra a perda no Nordeste e no Centro-Oeste sem mudar o nacional; termos de troca favoráveis puxam UFs agrícolas e extrativas; governador aliado puxa a aprovação local; governadores aliados aderem mais a convênios. Em 48 meses (5 sementes), a aprovação relativa do Nordeste fica +1,8 p.p. acima da média na distributiva, contra +0,4 p.p. na inerte; a dispersão regional da renda quase não muda (0,389 → 0,388–0,390): só o capital público regional mexe na tendência. `npm run sim:sensitivity` cobre os 18 parâmetros novos (204 no total, nenhum problema); como a distribuição não muda o agregado, só os de adesão têm efeito nacional.
 
 ---
 

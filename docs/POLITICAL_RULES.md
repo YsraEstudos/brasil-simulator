@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8)
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1)
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -50,6 +50,17 @@ No modo Casual a quebra continua possível e com consequências, mas mais branda
 | Direito penal, civil, trabalhista, eleitoral | Legislação privativa | — | — | CF art. 22 |
 
 **Regra do jogo:** em temas de competência comum ou estadual, o presidente atua por **programas nacionais, convênios, transferências voluntárias e normas gerais**. Os governadores decidem se aderem.
+
+### 2.1 Federação no motor (Fase 05, motor 0.5.0)
+Parâmetros em `src/engine/economy/calibration.ts` (seção Federação); distribuição econômica em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.15.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Governadores | 27 governadores fictícios (cenário v0.4.0), cada um de um bloco e com relação própria com o governo (−100…100). A relação anda até a meta: posição própria do governador + `governador_alinhamento` × relação do bloco dele + `governador_aprovacao` × aprovação do presidente no estado acima da base. Eventos movem governadores de regiões específicas (`governadores.relacao`). |
+| Governador e aprovação local | Governador aliado puxa a aprovação do presidente no estado para cima; hostil, para baixo (`aprovacao_governador`). |
+| Adesão a convênios | Política com a condição `adesao_estadual` (hoje, a cooperação em segurança): no início da execução cada estado adere com probabilidade `adesao_base + adesao_relacao × relação/100`. O gasto e o capital público alcançam só a população dos estados que aderiram e são repartidos só entre eles; substitui o risco genérico de baixa adesão. No Casual todos aderem. A mesa de despacho mostra a adesão esperada. |
+| Visita presidencial | Ação de agenda (1 ponto, uma por estado por mês): aprovação local `aprovacao_visita` por `meses_visita` meses e `relacao_visita` pontos com o governador. Não muda a aprovação nacional. |
+| Ainda não modelado | Finanças e dívidas estaduais (o evento das dívidas estaduais só mexe em relação, atividade e risco), FPE/FPM por UF, bancadas estaduais no Congresso, eleição de governadores (Fase 08), invasão de competência estadual como risco jurídico. |
 
 ---
 
