@@ -66,7 +66,14 @@ describe('eventos: disparo e prazo (GAME_DESIGN.md §11.3)', () => {
   it('resposta do jogador agenda os efeitos da escolha com os rótulos corretos', () => {
     // Chamada direta da etapa: o advanceMonth já descartaria o impulso de 1 mês antes do fim do turno.
     const { content, state } = stateWithPendingEvent();
-    const draft: ReportDraft = { proposalChanges: [], eventsResolved: [], eventsFired: [], notes: [], copom: null };
+    const draft: ReportDraft = {
+      proposalChanges: [],
+      eventsResolved: [],
+      eventsFired: [],
+      notes: [],
+      copom: null,
+      regional: null,
+    };
     const out = resolveEventsStep(state, {
       rng: createRng(state.rng),
       content,

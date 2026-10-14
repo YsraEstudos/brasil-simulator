@@ -211,6 +211,18 @@ describe('campanhas', () => {
     expect(await loadReport(db, 'c1', 2)).toBeNull();
   });
 
+  it('relatório gravado antes da Fase 05 (sem explicação por UF) volta com `regional` nulo', async () => {
+    const state = newState(6);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    const { regional: _omit, ...old } = advanceMonth(state, { decisions: [] }, content, []).report;
+    await db.run('INSERT INTO month_reports (campaign_id, month_index, report_json) VALUES (?, ?, ?)', [
+      'c1',
+      0,
+      JSON.stringify(old),
+    ]);
+    expect((await loadReport(db, 'c1', 0))?.regional).toBeNull();
+  });
+
   it('guarda snapshots completos só dos últimos 13 meses e a série de indicadores inteira (ECONOMIC_MODEL.md §11)', async () => {
     let state = newState(8);
     await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });

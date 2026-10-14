@@ -179,7 +179,7 @@ function ctxOf(state: GameState) {
     content,
     decisions: [],
     eventChoices: [],
-    draft: { proposalChanges: [], eventsResolved: [], eventsFired: [], notes: [], copom: null },
+    draft: { proposalChanges: [], eventsResolved: [], eventsFired: [], notes: [], copom: null, regional: null },
   };
 }
 
@@ -230,6 +230,7 @@ describe('apoio negociado e veto (POLITICAL_RULES.md §6.2, §7)', () => {
     rider: 0,
     veto: null,
     judicial: null,
+    adherents: null,
     executionStart: null,
     executionEnd: null,
     votes: [],

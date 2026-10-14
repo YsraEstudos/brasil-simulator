@@ -32,7 +32,7 @@ function play(seed: number, months: number, steps: MonthStep[] = [noisyApproval]
   for (let m = 0; m < months; m++) {
     const decisions = m % 3 === 0 ? [decision(TEST_DECREE.id), decision(TEST_BILL.id)] : [];
     const r = advanceMonth(state, { decisions }, content, steps);
-    expect(checkInvariants(state, r.state, r.report)).toEqual([]);
+    expect(checkInvariants(state, r.state, r.report, content)).toEqual([]);
     state = r.state;
   }
   return state;
@@ -168,7 +168,7 @@ describe('advanceMonth', () => {
     const r = advanceMonth(prev, { decisions: [] }, content, [bump, bump]);
     expect(seen[1]).toBeCloseTo(seen[0] + 0.1);
     expect(r.state.indicators.approval).toBeCloseTo(prev.indicators.approval + 0.2);
-    expect(checkInvariants(prev, r.state, r.report)).toEqual([]);
+    expect(checkInvariants(prev, r.state, r.report, content)).toEqual([]);
   });
 
   it('indicadores só mudam por contribuição: etapa que altera o indicador direto é ignorada (§7.3)', () => {

@@ -169,13 +169,18 @@ export async function loadIndicatorHistory(db: SqlDatabase, campaignId: string):
   });
 }
 
-/** Relatório mensal salvo (decomposição causal); `null` se o mês saiu da retenção ou não existe. */
+/**
+ * Relatório mensal salvo (decomposição causal); `null` se o mês saiu da retenção ou não existe. Relatórios
+ * gravados antes da Fase 05 não têm a explicação por UF: ela vem como `null`.
+ */
 export async function loadReport(db: SqlDatabase, campaignId: string, monthIndex: number): Promise<MonthReport | null> {
   const row = await db.first<{ report_json: string }>(
     'SELECT report_json FROM month_reports WHERE campaign_id = ? AND month_index = ?',
     [campaignId, monthIndex],
   );
-  return row ? (JSON.parse(row.report_json) as MonthReport) : null;
+  if (!row) return null;
+  const report = JSON.parse(row.report_json) as Partial<MonthReport>;
+  return { ...report, regional: report.regional ?? null } as MonthReport;
 }
 
 /** Estado mais recente da campanha, pronto para continuar jogando. */

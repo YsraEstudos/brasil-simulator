@@ -31,11 +31,11 @@ function runMonth(state: GameState): MonthResult {
 
 function runMonths(start: GameState, months: number): { state: GameState; errors: string[]; last: MonthResult } {
   let last = runMonth(start);
-  const errors = checkInvariants(start, last.state, last.report);
+  const errors = checkInvariants(start, last.state, last.report, content);
   for (let m = 1; m < months; m++) {
     const prev = last.state;
     last = runMonth(prev);
-    errors.push(...checkInvariants(prev, last.state, last.report));
+    errors.push(...checkInvariants(prev, last.state, last.report, content));
   }
   return { state: last.state, errors, last };
 }

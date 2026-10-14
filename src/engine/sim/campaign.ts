@@ -63,7 +63,7 @@ export function runCampaign(
   for (let m = 0; m < months; m++) {
     const input = strategy.decide(state, content);
     const result = advanceMonth(state, input, content);
-    for (const error of checkInvariants(state, result.state, result.report)) {
+    for (const error of checkInvariants(state, result.state, result.report, content)) {
       violations.push(`mês ${state.monthIndex}: ${error}`);
     }
     state = result.state;

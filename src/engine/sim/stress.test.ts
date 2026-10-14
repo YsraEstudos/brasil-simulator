@@ -25,7 +25,7 @@ function play(start: GameState, months: number): GameState[] {
   let state = start;
   for (let m = 0; m < months; m++) {
     const r = advanceMonth(state, { decisions: [] }, content);
-    expect(checkInvariants(state, r.state, r.report)).toEqual([]);
+    expect(checkInvariants(state, r.state, r.report, content)).toEqual([]);
     state = r.state;
     path.push(state);
   }

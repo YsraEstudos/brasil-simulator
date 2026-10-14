@@ -26,6 +26,7 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   if (version < 2) state = v1ToV2(state);
   if (version < 3) state = v2ToV3(state);
   if (version < 4) state = v3ToV4(state);
+  if (version < 5) state = v4ToV5(state);
   return state as unknown as GameState;
 }
 
@@ -89,6 +90,15 @@ function v3ToV4(s: Raw): Raw {
     };
   });
   return { ...s, schemaVersion: 4, congress: { ...congress, cabinet: [] }, proposals };
+}
+
+/**
+ * v4 (Fase 04) → v5 (Fase 05): entram as UFs (vazio = a etapa regional parte do cenário no próximo mês) e, nas
+ * propostas, a adesão dos estados (`null`: execuções anteriores não tinham adesão por UF).
+ */
+function v4ToV5(s: Raw): Raw {
+  const proposals = ((s.proposals ?? []) as Raw[]).map((p) => ({ ...p, adherents: null }));
+  return { ...s, schemaVersion: 5, proposals, regions: { ufs: [] } };
 }
 
 /**

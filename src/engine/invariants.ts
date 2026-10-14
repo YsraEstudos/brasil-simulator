@@ -1,14 +1,28 @@
-import { MANDATORY_GROUPS, REVENUE_GROUPS, type GameState, type IndicatorKey, type MonthReport } from './types';
+import { populationShares, regionsOf } from './regions/regions';
+import {
+  MANDATORY_GROUPS,
+  REVENUE_GROUPS,
+  type GameContent,
+  type GameState,
+  type IndicatorKey,
+  type MonthReport,
+} from './types';
 
 /** Tolerância numérica para somas de contribuições (indicadores são frações). */
 const EPSILON = 1e-9;
 
 /**
  * Invariantes do ECONOMIC_MODEL.md §7: 1 e 2 (contas públicas), 3 (contribuições), 4 (limite de despesas com
- * exceções registradas), 5 (valores possíveis) e 6 (finitude). O 7 (determinismo) e o 8 (estado estacionário)
- * são testados nas simulações; o 9 é da Fase 05. Retorna a lista de violações; vazia = tudo certo.
+ * exceções registradas), 5 (valores possíveis), 6 (finitude) e 9 (regiões somam o total nacional). O 7
+ * (determinismo) e o 8 (estado estacionário) são testados nas simulações. Retorna a lista de violações; vazia =
+ * tudo certo. As médias regionais de desemprego e aprovação só são conferidas com o conteúdo (população das UFs).
  */
-export function checkInvariants(prev: GameState, next: GameState, report: MonthReport): string[] {
+export function checkInvariants(
+  prev: GameState,
+  next: GameState,
+  report: MonthReport,
+  content?: Pick<GameContent, 'scenario'>,
+): string[] {
   const errors: string[] = [];
 
   // §7.6: nenhum NaN ou Infinity
@@ -76,6 +90,44 @@ export function checkInvariants(prev: GameState, next: GameState, report: MonthR
       eco.grossDebt - prev.economy.grossDebt - ((eco.interest - eco.monthlyPrimary) / 12 + eco.debtAdjustment);
     if (Math.abs(debtGap) > EPSILON) {
       errors.push(`dívida bruta não fecha com juros, primário e ajuste: diferença ${debtGap}`);
+    }
+  }
+
+  // §7.9: soma das variáveis regionais = total nacional (só quando a etapa regional rodou no mês)
+  const ufs = next.regions?.ufs ?? [];
+  if (ufs.length > 0 && next.regions !== prev.regions) {
+    const shares = ufs.reduce((s, u) => s + u.share, 0);
+    const structural = ufs.reduce((s, u) => s + u.structuralShare, 0);
+    if (Math.abs(shares - 1) > EPSILON) errors.push(`participações das UFs somam ${shares}, esperado 1`);
+    if (Math.abs(structural - 1) > EPSILON) errors.push(`participações de tendência somam ${structural}, esperado 1`);
+    const populationWeights = content ? populationShares(regionsOf(content)) : [];
+    if (populationWeights.length === ufs.length) {
+      const mean = (pick: (u: (typeof ufs)[number]) => number) =>
+        ufs.reduce((s, u, i) => s + populationWeights[i] * pick(u), 0);
+      const uGap = mean((u) => u.unemployment) - ind.unemployment;
+      const aGap = mean((u) => u.approval) - ind.approval;
+      if (Math.abs(uGap) > EPSILON) errors.push(`desemprego médio das UFs ≠ nacional: diferença ${uGap}`);
+      if (Math.abs(aGap) > EPSILON) errors.push(`aprovação média das UFs ≠ nacional: diferença ${aGap}`);
+    }
+    for (const u of ufs) {
+      if (!(u.share > 0)) errors.push(`${u.id}: participação não positiva: ${u.share}`);
+      if (!(u.unemployment > 0 && u.unemployment < 1)) errors.push(`${u.id}: desemprego fora de (0, 1)`);
+      if (!(u.approval >= 0 && u.approval <= 1)) errors.push(`${u.id}: aprovação fora de [0, 1]: ${u.approval}`);
+      if (!(Math.abs(u.governorRelation) <= 100)) errors.push(`${u.id}: relação do governador fora de −100…100`);
+    }
+    // Cada explicação regional soma a diferença que explica (o "Por que mudou?" das UFs).
+    for (const x of report.regional ?? []) {
+      const u = ufs.find((v) => v.id === x.id);
+      if (!u) continue;
+      const total = (pieces: readonly { delta: number }[]) => pieces.reduce((s, p) => s + p.delta, 0);
+      const gaps: [string, number][] = [
+        ['atividade', total(x.activity) - (u.share / u.structuralShare - 1)],
+        ['desemprego', total(x.unemployment) - (u.unemployment - ind.unemployment)],
+        ['aprovação', total(x.approval) - (u.approval - ind.approval)],
+      ];
+      for (const [name, gap] of gaps) {
+        if (Math.abs(gap) > EPSILON) errors.push(`${u.id}: explicação de ${name} não fecha: diferença ${gap}`);
+      }
     }
   }
 

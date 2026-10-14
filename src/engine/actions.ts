@@ -30,6 +30,8 @@ export const URGENCY_ACTION_ID = 'pedir_urgencia';
 export const APPOINT_ACTION_ID = 'nomear_ministro';
 /** Sanção ou veto de projeto aprovado (§7). Params: `proposalId`, `choice` (`SanctionChoice`). */
 export const SANCTION_ACTION_ID = 'sancao';
+/** Visita presidencial a uma UF (POLITICAL_RULES.md §2.1). Params: `uf` (sigla). */
+export const VISIT_ACTION_ID = 'visitar_estado';
 
 export const SANCTION_CHOICES = ['sancionar', 'vetar_acrescimos', 'vetar_total'] as const;
 export type SanctionChoice = (typeof SANCTION_CHOICES)[number];
@@ -101,6 +103,16 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
       'veto por maioria absoluta de cada Casa.',
     agendaCost: 0,
     targetParams: ['proposalId'],
+    listed: false,
+  },
+  [VISIT_ACTION_ID]: {
+    id: VISIT_ACTION_ID,
+    name: 'Visitar o estado',
+    summary:
+      'Agenda presidencial na UF: inaugurações e encontro com o governador. A aprovação local sobe por alguns ' +
+      'meses e a relação com o governador melhora; não muda a aprovação nacional.',
+    agendaCost: 1,
+    targetParams: ['uf'],
     listed: false,
   },
 };

@@ -25,7 +25,7 @@ function play(strategyId: string, seed: number): { state: GameState; violations:
   let scandals = 0;
   for (let m = 0; m < MONTHS; m++) {
     const result = advanceMonth(state, strategy.decide(state, content), content);
-    violations.push(...checkInvariants(state, result.state, result.report));
+    violations.push(...checkInvariants(state, result.state, result.report, content));
     expect(result.report.rejected).toEqual([]);
     scandals += result.report.eventsFired.filter((e) => e === 'escandalo_ministerio').length;
     state = result.state;

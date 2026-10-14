@@ -9,6 +9,7 @@ import {
 } from '../congress/congress';
 import { blocRelation } from '../congress/relations';
 import { pautaOccupancy, pautaSlots } from '../proposals/proposals';
+import { expectedAdhesion, REGION_NAMES, regionalIncidence } from '../regions/regions';
 import { createRng, seedRng } from '../rng';
 import { fiscalRoom } from '../economy/fiscal';
 import { currentNominalGdpMillions } from '../state';
@@ -24,9 +25,14 @@ import { pct, pp } from './format';
  * - marginEstrategica / marginRealismo: meia-largura da faixa mostrada na Estratégica e no Realismo.
  * - biasRealismo: viés otimista da pasta de articulação no Realismo, somado à previsão.
  * - folgaVotos: folga acima do exigido a partir da qual o parecer diz que a aprovação é provável.
+ * - regionHigh / ufHigh: incidência per capita (1 = média nacional) a partir da qual a Comunicação cita a região
+ *   ou a UF onde a política pesa mais (ECONOMIC_MODEL.md §5.15).
  */
 export const ADVICE_PARAMS = {
   hotGap: 0.01,
+  /** Incidência per capita (1 = média) a partir da qual o parecer cita a região ou a UF. */
+  regionHigh: 1.2,
+  ufHigh: 2,
   marginEstrategica: 0.03,
   marginRealismo: 0.06,
   biasRealismo: 0.02,
@@ -47,6 +53,8 @@ export interface DispatchAdvice {
     annualFiscalImpact: number;
     votes: VotePrediction[];
     approvalImpact: number;
+    /** Fração da população dos estados que devem aderir (programas por convênio); `null` sem adesão. */
+    adhesion: number | null;
   };
 }
 
@@ -179,7 +187,46 @@ function comunicacaoOpinion(state: Readonly<GameState>, policy: Policy, content:
   const honeymoon = state.monthIndex % TERM_MONTHS < content.calibration.meses_lua_de_mel;
   if (impact < 0 && honeymoon) parts.push('Na lua de mel o desgaste é menor.');
 
+  const regional = regionalSentence(policy, content);
+  if (regional) parts.push(regional);
+
   return { text: parts.join(' '), tone };
+}
+
+/**
+ * Onde a política pesa mais (ECONOMIC_MODEL.md §5.15): regiões com incidência per capita bem acima da média e a
+ * UF mais concentrada, se for o caso. Benefício ("favorece") quando o saldo é gasto ou desoneração; custo
+ * ("pesa mais") quando é corte ou tributo.
+ */
+function regionalSentence(policy: Policy, content: GameContent): string | null {
+  const profile = policy.regional;
+  if (!profile) return null;
+  const { regions, topUf } = regionalIncidence(content, profile);
+  const high = regions.filter((r) => r.ratio >= ADVICE_PARAMS.regionHigh).sort((a, b) => b.ratio - a.ratio);
+  const benefit =
+    sumMagnitude(policy, SPENDING_CHANNELS) +
+      sumMagnitude(policy, RELIEF_CHANNELS) -
+      sumMagnitude(policy, REVENUE_CHANNELS) >=
+    0;
+  const verb = benefit ? 'Favorece mais' : 'Pesa mais sobre';
+  const uf =
+    topUf && topUf.ratio >= ADVICE_PARAMS.ufHigh ? content.scenario.regions?.ufs.find((u) => u.id === topUf.id) : null;
+  const top = uf ? `maior peso por habitante: ${uf.name}` : '';
+  if (high.length === 0) return uf ? `${top.charAt(0).toUpperCase()}${top.slice(1)}.` : null;
+  const names = high.slice(0, 2).map((r) => REGION_NAMES[r.id]);
+  return `${verb} o ${names.join(' e o ')}${uf ? ` (${top})` : ''}.`;
+}
+
+/** Adesão esperada dos governadores a programa por convênio (POLITICAL_RULES.md §2.1). */
+function adhesionWarning(state: Readonly<GameState>, policy: Policy, content: GameContent) {
+  if (!policy.conditions.includes('adesao_estadual') || state.difficulty === 'casual') return null;
+  const expected = expectedAdhesion(state, content);
+  if (!expected) return null;
+  const total = content.scenario.regions?.ufs.length ?? 0;
+  return {
+    share: expected.populationShare,
+    text: `Governadores: devem aderir cerca de ${Math.round(expected.states)} de ${total} estados (${pct(expected.populationShare, 0)} da população).`,
+  };
 }
 
 /**
@@ -236,6 +283,7 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
   const approvalImpact = sumMagnitude(policy, new Set([APPROVAL_CHANNEL]));
 
   let articulacao: Opinion = { text: 'Ato do Executivo: não depende do Congresso.', tone: 'neutro' };
+  const adhesion = adhesionWarning(state, policy, content);
   let votes: VotePrediction[] = [];
   if (legislativeInstrument(policy) !== null) {
     votes = predictVotes(state, policy, content);
@@ -247,11 +295,12 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
       articulacao = { text: `${articulacao.text} ${warnings.join(' ')}`, tone: articulacao.tone };
     }
   }
+  if (adhesion) articulacao = { text: `${articulacao.text} ${adhesion.text}`, tone: articulacao.tone };
 
   return {
     fazenda: fazendaOpinion(state, content, parts),
     articulacao,
     comunicacao: comunicacaoOpinion(state, policy, content, approvalImpact),
-    forecast: { annualFiscalImpact: parts.fiscal, votes, approvalImpact },
+    forecast: { annualFiscalImpact: parts.fiscal, votes, approvalImpact, adhesion: adhesion?.share ?? null },
   };
 }

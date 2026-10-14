@@ -1,0 +1,736 @@
+{
+  "schemaVersion": 4,
+  "engineVersion": "0.4.0",
+  "scenarioId": "brasil_2027_01",
+  "difficulty": "estrategica",
+  "seed": 4,
+  "rng": [1123668297, 3167960491, 1569326403, 970577311],
+  "monthIndex": 7,
+  "indicators": {
+    "approval": 0.43772331188480923,
+    "gdpGrowth12m": 0.017110451948930534,
+    "inflation12m": 0.03893329463376921,
+    "unemployment": 0.06215460270032002,
+    "primaryBalance12m": -0.0034791319095195173
+  },
+  "resources": {
+    "politicalCapital": 65.05748364359577,
+    "agendaPointsPerMonth": 3
+  },
+  "economy": {
+    "outputGap": 0.002215777093995281,
+    "potentialGrowth": 0.02,
+    "potentialIndex": 1.011618509187693,
+    "priceLevel": 1.0227621372366271,
+    "selic": 0.0975,
+    "effectiveRealRate": 0.07814938447536837,
+    "inflationExpectation": 0.032806014388440254,
+    "credibility": 0.6704974305867509,
+    "riskPremium": 0.030255436914165806,
+    "exchangeRate": 5.498159148130301,
+    "depreciation12m": 0.037901038170736645,
+    "externalRate": 0.04107107454638887,
+    "termsOfTrade": 0.024248485864517763,
+    "grossDebt": 0.8336790797447449,
+    "implicitRate": 0.11827971099782042,
+    "revenue": 0.18738148052757786,
+    "primarySpending": 0.19021164930462123,
+    "monthlyPrimary": -0.002830168777043368,
+    "interest": 0.09804633937674398,
+    "debtAdjustment": -0.0036635399415453638,
+    "fiscal": {
+      "mandatory": {
+        "previdencia": 0.08333738043901098,
+        "beneficios": 0.019209009948329702,
+        "pessoal": 0.0305451113432197,
+        "outras": 0.0099
+      },
+      "linked": 0.02696707308902733,
+      "policyMandatory": 0,
+      "discretionary": 0.013653074485033518,
+      "policyDiscretionary": 0.0016,
+      "exceptions": 0.005,
+      "extraordinary": 0,
+      "spendingLimit": 0.18521164930462122,
+      "limitRealGrowth": 0.012599999999999998,
+      "limitExcess": 0,
+      "revenueByGroup": {
+        "renda": 0.047112869376529115,
+        "folha": 0.05280682240059306,
+        "consumo": 0.04591897600051571,
+        "outras": 0.034439232000386774,
+        "royalties": 0.007103580749553195
+      },
+      "revenueLoss": 0,
+      "revenue12m": 0.18729749275570748,
+      "revenue12mAtReview": 0.187,
+      "gdpGrowthHistory": [0.023, 0.018],
+      "minimumWageIndex": 1,
+      "demandRef": -0.00003452244993069249
+    },
+    "bcPressure": {
+      "months": [],
+      "pendingCut": 0
+    }
+  },
+  "congress": {
+    "blocs": [
+      {
+        "id": "esquerda",
+        "governmentRelation": 12
+      },
+      {
+        "id": "centro_esquerda",
+        "governmentRelation": 6
+      },
+      {
+        "id": "centro",
+        "governmentRelation": 56.5
+      },
+      {
+        "id": "centro_direita",
+        "governmentRelation": 28.5
+      },
+      {
+        "id": "direita",
+        "governmentRelation": 0
+      }
+    ],
+    "cabinet": [
+      {
+        "id": "transportes",
+        "occupant": "centro",
+        "since": 0
+      },
+      {
+        "id": "cidades",
+        "occupant": "centro",
+        "since": 1
+      },
+      {
+        "id": "agricultura",
+        "occupant": "centro_direita",
+        "since": 2
+      },
+      {
+        "id": "minas_energia",
+        "occupant": "centro_direita",
+        "since": 3
+      },
+      {
+        "id": "saude",
+        "occupant": "centro",
+        "since": 4
+      }
+    ]
+  },
+  "proposals": [
+    {
+      "id": "reforma_previdencia_0",
+      "policyId": "reforma_previdencia",
+      "createdMonth": 0,
+      "status": "em_tramitacao",
+      "scale": 1,
+      "voteMonth": 8,
+      "stage": 2,
+      "rapporteur": "centro",
+      "textAltered": false,
+      "postponements": 0,
+      "negotiation": {
+        "blocs": {},
+        "amendments": true,
+        "textConceded": false,
+        "urgency": false
+      },
+      "rider": 0,
+      "veto": null,
+      "judicial": null,
+      "executionStart": null,
+      "executionEnd": null,
+      "votes": [
+        {
+          "monthIndex": 4,
+          "house": "camara",
+          "round": 1,
+          "yes": 343,
+          "no": 170,
+          "required": 308,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": 0.036307167818049296,
+              "yes": 4,
+              "no": 106
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.19914237785826092,
+              "yes": 10,
+              "no": 60
+            },
+            {
+              "blocId": "centro",
+              "support": 0.9738493706185614,
+              "yes": 150,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 0.9308861679595208,
+              "yes": 98,
+              "no": 0
+            },
+            {
+              "blocId": "direita",
+              "support": 0.350017899570266,
+              "yes": 81,
+              "no": 4
+            }
+          ]
+        },
+        {
+          "monthIndex": 4,
+          "house": "camara",
+          "round": 2,
+          "yes": 441,
+          "no": 72,
+          "required": 308,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": 0.2206494636062778,
+              "yes": 102,
+              "no": 8
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.1662360451158381,
+              "yes": 9,
+              "no": 61
+            },
+            {
+              "blocId": "centro",
+              "support": 1.1548438599977886,
+              "yes": 150,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 0.8747257231001055,
+              "yes": 98,
+              "no": 0
+            },
+            {
+              "blocId": "direita",
+              "support": 0.3936940468821919,
+              "yes": 82,
+              "no": 3
+            }
+          ]
+        }
+      ],
+      "history": [
+        {
+          "monthIndex": 0,
+          "status": "em_tramitacao",
+          "cause": "enviada",
+          "detail": "Enviada ao Congresso. Votação prevista na Câmara em 2027-05; relator do bloco Centro."
+        },
+        {
+          "monthIndex": 3,
+          "status": "em_tramitacao",
+          "cause": "emendas_liberadas",
+          "detail": "Emendas parlamentares liberadas para a votação."
+        },
+        {
+          "monthIndex": 4,
+          "status": "em_tramitacao",
+          "cause": "votacao",
+          "detail": "Aprovada: Câmara (1º turno) 343/170, Câmara (2º turno) 441/72. Votação prevista no Senado em 2027-09; relator do bloco Centro."
+        }
+      ]
+    },
+    {
+      "id": "reforma_administrativa_1",
+      "policyId": "reforma_administrativa",
+      "createdMonth": 1,
+      "status": "em_tramitacao",
+      "scale": 1,
+      "voteMonth": 9,
+      "stage": 0,
+      "rapporteur": "centro_direita",
+      "textAltered": false,
+      "postponements": 0,
+      "negotiation": {
+        "blocs": {},
+        "amendments": false,
+        "textConceded": false,
+        "urgency": false
+      },
+      "rider": 0,
+      "veto": null,
+      "judicial": null,
+      "executionStart": null,
+      "executionEnd": null,
+      "votes": [],
+      "history": [
+        {
+          "monthIndex": 1,
+          "status": "parada",
+          "cause": "capacidade_pauta",
+          "detail": "Enviada ao Congresso. Pauta da Câmara cheia: aguarda vaga."
+        },
+        {
+          "monthIndex": 5,
+          "status": "em_tramitacao",
+          "cause": "pauta_liberada",
+          "detail": "Vaga na pauta. Votação prevista na Câmara em 2027-10; relator do bloco Centro-Direita."
+        }
+      ]
+    },
+    {
+      "id": "gastos_tributarios_revisao_2",
+      "policyId": "gastos_tributarios_revisao",
+      "createdMonth": 2,
+      "status": "aguardando_sancao",
+      "scale": 1,
+      "voteMonth": 7,
+      "stage": 2,
+      "rapporteur": null,
+      "textAltered": false,
+      "postponements": 0,
+      "negotiation": {
+        "blocs": {},
+        "amendments": true,
+        "textConceded": false,
+        "urgency": false
+      },
+      "rider": 0,
+      "veto": null,
+      "judicial": null,
+      "executionStart": null,
+      "executionEnd": null,
+      "votes": [
+        {
+          "monthIndex": 4,
+          "house": "camara",
+          "round": 1,
+          "yes": 498,
+          "no": 15,
+          "required": 257,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": 0.3537230205212033,
+              "yes": 106,
+              "no": 4
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.4637456067923701,
+              "yes": 68,
+              "no": 2
+            },
+            {
+              "blocId": "centro",
+              "support": 1.108147649334023,
+              "yes": 150,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 0.6910264296543098,
+              "yes": 97,
+              "no": 1
+            },
+            {
+              "blocId": "direita",
+              "support": 0.2264087710764504,
+              "yes": 77,
+              "no": 8
+            }
+          ]
+        },
+        {
+          "monthIndex": 6,
+          "house": "senado",
+          "round": 1,
+          "yes": 65,
+          "no": 16,
+          "required": 41,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": 0.2486240095971783,
+              "yes": 13,
+              "no": 1
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.39773009080352983,
+              "yes": 9,
+              "no": 1
+            },
+            {
+              "blocId": "centro",
+              "support": 1.230803561179962,
+              "yes": 24,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 0.6705594672253987,
+              "yes": 18,
+              "no": 0
+            },
+            {
+              "blocId": "direita",
+              "support": 0.1910656014821192,
+              "yes": 1,
+              "no": 14
+            }
+          ]
+        }
+      ],
+      "history": [
+        {
+          "monthIndex": 2,
+          "status": "em_tramitacao",
+          "cause": "enviada",
+          "detail": "Enviada ao Congresso. Votação prevista na Câmara em 2027-05; relator do bloco Esquerda."
+        },
+        {
+          "monthIndex": 3,
+          "status": "em_tramitacao",
+          "cause": "emendas_liberadas",
+          "detail": "Emendas parlamentares liberadas para a votação."
+        },
+        {
+          "monthIndex": 4,
+          "status": "em_tramitacao",
+          "cause": "votacao",
+          "detail": "Aprovada: Câmara 498/15. Votação prevista no Senado em 2027-07; relator do bloco Direita."
+        },
+        {
+          "monthIndex": 6,
+          "status": "aprovada",
+          "cause": "votacao",
+          "detail": "Aprovada: Senado 65/16."
+        },
+        {
+          "monthIndex": 6,
+          "status": "aguardando_sancao",
+          "cause": "enviada_a_sancao",
+          "detail": "Enviada à sanção: decida em 2027-08 (sem resposta, sanção tácita)."
+        }
+      ]
+    },
+    {
+      "id": "infraestrutura_credito_adicional_2",
+      "policyId": "infraestrutura_credito_adicional",
+      "createdMonth": 2,
+      "status": "em_execucao",
+      "scale": 1,
+      "voteMonth": null,
+      "stage": 2,
+      "rapporteur": null,
+      "textAltered": false,
+      "postponements": 0,
+      "negotiation": {
+        "blocs": {},
+        "amendments": false,
+        "textConceded": false,
+        "urgency": false
+      },
+      "rider": 0,
+      "veto": null,
+      "judicial": null,
+      "executionStart": 7,
+      "executionEnd": 36,
+      "votes": [
+        {
+          "monthIndex": 5,
+          "house": "camara",
+          "round": 1,
+          "yes": 424,
+          "no": 89,
+          "required": 257,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": 0.33418250683487527,
+              "yes": 106,
+              "no": 4
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.5076714009063052,
+              "yes": 68,
+              "no": 2
+            },
+            {
+              "blocId": "centro",
+              "support": 1.202379920827012,
+              "yes": 150,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 0.562979199850719,
+              "yes": 96,
+              "no": 2
+            },
+            {
+              "blocId": "direita",
+              "support": 0.059641276540021874,
+              "yes": 4,
+              "no": 81
+            }
+          ]
+        },
+        {
+          "monthIndex": 5,
+          "house": "senado",
+          "round": 1,
+          "yes": 64,
+          "no": 17,
+          "required": 41,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": 0.24615677678750034,
+              "yes": 13,
+              "no": 1
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.5409949511119829,
+              "yes": 10,
+              "no": 0
+            },
+            {
+              "blocId": "centro",
+              "support": 1.1608429032655168,
+              "yes": 24,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 0.42851867152542944,
+              "yes": 17,
+              "no": 1
+            },
+            {
+              "blocId": "direita",
+              "support": -0.08843643563075781,
+              "yes": 0,
+              "no": 15
+            }
+          ]
+        }
+      ],
+      "history": [
+        {
+          "monthIndex": 2,
+          "status": "em_tramitacao",
+          "cause": "enviada",
+          "detail": "Enviada ao Congresso. Votação prevista em sessão conjunta em 2027-06; relator do bloco Centro."
+        },
+        {
+          "monthIndex": 5,
+          "status": "aprovada",
+          "cause": "votacao",
+          "detail": "Aprovada: Câmara 424/89, Senado 64/17."
+        },
+        {
+          "monthIndex": 5,
+          "status": "aguardando_sancao",
+          "cause": "enviada_a_sancao",
+          "detail": "Enviada à sanção: decida em 2027-07 (sem resposta, sanção tácita)."
+        },
+        {
+          "monthIndex": 6,
+          "status": "em_execucao",
+          "cause": "sancao_tacita",
+          "detail": "Sanção tácita."
+        }
+      ]
+    }
+  ],
+  "impulses": [
+    {
+      "sourceId": "evento:alta_petroleo_2",
+      "label": "Alta internacional do petróleo",
+      "target": "choque.inflacao",
+      "delta": 0.006,
+      "startMonth": 2,
+      "endMonth": 7
+    },
+    {
+      "sourceId": "emendas:reforma_previdencia_0",
+      "label": "Emendas liberadas: Reforma da previdência (parâmetros)",
+      "target": "gasto.custeio",
+      "delta": 0.0008,
+      "startMonth": 3,
+      "endMonth": 8
+    },
+    {
+      "sourceId": "emendas:gastos_tributarios_revisao_2",
+      "label": "Emendas liberadas: Revisão de gastos tributários",
+      "target": "gasto.custeio",
+      "delta": 0.0008,
+      "startMonth": 3,
+      "endMonth": 8
+    },
+    {
+      "sourceId": "proposta:infraestrutura_credito_adicional_2",
+      "label": "Crédito adicional para infraestrutura",
+      "target": "gasto.investimento",
+      "delta": 0.00035852976121183056,
+      "startMonth": 10,
+      "endMonth": 39
+    },
+    {
+      "sourceId": "proposta:infraestrutura_credito_adicional_2",
+      "label": "Crédito adicional para infraestrutura",
+      "target": "oferta.potencial",
+      "delta": 0.0006000000000000001,
+      "startMonth": 31,
+      "endMonth": null
+    },
+    {
+      "sourceId": "proposta:infraestrutura_credito_adicional_2",
+      "label": "Crédito adicional para infraestrutura",
+      "target": "aprovacao",
+      "delta": 0.00375,
+      "startMonth": 13,
+      "endMonth": 13
+    }
+  ],
+  "events": {
+    "pending": [],
+    "lastFired": {
+      "orcamento_transicao": 1,
+      "dados_emprego_surpreendem": 1,
+      "alta_petroleo": 2,
+      "calibragem_cbs": 3
+    },
+    "count": {
+      "orcamento_transicao": 1,
+      "dados_emprego_surpreendem": 1,
+      "alta_petroleo": 1,
+      "calibragem_cbs": 1
+    }
+  },
+  "decisionLog": [
+    {
+      "monthIndex": 0,
+      "decision": {
+        "policyId": "nomear_ministro",
+        "agendaCost": 1,
+        "params": {
+          "ministryId": "transportes",
+          "occupant": "centro"
+        }
+      }
+    },
+    {
+      "monthIndex": 0,
+      "decision": {
+        "policyId": "reforma_previdencia",
+        "agendaCost": 2
+      }
+    },
+    {
+      "monthIndex": 1,
+      "decision": {
+        "policyId": "nomear_ministro",
+        "agendaCost": 1,
+        "params": {
+          "ministryId": "cidades",
+          "occupant": "centro"
+        }
+      }
+    },
+    {
+      "monthIndex": 1,
+      "decision": {
+        "policyId": "reforma_administrativa",
+        "agendaCost": 2
+      }
+    },
+    {
+      "monthIndex": 2,
+      "decision": {
+        "policyId": "nomear_ministro",
+        "agendaCost": 1,
+        "params": {
+          "ministryId": "agricultura",
+          "occupant": "centro_direita"
+        }
+      }
+    },
+    {
+      "monthIndex": 2,
+      "decision": {
+        "policyId": "gastos_tributarios_revisao",
+        "agendaCost": 1
+      }
+    },
+    {
+      "monthIndex": 2,
+      "decision": {
+        "policyId": "infraestrutura_credito_adicional",
+        "agendaCost": 1
+      }
+    },
+    {
+      "monthIndex": 3,
+      "decision": {
+        "policyId": "liberar_emendas",
+        "agendaCost": 1,
+        "params": {
+          "proposalId": "reforma_previdencia_0"
+        }
+      }
+    },
+    {
+      "monthIndex": 3,
+      "decision": {
+        "policyId": "liberar_emendas",
+        "agendaCost": 1,
+        "params": {
+          "proposalId": "gastos_tributarios_revisao_2"
+        }
+      }
+    },
+    {
+      "monthIndex": 3,
+      "decision": {
+        "policyId": "nomear_ministro",
+        "agendaCost": 1,
+        "params": {
+          "ministryId": "minas_energia",
+          "occupant": "centro_direita"
+        }
+      }
+    },
+    {
+      "monthIndex": 4,
+      "decision": {
+        "policyId": "nomear_ministro",
+        "agendaCost": 1,
+        "params": {
+          "ministryId": "saude",
+          "occupant": "centro"
+        }
+      }
+    }
+  ]
+}

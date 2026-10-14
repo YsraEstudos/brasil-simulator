@@ -2,6 +2,7 @@ import type { Scenario } from '../types/scenario';
 
 import type { Calibration } from './economy/calibration';
 import { initialFiscal, type FiscalValues } from './economy/fiscal';
+import { initialRegions } from './regions/regions';
 import { seedRng } from './rng';
 import {
   ENGINE_VERSION,
@@ -79,7 +80,7 @@ export interface NewCampaign {
 export function createInitialState(c: NewCampaign): GameState {
   if (!Number.isInteger(c.seed)) throw new RangeError(`semente deve ser inteira: ${c.seed}`);
   const { scenario, calibration } = c.content;
-  return {
+  const state: GameState = {
     schemaVersion: STATE_SCHEMA_VERSION,
     engineVersion: ENGINE_VERSION,
     scenarioId: scenario.id,
@@ -101,7 +102,9 @@ export function createInitialState(c: NewCampaign): GameState {
     impulses: [],
     events: { pending: [], lastFired: {}, count: {} },
     decisionLog: [],
+    regions: { ufs: [] },
   };
+  return { ...state, regions: { ufs: initialRegions(state, c.content).ufs } };
 }
 
 /** Indicadores iniciais do cenário (só os valores; status e fonte ficam no cenário). */

@@ -33,7 +33,14 @@ function passo(state: GameState, content: GameContent, decisions: Decision[] = [
 
 /** Roda só a etapa, para inspecionar os impulsos gerados no mês. */
 function etapa(state: GameState, content: GameContent, decisions: Decision[]) {
-  const draft: ReportDraft = { proposalChanges: [], eventsResolved: [], eventsFired: [], notes: [], copom: null };
+  const draft: ReportDraft = {
+    proposalChanges: [],
+    eventsResolved: [],
+    eventsFired: [],
+    notes: [],
+    copom: null,
+    regional: null,
+  };
   const ctx: StepContext = { rng: createRng(state.rng), content, decisions, eventChoices: [], draft };
   return proposalsStep(state, ctx);
 }

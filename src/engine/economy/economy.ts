@@ -10,7 +10,8 @@ import type {
   StepContext,
 } from '../types';
 
-import type { Calibration, ParamName } from './calibration';
+import type { Calibration } from './calibration';
+import { DEMAND_GAIN } from './demand';
 import { externalMonth, NOISE_PARAM, riskDrivers } from './external';
 import {
   annualReview,
@@ -37,27 +38,6 @@ import { clamp, impulsePiece, scalePieces, sumOf, toContributions, type Piece } 
 
 const MONTHS_PER_YEAR = 12;
 const PRESSURE_LABEL = 'Pressão sobre o Banco Central';
-
-/** Multiplicador e sinal de um impulso de demanda sobre o hiato (ECONOMIC_MODEL.md §5.2). */
-interface DemandGain {
-  mult: ParamName;
-  sign: 1 | -1;
-}
-
-const DEMAND_GAIN: Partial<Record<ImpulseTarget, DemandGain>> = {
-  'gasto.investimento': { mult: 'mult_investimento', sign: 1 },
-  'gasto.custeio': { mult: 'mult_custeio', sign: 1 },
-  'gasto.transferencia_baixa_renda': { mult: 'mult_transf_baixa_renda', sign: 1 },
-  'gasto.transferencia_alta_renda': { mult: 'mult_transf_alta_renda', sign: 1 },
-  'gasto.obrigatoria': { mult: 'mult_obrigatoria', sign: 1 },
-  'gasto.extraordinario': { mult: 'mult_custeio', sign: 1 },
-  'receita.desoneracao_consumo': { mult: 'mult_desoneracao_consumo', sign: 1 },
-  'receita.desoneracao_renda': { mult: 'mult_desoneracao_renda', sign: 1 },
-  'receita.tributaria': { mult: 'mult_receita', sign: -1 },
-  'receita.renda': { mult: 'mult_receita', sign: -1 },
-  'receita.consumo': { mult: 'mult_receita', sign: -1 },
-  'demanda.credito': { mult: 'mult_credito', sign: 1 },
-};
 
 /** Impulsos de demanda que entram no hiato (ECONOMIC_MODEL.md §5.2). */
 const DEMAND_TARGETS = Object.keys(DEMAND_GAIN) as ImpulseTarget[];

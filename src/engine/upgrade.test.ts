@@ -4,11 +4,13 @@ import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { advanceMonth } from '@/engine/advanceMonth';
 import { checkInvariants } from '@/engine/invariants';
 import { STRATEGIES } from '@/engine/sim/strategies';
+import { regionsView } from '@/engine/regions/regions';
 import { SaveTooNewError, upgradeGameState } from '@/engine/upgrade';
 import { STATE_SCHEMA_VERSION, type GameState } from '@/engine/types';
 
 import v2Save from '@/tests/saves/state_v2_fase02.json';
 import v3Save from '@/tests/saves/state_v3_fase03.json';
+import v4Save from '@/tests/saves/state_v4_fase04.json';
 
 // AI_INSTRUCTIONS.md §3 e §5: saves antigos são atualizados, não recusados; teste com save real da versão
 // anterior. O fixture foi gravado pelo motor 0.2.0 (Fase 02, commit 30b0749): campanha populista fiscal,
@@ -39,7 +41,7 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
     const errors: string[] = [];
     for (let m = 0; m < 24; m++) {
       const result = advanceMonth(state, strategy.decide(state, content), content);
-      errors.push(...checkInvariants(state, result.state, result.report));
+      errors.push(...checkInvariants(state, result.state, result.report, content));
       state = result.state;
     }
     expect(errors).toEqual([]);
@@ -69,13 +71,40 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
     const errors: string[] = [];
     for (let m = 0; m < 24; m++) {
       const result = advanceMonth(state, strategy.decide(state, content), content);
-      errors.push(...checkInvariants(state, result.state, result.report));
+      errors.push(...checkInvariants(state, result.state, result.report, content));
       expect(result.report.rejected).toEqual([]);
       state = result.state;
     }
     expect(errors).toEqual([]);
     const pec = state.proposals.find((p) => p.policyId === 'reforma_administrativa');
     expect(pec?.status).not.toBe('em_tramitacao');
+  });
+
+  // Fixture v4 gravado pelo motor 0.4.0 (Fase 04, commit ffd00cd): estratégia fisiológica, semente 4, sete meses
+  // no cenário brasil_2027_01, com as duas PECs em tramitação, cinco pastas de bloco e infraestrutura em execução.
+  it('save v4 da Fase 04 ganha as UFs (a partir do cenário) e a adesão nas propostas', () => {
+    const state = upgradeGameState(4, structuredClone(v4Save) as unknown);
+    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.regions.ufs).toEqual([]);
+    expect(state.proposals.every((p) => p.adherents === null)).toBe(true);
+    expect(state.congress.cabinet).toHaveLength(5);
+    // A interface já mostra as UFs antes do primeiro mês jogado depois da atualização.
+    expect(regionsView(state, content)).toHaveLength(27);
+  });
+
+  it('save v4 atualizado continua jogável por 24 meses sem violar invariantes (incluindo §7.9)', () => {
+    let state: GameState = upgradeGameState(4, structuredClone(v4Save) as unknown);
+    const strategy = STRATEGIES.find((s) => s.id === 'fisiologica');
+    if (!strategy) throw new Error('estratégia ausente');
+    const errors: string[] = [];
+    for (let m = 0; m < 24; m++) {
+      const result = advanceMonth(state, strategy.decide(state, content), content);
+      errors.push(...checkInvariants(state, result.state, result.report, content));
+      expect(result.report.rejected).toEqual([]);
+      state = result.state;
+    }
+    expect(errors).toEqual([]);
+    expect(state.regions.ufs).toHaveLength(27);
   });
 
   it('save de versão mais nova que o app é recusado', () => {

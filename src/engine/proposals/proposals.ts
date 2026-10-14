@@ -28,6 +28,7 @@ import {
 import { blocRelation, RELACAO_MAX, RELACAO_MIN } from '../congress/relations';
 import type { Calibration } from '../economy/calibration';
 import { fiscalRoom } from '../economy/fiscal';
+import { populationShares, regionsOf, regionsView } from '../regions/regions';
 import { currentNominalGdpMillions } from '../state';
 import type { Instrument, Policy } from '../../types/policy';
 import type { Bloc } from '../../types/scenario';
@@ -36,6 +37,7 @@ import type {
   GameContent,
   GameState,
   House,
+  ImpulseRegional,
   ImpulseTarget,
   MonthStep,
   Proposal,
@@ -121,6 +123,8 @@ export interface ImpulseSchedule {
   delayMonths: number;
   /** Ação no STF, se houve; a janela de suspensão já foi retirada dos impulsos. */
   judicial: ProposalJudicial | null;
+  /** UFs que aderiram (condição `adesao_estadual`); `null` quando a política não depende de adesão. */
+  adherents: string[] | null;
 }
 
 export const proposalsStep: MonthStep = (state, ctx) => {
@@ -193,15 +197,38 @@ export function scheduleImpulses(
   // Pasta de bloco: parte do resultado se perde (capacidade administrativa menor).
   const resultFactor = partisanBloc ? 1 - c.perda_execucao_partidaria : 1;
 
+  // POLITICAL_RULES.md §2.1: programa por convênio depende da adesão de cada estado (não vale no Casual).
+  const adhesion = stateAdhesion(policy, state, ctx);
+  if (adhesion) {
+    notes.push(
+      `${policy.name}: ${adhesion.adherents.length} de ${regionsOf(ctx.content).length} estados aderiram ` +
+        `(${Math.round(adhesion.populationShare * 100)}% da população).`,
+    );
+    riskEvents.push({
+      cause: 'adesao_estados',
+      detail: `Aderiram ${adhesion.adherents.length} estados, com ${Math.round(adhesion.populationShare * 100)}% da população.`,
+    });
+  }
+  const regional = impulseRegional(policy, adhesion?.adherents ?? null);
+
   for (const impact of policy.impacts) {
     const target = IMPULSE_TARGET[impact.channel];
     const startMonth = start + impact.lagMonths;
     const common = { sourceId, label: policy.name, target };
+    // Só a parte da população que aderiu recebe o programa.
+    const reach = adhesion ? adhesion.populationShare : 1;
+    const local = regional ? { regional } : {};
     if (isFiscal(target)) {
       const endMonth = executionMonths > 0 ? startMonth + executionMonths - 1 : null;
-      impulses.push({ ...common, delta: (impact.magnitude / gdp) * scale, startMonth, endMonth });
+      impulses.push({ ...common, ...local, delta: (impact.magnitude / gdp) * scale * reach, startMonth, endMonth });
     } else if (target === 'oferta.potencial') {
-      impulses.push({ ...common, delta: impact.magnitude * scale * resultFactor, startMonth, endMonth: null });
+      impulses.push({
+        ...common,
+        ...local,
+        delta: impact.magnitude * scale * resultFactor * reach,
+        startMonth,
+        endMonth: null,
+      });
     } else if (target === 'salario_minimo') {
       // Ganho real extra entra no reajuste de janeiro (o deste mês, se for janeiro; senão o do ano seguinte).
       // Jan/2027 (mês 0) já vem do cenário: o primeiro reajuste possível é o de jan/2028.
@@ -276,7 +303,8 @@ export function scheduleImpulses(
         riskEvents.push({ cause: 'sobrecusto', detail: 'Sobrecusto: a execução custa acima do previsto.' });
       }
     } else if (risk.kind === 'baixa_adesao') {
-      if (ctx.rng.chance(risk.probability)) {
+      // Com adesão por estado, o risco genérico já está na adesão de cada governador.
+      if (!adhesion && ctx.rng.chance(risk.probability)) {
         impulses = impulses.map((i) =>
           isFiscal(i.target) || i.target === 'oferta.potencial' ? { ...i, delta: i.delta * c.fator_baixa_adesao } : i,
         );
@@ -340,7 +368,46 @@ export function scheduleImpulses(
     });
   }
 
-  return { impulses, notes, riskEvents, delayMonths, judicial };
+  return { impulses, notes, riskEvents, delayMonths, judicial, adherents: adhesion?.adherents ?? null };
+}
+
+/**
+ * Adesão dos estados a um programa por convênio (POLITICAL_RULES.md §2.1): cada governador adere com
+ * probabilidade `adesao_base + adesao_relacao × relação/100`. Um sorteio por UF, na ordem do cenário.
+ * `null` quando a política não depende de adesão, o cenário não tem UFs ou a dificuldade é Casual (todos aderem).
+ */
+function stateAdhesion(
+  policy: Policy,
+  state: Readonly<GameState>,
+  ctx: StepContext,
+): { adherents: string[]; populationShare: number } | null {
+  const ufs = regionsOf(ctx.content);
+  if (!policy.conditions.includes('adesao_estadual') || ufs.length === 0 || state.difficulty === 'casual') return null;
+  const c = ctx.content.calibration;
+  const view = regionsView(state, ctx.content);
+  const pop = populationShares(ufs);
+  const adherents: string[] = [];
+  let populationShare = 0;
+  ufs.forEach((uf, i) => {
+    const relation = view[i]?.governorRelation ?? uf.governor.relation;
+    const p = clamp(c.adesao_base + (c.adesao_relacao * relation) / RELACAO_MAX, 0, 1);
+    if (ctx.rng.chance(p)) {
+      adherents.push(uf.id);
+      populationShare += pop[i];
+    }
+  });
+  return { adherents, populationShare };
+}
+
+/** Incidência regional dos impulsos da política (ECONOMIC_MODEL.md §5.15), restrita às UFs que aderiram. */
+function impulseRegional(policy: Policy, adherents: readonly string[] | null): ImpulseRegional | null {
+  const profile = policy.regional;
+  if (!profile && !adherents) return null;
+  const key = profile?.key ?? 'populacao';
+  const boost = profile && Object.keys(profile.boost).length > 0 ? { boost: { ...profile.boost } } : {};
+  // Sem nenhuma adesão o alcance é zero e os impulsos já não têm efeito (o escopo vazio não importa).
+  const scope = adherents ? [...adherents] : [...(profile?.scope ?? [])];
+  return { key, scope, ...boost };
 }
 
 /**
@@ -566,6 +633,7 @@ function sendPolicy(run: Run, policyId: string): void {
     judicial: null,
     executionStart: null,
     executionEnd: null,
+    adherents: null,
     votes: [],
     history: [],
   };
@@ -1043,6 +1111,7 @@ function startExecution(run: Run, p: Proposal, start: number, scale: number): vo
   p.executionEnd = policy.timeline.executionMonths > 0 ? p.executionStart + policy.timeline.executionMonths - 1 : null;
   // Se a medida for derrubada, a data final passa a ser a da liminar no julgamento (`judicialTransitions`).
   p.judicial = schedule.judicial;
+  p.adherents = schedule.adherents;
   run.impulses.push(...schedule.impulses);
   run.ctx.draft.notes.push(...schedule.notes);
   for (const r of schedule.riskEvents) pushTransition(run, p, p.status, r.cause, r.detail);

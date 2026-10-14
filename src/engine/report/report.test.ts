@@ -5,6 +5,10 @@ import type { GameState, MonthReport } from '@/engine/types';
 
 import { billions, pct, pp } from './format';
 import { explainIndicator, headlines } from './explain';
+import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
+
+import { createInitialState } from '../state';
+
 import { adviseDecision } from './dispatch';
 
 const content = testContent();
@@ -20,6 +24,7 @@ function report(overrides: Partial<MonthReport> = {}): MonthReport {
     eventsFired: [],
     copom: null,
     notes: [],
+    regional: null,
     ...overrides,
   };
 }
@@ -166,5 +171,25 @@ describe('adviseDecision', () => {
     expect(adviseDecision(testState(), TEST_BILL.id, content).articulacao.text).not.toContain('Quórum qualificado');
     const hostil = adviseDecision(withRelation(testState(), -100), TEST_BILL.id, content);
     expect(hostil.articulacao.text).toContain('pode não pautar');
+  });
+});
+
+describe('mesa de despacho: federação (ECONOMIC_MODEL.md §5.15; POLITICAL_RULES.md §2.1)', () => {
+  const real = loadContent(DEFAULT_SCENARIO_ID);
+  const state = createInitialState({ content: real, difficulty: 'estrategica', seed: 1 });
+
+  it('a Comunicação diz onde a política pesa mais', () => {
+    expect(adviseDecision(state, 'transferencia_renda_ampliacao', real).comunicacao.text).toContain(
+      'Favorece mais o Nordeste',
+    );
+    expect(adviseDecision(state, 'reforma_administrativa', real).comunicacao.text).toContain('Distrito Federal');
+  });
+
+  it('a Articulação prevê a adesão dos governadores a programa por convênio', () => {
+    const advice = adviseDecision(state, 'seguranca_cooperacao', real);
+    expect(advice.articulacao.text).toContain('Governadores: devem aderir');
+    expect(advice.forecast.adhesion).toBeGreaterThan(0);
+    expect(advice.forecast.adhesion).toBeLessThan(1);
+    expect(adviseDecision(state, 'irpf_tabela', real).forecast.adhesion).toBeNull();
   });
 });

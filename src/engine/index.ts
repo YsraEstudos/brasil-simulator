@@ -20,6 +20,7 @@ export {
   SANCTION_ACTION_ID,
   SANCTION_CHOICES,
   URGENCY_ACTION_ID,
+  VISIT_ACTION_ID,
   type AgendaAction,
   type SanctionChoice,
 } from './actions';
@@ -53,6 +54,18 @@ export { fiscalRoom } from './economy/fiscal';
 export { BC_BOARD_SIZE, boardShare } from './economy/monetary';
 export { activeImpulses, isActive, pruneImpulses, sumActive } from './impulses';
 export { checkInvariants } from './invariants';
+export {
+  expectedAdhesion,
+  inScope,
+  keyWeights,
+  meanGovernorRelation,
+  populationShares,
+  REGION_NAMES,
+  regionalDispersion,
+  regionalIncidence,
+  regionsOf,
+  regionsView,
+} from './regions/regions';
 export { createRng, seedRng, type Rng, type RngState } from './rng';
 export {
   AGENDA_POINTS,

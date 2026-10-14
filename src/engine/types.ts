@@ -1,14 +1,15 @@
 import type { GameEvent } from '../types/event';
 import type { Policy } from '../types/policy';
+import type { RegionalKey, RegionalScope } from '../types/regions';
 import type { Scenario } from '../types/scenario';
 import type { Calibration } from './economy/calibration';
 import type { Rng, RngState } from './rng';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 4;
+export const STATE_SCHEMA_VERSION = 5;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.4.0';
+export const ENGINE_VERSION = '0.5.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -167,6 +168,9 @@ export interface EconomyState {
  * | `aprovacao` | variação da aprovação em cada mês ativo (fração) | opinião |
  * | `capital_politico` | variação do capital político em cada mês ativo (pontos 0–100) | opinião |
  * | `relacao_congresso` | variação da relação de **todos** os blocos com o governo em cada mês ativo (−100…100) | Congresso |
+ * | `regiao.atividade` | desvio da atividade (log) das UFs do escopo enquanto ativo; não muda o total nacional | regiões |
+ * | `regiao.aprovacao` | desvio da aprovação (fração) nas UFs do escopo enquanto ativo; a média segue a nacional | regiões |
+ * | `governadores.relacao` | variação da relação dos governadores do escopo em cada mês ativo (−100…100) | regiões |
  */
 export type ImpulseTarget =
   | 'gasto.investimento'
@@ -190,7 +194,23 @@ export type ImpulseTarget =
   | 'credibilidade'
   | 'aprovacao'
   | 'capital_politico'
-  | 'relacao_congresso';
+  | 'relacao_congresso'
+  | 'regiao.atividade'
+  | 'regiao.aprovacao'
+  | 'governadores.relacao';
+
+/**
+ * Incidência regional de um impulso (ECONOMIC_MODEL.md §5.15): como o efeito se reparte entre as UFs. Sem ela,
+ * o efeito é proporcional ao PIB de cada UF (nenhuma diferença regional). Nos alvos `regiao.*` e
+ * `governadores.relacao` só o escopo importa (vazio = todas as UFs).
+ */
+export interface ImpulseRegional {
+  key: RegionalKey;
+  /** Regiões ou UFs que recebem; vazio = todas. */
+  scope: readonly RegionalScope[];
+  /** Multiplicador da chave por UF (sigla). */
+  boost?: Readonly<Record<string, number>>;
+}
 
 /** Efeito futuro agendado (ECONOMIC_MODEL.md §5.11). */
 export interface ScheduledImpulse {
@@ -205,6 +225,8 @@ export interface ScheduledImpulse {
   startMonth: number;
   /** Último mês com efeito (inclusivo); `null` = permanente. */
   endMonth: number | null;
+  /** Incidência regional (Fase 05); ausente = proporcional ao PIB das UFs. */
+  regional?: ImpulseRegional;
 }
 
 /**
@@ -332,6 +354,8 @@ export interface Proposal {
   /** Primeiro e último mês de execução (null antes de executar; last null = permanente). */
   executionStart: number | null;
   executionEnd: number | null;
+  /** UFs que aderiram ao programa (condição `adesao_estadual`, POLITICAL_RULES.md §2); `null` = sem adesão. */
+  adherents: string[] | null;
   votes: VoteResult[];
   history: ProposalTransition[];
 }
@@ -443,6 +467,53 @@ export interface GameState {
   impulses: ScheduledImpulse[];
   events: EventsState;
   decisionLog: DecisionRecord[];
+  /** Distribuição do agregado às UFs (ECONOMIC_MODEL.md §5.12, §5.15). */
+  regions: RegionsState;
+}
+
+/**
+ * Situação de uma UF no mês processado (ECONOMIC_MODEL.md §5.15). Participação, desemprego e aprovação são uma
+ * distribuição dos números nacionais: as médias ponderadas reproduzem o total (invariante §7.9).
+ */
+export interface UfState {
+  /** Sigla da UF. */
+  id: string;
+  /** Participação no PIB nacional (soma 1). */
+  share: number;
+  /** Participação de tendência, sem o ciclo, o gasto federal e os choques do mês (soma 1). */
+  structuralShare: number;
+  /** Crescimento do PIB da UF em 12 meses menos o nacional (suavizado, como o PIB 12m nacional). */
+  growthGap12m: number;
+  /** Desemprego da UF (média ponderada pela população = nacional). */
+  unemployment: number;
+  /** Aprovação do governo na UF (média ponderada pela população = nacional). */
+  approval: number;
+  /** Relação do governador com o governo, −100…100. */
+  governorRelation: number;
+}
+
+/** UFs na ordem do cenário. Vazio = cenário sem dados regionais ou save antigo ainda não processado. */
+export interface RegionsState {
+  ufs: UfState[];
+}
+
+/** Parcela de uma diferença regional em relação à média nacional, com causa (ECONOMIC_MODEL.md §5.15). */
+export interface RegionalPiece {
+  cause: string;
+  label: string;
+  /** Na unidade da diferença explicada (fração). */
+  delta: number;
+}
+
+/**
+ * "Por que esta UF está diferente da média?" no mês: decomposições exatas (a soma das parcelas é a diferença).
+ * `activity`: participação ÷ participação de tendência − 1. `unemployment` e `approval`: UF − nacional.
+ */
+export interface UfExplanation {
+  id: string;
+  activity: RegionalPiece[];
+  unemployment: RegionalPiece[];
+  approval: RegionalPiece[];
 }
 
 /** Mudança de estado de uma proposta no mês, para o relatório. */
@@ -475,6 +546,11 @@ export interface MonthReport {
   copom: CopomDecision | null;
   /** Avisos curtos para o jogador (ex.: gasto acima do limite). */
   notes: string[];
+  /**
+   * Diferenças de cada UF em relação à média nacional, por causa (Fase 05). `null` sem dados regionais;
+   * relatórios gravados antes da Fase 05 não têm o campo.
+   */
+  regional: UfExplanation[] | null;
 }
 
 export interface MonthResult {
@@ -493,6 +569,7 @@ export interface GameContent {
 /** Partes do relatório que as etapas preenchem (o resto é montado pelo `advanceMonth`). */
 export type ReportDraft = Pick<MonthReport, 'proposalChanges' | 'eventsResolved' | 'eventsFired' | 'notes'> & {
   copom: CopomDecision | null;
+  regional: UfExplanation[] | null;
 };
 
 export interface StepContext {

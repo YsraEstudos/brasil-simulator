@@ -7,6 +7,7 @@ import { resolveEventsStep, triggerEventsStep } from './events/events';
 import { pruneImpulses } from './impulses';
 import { opinionStep } from './politics/opinion';
 import { proposalsStep } from './proposals/proposals';
+import { regionsStep } from './regions/regions';
 import { createRng } from './rng';
 import {
   PROPOSAL_IN_PROGRESS,
@@ -26,7 +27,8 @@ import {
 /**
  * Etapas do mês, na ordem do pipeline (ECONOMIC_MODEL.md §4): respostas a eventos, nomeações de ministros,
  * propostas e Congresso (negociação, votações, sanção, execução), relações com os blocos, economia, opinião
- * pública e, por fim, sorteio dos eventos que chegam à caixa de entrada do mês seguinte.
+ * pública, distribuição às UFs (ECONOMIC_MODEL.md §5.15) e, por fim, sorteio dos eventos que chegam à caixa de
+ * entrada do mês seguinte.
  */
 export const DEFAULT_STEPS: readonly MonthStep[] = [
   resolveEventsStep,
@@ -35,6 +37,7 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
   congressStep,
   economyStep,
   opinionStep,
+  regionsStep,
   triggerEventsStep,
 ];
 
@@ -51,7 +54,14 @@ export function advanceMonth(
   const screened = screenInput(state, input, content);
 
   const rng = createRng(state.rng);
-  const draft: ReportDraft = { proposalChanges: [], eventsResolved: [], eventsFired: [], notes: [], copom: null };
+  const draft: ReportDraft = {
+    proposalChanges: [],
+    eventsResolved: [],
+    eventsFired: [],
+    notes: [],
+    copom: null,
+    regional: null,
+  };
   const ctx = { rng, content, decisions: screened.accepted, eventChoices: screened.eventChoices, draft };
   const contributions: Contribution[] = [];
   let current: GameState = state;
@@ -86,6 +96,7 @@ export function advanceMonth(
       eventsFired: draft.eventsFired,
       copom: draft.copom,
       notes: draft.notes,
+      regional: draft.regional,
     },
   };
 }

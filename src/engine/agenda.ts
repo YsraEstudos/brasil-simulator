@@ -6,6 +6,7 @@ import {
   SANCTION_ACTION_ID,
   SANCTION_CHOICES,
   URGENCY_ACTION_ID,
+  VISIT_ACTION_ID,
   type AgendaAction,
 } from './actions';
 import { ministriesOf, ministryOccupant } from './congress/cabinet';
@@ -70,6 +71,8 @@ export function validateActionTarget(
       if (!p || p.status !== 'aguardando_sancao' || p.voteMonth !== state.monthIndex || !choice) return 'alvo_invalido';
       return choice === 'vetar_acrescimos' && p.rider <= 0 ? 'alvo_invalido' : null;
     }
+    case VISIT_ACTION_ID:
+      return content.scenario.regions?.ufs.some((u) => u.id === params.uf) ? null : 'alvo_invalido';
     default:
       return null;
   }

@@ -23,7 +23,7 @@ function runMonths(start: GameState, months: number): { state: GameState; errors
   const errors: string[] = [];
   for (let m = 0; m < months; m++) {
     const r = advanceMonth(state, { decisions: [] }, content, [economyStep]);
-    errors.push(...checkInvariants(state, r.state, r.report));
+    errors.push(...checkInvariants(state, r.state, r.report, content));
     state = r.state;
   }
   return { state, errors };

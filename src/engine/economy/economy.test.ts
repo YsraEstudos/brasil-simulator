@@ -18,7 +18,7 @@ function runMonths(start: GameState, months: number, content = testContent()): {
   const errors: string[] = [];
   for (let m = 0; m < months; m++) {
     const res = runMonth(state, content);
-    errors.push(...checkInvariants(state, res.state, res.report));
+    errors.push(...checkInvariants(state, res.state, res.report, content));
     state = res.state;
   }
   return { state, errors };
@@ -86,7 +86,7 @@ describe('economyStep', () => {
     const snapshot: GameState[] = [];
     for (let m = 0; m < 240; m++) {
       const res = runMonth(state, content);
-      errors.push(...checkInvariants(state, res.state, res.report));
+      errors.push(...checkInvariants(state, res.state, res.report, content));
       state = res.state;
       snapshot.push(state);
     }

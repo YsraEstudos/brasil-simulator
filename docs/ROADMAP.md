@@ -66,7 +66,7 @@ Revisão externa avaliada em 13/10/2026. A ordem das fases não mudou (o motor j
 - [x] `DATA_SOURCES.md`: status dos dados, metadados, fontes, variáveis do cenário, pipeline
 - [x] `AI_INSTRUCTIONS.md`: regras obrigatórias para agentes de IA
 - [x] Revisão humana dos cinco documentos (13/10/2026)
-- [x] Resolver as decisões que bloqueiam as Fases 01–02 (D1, D2, D3 — §8.1)
+- [x] Resolver as decisões que bloqueiam as Fases 01–02 (D1, D2, D3 — §9.1)
 - [x] Verificar os itens ⚠ de POLITICAL_RULES.md que afetam o protótipo (13/10/2026; registro em DATA_SOURCES.md §6). Restam: execução provisória da LOA (aguarda LDO 2027) e texto compilado da LC 214/2025.
 
 ---
@@ -157,11 +157,30 @@ Branch `feat/fase-04-congresso` (a partir da Fase 03). Estado v4 (saves v3 atual
 
 **Fora do escopo da Fase 04:** impeachment, CPIs e parecer do TCU (proposta: Fase 07, com eventos encadeados); comissões permanentes individuais, emendas de plenário e parlamentares individuais (Fase 09); recesso de julho e convocação extraordinária (o turno é mensal: só janeiro é recesso); indicações ao STF.
 
+## 8. Fase 05 — plano de tarefas
+
+Branch `feat/fase-05-federacao` (a partir da Fase 04). Estado v5 (saves v4 atualizados), motor 0.5.0, cenário `brasil_2027_01` v0.4.0. Critério: decisões federais com efeitos regionais diferentes e explicáveis. Arquitetura pela decisão D7 (ECONOMIC_MODEL.md §5.12): o motor nacional não muda; as UFs recebem uma **distribuição** do agregado, sem motor macroeconômico por UF.
+
+1. ⬜ **Dados das 27 UFs no cenário v0.4.0** (`regions`): população, participação no PIB, peso de agropecuária, extrativa, indústria e serviços, desemprego inicial, pobreza, bloco do governador e relação inicial (DATA_SOURCES.md §4.2). Valores `PROVISORIO` (ordens de grandeza do IBGE) e governadores `FICTICIO`.
+2. ⬜ **Motor regional** (`src/engine/regions/`): participação estrutural de cada UF mais um desvio explicado por causa (setores × hiato e termos de troca, gasto federal pela chave de distribuição de cada política, choques regionais de eventos); capital público regional muda a participação estrutural. Desemprego e aprovação por UF são desvios da média nacional, normalizados para que a média ponderada reproduza o número nacional (invariante §7.9).
+3. ⬜ **Chaves de distribuição e impulsos regionais**: cada política diz como o gasto (ou o tributo) se reparte entre as UFs (população, pobreza, PIB); impulsos carregam o escopo regional; eventos ganham alvos `regiao.atividade`, `regiao.aprovacao` e `governadores.relacao` com regiões ou UFs.
+4. ⬜ **Governadores** (POLITICAL_RULES.md §2): relação por UF que segue o bloco do governador, a aprovação local e as transferências recebidas; governador aliado ou hostil puxa a aprovação local; programas com `adesao_estadual` dependem da adesão de cada estado (substitui o sorteio genérico de baixa adesão).
+5. ⬜ **Ação de agenda "Visitar um estado"** (1 ponto, alvo UF): aprovação local e relação com o governador sobem por alguns meses.
+6. ⬜ **Conteúdo**: chave regional nas 10 políticas; efeitos regionais na seca, nas enchentes e nos eventos de governadores; evento novo "Estados endividados pedem alívio".
+7. ⬜ **Explicação**: relatório mensal com a decomposição por UF ("Por que este estado está diferente da média?"); mesa de despacho com a incidência regional e a adesão prevista dos estados; dispersão regional no relatório de legado (GAME_DESIGN.md §7.2).
+8. ⬜ **Testes**: invariante §7.9 em todas as campanhas automáticas; testes de sentido (transferência à baixa renda favorece Norte e Nordeste; tributo sobre a renda pesa mais no Sudeste; seca concentra a perda no Nordeste; relação ruim com governadores reduz a adesão); determinismo; save v4 real atualizado para v5.
+9. ⬜ **Interface**: aba Brasil com mapa de calor no globo por indicador (crescimento, desemprego, aprovação, renda per capita, relação com o governador), legenda, lista ordenada das UFs e cartão da UF com os valores, a explicação, o governador e a visita.
+10. ⬜ **Documentos e calibração**: ECONOMIC_MODEL §5.12/§5.15 e §7.9, POLITICAL_RULES §2.1, GAME_DESIGN (aba Brasil), DATA_SOURCES (cenário v0.4.0), `npm run sim:sensitivity` regenerando CALIBRATION.md.
+
+**Arquivos que serão modificados:** `src/engine/` (novo `regions/`, `types.ts`, `state.ts`, `upgrade.ts`, `advanceMonth.ts`, `invariants.ts`, `actions.ts`, `agenda.ts`, `proposals/proposals.ts`, `events/events.ts`, `economy/calibration.ts`, `report/`, `sim/`, `index.ts`), `src/types/` (cenário, política, evento), `src/data/` (cenário, políticas, eventos), `src/globe/` (camada de mapa de calor), `src/app/brasil.tsx`, `src/components/` (aba Brasil, legado, despacho), `src/tests/saves/state_v4_fase04.json` (gravado pelo motor 0.4.0, commit ffd00cd: estratégia fisiológica, semente 4, sete meses), `scripts/sim/`, `docs/`.
+
+**Fora do escopo da Fase 05:** motor econômico por UF (D7 proíbe), finanças estaduais (receita, dívida e folha dos estados), municípios, eleições de governadores (Fase 08), bancadas estaduais no Congresso (Fase 09), setores no motor nacional e quintis de renda (Fase 06), rótulos de capitais no globo.
+
 ---
 
-## 8. Decisões
+## 9. Decisões
 
-### 8.1 Tomadas
+### 9.1 Tomadas
 
 | # | Decisão | Escolha | Data |
 | --- | --- | --- | --- |
@@ -170,7 +189,7 @@ Branch `feat/fase-04-congresso` (a partir da Fase 03). Estado v4 (saves v3 atual
 | D3 | Biblioteca de gráficos | **Componentes SVG próprios** (`react-native-svg`): `LineChart`, `BarChart`, `Sparkline`, isolados para permitir troca por victory-native se o Realismo Extremo exigir | 13/10/2026 |
 | D7 | Economia regional | **Agregado nacional primeiro, distribuído às UFs** por matriz de participação e sensibilidade setorial; nunca 27 motores somados (ECONOMIC_MODEL.md §5.12) | 13/10/2026 |
 
-### 8.2 Em aberto
+### 9.2 Em aberto
 
 | # | Decisão | Opções | Recomendação | Bloqueia |
 | --- | --- | --- | --- | --- |
@@ -180,7 +199,7 @@ Branch `feat/fase-04-congresso` (a partir da Fase 03). Estado v4 (saves v3 atual
 
 ---
 
-## 9. Riscos principais
+## 10. Riscos principais
 
 | Risco | Medida preventiva |
 | --- | --- |

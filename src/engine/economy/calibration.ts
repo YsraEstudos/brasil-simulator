@@ -1123,6 +1123,131 @@ export const PARAMS = {
     basis: JOGO,
   },
 
+  // ── Federação (ECONOMIC_MODEL.md §5.15; POLITICAL_RULES.md §2.1) ────────────────────────────────
+  concentracao_regional: {
+    value: 0.6,
+    min: 0.3,
+    max: 0.9,
+    note: 'fração do efeito de demanda (e do capital público) que fica na UF onde o gasto federal ocorre; o resto vaza para as demais pelo comércio entre UFs',
+    basis:
+      'ordem de grandeza dos vazamentos inter-regionais em modelos insumo-produto regionais do Brasil; faixa ampla',
+  },
+  ciclo_agro_termos: {
+    value: 1,
+    min: 0.3,
+    max: 2,
+    note: 'desvio (log) da agropecuária em relação ao agregado por unidade de termos de troca (log)',
+    basis:
+      'safra exportada e preços de commodities agrícolas movem mais o PIB das UFs agrícolas; critério de jogo testado na faixa',
+  },
+  ciclo_extrativa_termos: {
+    value: 1.5,
+    min: 0.5,
+    max: 3,
+    note: 'desvio (log) da indústria extrativa (petróleo, minério) por unidade de termos de troca (log)',
+    basis: 'a extrativa é o setor mais exposto a preços internacionais; critério de jogo testado na faixa',
+  },
+  ciclo_industria_hiato: {
+    value: 1.5,
+    min: 0.5,
+    max: 2.5,
+    note: 'amplitude extra do ciclo da indústria sobre o hiato do produto (desvio relativo ao agregado = este valor × hiato)',
+    basis: 'a produção industrial oscila de 2 a 3 vezes o PIB no ciclo (PIM-PF × PIB trimestral, IBGE)',
+  },
+  desvio_atividade_max: {
+    value: 0.1,
+    min: 0.05,
+    max: 0.2,
+    note: 'desvio máximo (log) da atividade de uma UF em relação à sua tendência; saturação por tanh',
+    basis: SATURACAO,
+  },
+  okun_regional: {
+    value: 6,
+    min: 3,
+    max: 10,
+    note: 'queda do log do desemprego relativo da UF por unidade (log) de atividade acima da tendência',
+    basis: 'coeficiente de Okun nacional (0,35 p.p. por 1% de hiato) convertido para razão log com desemprego de ~6%',
+  },
+  aprovacao_gasto_regional: {
+    value: 8,
+    min: 3,
+    max: 15,
+    note: 'aprovação extra na UF por unidade de gasto federal per capita acima da média (fração do PIB nacional × desvio relativo per capita)',
+    basis:
+      'programa de 0,2% do PIB focalizado no Nordeste rende ~2 p.p. de aprovação local acima da média; critério de jogo',
+  },
+  aprovacao_atividade_regional: {
+    value: 1,
+    min: 0.3,
+    max: 2,
+    note: 'aprovação extra na UF por unidade (log) de atividade local acima da tendência',
+    basis: JOGO,
+  },
+  aprovacao_governador: {
+    value: 0.04,
+    min: 0.01,
+    max: 0.08,
+    note: 'aprovação extra na UF com governador totalmente aliado (relação 100); simétrica com governador hostil',
+    basis: JOGO,
+  },
+  desvio_aprovacao_max: {
+    value: 0.15,
+    min: 0.08,
+    max: 0.25,
+    note: 'diferença máxima entre a aprovação de uma UF e a média nacional; saturação por tanh',
+    basis: SATURACAO,
+  },
+  governador_alinhamento: {
+    value: 0.5,
+    min: 0.2,
+    max: 0.8,
+    note: 'peso da relação do bloco do governador com o governo na relação do próprio governador',
+    basis: JOGO,
+  },
+  governador_aprovacao: {
+    value: 1,
+    min: 0.3,
+    max: 2,
+    note: 'pontos de relação do governador por p.p. de aprovação local do presidente acima da base',
+    basis: 'governadores se aproximam de presidentes populares no seu estado; critério de jogo',
+  },
+  ajuste_governador: {
+    value: 0.1,
+    min: 0.03,
+    max: 0.25,
+    note: 'fração mensal do caminho da relação do governador até a sua meta',
+    basis: JOGO,
+  },
+  adesao_base: {
+    value: 0.6,
+    min: 0.4,
+    max: 0.8,
+    note: 'probabilidade de um estado com governador neutro aderir a programa federal por convênio',
+    basis: 'adesão parcial dos estados a programas federais de cooperação; critério de jogo',
+  },
+  adesao_relacao: {
+    value: 0.4,
+    min: 0.2,
+    max: 0.6,
+    note: 'probabilidade extra de adesão com governador aliado (relação 100); a mesma a menos com governador hostil',
+    basis: JOGO,
+  },
+  aprovacao_visita: {
+    value: 0.02,
+    min: 0.005,
+    max: 0.04,
+    note: 'aprovação extra na UF visitada pelo presidente, enquanto dura o efeito',
+    basis: JOGO,
+  },
+  meses_visita: { value: 3, min: 1, max: 6, note: 'meses de efeito da visita na aprovação local', basis: JOGO },
+  relacao_visita: {
+    value: 10,
+    min: 3,
+    max: 20,
+    note: 'pontos de relação ganhos com o governador do estado visitado',
+    basis: JOGO,
+  },
+
   // ── Eventos (GAME_DESIGN.md §11.3) ──────────────────────────────────────────────────────────────
   max_eventos_mes: { value: 2, min: 1, max: 3, note: 'eventos novos por mês, no máximo', basis: JOGO },
 } as const satisfies Record<string, ParamSpec>;

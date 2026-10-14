@@ -6,6 +6,7 @@ import {
   longestServingPartisan,
   partisanMinistries,
 } from '../congress/cabinet';
+import { meanGovernorRelation } from '../regions/regions';
 import {
   TECHNICAL_OCCUPANT,
   type GameContent,
@@ -33,7 +34,7 @@ export function effectsToImpulses(
 ): ScheduledImpulse[] {
   return effects.map((effect) => {
     const startMonth = firstMonth + effect.lagMonths;
-    return {
+    const impulse: ScheduledImpulse = {
       sourceId,
       label: effect.label ?? fallbackLabel,
       target: effect.target,
@@ -41,6 +42,8 @@ export function effectsToImpulses(
       startMonth,
       endMonth: effect.durationMonths === null ? null : startMonth + effect.durationMonths - 1,
     };
+    // ECONOMIC_MODEL.md §5.15: efeito concentrado nas UFs atingidas, repartido pela população.
+    return effect.regions ? { ...impulse, regional: { key: 'populacao', scope: [...effect.regions] } } : impulse;
   });
 }
 
@@ -78,6 +81,7 @@ export function conditionValue(state: Readonly<GameState>, variable: ConditionVa
     monthIndex: () => state.monthIndex,
     partisanMinistries: () => partisanMinistries(state, content).length,
     cabinetScandalRisk: () => cabinetScandalRisk(state, content),
+    governorRelation: () => meanGovernorRelation(state, content),
   };
   return reader[variable]();
 }
