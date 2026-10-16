@@ -5,12 +5,23 @@ import { UFS } from './ufs';
 
 /**
  * Preenchimento das UFs para o mapa de calor (aba Brasil): um polígono por anel, triangulado em lon/lat e
- * projetado logo acima da esfera. Anéis de outra UF dentro do anel (o DF dentro de GO) viram buracos, para as
- * cores não se somarem. A geometria é criada uma vez e reutilizada; só a cor do material muda.
+ * projetado logo acima da esfera. Anel de outra UF inteiramente dentro do anel (enclave) vira buraco, para as
+ * cores não se somarem; vizinhas que só dividem fronteira não. Nos contornos atuais nenhuma UF é enclave: o DF
+ * encosta em GO, mas não cai dentro dele. A geometria é criada uma vez e reutilizada; só a cor do material muda.
  */
 
 /** Raio da camada: acima do globo base e abaixo do contorno da UF selecionada (1,0015). */
 const FILL_RADIUS = 1.001;
+
+/** Fração mínima dos vértices dentro do anel externo para o anel ser enclave (vértices de fronteira são ambíguos). */
+const HOLE_MIN_INSIDE = 0.9;
+
+/** O anel `inner` é enclave de `outer`? Testar só um vértice falha: ele costuma cair na fronteira comum. */
+export function isHole(inner: readonly (readonly number[])[], outer: readonly (readonly number[])[]): boolean {
+  if (inner.length === 0) return false;
+  const inside = inner.filter(([lon, lat]) => pointInRing(lon, lat, outer)).length;
+  return inside / inner.length >= HOLE_MIN_INSIDE;
+}
 
 let cache: Map<string, THREE.BufferGeometry> | null = null;
 
@@ -31,7 +42,7 @@ function build(): Map<string, THREE.BufferGeometry> {
       const contour = ringToVectors(ring);
       if (contour.length < 3) continue;
       const holes = allRings
-        .filter((r) => r.sigla !== uf.sigla && pointInRing(r.ring[0][0], r.ring[0][1], ring))
+        .filter((r) => r.sigla !== uf.sigla && isHole(r.ring, ring))
         .map((r) => ringToVectors(r.ring));
       const faces = THREE.ShapeUtils.triangulateShape(contour, holes);
       const base = positions.length / 3;

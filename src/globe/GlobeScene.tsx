@@ -78,6 +78,7 @@ function Stars({ material }: { material: THREE.PointsMaterial }) {
     }
     return new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
   }, []);
+  useEffect(() => () => geometry.dispose(), [geometry]);
   return <points geometry={geometry} material={material} renderOrder={-2} />;
 }
 
@@ -187,8 +188,13 @@ export function GlobeScene({ controller, selectedUf, fills, onStats }: Props) {
 
   useEffect(() => {
     let alive = true;
+    let tex: THREE.Texture | null = null;
     loadTexture(require('../../assets/globe/world.jpg')).then((t) => {
-      if (!alive) return;
+      if (!alive) {
+        t.dispose();
+        return;
+      }
+      tex = t;
       t.colorSpace = THREE.NoColorSpace;
       t.anisotropy = Math.min(4, gl.capabilities.getMaxAnisotropy());
       t.needsUpdate = true;
@@ -198,6 +204,7 @@ export function GlobeScene({ controller, selectedUf, fills, onStats }: Props) {
     });
     return () => {
       alive = false;
+      tex?.dispose();
     };
   }, [gl, globeMaterial, invalidate]);
 
@@ -221,8 +228,10 @@ export function GlobeScene({ controller, selectedUf, fills, onStats }: Props) {
       store.dispose();
       for (const m of meshes.current.values()) m.material.dispose();
       geometry.dispose();
+      globeMaterial.dispose();
+      starMaterial.dispose();
     },
-    [store, geometry],
+    [store, geometry, globeMaterial, starMaterial],
   );
 
   const highlight = useMemo(() => {
