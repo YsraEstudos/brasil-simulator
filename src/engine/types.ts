@@ -469,6 +469,8 @@ export type DecisionRejection =
   | 'politica_desconhecida'
   | 'acao_repetida'
   | 'ja_em_andamento'
+  /** MP rejeitada ou caducada não pode ser reeditada na mesma sessão legislativa (CF art. 62 §10). */
+  | 'reedicao_vedada'
   | 'evento_nao_pendente'
   | 'escolha_invalida';
 

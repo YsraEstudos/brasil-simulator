@@ -181,6 +181,23 @@ describe('sociedade — Fase 06 tarefa 2', () => {
     expect(next.explanations.some((item) => item.cause === sourceId && item.metric === 'sector_output')).toBe(true);
   });
 
+  it('resolve os setores da política pelo sourceId do capital de projeto', () => {
+    const project = Object.values(POLICIES).find(
+      (policy) => policy.delivery === 'projeto' && policy.affected.sectors.length > 0,
+    );
+    if (!project) throw new Error('catálogo sem projeto com setores');
+    const sector = project.affected.sectors[0]!;
+    const other = SOCIETY_SECTOR_IDS.find((id) => !project.affected.sectors.includes(id))!;
+    const sourceId = `projeto:capital:${project.id}_0:0`;
+    const next = socialAfter(
+      gameWithSociety({
+        impulses: [impulse({ sourceId, label: 'Capital público', target: 'oferta.potencial', delta: 0.01 })],
+      }),
+    );
+    const growth = (id: string) => next.sectors.find((item) => item.id === id)!.growth;
+    expect(growth(sector)).toBeGreaterThan(growth(other));
+  });
+
   // AI_INSTRUCTIONS.md §5 e ECONOMIC_MODEL.md §1.2: determinismo e carregamento de save legado.
   it('é determinístico e reconstitui o bloco ao carregar save v5 sem sociedade', () => {
     const game = gameWithSociety();
@@ -230,6 +247,21 @@ describe('sociedade — Fase 06 tarefa 2', () => {
     }
     expect(game.society.quintiles[0].policyAdjustment).toBeCloseTo(0, 5);
     expect(game.society.quintiles[0].realIncome).toBeLessThan(incomeAtEnd);
+  });
+
+  it('termos de troca deslocam a composição pela variação, sem deriva com o nível parado', () => {
+    const base = gameWithSociety();
+    const extractive = (g: GameState) => g.society.sectors.find((sector) => sector.id === 'extrativa')!.share;
+    let game: GameState = { ...base, society: { ...base.society, termsOfTrade: 0 } };
+    game = { ...game, economy: { ...game.economy, termsOfTrade: 0.1 } };
+    const before = extractive(game);
+    game = { ...societyStep(game, context()).state, monthIndex: game.monthIndex + 1 };
+    const afterShock = extractive(game);
+    expect(afterShock).toBeGreaterThan(before);
+    for (let month = 0; month < 24; month += 1) {
+      game = { ...societyStep(game, context()).state, monthIndex: game.monthIndex + 1 };
+    }
+    expect(extractive(game)).toBeCloseTo(afterShock, 3);
   });
 
   // ECONOMIC_MODEL.md §1.8: saturação impede cruzamento de quintis em campanhas longas.

@@ -1,3 +1,4 @@
+import { termOf } from '../calendar';
 import { annualReview, fiscalStructure, revenueMonth, spendingMonth } from '../economy/fiscal';
 import { BRAND_ACTION_ID, DIRECTIVE_ACTION_ID } from '../actions';
 import { currentNominalGdpMillions, fiscalValues, scenarioEconomyValues } from '../state';
@@ -26,7 +27,6 @@ import {
 export { BRAND_ACTION_ID, DIRECTIVE_ACTION_ID } from '../actions';
 
 const MONTHS_PER_YEAR = 12;
-const MANDATE_MONTHS = 48;
 const MAX_BRANDS_PER_TERM = 3;
 const MAX_BRAND_NAME_LENGTH = 60;
 const ROUTINE_IMPULSE_PREFIX = 'diretriz:';
@@ -461,8 +461,20 @@ function processProject(
     project.delayMonths += 1;
     return { roomMillions, impulses: [], transition };
   }
+  // A partially funded tranche keeps its curve index; only the unpaid balance is charged again.
+  let paidBefore = 0;
+  for (let month = 0; month < project.phaseMonth; month += 1) {
+    paidBefore += plannedConstructionSpend(project, policy, month, duration, c.curva_s_projetos);
+  }
+  const trancheSpent = Math.min(planned, Math.max(0, project.spentMillions - paidBefore));
+  const due = planned - trancheSpent;
+  if (due <= EPSILON) {
+    project.phaseMonth += 1;
+    project.progress = Math.max(project.progress, Math.min(1, after));
+    return { roomMillions, impulses: [], transition };
+  }
   const availableMonthly = roomMillions / MONTHS_PER_YEAR;
-  const allocated = Math.min(planned, availableMonthly);
+  const allocated = Math.min(due, availableMonthly);
   if (allocated <= EPSILON) {
     project.delayMonths += 1;
     ctx.draft.notes.push(`Projeto ${policy.name}: orçamento mensal indisponível; obra atrasada.`);
@@ -470,7 +482,7 @@ function processProject(
   }
   roomMillions -= allocated * MONTHS_PER_YEAR;
   project.spentMillions = Math.min(project.budgetMillions, project.spentMillions + allocated);
-  const share = planned > EPSILON ? allocated / planned : 1;
+  const share = allocated / due;
   project.progress = Math.min(1, project.progress + (after - project.progress) * share);
   if (share >= 1 - EPSILON) project.phaseMonth += 1;
   else project.delayMonths += 1;
@@ -545,7 +557,12 @@ function depreciateAssets(publicState: PublicPolicyState, content: GameContent):
   }
 }
 
-function budgetPreview(state: Readonly<GameState>, content: GameContent): BudgetPreview {
+/**
+ * Espaço discricionário anual livre. Impulsos da carteira (rotinas, obras, manutenção) ficam de fora: cada alocação
+ * ocupa o espaço uma única vez, no mês em que é decidida, mesmo quando o efeito chega com defasagem.
+ */
+function budgetPreview(rawState: Readonly<GameState>, content: GameContent): BudgetPreview {
+  const state = { ...rawState, impulses: rawState.impulses.filter((impulse) => !managedImpulse(impulse)) } as GameState;
   const c = content.calibration;
   const anchor = scenarioEconomyValues(content.scenario);
   const structure = fiscalStructure(fiscalValues(content.scenario, anchor));
@@ -654,6 +671,9 @@ function plannedConstructionSpend(
 
 function brandStatus(status: ProposalStatus, phase: ProjectPhase | undefined, progress: string): string {
   if (status === 'abandonada' || phase === 'cancelado') return 'cancelado';
+  if (status === 'rejeitada') return 'rejeitado no Congresso';
+  if (status === 'vetada') return 'vetado';
+  if (status === 'bloqueada') return 'bloqueado';
   if (status === 'suspensa') return `suspenso (${progress})`;
   if (phase === 'operacao' || status === 'concluida') return 'concluído e em operação';
   return `${phase ?? 'em tramitação'} (${progress})`;
@@ -713,10 +733,6 @@ function calibration(content: GameContent): GameContent['calibration'] {
 
 function yearOf(month: number): number {
   return Math.floor(month / MONTHS_PER_YEAR);
-}
-
-function termOf(month: number): number {
-  return Math.floor(month / MANDATE_MONTHS);
 }
 
 function stringParam(params: Decision['params'], key: string): string | null {

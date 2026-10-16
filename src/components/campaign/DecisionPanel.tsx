@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Button, Card, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import type { GameContent, GameState, Proposal } from '@/engine';
+import { reissueBarredPolicies, type GameContent, type GameState, type Proposal } from '@/engine';
 import { legislativeInstrument } from '@/engine/congress/congress';
 import type { Policy } from '@/types/policy';
 
@@ -41,6 +41,7 @@ export function DecisionPanel({
     const policy = content.policies[id];
     return policy && policy.delivery !== 'rotina' ? [policy] : [];
   });
+  const barred = reissueBarredPolicies(state, content);
   const areas = [...new Set(policies.map((policy) => policy.area))];
   const [area, setArea] = useState<string | null>(null);
   const visiblePolicies = area === null ? policies : policies.filter((policy) => policy.area === area);
@@ -90,12 +91,14 @@ export function DecisionPanel({
           </>
         );
 
-        if (inProgress) {
+        if (inProgress || barred.has(policy.id)) {
           return (
             <Card key={policy.id} title={policy.name} subtitle={policy.summary}>
               {meta}
               <Text variant="caption" color="textMuted">
-                Já está em andamento; não pode ser enviada de novo agora.
+                {inProgress
+                  ? 'Já está em andamento; não pode ser enviada de novo agora.'
+                  : 'Medida provisória rejeitada ou caducada: só pode ser reeditada no ano que vem (CF art. 62 §10).'}
               </Text>
             </Card>
           );

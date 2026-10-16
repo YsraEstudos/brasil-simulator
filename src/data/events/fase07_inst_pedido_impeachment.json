@@ -71,7 +71,7 @@
     {
       "id": "apelar_ao_stf",
       "label": "Apelar ao STF",
-      "description": "Pede ao Supremo a suspensão do pedido. O processo fica parado sem ser admitido, custa capital político e, com chance de 50% em dois meses, um pacto entre os Poderes é proposto. Ministro fictício. O recurso não arquiva a denúncia: ela segue para a Câmara.",
+      "description": "Pede ao Supremo a suspensão do pedido. O recurso não arquiva a denúncia, que segue para a Câmara como se fosse enfrentada, mas custa capital político e aproxima o governo do ministro do STF. Ministro fictício.",
       "agendaCost": 1,
       "effects": [
         {

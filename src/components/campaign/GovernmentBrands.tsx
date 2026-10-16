@@ -10,6 +10,7 @@ import {
   type GameContent,
   type GameState,
   type Proposal,
+  termOf,
   validateActionTarget,
   type Decision,
 } from '@/engine';
@@ -86,8 +87,10 @@ export function GovernmentBrands({ state, content, pointsMax }: GovernmentBrands
       return typeof proposalId === 'string' && typeof name === 'string' ? [[proposalId, decision] as const] : [];
     }),
   );
+  // O limite vale por mandato, como no motor (validateBrand).
+  const term = termOf(state.monthIndex);
   const consumed =
-    brands.length +
+    brands.filter((brand) => brand.term === term).length +
     pendingBrands.filter((decision) => {
       const proposalId = decision.params?.proposalId;
       return typeof proposalId === 'string' && !brands.some((brand) => brand.proposalId === proposalId);

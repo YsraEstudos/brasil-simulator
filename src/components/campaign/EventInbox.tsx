@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Card, Text } from '@/components/ui';
-import { Spacing } from '@/constants/theme';
-import type { PendingEvent, Proposal, SanctionChoice } from '@/engine';
+import { Spacing, type ThemeColor } from '@/constants/theme';
+import { adviseEventChoice, type Opinion, type PendingEvent, type Proposal, type SanctionChoice } from '@/engine';
 import type { GameEvent } from '@/types/event';
 
 import { ChoiceOption } from './ChoiceOption';
@@ -101,7 +101,8 @@ export function EventInbox({
       })}
       {items.map(({ event, pending }) => {
         const selectedId = chosen[event.id];
-        const deadline = monthLabel(pending.monthIndex + 1);
+        // O padrão vale ao encerrar o mês em que o evento chegou à caixa (resolveEventsStep).
+        const deadline = monthLabel(pending.monthIndex);
         const character = event.characterId ? characters.find((c) => c.id === event.characterId) : undefined;
         return (
           <Card key={event.id} title={event.title} subtitle={`Sem resposta até o fim de ${deadline}, vale o padrão.`}>
@@ -131,9 +132,43 @@ export function EventInbox({
                 );
               })}
             </View>
+            <EventDispatch event={event} choiceId={selectedId ?? event.defaultChoice} />
           </Card>
         );
       })}
+    </View>
+  );
+}
+
+const TONE: Record<Opinion['tone'], { color: ThemeColor; word: string }> = {
+  favoravel: { color: 'positive', word: 'favorável' },
+  desfavoravel: { color: 'negative', word: 'desfavorável' },
+  neutro: { color: 'textSecondary', word: 'neutro' },
+};
+
+/** Mesa de despacho da resposta (GAME_DESIGN.md §4.4): pareceres da escolha marcada, ou da padrão se nenhuma. */
+function EventDispatch({ event, choiceId }: { event: GameEvent; choiceId: string }) {
+  const advice = adviseEventChoice(event, choiceId);
+  if (!advice) return null;
+  const label = event.choices.find((c) => c.id === choiceId)?.label ?? '';
+  const voices: [string, Opinion][] = [
+    ['Fazenda', advice.fazenda],
+    ['Articulação', advice.articulacao],
+    ['Comunicação', advice.comunicacao],
+  ];
+  return (
+    <View style={styles.dispatch}>
+      <Text variant="label" color="textSecondary">
+        Mesa de despacho · {label}
+      </Text>
+      {voices.map(([title, opinion]) => (
+        <Text key={title} variant="caption">
+          <Text variant="caption" color={TONE[opinion.tone].color}>
+            {title} ({TONE[opinion.tone].word}):
+          </Text>{' '}
+          {opinion.text}
+        </Text>
+      ))}
     </View>
   );
 }
@@ -142,4 +177,5 @@ const styles = StyleSheet.create({
   root: { gap: Spacing.two },
   options: { gap: Spacing.two },
   character: { gap: Spacing.half },
+  dispatch: { gap: Spacing.half },
 });

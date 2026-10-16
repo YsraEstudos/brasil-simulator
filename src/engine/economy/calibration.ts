@@ -203,7 +203,8 @@ export const PARAMS = {
     min: 0,
     max: 0.002,
     note: 'efeito mensal no hiato de 1 unidade (log) de termos de troca acima da média',
-    basis: 'ciclo de commodities explica parte do ciclo brasileiro; 10% de alta → ~0,5% de hiato',
+    basis:
+      'ciclo de commodities explica parte do ciclo brasileiro; 10% de alta sustentada → ~0,05 p.p. de hiato em estado estacionário (÷ (1 − rho_h))',
   },
 
   // ── Preços (§5.3) ───────────────────────────────────────────────────────────────────────────────

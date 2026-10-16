@@ -1,4 +1,4 @@
-import { monthKey } from '../calendar';
+import { monthKey, toCalendar } from '../calendar';
 import {
   AMENDMENTS_ACTION_ID,
   CONCEDE_ACTION_ID,
@@ -144,10 +144,11 @@ export const proposalsStep: MonthStep = (state, ctx) => {
   concludeExecutions(run);
   judicialTransitions(run);
   applySanctions(run);
+  expireMeasures(run);
+  // Paradas têm prioridade sobre as enviadas no mês: a vaga aberta vai para quem já esperava (POLITICAL_RULES.md §6.3).
+  releaseParked(run);
   for (const decision of ctx.decisions) if (!isAgendaAction(decision.policyId)) sendPolicy(run, decision.policyId);
   applyNegotiations(run);
-  expireMeasures(run);
-  releaseParked(run);
   runVetoSessions(run);
   runVotes(run);
 
@@ -466,6 +467,22 @@ export function pautaSlots(instrument: Instrument, c: Calibration): number {
   return instrument === 'pec' ? c.vagas_pec : 1;
 }
 
+/**
+ * Políticas por MP que não podem ser reeditadas agora: rejeitadas ou caducadas na mesma sessão legislativa
+ * (CF art. 62 §10; aproximada pelo ano-calendário). Usada na triagem das decisões, nos robôs e na interface.
+ */
+export function reissueBarredPolicies(state: Readonly<GameState>, content: GameContent): Set<string> {
+  const year = toCalendar(state.monthIndex).year;
+  const barred = new Set<string>();
+  for (const p of state.proposals) {
+    const policy = content.policies[p.policyId];
+    if (p.status !== 'rejeitada' || !policy || legislativeInstrument(policy) !== 'medida_provisoria') continue;
+    const closed = p.history[p.history.length - 1]?.monthIndex ?? p.createdMonth;
+    if (toCalendar(closed).year === year) barred.add(p.policyId);
+  }
+  return barred;
+}
+
 /** Vagas ocupadas na pauta da Casa por propostas em tramitação (menos `except`). */
 export function pautaOccupancy(
   proposals: readonly Proposal[],
@@ -600,17 +617,23 @@ function applySanctions(run: Run): void {
   }
 }
 
-/** Despesa dos acréscimos do relator, a partir de `start` (fica fora da fonte da proposta: não é cancelada com ela). */
+/**
+ * Despesa dos acréscimos do relator, a partir de `start` (fica fora da fonte da proposta: não é cancelada com ela).
+ * Os acréscimos são parte da mesma lei: a liminar do STF os suspende na mesma janela e a declaração de
+ * inconstitucionalidade os derruba junto (POLITICAL_RULES.md §8).
+ */
 function scheduleRider(run: Run, p: Proposal, start: number): void {
   if (p.rider <= 0) return;
-  run.impulses.push({
+  const rider: ScheduledImpulse = {
     sourceId: `acrescimo:${p.id}`,
     label: `Acréscimos do relator: ${policyOf(run.ctx.content, p.policyId).name}`,
     target: 'gasto.custeio',
     delta: p.rider,
     startMonth: start,
     endMonth: start + run.c.meses_acrescimo - 1,
-  });
+  };
+  const j = p.judicial;
+  run.impulses.push(...(j ? cutWindow([rider], j.suspendFrom, j.struckDown ? null : j.suspendTo) : [rider]));
 }
 
 /** Decisões aceitas neste mês: envio de política. */

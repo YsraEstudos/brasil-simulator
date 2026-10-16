@@ -279,4 +279,22 @@ describe('manchetes por causa (FASE_07.md, critério 3)', () => {
       tone: 'positiva',
     });
   });
+
+  it('a causa citada empurrou no mesmo sentido do movimento, mesmo não sendo a maior em módulo', () => {
+    const state = initialState();
+    const previous: GameState = { ...state, indicators: { ...state.indicators, inflation12m: 0.059 } };
+    const next: GameState = { ...state, indicators: { ...state.indicators, inflation12m: 0.061 } };
+    const report = baseReport({
+      contributions: [
+        { indicator: 'inflation12m', cause: 'juros_bc', label: 'Juros do Banco Central', delta: -0.003 },
+        { indicator: 'inflation12m', cause: 'choque_alimentos', label: 'Preço dos alimentos', delta: 0.002 },
+        { indicator: 'inflation12m', cause: 'cambio', label: 'Câmbio', delta: 0.003 },
+      ],
+    });
+    const cause = generateNews({ previous, next, report, content }).find((i) =>
+      i.headline.startsWith('Inflação'),
+    )?.cause;
+    expect(cause).toContain('Câmbio');
+    expect(cause).not.toContain('Juros');
+  });
 });

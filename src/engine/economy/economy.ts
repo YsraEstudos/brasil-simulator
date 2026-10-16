@@ -23,6 +23,7 @@ import {
   revenueMonth,
   spendingMonth,
   spendingPieces,
+  type SpendingMonth,
 } from './fiscal';
 import { BC_BOARD_SIZE, boardShare, copomRate, pressureMonth } from './monetary';
 import { clamp, impulsePiece, scalePieces, sumOf, toContributions, type Piece } from './pieces';
@@ -74,7 +75,14 @@ function nextCredibility(state: GameState, c: Calibration, pressureCost: number)
  * fiscal estrutural, acomodação da economia à postura fiscal, choques e ruído. Devolve também a postura de
  * demanda `F` do mês (para atualizar a referência). Sorteia exatamente uma normal por mês.
  */
-function gapPieces(state: GameState, ctx: StepContext, structuralStance: number, riskPremium: number, terms: number) {
+function gapPieces(
+  state: GameState,
+  ctx: StepContext,
+  spending: Pick<SpendingMonth, 'structuralStance' | 'cutExecution'>,
+  riskPremium: number,
+  terms: number,
+) {
+  const { structuralStance, cutExecution } = spending;
   const t = state.monthIndex;
   const e = state.economy;
   const c = ctx.content.calibration;
@@ -96,7 +104,9 @@ function gapPieces(state: GameState, ctx: StepContext, structuralStance: number,
   for (const impulse of activeImpulses(state.impulses, t, DEMAND_TARGETS)) {
     const gain = DEMAND_GAIN[impulse.target];
     if (!gain) continue;
-    const level = c[gain.mult] * risk * gain.sign * impulse.delta;
+    // Corte discricionário conta só na parte executada (o excesso não reduz despesa nenhuma).
+    const executed = impulse.delta < 0 && DISCRETIONARY_TARGETS.includes(impulse.target) ? cutExecution : 1;
+    const level = c[gain.mult] * risk * gain.sign * impulse.delta * executed;
     stance += level;
     pieces.push(impulsePiece(impulse, damp * level));
   }
@@ -181,7 +191,7 @@ export const economyStep: MonthStep = (input, ctx) => {
   const ext = externalMonth(state, ctx, drivers, anchor);
 
   // §5.2: hiato
-  const gap = gapPieces(state, ctx, spending.structuralStance, ext.riskPremium, ext.termsOfTrade);
+  const gap = gapPieces(state, ctx, spending, ext.riskPremium, ext.termsOfTrade);
   const h1 = h0 + sumOf(gap.pieces);
 
   // §5.2, §5.3, §5.6, §5.9: contribuições de cada indicador (somas exatas, ECONOMIC_MODEL.md §7.3)

@@ -54,6 +54,17 @@ describe('Copom (ECONOMIC_MODEL.md §5.4)', () => {
     const risky = copomRate({ ...base, inflation12m: 0.03, riskPremium: QUIET.premio_base + 0.03 }, QUIET);
     expect(risky).toBeGreaterThan(calm);
   });
+
+  it('o corte por pressão não leva a queda da reunião além do passo máximo', () => {
+    const atLimit = { ...base, gap: -0.03, inflation12m: 0.03 };
+    const free = copomRate(atLimit, QUIET);
+    const pressed = copomRate({ ...atLimit, pendingCut: 0.0015 }, QUIET);
+    expect(free).toBeCloseTo(0.1 - QUIET.max_passo, 12);
+    expect(pressed).toBeCloseTo(0.1 - QUIET.max_passo, 12);
+    // Longe do limite, a pressão continua cortando 25 bp.
+    const mild = { ...base, inflation12m: 0.03 };
+    expect(copomRate({ ...mild, pendingCut: 0.0015 }, QUIET)).toBeCloseTo(copomRate(mild, QUIET) - 0.0025, 12);
+  });
 });
 
 describe('pressão pública sobre o Banco Central (ECONOMIC_MODEL.md §5.4.1)', () => {

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -92,6 +93,12 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
     if (gameStore.getState().active?.state.monthIndex !== before) setExpandedPolicy(null);
   };
 
+  /** Salva e fecha a partida e volta à tela de abertura (a pilha de abas não tem cabeçalho com "voltar"). */
+  const leaveToMenu = async () => {
+    await gameStore.getState().leaveCampaign();
+    router.navigate('/');
+  };
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
@@ -131,13 +138,7 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
         <>
           <LegacyReport state={state} content={content} />
           <View style={styles.actions}>
-            <Button
-              label="Voltar ao menu"
-              variant="secondary"
-              block
-              disabled={busy}
-              onPress={() => gameStore.getState().leaveCampaign()}
-            />
+            <Button label="Voltar ao menu" variant="secondary" block disabled={busy} onPress={leaveToMenu} />
           </View>
         </>
       ) : (
@@ -186,13 +187,7 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
 
           <View style={styles.actions}>
             <Button label="Encerrar o mês" block loading={busy} onPress={endMonth} />
-            <Button
-              label="Voltar ao menu"
-              variant="secondary"
-              block
-              disabled={busy}
-              onPress={() => gameStore.getState().leaveCampaign()}
-            />
+            <Button label="Voltar ao menu" variant="secondary" block disabled={busy} onPress={leaveToMenu} />
           </View>
         </>
       )}

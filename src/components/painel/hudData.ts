@@ -146,9 +146,6 @@ export interface HudData {
 /** Meta de inflação (GAME_DESIGN.md §8.1) e banda de tolerância de 1,5 p.p. */
 const INFLATION_TARGET = 0.03;
 const INFLATION_BAND = 0.015;
-/** Meta de resultado primário do cenário (% do PIB). */
-const PRIMARY_TARGET = 0.0025;
-
 /** Cores das grandes regiões na Visão Regional (identidade fixa, legível no fundo escuro). */
 const REGION_COLORS: Readonly<Record<string, string>> = {
   norte: '#5fd38d',
@@ -405,7 +402,8 @@ function buildRegions(content: GameContent, shares: readonly number[] | null): H
   }));
 }
 
-function buildGoal(indicators: Indicators): HudGoal {
+/** Primário cumprido no limite inferior da banda, como no motor (LC 200/2023; `fiscal.ts`). */
+function buildGoal(indicators: Indicators, c: GameContent['calibration']): HudGoal {
   return {
     summary: 'Inflação na meta e contas públicas em ordem',
     checks: [
@@ -417,7 +415,7 @@ function buildGoal(indicators: Indicators): HudGoal {
       {
         label: 'Resultado primário',
         value: formatPercent(indicators.primaryBalance12m, 2),
-        met: indicators.primaryBalance12m >= PRIMARY_TARGET,
+        met: indicators.primaryBalance12m >= c.meta_primario - c.banda_meta_primario,
       },
     ],
   };
@@ -460,7 +458,7 @@ export function hudFromCampaign(
     congress: buildCongress(content, state),
     sectors: buildSectors(state.society),
     regions: buildRegions(content, ufStates.length > 0 ? ufStates.map((uf) => uf.share) : null),
-    goal: buildGoal(state.indicators),
+    goal: buildGoal(state.indicators, content.calibration),
     series: buildSeries(history),
     fills: content.scenario.regions ? mapFills(mapRows('aprovacao', state, content)) : null,
   };
@@ -492,7 +490,7 @@ export function hudFromScenario(content: GameContent): HudData {
     congress: buildCongress(content, null),
     sectors: buildSectors(null),
     regions: buildRegions(content, null),
-    goal: buildGoal(indicators),
+    goal: buildGoal(indicators, content.calibration),
     series: DEMO_SERIES,
     fills: null,
   };

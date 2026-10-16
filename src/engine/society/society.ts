@@ -158,11 +158,10 @@ function sourcePolicyId(sourceId: string, content: GameContent): string | undefi
     case 'proposta':
       return parts.length === 2 ? proposalPolicyId(content, parts[1]) : undefined;
     case 'projeto':
-      // publicPolicies.processProject: projeto:<proposalId>:maintenance|obra:<month>
-      if (parts.length !== 4 || !['maintenance', 'obra'].includes(parts[2]) || !/^\d+$/.test(parts[3])) {
-        return undefined;
-      }
-      return proposalPolicyId(content, parts[1]);
+      // publicPolicies: projeto:<proposalId>:maintenance|obra:<month> e projeto:capital:<proposalId>:<month>
+      if (parts.length !== 4 || !/^\d+$/.test(parts[3])) return undefined;
+      if (parts[1] === 'capital') return proposalPolicyId(content, parts[2]);
+      return ['maintenance', 'obra'].includes(parts[2]) ? proposalPolicyId(content, parts[1]) : undefined;
     case 'rotina':
       // Reserved legacy spelling; keep its fields delimited as well.
       return parts.length >= 2 ? knownPolicyId(content, parts[1]) : undefined;
@@ -277,8 +276,11 @@ function sectorTransition(
   const total = nationalOutput(game, calibration);
   const previousTotal = Math.max(calibration.minimumPositiveLevel, previous.nationalOutput);
   const impulses = activeImpulses(game.impulses, game.monthIndex, OUTPUT_TARGETS);
+  // A participação anterior já carrega o nível acumulado; só a variação do mês desloca a composição de novo
+  // (acumulado = sensibilidade × nível dos termos de troca, sem deriva enquanto o nível fica parado).
+  const termsChange = game.economy.termsOfTrade - (previous.termsOfTrade ?? game.economy.termsOfTrade);
   const weights = SOCIETY_SECTOR_IDS.map((id) => {
-    const terms = calibration.termsOfTradeSensitivity[id] * game.economy.termsOfTrade;
+    const terms = calibration.termsOfTradeSensitivity[id] * termsChange;
     const effect = impulses.reduce((sum, impulse) => sum + sectorGrowthEffect(impulse, id, content, calibration), 0);
     const extra = saturate(terms + effect, calibration.sectorGrowthSaturation);
     return {
@@ -468,6 +470,7 @@ export const societyStep: MonthStep = (input, ctx) => {
     minimumWage: income.minimumWage,
     povertyRate: income.povertyRate,
     explanations,
+    termsOfTrade: input.economy.termsOfTrade,
   };
   return { state: { ...input, society: next }, contributions: [] };
 };

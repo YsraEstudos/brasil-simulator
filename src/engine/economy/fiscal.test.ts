@@ -98,6 +98,16 @@ describe('limite de despesas e compressão das discricionárias (ECONOMIC_MODEL.
     expect(cut.state.indicators.primaryBalance12m).toBeGreaterThan(base.state.indicators.primaryBalance12m);
   });
 
+  it('corte além do que resta de discricionária não contrai a demanda (§4: despesa executada)', () => {
+    const deep = runMonth(withImpulses(testState(1, 'estrategica', content), [permanent('gasto.custeio', -0.02)]));
+    const deeper = runMonth(withImpulses(testState(1, 'estrategica', content), [permanent('gasto.custeio', -0.03)]));
+    expect(deep.state.economy.fiscal.discretionary).toBe(0);
+    expect(deeper.state.economy.fiscal.discretionary).toBe(0);
+    expect(deeper.state.economy.primarySpending).toBeCloseTo(deep.state.economy.primarySpending, 12);
+    expect(deeper.state.economy.outputGap).toBeCloseTo(deep.state.economy.outputGap, 12);
+    expect(deeper.state.economy.fiscal.demandRef).toBeCloseTo(deep.state.economy.fiscal.demandRef, 12);
+  });
+
   it('sem reformas, as obrigatórias crescem acima do PIB e comprimem as discricionárias até o mínimo', () => {
     const start = testState(5, 'estrategica', content);
     const run = runMonths(start, 72);

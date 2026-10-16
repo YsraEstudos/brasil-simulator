@@ -127,5 +127,6 @@
     }
   ],
   "defaultChoice": "manter_cronograma",
+  "onlyScenarios": ["brasil_2027_01", "brasil_2027_01_v050", "brasil_2027_01_v060"],
   "dataStatus": "FICTICIO"
 }

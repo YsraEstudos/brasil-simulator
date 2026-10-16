@@ -9,7 +9,7 @@ import { appendNews, generateNews } from './news';
 import { opinionStep } from './politics/opinion';
 import { publicPoliciesStep, reservePublicAction } from './publicPolicies/publicPolicies';
 import { societyStep } from './society/society';
-import { proposalsStep } from './proposals/proposals';
+import { proposalsStep, reissueBarredPolicies } from './proposals/proposals';
 import { regionsStep } from './regions/regions';
 import { createRng } from './rng';
 import {
@@ -127,6 +127,8 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
   const accepted: Decision[] = [];
   const rejected: { decision: Decision; reason: DecisionRejection }[] = [];
   const sent = new Set(state.proposals.filter((p) => PROPOSAL_IN_PROGRESS.has(p.status)).map((p) => p.policyId));
+  // CF art. 62 §10: MP rejeitada ou caducada não volta na mesma sessão legislativa.
+  const barredMeasures = reissueBarredPolicies(state, content);
   const actionsDone = new Set<string>();
   let actionState = state;
   for (const decision of input.decisions) {
@@ -158,6 +160,8 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
       rejected.push({ decision, reason: 'alvo_invalido' });
     } else if (sent.has(decision.policyId)) {
       rejected.push({ decision, reason: 'ja_em_andamento' });
+    } else if (barredMeasures.has(decision.policyId)) {
+      rejected.push({ decision, reason: 'reedicao_vedada' });
     } else if (!Number.isFinite(cost) || cost < 0) {
       rejected.push({ decision, reason: 'custo_invalido' });
     } else if (cost > left) {

@@ -425,6 +425,35 @@ describe('eventos: encadeamento (FASE_07.md)', () => {
     expect(out.state.events.pending).toEqual([]);
     expect(out.state.events.scheduled).toEqual([]);
   });
+
+  it('agendado respeita marcas e condições do gatilho na chegada', () => {
+    const start = testState();
+    const queued = (flags: Record<string, number>): GameState => ({
+      ...start,
+      events: {
+        ...start.events,
+        flags,
+        scheduled: [{ eventId: 'teste_seguinte', monthIndex: 1, causeEventId: 'x', causeChoiceId: 'y' }],
+      },
+    });
+    const forbidding = testContent({
+      events: [{ ...CHAINED, trigger: { ...CHAINED.trigger, forbidsFlags: ['bloqueio'] } }],
+    });
+    expect(step(queued({}), forbidding).state.events.pending).toEqual([{ eventId: 'teste_seguinte', monthIndex: 1 }]);
+    const blocked = step(queued({ bloqueio: 0 }), forbidding).state.events;
+    expect(blocked.pending).toEqual([]);
+    expect(blocked.scheduled).toEqual([]);
+
+    const impossible = testContent({
+      events: [
+        {
+          ...CHAINED,
+          trigger: { ...CHAINED.trigger, conditions: [{ variable: 'inflation12m', op: 'gt', value: 0.5 }] },
+        },
+      ],
+    });
+    expect(step(queued({}), impossible).state.events.pending).toEqual([]);
+  });
 });
 
 describe('eventos: escopo de cenário (onlyScenarios; AI_INSTRUCTIONS.md §8)', () => {

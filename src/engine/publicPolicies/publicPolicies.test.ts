@@ -241,6 +241,10 @@ describe('publicPoliciesStep', () => {
     expect(out.state.publicPolicies.brands).toEqual([
       { proposalId: proposal.id, name: 'Marca aceita antes da rejeição', term: 0 },
     ]);
+    const draft = ctx(c);
+    publicPoliciesStep(out.state, { ...draft, decisions: [] });
+    expect(draft.draft.notes.some((note) => note.includes('rejeitado no Congresso'))).toBe(true);
+    expect(draft.draft.notes.some((note) => note.includes('em tramitação'))).toBe(false);
   });
 
   it('executes an accepted directive with a lower current fiscal room and records the cut', () => {
@@ -459,5 +463,109 @@ describe('publicPoliciesStep', () => {
       .publicPolicies;
     expect(publicState.directives.some((directive) => directive.year === 1)).toBe(true);
     expect(draft.notes.some((note) => note.includes('renovada'))).toBe(true);
+  });
+
+  it('charges only the unpaid balance of a partially funded tranche', () => {
+    const c = content();
+    type PublicState = ReturnType<typeof initialPublicPolicies>;
+    const proposal = {
+      id: 'projeto_direto_teste_2',
+      policyId: directProject.id,
+      createdMonth: 0,
+      status: 'em_execucao' as const,
+      scale: 1,
+      voteMonth: null,
+      stage: 0,
+      rapporteur: null,
+      textAltered: false,
+      postponements: 0,
+      negotiation: { blocs: {}, amendments: false, textConceded: false, urgency: false },
+      rider: 0,
+      veto: null,
+      judicial: null,
+      executionStart: 0,
+      executionEnd: null,
+      adherents: null,
+      votes: [],
+      history: [],
+    };
+    const atBudget = (budgetMillions: number) =>
+      state({
+        monthIndex: 1,
+        proposals: [proposal],
+        publicPolicies: {
+          directives: [],
+          projects: [
+            {
+              proposalId: proposal.id,
+              policyId: directProject.id,
+              phase: 'obra',
+              phaseMonth: 0,
+              progress: 0,
+              budgetMillions,
+              spentMillions: 0,
+              assetMillions: 0,
+              maintenanceMillions: 0,
+              delayMonths: 0,
+              startMonth: 0,
+            },
+          ],
+          brands: [],
+          capitalStockMillions: 0,
+        },
+      } as never);
+    const project = (s: GameState) => (s as GameState & { publicPolicies: PublicState }).publicPolicies.projects[0]!;
+    const step = (s: GameState) => {
+      const out = publicPoliciesStep(s, { ...ctx(c), decisions: [] });
+      return { ...out.state, monthIndex: s.monthIndex + 1 } as GameState;
+    };
+
+    // Parcela do mês 0 por real de orçamento (cabe no espaço) e espaço mensal disponível (orçamento enorme).
+    const perMillion = project(step(atBudget(1))).spentMillions;
+    const monthlyRoom = project(step(atBudget(1e12))).spentMillions;
+    expect(perMillion).toBeGreaterThan(0);
+    expect(monthlyRoom).toBeGreaterThan(0);
+
+    // Parcela de 1,5× o espaço: dois meses pagam a parcela inteira, sem cobrá-la de novo.
+    const tranche = 1.5 * monthlyRoom;
+    const first = step(atBudget(tranche / perMillion));
+    expect(project(first).phaseMonth).toBe(0);
+    const second = step(first);
+    expect(project(second).phaseMonth).toBe(1);
+    expect(project(second).spentMillions).toBeCloseTo(tranche, 6);
+  });
+
+  it('counts a lagged routine allocation against the room only once (no oscillation)', () => {
+    const c = content();
+    const withDirective = (annualMillions: number, monthIndex: number) =>
+      state({
+        monthIndex,
+        publicPolicies: {
+          directives: [{ ministryId: 'fazenda', policyId: alternateRoutine.id, annualMillions, year: 0 }],
+          projects: [],
+          brands: [],
+          capitalStockMillions: 0,
+        },
+      } as never);
+    const probe = ctx(c);
+    publicPoliciesStep(withDirective(1e12, 1), { ...probe, decisions: [] });
+    const note = probe.draft.notes.find((n) => n.includes('orçamento reduzido')) ?? '';
+    const room = Number(/para R\$ ([\d.]+) mi/.exec(note)?.[1]);
+    expect(room).toBeGreaterThan(0);
+
+    let s = withDirective(0.7 * room, 1);
+    const allocations: number[] = [];
+    for (let month = 1; month <= 4; month++) {
+      const draft = ctx(c);
+      const out = publicPoliciesStep(s, { ...draft, decisions: [] });
+      expect(draft.draft.notes.filter((n) => n.includes('orçamento reduzido'))).toEqual([]);
+      allocations.push(
+        out.state.impulses
+          .filter((i) => i.sourceId.startsWith('diretriz:') && i.sourceId.endsWith(`:${month}`))
+          .reduce((sum, i) => sum + i.delta, 0),
+      );
+      s = { ...out.state, monthIndex: month + 1 } as GameState;
+    }
+    for (const value of allocations) expect(value).toBeCloseTo(allocations[0]!, 9);
   });
 });

@@ -179,6 +179,34 @@ describe('propostas: ciclo de vida (GAME_DESIGN.md §9)', () => {
     expect(parada.rapporteur).toBeNull();
   });
 
+  it('vaga aberta vai para a proposta parada, não para a enviada no mês (POLITICAL_RULES.md §6.3)', () => {
+    const copias: Policy[] = [1, 2, 3, 4, 5, 6].map((i) => ({ ...TEST_BILL, id: `teste_pl_fila_${i}` }));
+    const content = testContent({
+      scenario: { ...TEST_SCENARIO, policies: [...TEST_SCENARIO.policies, ...copias.map((p) => p.id)] },
+      policies: { ...testContent().policies, ...Object.fromEntries(copias.map((p) => [p.id, p])) },
+    });
+    const base = favoravel();
+    // Duas no mês 0; a terceira lota a pauta no mês 1 e a quarta fica parada.
+    let s = passo({ ...base, resources: { ...base.resources, agendaPointsPerMonth: 10 } }, content, [
+      decisao(copias[0].id),
+      decisao(copias[1].id),
+    ]);
+    s = passo(s, content, [decisao(copias[2].id), decisao(copias[3].id)]);
+    expect(proposta(s, copias[3].id).status).toBe('parada');
+    const naCamara = (st: GameState, p: Policy) => {
+      const x = proposta(st, p.id);
+      return x.status === 'em_tramitacao' && x.stage === 0;
+    };
+    while (s.monthIndex < 12 && naCamara(s, copias[0]) && naCamara(s, copias[1])) s = passo(s, content);
+    expect(naCamara(s, copias[2])).toBe(true);
+    expect(proposta(s, copias[3].id).status).toBe('parada');
+
+    // Duas vagas abertas e duas propostas novas: a parada entra primeiro.
+    s = passo(s, content, [decisao(copias[4].id), decisao(copias[5].id)]);
+    expect(proposta(s, copias[3].id).status).toBe('em_tramitacao');
+    expect([copias[4], copias[5]].map((p) => proposta(s, p.id).status).sort()).toEqual(['em_tramitacao', 'parada']);
+  });
+
   it('PEC ocupa duas vagas: PEC e um PL lotam a pauta de três vagas (POLITICAL_RULES.md §6.3)', () => {
     const outroPl: Policy = { ...TEST_BILL, id: 'teste_pl_outro' };
     const content = comPolitica(outroPl);
@@ -468,6 +496,26 @@ describe('propostas: sanção e veto (POLITICAL_RULES.md §7)', () => {
     expect(cedo.report.rejected.map((r) => r.reason)).toEqual(['alvo_invalido']);
   });
 
+  it('acréscimos do relator seguem a liminar e a derrubada do STF da lei', () => {
+    const judicial: Policy = { ...TEST_BILL, risks: [{ kind: 'judicializacao', probability: 1 }] };
+    const content = testContent({ policies: { ...testContent().policies, [TEST_BILL.id]: judicial } });
+    const base = aguardandoSancao();
+    const p0 = proposta(base, TEST_BILL.id);
+    const comAcrescimo: GameState = {
+      ...base,
+      proposals: base.proposals.map((p) => (p.id === p0.id ? { ...p, rider: c.custo_acrescimo } : p)),
+    };
+    const sancionada = passo(comAcrescimo, content);
+    const j = proposta(sancionada, TEST_BILL.id).judicial;
+    expect(j).not.toBeNull();
+    if (!j) return;
+    const rider = sancionada.impulses.filter((i) => i.sourceId === `acrescimo:${p0.id}`);
+    const activeAt = (month: number) =>
+      rider.some((i) => i.startMonth <= month && (i.endMonth === null || i.endMonth >= month));
+    expect(activeAt(j.suspendFrom)).toBe(false);
+    expect(activeAt(j.suspendTo + 1)).toBe(!j.struckDown && j.suspendTo + 1 <= 3 + c.meses_acrescimo - 1);
+  });
+
   it('acréscimos do relator: vetados e mantidos não geram despesa; sancionados geram', () => {
     const content = testContent();
     const base = aguardandoSancao();
@@ -506,6 +554,12 @@ describe('propostas: medida provisória (CF art. 62)', () => {
     expect(ultimaCausa(p)).toBe('caducidade');
     expect(p.executionEnd).toBe(4);
     expect(sumActive(state.impulses, 5, 'gasto.custeio')).toBe(0);
+
+    // CF art. 62 §10: não pode ser reeditada no mesmo ano; no ano seguinte, pode.
+    const sameYear = mes(state, content, [decisao(TEST_MP.id)]);
+    expect(sameYear.report.rejected.map((r) => r.reason)).toEqual(['reedicao_vedada']);
+    const nextYear = mes({ ...state, monthIndex: 12 }, content, [decisao(TEST_MP.id)]);
+    expect(nextYear.report.rejected).toEqual([]);
   });
 
   it('MP com mais de 45 dias tranca a pauta da Casa: o PL na mesma Casa espera', () => {

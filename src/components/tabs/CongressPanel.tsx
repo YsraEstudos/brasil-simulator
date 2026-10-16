@@ -66,7 +66,8 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
     toggle: (d: Decision) => gameStore.getState().toggleDecision(d),
   };
 
-  const proposals = state.proposals.filter((p) => IN_CONGRESS.has(p.status));
+  // Veto aos acréscimos de uma lei já em execução também aguarda sessão do Congresso.
+  const proposals = state.proposals.filter((p) => IN_CONGRESS.has(p.status) || pendingVeto(p));
 
   return (
     <>
@@ -142,9 +143,17 @@ function ActionButton({ decision, label, agenda }: { decision: Decision; label: 
   );
 }
 
+function pendingVeto(p: Proposal): boolean {
+  return p.veto !== null && p.veto.overridden === null;
+}
+
 function stageText(p: Proposal, content: GameContent, blocName: (id: string | null) => string): string {
   const policy = content.policies[p.policyId];
   const instrument = policy ? legislativeInstrument(policy) : null;
+  if (p.status !== 'apreciacao_veto' && pendingVeto(p)) {
+    const when = p.voteMonth === null ? '' : `: sessão conjunta em ${shortMonthLabel(p.voteMonth)}`;
+    return `Lei em vigor; veto aos acréscimos do relator em apreciação${when}.`;
+  }
   if (p.status === 'apreciacao_veto') {
     return p.voteMonth === null
       ? 'Veto em apreciação.'
@@ -180,7 +189,10 @@ function ProposalItem({
   const negotiated = Object.entries(n.blocs)
     .filter(([, v]) => v > 0)
     .map(([id]) => blocName(id));
+  const mpInForce =
+    instrument === 'medida_provisoria' && (proposal.status === 'em_tramitacao' || proposal.status === 'parada');
   const facts = [
+    mpInForce ? 'em vigor desde a edição (medida provisória)' : null,
     n.amendments ? 'emendas liberadas' : null,
     n.textConceded ? 'texto cedido' : null,
     n.urgency ? 'urgência' : null,

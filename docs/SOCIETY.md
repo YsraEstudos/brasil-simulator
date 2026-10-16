@@ -27,7 +27,7 @@ nationalOutput = potentialIndex × exp(outputGap)
 ## Setores
 
 As participações anteriores são atualizadas por crescimento relativo. O crescimento nacional entra em todos os setores;
-termos de troca favorecem principalmente agropecuária e extrativa. Impulsos ativos são filtrados pela fila com
+termos de troca favorecem principalmente agropecuária e extrativa. Entra a **variação** mensal dos termos de troca (`termsOfTrade` guarda o valor do mês anterior), não o nível: a participação anterior já carrega o deslocamento acumulado, que fica igual à sensibilidade × nível e não deriva enquanto o nível fica parado. Impulsos ativos são filtrados pela fila com
 `activeImpulses`. Quando o impulso carrega `affected.sectors`, o setor indicado recebe a incidência cheia e os demais
 recebem o vazamento calibrado. O produto nacional é aplicado depois da normalização das participações, portanto esses
 efeitos mudam a composição sem criar PIB adicional.

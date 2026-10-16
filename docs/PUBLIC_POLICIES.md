@@ -16,7 +16,7 @@ o mesmo espaço.
 Uma diretriz é válida até dezembro. Em janeiro, a carteira copia as diretrizes do ano anterior para o novo ano e a
 execução informa no relatório qualquer corte provocado pela disponibilidade. Trocar a política ou o valor da mesma
 pasta substitui a reserva anterior daquela pasta; repetir a mesma política com o mesmo valor é uma ação repetida.
-Cada mês emite somente os impulsos correspondentes à alocação efetiva. O impulso positivo de custeio desloca as
+Cada mês emite somente os impulsos correspondentes à alocação efetiva. Cada alocação ocupa o espaço uma única vez, no mês em que é decidida: impulsos da carteira (rotinas com defasagem, obras e manutenção) não entram no cálculo do espaço livre dos meses seguintes. O impulso positivo de custeio desloca as
 discricionárias livres calculadas pelo limite de despesas e não cria uma segunda despesa.
 
 `marcar_governo` recebe `proposalId` e um nome com 1–60 caracteres. A proposta precisa ser uma política de projeto

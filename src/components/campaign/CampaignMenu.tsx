@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
@@ -117,6 +118,8 @@ export function CampaignMenu() {
           ))}
         </View>
       </View>
+
+      <Button label="Menu principal" variant="ghost" block onPress={() => router.navigate('/')} />
     </View>
   );
 }

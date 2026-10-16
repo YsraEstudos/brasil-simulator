@@ -80,8 +80,8 @@ export interface CopomInputs {
 /**
  * Selic decidida pelo Copom: alvo de Taylor com juro neutro + parte do prêmio de risco; suavização, passo
  * máximo (maior em crise) e arredondamento a 25 bp. O corte obtido por pressão é aplicado **depois** da
- * suavização, em passos de 25 bp (corte abaixo de meio passo não muda a decisão), e o piso operacional vale
- * sempre (ECONOMIC_MODEL.md §5.4.1).
+ * suavização, em passos de 25 bp (corte abaixo de meio passo não muda a decisão), sem passar do passo máximo da
+ * reunião; o piso operacional vale sempre (ECONOMIC_MODEL.md §5.4.1).
  */
 export function copomRate(x: CopomInputs, c: Calibration): number {
   const neutral = c.juro_neutro + c.repasse_risco_neutro * (x.riskPremium - c.premio_base);
@@ -94,5 +94,5 @@ export function copomRate(x: CopomInputs, c: Calibration): number {
   const limited = clamp(raw, x.selicPrev - step, x.selicPrev + step);
   const rounded = Math.round(limited / c.passo_selic) * c.passo_selic;
   const cut = Math.round(x.pendingCut / c.passo_selic) * c.passo_selic;
-  return Math.max(c.selic_piso, rounded - cut);
+  return Math.max(c.selic_piso, x.selicPrev - step, rounded - cut);
 }

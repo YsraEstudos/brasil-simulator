@@ -1,5 +1,5 @@
 export { advanceMonth, DEFAULT_STEPS } from './advanceMonth';
-export { monthKey, START_YEAR, TERM_MONTHS, toCalendar, toMonthIndex, type CalendarMonth } from './calendar';
+export { monthKey, START_YEAR, TERM_MONTHS, termOf, toCalendar, toMonthIndex, type CalendarMonth } from './calendar';
 export {
   calibrationFromScenario,
   DEFAULT_CALIBRATION,
@@ -51,7 +51,7 @@ export {
   type VotePrediction,
   type VoteStage,
 } from './congress/congress';
-export { currentHouse, pautaOccupancy, pautaSlots } from './proposals/proposals';
+export { currentHouse, pautaOccupancy, pautaSlots, reissueBarredPolicies } from './proposals/proposals';
 export { fiscalRoom } from './economy/fiscal';
 export { BC_BOARD_SIZE, boardShare } from './economy/monetary';
 export { activeImpulses, isActive, pruneImpulses, sumActive } from './impulses';

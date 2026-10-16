@@ -8,6 +8,7 @@ import {
 } from '../actions';
 import { ministriesOf, ministryOccupant } from '../congress/cabinet';
 import { blocSupport, legislativeInstrument, predictVotes } from '../congress/congress';
+import { reissueBarredPolicies } from '../proposals/proposals';
 import { createRng, seedRng, type Rng } from '../rng';
 import {
   PROPOSAL_IN_PROGRESS,
@@ -57,9 +58,10 @@ function answerEvents(state: GameState, content: GameContent, choose: EventChoos
 /** Resposta padrão do evento (`defaultChoice`), que todas as estratégias usam salvo indicação contrária. */
 const useDefault: EventChooser = (event) => event.defaultChoice;
 
-/** Políticas do cenário que podem ser enviadas agora (existem no catálogo e não estão em andamento). */
+/** Políticas do cenário que podem ser enviadas agora (no catálogo, fora de andamento e sem reedição vedada de MP). */
 function sendablePolicies(state: GameState, content: GameContent): Set<string> {
   const busy = new Set(state.proposals.filter((p) => PROPOSAL_IN_PROGRESS.has(p.status)).map((p) => p.policyId));
+  for (const id of reissueBarredPolicies(state, content)) busy.add(id);
   return new Set(
     content.scenario.policies.filter(
       (id) => content.policies[id] !== undefined && content.policies[id].delivery !== 'rotina' && !busy.has(id),

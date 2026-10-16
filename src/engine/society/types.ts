@@ -61,4 +61,9 @@ export interface SocietyState {
   povertyRate: number;
   /** Explicações do mês corrente; histórico fica fora do GameState. */
   explanations: SocietyExplanation[];
+  /**
+   * Termos de troca do mês anterior, para a composição reagir à variação (e não ao nível) dos termos de troca.
+   * Ausente em saves anteriores: o primeiro mês após carregar não desloca a composição.
+   */
+  termsOfTrade?: number;
 }

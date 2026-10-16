@@ -291,6 +291,10 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
     if (item.monthIndex < n || !event) continue;
     const full = (book.count[event.id] ?? 0) >= event.trigger.maxOccurrences;
     if (full || book.pending.some((p) => p.eventId === event.id)) continue;
+    // Na chegada, o encadeado também respeita marcas e condições do gatilho; se não valerem, é descartado.
+    const allowed =
+      flagsAllow(state, event) && event.trigger.conditions.every((c) => conditionHolds(state, c, ctx.content));
+    if (!allowed) continue;
     fireEvent(event, n, ctx, book, impulses, flags);
   }
 

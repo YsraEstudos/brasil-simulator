@@ -1,5 +1,7 @@
+import type { GameEvent } from '../../types/event';
 import type { Policy } from '../../types/policy';
 import { TERM_MONTHS } from '../calendar';
+import { isPartisan, ministryOccupant, policyMinistry } from '../congress/cabinet';
 import {
   housePresident,
   legislativeInstrument,
@@ -13,7 +15,7 @@ import { expectedAdhesion, REGION_NAMES, regionalIncidence } from '../regions/re
 import { createRng, seedRng } from '../rng';
 import { fiscalRoom } from '../economy/fiscal';
 import { currentNominalGdpMillions } from '../state';
-import type { GameContent, GameState, Proposal } from '../types';
+import type { GameContent, GameState, ImpulseTarget, Proposal } from '../types';
 
 import { pct, pp } from './format';
 
@@ -68,6 +70,8 @@ const SPENDING_CHANNELS: ReadonlySet<string> = new Set([
 const RELIEF_CHANNELS: ReadonlySet<string> = new Set(['desoneracao_consumo', 'desoneracao_renda']);
 const REVENUE_CHANNELS: ReadonlySet<string> = new Set(['receita_tributaria', 'receita_renda', 'receita_consumo']);
 const APPROVAL_CHANNEL = 'aprovacao';
+const CREDIBILITY_CHANNEL = 'credibilidade_fiscal';
+const MINIMUM_WAGE_CHANNEL = 'salario_minimo_real';
 
 /** Constantes do FNV-1a, usadas para misturar a semente do parecer. */
 const HASH_OFFSET_BASIS = 2166136261;
@@ -96,14 +100,55 @@ function sumMagnitude(policy: Policy, channels: ReadonlySet<string>): number {
   return policy.impacts.reduce((n, i) => (channels.has(i.channel) ? n + i.magnitude : n), 0);
 }
 
-function fiscalParts(policy: Policy, gdpMillions: number): FiscalParts {
-  const spending = sumMagnitude(policy, SPENDING_CHANNELS) / gdpMillions;
-  const relief = sumMagnitude(policy, RELIEF_CHANNELS) / gdpMillions;
-  const revenue = sumMagnitude(policy, REVENUE_CHANNELS) / gdpMillions;
+/** Primeiro mês de efeito (defasagem) entre os impactos dos canais indicados; `null` se nenhum. */
+function firstLag(policy: Policy, channels: ReadonlySet<string>): number | null {
+  const lags = policy.impacts.filter((i) => channels.has(i.channel) && i.magnitude !== 0).map((i) => i.lagMonths);
+  return lags.length > 0 ? Math.min(...lags) : null;
+}
+
+/**
+ * Como a execução vai escalar a política, igual ao motor de propostas: só a população dos estados que aderem
+ * recebe o programa por convênio (`reach`) e a pasta com ministro de bloco perde parte do ganho (`resultFactor`).
+ */
+function executionFactors(state: Readonly<GameState>, policy: Policy, content: GameContent, reach: number) {
+  const ministry = policyMinistry(policy, content);
+  const occupant = ministry ? ministryOccupant(state, ministry) : null;
+  const partisan = occupant !== null && isPartisan(occupant);
+  return { reach, resultFactor: partisan ? 1 - content.calibration.perda_execucao_partidaria : 1, partisan };
+}
+
+function fiscalParts(policy: Policy, gdpMillions: number, reach = 1): FiscalParts {
+  const spending = (sumMagnitude(policy, SPENDING_CHANNELS) / gdpMillions) * reach;
+  const relief = (sumMagnitude(policy, RELIEF_CHANNELS) / gdpMillions) * reach;
+  const revenue = (sumMagnitude(policy, REVENUE_CHANNELS) / gdpMillions) * reach;
   return { fiscal: spending + relief - revenue, spending, expansion: spending + relief };
 }
 
-function fazendaOpinion(state: Readonly<GameState>, content: GameContent, parts: FiscalParts): Opinion {
+/** Frases da Fazenda que não dependem do custo: defasagem, credibilidade fiscal e salário mínimo real. */
+function fazendaExtras(policy: Policy): { sentences: string[]; worse: boolean; better: boolean } {
+  const sentences: string[] = [];
+  const lag = firstLag(policy, new Set([...SPENDING_CHANNELS, ...RELIEF_CHANNELS, ...REVENUE_CHANNELS]));
+  if (lag !== null && lag > 0) sentences.push(`Efeito fiscal só daqui a ${lag} meses.`);
+  const credibility = sumMagnitude(policy, new Set([CREDIBILITY_CHANNEL]));
+  if (credibility < 0) sentences.push('Abala a credibilidade fiscal: juros e câmbio tendem a subir.');
+  if (credibility > 0) sentences.push('Reforça a credibilidade fiscal.');
+  const wage = sumMagnitude(policy, new Set([MINIMUM_WAGE_CHANNEL]));
+  if (wage > 0) {
+    sentences.push(
+      `Ganho real de ${pct(wage, 1)} no salário mínimo no reajuste de janeiro: eleva previdência e benefícios.`,
+    );
+  } else if (wage < 0) {
+    sentences.push(`Reajuste do salário mínimo ${pct(-wage, 1)} menor: alivia previdência e benefícios.`);
+  }
+  return { sentences, worse: credibility < 0 || wage > 0, better: credibility > 0 || wage < 0 };
+}
+
+function fazendaOpinion(
+  state: Readonly<GameState>,
+  content: GameContent,
+  parts: FiscalParts,
+  policy?: Policy,
+): Opinion {
   const { fiscal, spending, expansion } = parts;
   const sentences: string[] = [];
   let tone: Opinion['tone'] = 'neutro';
@@ -128,6 +173,13 @@ function fazendaOpinion(state: Readonly<GameState>, content: GameContent, parts:
   if (expansion > 0 && state.economy.outputGap > ADVICE_PARAMS.hotGap) {
     sentences.push('Demanda aquecida: pressiona a inflação.');
     if (tone === 'favoravel') tone = 'neutro';
+  }
+
+  if (policy) {
+    const extras = fazendaExtras(policy);
+    sentences.push(...extras.sentences);
+    if (extras.worse && tone === 'favoravel') tone = 'neutro';
+    if (extras.better && tone === 'neutro' && fiscal <= 0) tone = 'favoravel';
   }
 
   return { text: sentences.join(' '), tone };
@@ -171,14 +223,22 @@ export function votesOpinion(state: Readonly<GameState>, policyId: string, predi
   return { text: `${text} Aprovação incerta.`, tone: 'neutro' };
 }
 
-function comunicacaoOpinion(state: Readonly<GameState>, policy: Policy, content: GameContent, impact: number): Opinion {
+function comunicacaoOpinion(
+  state: Readonly<GameState>,
+  policy: Policy,
+  content: GameContent,
+  impact: number,
+  partisan = false,
+): Opinion {
   const parts: string[] = [];
   let tone: Opinion['tone'] = 'neutro';
   if (impact === 0) {
     parts.push('Sem efeito direto na aprovação.');
   } else {
-    parts.push(`Efeito de ${pp(impact)} na aprovação.`);
+    const lag = firstLag(policy, new Set([APPROVAL_CHANNEL]));
+    parts.push(`Efeito de ${pp(impact)} na aprovação${lag !== null && lag > 0 ? ` daqui a ${lag} meses` : ''}.`);
     tone = impact > 0 ? 'favoravel' : 'desfavoravel';
+    if (impact > 0 && partisan) parts.push('Pasta com ministro de bloco: o ganho rende menos.');
   }
 
   const groups = policy.affected.groups.slice(0, 2).map((g) => g.replace(/_/g, ' '));
@@ -279,11 +339,14 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
   const policy = content.policies[policyId];
   if (!policy) throw new RangeError(`política desconhecida: ${policyId}`);
 
-  const parts = fiscalParts(policy, currentNominalGdpMillions(state, content));
-  const approvalImpact = sumMagnitude(policy, new Set([APPROVAL_CHANNEL]));
-
   let articulacao: Opinion = { text: 'Ato do Executivo: não depende do Congresso.', tone: 'neutro' };
   const adhesion = adhesionWarning(state, policy, content);
+  // Mesmas escalas que a execução aplicará (proposals.ts): adesão dos estados e perda da pasta de bloco.
+  const factors = executionFactors(state, policy, content, adhesion?.share ?? 1);
+  const parts = fiscalParts(policy, currentNominalGdpMillions(state, content), factors.reach);
+  const approvalImpact = policy.impacts
+    .filter((i) => i.channel === APPROVAL_CHANNEL)
+    .reduce((n, i) => n + i.magnitude * (i.magnitude > 0 ? factors.resultFactor : 1), 0);
   let votes: VotePrediction[] = [];
   if (legislativeInstrument(policy) !== null) {
     votes = predictVotes(state, policy, content);
@@ -298,9 +361,103 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
   if (adhesion) articulacao = { text: `${articulacao.text} ${adhesion.text}`, tone: articulacao.tone };
 
   return {
-    fazenda: fazendaOpinion(state, content, parts),
+    fazenda: fazendaOpinion(state, content, parts, policy),
     articulacao,
-    comunicacao: comunicacaoOpinion(state, policy, content, approvalImpact),
+    comunicacao: comunicacaoOpinion(state, policy, content, approvalImpact, factors.partisan),
     forecast: { annualFiscalImpact: parts.fiscal, votes, approvalImpact, adhesion: adhesion?.share ?? null },
+  };
+}
+
+export interface EventAdvice {
+  fazenda: Opinion;
+  articulacao: Opinion;
+  comunicacao: Opinion;
+}
+
+const EVENT_SPENDING: ReadonlySet<ImpulseTarget> = new Set<ImpulseTarget>([
+  'gasto.investimento',
+  'gasto.custeio',
+  'gasto.transferencia_baixa_renda',
+  'gasto.transferencia_alta_renda',
+  'gasto.obrigatoria',
+  'gasto.extraordinario',
+  'receita.desoneracao_consumo',
+  'receita.desoneracao_renda',
+]);
+const EVENT_REVENUE: ReadonlySet<ImpulseTarget> = new Set<ImpulseTarget>([
+  'receita.tributaria',
+  'receita.renda',
+  'receita.consumo',
+]);
+const EVENT_PRESSURE: ReadonlySet<ImpulseTarget> = new Set<ImpulseTarget>([
+  'choque.inflacao',
+  'choque.risco',
+  'choque.cambio',
+]);
+
+function toneOf(value: number): Opinion['tone'] {
+  return value > 0 ? 'favoravel' : value < 0 ? 'desfavoravel' : 'neutro';
+}
+
+function durationText(months: number | null): string {
+  return months === null ? 'de forma permanente' : months === 1 ? 'por 1 mês' : `por ${months} meses`;
+}
+
+/**
+ * Pareceres da mesa de despacho para uma resposta a evento ("resposta a crise", GAME_DESIGN.md §4.4), lidos dos
+ * efeitos da própria escolha. Função pura e determinística; `null` se a escolha não existir.
+ */
+export function adviseEventChoice(event: GameEvent, choiceId: string): EventAdvice | null {
+  const choice = event.choices.find((c) => c.id === choiceId);
+  if (!choice) return null;
+  const effects = choice.effects;
+  const sum = (targets: ReadonlySet<ImpulseTarget>) =>
+    effects.filter((e) => targets.has(e.target)).reduce((n, e) => n + e.delta, 0);
+  const longest = (targets: ReadonlySet<ImpulseTarget>): number | null => {
+    const hits = effects.filter((e) => targets.has(e.target));
+    if (hits.some((e) => e.durationMonths === null)) return null;
+    return Math.max(0, ...hits.map((e) => e.durationMonths ?? 0));
+  };
+  const one = (target: ImpulseTarget) => sum(new Set<ImpulseTarget>([target]));
+
+  const fazenda: string[] = [];
+  const cost = sum(EVENT_SPENDING) - sum(EVENT_REVENUE);
+  const fiscalWindow = durationText(longest(new Set([...EVENT_SPENDING, ...EVENT_REVENUE])));
+  if (cost > 0) fazenda.push(`Custo de ${pct(cost, 2)} do PIB ao ano ${fiscalWindow}.`);
+  else if (cost < 0) fazenda.push(`Economia de ${pct(-cost, 2)} do PIB ao ano ${fiscalWindow}.`);
+  else fazenda.push('Sem efeito fiscal direto.');
+  const credibility = one('credibilidade');
+  if (credibility < 0) fazenda.push('Abala a credibilidade fiscal.');
+  if (credibility > 0) fazenda.push('Reforça a credibilidade fiscal.');
+  const pressure = sum(EVENT_PRESSURE);
+  if (pressure > 0) fazenda.push('Pressiona inflação, juros ou câmbio.');
+  if (pressure < 0) fazenda.push('Alivia inflação, juros ou câmbio.');
+
+  const articulacao: string[] = [];
+  const congress = one('relacao_congresso');
+  const capital = one('capital_politico');
+  const governors = one('governadores.relacao');
+  if (congress !== 0) articulacao.push(`${congress > 0 ? 'Melhora' : 'Piora'} a relação com o Congresso.`);
+  if (capital !== 0) articulacao.push(`${capital > 0 ? 'Rende' : 'Custa'} capital político.`);
+  if (governors !== 0) articulacao.push(`${governors > 0 ? 'Agrada' : 'Desagrada'} os governadores.`);
+  if (choice.agendaCost > 0) {
+    articulacao.push(`Ocupa ${choice.agendaCost} ponto${choice.agendaCost > 1 ? 's' : ''} da agenda do mês.`);
+  }
+  if (articulacao.length === 0) articulacao.push('Sem efeito direto no Congresso nem nos governadores.');
+
+  const comunicacao: string[] = [];
+  const approval = sum(new Set<ImpulseTarget>(['aprovacao', 'regiao.aprovacao']));
+  if (approval === 0) {
+    comunicacao.push('Sem efeito direto na aprovação.');
+  } else {
+    const window = durationText(longest(new Set<ImpulseTarget>(['aprovacao', 'regiao.aprovacao'])));
+    comunicacao.push(`Efeito de ${pp(approval)} por mês na aprovação ${window}.`);
+  }
+  if (event.defaultChoice === choice.id) comunicacao.push('É o que acontece se o governo não responder.');
+
+  return {
+    fazenda: { text: fazenda.join(' '), tone: toneOf(-cost + credibility - pressure) },
+    articulacao: { text: articulacao.join(' '), tone: toneOf(congress + capital + governors) },
+    comunicacao: { text: comunicacao.join(' '), tone: toneOf(approval) },
   };
 }

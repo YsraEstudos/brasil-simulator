@@ -286,6 +286,11 @@ export interface SpendingMonth {
   structuralStance: number;
   /** Impulsos de despesa ativos, com sinal da despesa (+ = mais gasto). */
   impulses: ScheduledImpulse[];
+  /**
+   * Fração dos cortes discricionários do mês que foi de fato executada (0–1). Cortes que passam do que resta de
+   * discricionária não reduzem despesa e não podem contrair a demanda (§4, despesa efetivamente executada).
+   */
+  cutExecution: number;
 }
 
 /**
@@ -344,6 +349,7 @@ export function spendingMonth(
     compression,
     structuralStance: ruled + planned + exceptions - structure.initialSpending,
     impulses: [...mandatoryImpulses, ...discretionaryImpulses, ...extraordinaryImpulses],
+    cutExecution: minus < 0 ? (discretionary - planned) / minus : 1,
   };
 }
 

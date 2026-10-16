@@ -18,6 +18,7 @@ Eventos (`src/types/event.ts`), tudo opcional, JSONs antigos continuam válidos:
 - `onFireFlags`: marcas gravadas quando o evento chega à caixa de entrada.
 - Escolha: `setFlags`, `clearFlags`, `followUps: {eventId, delayMonths 1–24, probability}`, `characterEffects: {characterId, delta −30…30}`.
 - `chainedOnly`: só chega por `followUps`; o sorteio mensal o ignora.
+- Encadeado que chega pela fila (`scheduled`) passa pelas mesmas marcas (`requiresFlags`/`forbidsFlags`) e condições do gatilho; se alguma não valer no mês de chegada, ele é descartado.
 - `onlyScenarios`, `characterId` (personagem em destaque).
 - Condições novas: `impeachmentPressure` e `characterStanding` (com `characterId` na condição).
 

@@ -9,7 +9,7 @@ import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 
 import { createInitialState } from '../state';
 
-import { adviseDecision } from './dispatch';
+import { adviseDecision, adviseEventChoice } from './dispatch';
 
 const content = testContent();
 
@@ -191,5 +191,39 @@ describe('mesa de despacho: federação (ECONOMIC_MODEL.md §5.15; POLITICAL_RUL
     expect(advice.forecast.adhesion).toBeGreaterThan(0);
     expect(advice.forecast.adhesion).toBeLessThan(1);
     expect(adviseDecision(state, 'irpf_tabela', real).forecast.adhesion).toBeNull();
+  });
+});
+
+describe('mesa de despacho: execução e respostas a eventos (GAME_DESIGN.md §4.4)', () => {
+  const real = loadContent(DEFAULT_SCENARIO_ID);
+  const state = createInitialState({ content: real, difficulty: 'estrategica', seed: 1 });
+
+  it('o custo do programa por convênio considera só os estados que devem aderir', () => {
+    const advice = adviseDecision(state, 'seguranca_cooperacao', real);
+    const share = advice.forecast.adhesion ?? 1;
+    const casual = adviseDecision({ ...state, difficulty: 'casual' }, 'seguranca_cooperacao', real);
+    expect(advice.forecast.annualFiscalImpact).toBeCloseTo(casual.forecast.annualFiscalImpact * share, 12);
+  });
+
+  it('a Fazenda cita o salário mínimo real e a credibilidade fiscal', () => {
+    expect(adviseDecision(state, 'salario_minimo_valorizacao', real).fazenda.text).toContain('salário mínimo');
+    const withCredibility = Object.values(real.policies).find((p) =>
+      p.impacts.some((i) => i.channel === 'credibilidade_fiscal' && i.magnitude < 0),
+    );
+    if (withCredibility) {
+      expect(adviseDecision(state, withCredibility.id, real).fazenda.text).toContain('credibilidade fiscal');
+    }
+  });
+
+  it('resposta a evento tem os três pareceres, lidos dos efeitos da escolha', () => {
+    const event = content.events.find((e) => e.id === 'teste_choque');
+    if (!event) throw new Error('evento de teste ausente');
+    const subsidiar = adviseEventChoice(event, 'subsidiar');
+    expect(subsidiar?.fazenda.text).toContain('Custo de');
+    expect(subsidiar?.fazenda.tone).toBe('desfavoravel');
+    expect(subsidiar?.comunicacao.tone).toBe('favoravel');
+    const absorver = adviseEventChoice(event, 'absorver');
+    expect(absorver?.comunicacao.text).toContain('se o governo não responder');
+    expect(adviseEventChoice(event, 'nao_existe')).toBeNull();
   });
 });

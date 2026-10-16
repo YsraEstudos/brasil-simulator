@@ -112,6 +112,7 @@ export const REJECTION_REASON_LABEL: Record<DecisionRejection, string> = {
   politica_desconhecida: 'política indisponível neste cenário',
   acao_repetida: 'ação já feita neste mês',
   ja_em_andamento: 'já está em andamento',
+  reedicao_vedada: 'medida provisória rejeitada ou caducada não pode ser reeditada no mesmo ano',
   evento_nao_pendente: 'o evento não está mais pendente',
   escolha_invalida: 'escolha inválida',
 };

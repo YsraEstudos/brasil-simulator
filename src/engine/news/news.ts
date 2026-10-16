@@ -412,7 +412,10 @@ function levelCandidate(watch: LevelWatch, args: NewsArgs): NewsCandidate | unde
   const level = crossedLevel(before, after, watch.levels);
   if (level === undefined) return undefined;
   const up = after > before;
-  const topCause = watch.indicator ? explainIndicator(report, watch.indicator)[0] : undefined;
+  // A maior causa que empurrou no mesmo sentido do movimento (a maior em valor absoluto pode ter segurado a mudança).
+  const topCause = watch.indicator
+    ? explainIndicator(report, watch.indicator).find((c) => (up ? c.delta > 0 : c.delta < 0))
+    : undefined;
   // Duas casas na causa: com uma só, uma passagem pequena apareceria como "de 3,0% para 3,0%".
   let cause = `Causa: ${watch.label.toLowerCase()} passou de ${pct(before, 2)} para ${pct(after, 2)} no mês`;
   if (topCause) {
