@@ -1,0 +1,53 @@
+{
+  "id": "fase07_pol_sindical_convoca",
+  "title": "Central sindical convoca manifestação",
+  "description": "A central sindical convoca manifestação nacional em apoio à greve de professores e pela reposição da inflação nos salários. Dirigentes dizem que a mobilização pode parar serviços em capitais.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "inflation12m", "op": "gt", "value": 0.04 }],
+    "probability": 0.05,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "chainedOnly": true,
+  "characterId": "lider_sindical",
+  "onFire": [{ "target": "aprovacao", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "receber_centrais",
+      "label": "Receber as centrais na mesa",
+      "description": "Abre mesa de negociação com as centrais. A manifestação perde força e a aprovação sobe, mas a despesa obrigatória cresce por um ano.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "gasto.obrigatoria", "delta": 0.001, "lagMonths": 0, "durationMonths": 12 },
+        { "target": "aprovacao", "delta": 0.008, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "lider_sindical", "delta": 12 }]
+    },
+    {
+      "id": "endurecer_discurso",
+      "label": "Endurecer o discurso",
+      "description": "Acusa a manifestação de politização. Mantém o orçamento, mas a mobilização cresce e a imagem do governo sofre com o confronto.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": -0.012, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "capital_politico", "delta": -3, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["pol_sindicato_mobilizado"],
+      "characterEffects": [{ "characterId": "lider_sindical", "delta": -15 }]
+    },
+    {
+      "id": "ignorar_convocacao",
+      "label": "Ignorar a convocação",
+      "description": "Não responde à convocação. A manifestação acontece sem negociação, e a pressão se volta para a avaliação do governo entre a população.",
+      "agendaCost": 0,
+      "effects": [{ "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }],
+      "setFlags": ["pol_sindicato_mobilizado"],
+      "characterEffects": [{ "characterId": "lider_sindical", "delta": -8 }],
+      "followUps": [{ "eventId": "fase07_pol_pesquisa_pobres", "delayMonths": 3, "probability": 0.5 }]
+    }
+  ],
+  "defaultChoice": "ignorar_convocacao",
+  "dataStatus": "FICTICIO"
+}

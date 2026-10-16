@@ -1,0 +1,61 @@
+{
+  "id": "reforma_administrativa",
+  "name": "Reforma administrativa",
+  "summary": "Altera regras de carreiras e de admissão do funcionalismo por emenda constitucional e projeto de lei, com economia de despesa obrigatória de longo prazo. Tem tramitação longa, custo político alto e risco de judicialização.",
+  "area": "estado",
+  "competence": "federal",
+  "instruments": ["pec", "projeto_lei"],
+  "agendaCost": 2,
+  "cost": {
+    "annualMillions": -15000,
+    "disbursementProfile": [0.2, 0.3, 0.5]
+  },
+  "fundingSources": ["sem_custo"],
+  "timeline": {
+    "planningMonths": 2,
+    "expectedLegislativeMonths": 8,
+    "executionMonths": 0,
+    "maturationMonths": 24
+  },
+  "conditions": [],
+  "impacts": [
+    {
+      "channel": "despesa_obrigatoria",
+      "magnitude": -15000,
+      "lagMonths": 24
+    },
+    {
+      "channel": "credibilidade_fiscal",
+      "magnitude": 0.04,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": -0.01,
+      "lagMonths": 0
+    }
+  ],
+  "risks": [
+    {
+      "kind": "judicializacao",
+      "probability": 0.3
+    }
+  ],
+  "affected": {
+    "groups": ["servidores"],
+    "sectors": ["servicos"],
+    "regions": ["nacional"]
+  },
+  "regional": {
+    "key": "populacao",
+    "scope": [],
+    "boost": {
+      "DF": 6
+    }
+  },
+  "position": {
+    "economic": 0.6,
+    "social": 0.2
+  },
+  "dataStatus": "PROVISORIO"
+}

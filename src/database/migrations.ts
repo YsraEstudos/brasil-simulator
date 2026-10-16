@@ -74,6 +74,46 @@ export const MIGRATIONS: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 3,
+    name: 'relatorios_mensais',
+    sql: `
+      -- Decomposição causal completa dos últimos 12 meses (MonthReport em JSON), alimenta o "Por que mudou?".
+      -- Meses mais antigos são descartados ao gravar um novo mês (ECONOMIC_MODEL.md §11).
+      CREATE TABLE month_reports (
+        campaign_id TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+        month_index INTEGER NOT NULL CHECK (month_index >= 0),
+        report_json TEXT NOT NULL,
+        PRIMARY KEY (campaign_id, month_index)
+      );
+    `,
+  },
+  {
+    version: 4,
+    name: 'historico_de_indicadores',
+    sql: `
+      -- Vetor de indicadores por mês para os gráficos de longo prazo (ECONOMIC_MODEL.md §11). Os snapshots completos
+      -- do estado passam a ficar só nos últimos meses; esta série fica para a campanha inteira.
+      CREATE TABLE indicator_history (
+        campaign_id TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+        month_index INTEGER NOT NULL CHECK (month_index >= 0),
+        point_json  TEXT NOT NULL,
+        PRIMARY KEY (campaign_id, month_index)
+      );
+
+      -- Preenche a série com os snapshots que já existem (saves v1 não têm bloco econômico: campos nulos).
+      INSERT INTO indicator_history (campaign_id, month_index, point_json)
+      SELECT campaign_id, month_index, json_object(
+        'indicators', json(json_extract(state_json, '$.indicators')),
+        'selic', json_extract(state_json, '$.economy.selic'),
+        'grossDebt', json_extract(state_json, '$.economy.grossDebt'),
+        'credibility', json_extract(state_json, '$.economy.credibility'),
+        'exchangeRate', json_extract(state_json, '$.economy.exchangeRate'),
+        'riskPremium', json_extract(state_json, '$.economy.riskPremium')
+      )
+      FROM snapshots;
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

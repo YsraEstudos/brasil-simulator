@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { contentIdSchema, dataValueSchema } from './data';
+import { contentIdSchema, dataSeriesSchema, dataStatusSchema, dataValueSchema } from './data';
+import { regionIdSchema, ufIdSchema } from './regions';
 
 /**
  * Cenário inicial de campanha, gravado como JSON versionado em `src/data/scenarios/` (DATA_SOURCES.md §1).
@@ -42,6 +43,171 @@ export const scenarioIndicatorsSchema = z
   })
   .strict();
 
+/**
+ * Estado econômico inicial (ECONOMIC_MODEL.md §3, subconjunto v0.1). Fluxos fiscais em fração do PIB anual.
+ * Opcional para cenários antigos: sem ele o motor usa valores padrão provisórios.
+ */
+export const scenarioEconomySchema = z
+  .object({
+    /** PIB nominal de 12 meses, R$ milhões (converte custos de políticas em fração do PIB). */
+    nominalGdpMillions: dataValueSchema,
+    outputGap: dataValueSchema,
+    selic: dataValueSchema,
+    inflationExpectation: dataValueSchema,
+    credibility: dataValueSchema,
+    grossDebt: dataValueSchema,
+    implicitRate: dataValueSchema,
+    /** Receita primária líquida do governo central, fração do PIB. */
+    revenue: dataValueSchema,
+    /** Despesa primária do governo central, fração do PIB. */
+    primarySpending: dataValueSchema,
+    /** Câmbio R$/US$ (ECONOMIC_MODEL.md §5.5). Opcional: sem ele o motor usa o valor provisório padrão. */
+    exchangeRate: dataValueSchema.optional(),
+    /** Prêmio de risco soberano anual (fração). */
+    riskPremium: dataValueSchema.optional(),
+    /** Juro externo anual (fração). */
+    externalRate: dataValueSchema.optional(),
+    /** Crescimento real do PIB dois anos antes do início (regra do salário mínimo, Lei 15.077/2024). */
+    gdpGrowthTwoYearsAgo: dataValueSchema.optional(),
+  })
+  .strict();
+export type ScenarioEconomy = z.infer<typeof scenarioEconomySchema>;
+
+/** Fração por grupo de receita (ECONOMIC_MODEL.md §5.7); mesmas chaves de `RevenueGroup` do motor. */
+const revenueGroupsSchema = z
+  .object({
+    renda: dataValueSchema,
+    folha: dataValueSchema,
+    consumo: dataValueSchema,
+    outras: dataValueSchema,
+    royalties: dataValueSchema,
+  })
+  .strict();
+
+/**
+ * Estrutura fiscal inicial (ECONOMIC_MODEL.md §5.7–5.8; POLITICAL_RULES.md §4.2–4.3). Opcional: sem ela o
+ * motor reparte os totais de `economy` pelas frações provisórias padrão (`FALLBACK_FISCAL`).
+ */
+export const scenarioFiscalSchema = z
+  .object({
+    /** Participação de cada grupo na receita bruta (soma 1). */
+    revenueShares: revenueGroupsSchema,
+    /** Fração de cada grupo repassada a estados e municípios (FPE, FPM, royalties). */
+    transferShares: revenueGroupsSchema,
+    /** Despesas em fração do PIB; somam `economy.primarySpending`. O limite inicial é tudo menos as exceções. */
+    spending: z
+      .object({
+        previdencia: dataValueSchema,
+        beneficios: dataValueSchema,
+        pessoal: dataValueSchema,
+        outras: dataValueSchema,
+        linked: dataValueSchema,
+        discretionary: dataValueSchema,
+        exceptions: dataValueSchema,
+      })
+      .strict(),
+  })
+  .strict();
+export type ScenarioFiscal = z.infer<typeof scenarioFiscalSchema>;
+
+/** Ocupante técnico/aliado de um ministério (POLITICAL_RULES.md §6.3.1); os demais ocupantes são ids de bloco. */
+export const TECHNICAL_MINISTER = 'tecnico';
+
+/** Ministério relevante para a coalizão (POLITICAL_RULES.md §6.3.1). */
+export const ministrySchema = z
+  .object({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    /** Áreas de política (`Policy.area`) executadas pela pasta. */
+    areas: z.array(contentIdSchema).min(1),
+    /** Peso político da pasta (0–1): apoio do bloco que a ocupa e relação ganha na nomeação. */
+    weight: unitInterval,
+    /** Ocupante no início: `tecnico` ou id de bloco. */
+    occupant: contentIdSchema,
+  })
+  .strict();
+export type Ministry = z.infer<typeof ministrySchema>;
+
+/**
+ * Instituições do cenário (POLITICAL_RULES.md §6.3, §13): blocos que presidem a Câmara e o Senado e
+ * ministérios. Opcional: sem ele, cada Casa é presidida pelo maior bloco nela e não há ministérios.
+ */
+export const scenarioInstitutionsSchema = z
+  .object({
+    housePresidents: z.object({ camara: contentIdSchema, senado: contentIdSchema }).strict(),
+    ministries: z.array(ministrySchema),
+  })
+  .strict();
+export type ScenarioInstitutions = z.infer<typeof scenarioInstitutionsSchema>;
+
+/** Quantidade de UFs (26 estados e o Distrito Federal). */
+export const UF_COUNT = 27;
+
+const shareSchema = z.number().gt(0).lt(1);
+
+/** UF no cenário (ECONOMIC_MODEL.md §5.12, §5.15): só a matriz de participação e de sensibilidade setorial. */
+export const scenarioUfSchema = z
+  .object({
+    /** Sigla, igual à do globo (`src/globe/data/ufs.json`). */
+    id: ufIdSchema,
+    name: z.string().min(1),
+    region: regionIdSchema,
+    /** Milhares de pessoas (ECONOMIC_MODEL.md §2). */
+    population: z.number().positive(),
+    /** Participação no PIB nacional no início do cenário; soma 1 entre as UFs. */
+    gdpShare: shareSchema,
+    /** Peso de cada setor no valor adicionado da UF; soma 1. */
+    sectors: z
+      .object({ agropecuaria: unitInterval, extrativa: unitInterval, industria: unitInterval, servicos: unitInterval })
+      .strict(),
+    /** Desemprego inicial da UF (só a diferença relativa entre as UFs é usada). */
+    unemployment: shareSchema,
+    /** População abaixo da linha de pobreza (chave de distribuição de transferências). */
+    poverty: unitInterval,
+    /** Governador fictício: bloco a que pertence e relação inicial com o presidente (−100…100). */
+    governor: z.object({ bloc: contentIdSchema, relation: z.number().min(-100).max(100) }).strict(),
+  })
+  .strict();
+export type ScenarioUf = z.infer<typeof scenarioUfSchema>;
+
+/**
+ * Dados regionais do cenário (DATA_SOURCES.md §4.2): uma linha por UF e os metadados de cada série (os números
+ * de uma série têm a mesma origem e o mesmo status). Opcional: sem ele, o motor não distribui o agregado.
+ */
+export const scenarioRegionsSchema = z
+  .object({
+    meta: z
+      .object({
+        population: dataSeriesSchema,
+        gdpShare: dataSeriesSchema,
+        sectors: dataSeriesSchema,
+        unemployment: dataSeriesSchema,
+        poverty: dataSeriesSchema,
+        governors: dataSeriesSchema,
+      })
+      .strict(),
+    ufs: z.array(scenarioUfSchema).length(UF_COUNT),
+  })
+  .strict();
+export type ScenarioRegions = z.infer<typeof scenarioRegionsSchema>;
+
+/** Personagem fictício recorrente (FASE_07.md). Nunca baseado em pessoa real (GAME_DESIGN.md §13). */
+export const characterSchema = z
+  .object({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    /** Cargo ou papel, em português (ex.: "Ministra da Fazenda"). */
+    role: z.string().min(1),
+    description: z.string().min(1),
+    /** Bloco a que pertence, se houver. */
+    blocId: contentIdSchema.optional(),
+    /** Prestígio inicial com o governo, −100…100. */
+    initialStanding: z.number().min(-100).max(100),
+    dataStatus: dataStatusSchema,
+  })
+  .strict();
+export type Character = z.infer<typeof characterSchema>;
+
 export const scenarioSchema = z
   .object({
     /** Ex.: `brasil_2027_01` */
@@ -51,6 +217,10 @@ export const scenarioSchema = z
     /** Mês de posse = monthIndex 0 (jan/2027). */
     startPeriod: z.literal('2027-01'),
     indicators: scenarioIndicatorsSchema,
+    economy: scenarioEconomySchema.optional(),
+    fiscal: scenarioFiscalSchema.optional(),
+    institutions: scenarioInstitutionsSchema.optional(),
+    regions: scenarioRegionsSchema.optional(),
     /** Parâmetros do modelo (ECONOMIC_MODEL.md §6), todos com status — `A_CALIBRAR` = `PROVISORIO`. */
     parameters: z.record(z.string().regex(/^[a-z][a-z0-9_.]*$/), dataValueSchema),
     blocs: z.array(blocSchema).min(2),
@@ -58,6 +228,8 @@ export const scenarioSchema = z
     copomMonths: z.array(z.number().int().min(1).max(12)).length(8),
     /** IDs das políticas disponíveis neste cenário. */
     policies: z.array(contentIdSchema).min(1),
+    /** Elenco de personagens fictícios (Fase 07); ausente nos cenários anteriores. */
+    characters: z.array(characterSchema).optional(),
   })
   .strict()
   .superRefine((s, ctx) => {
@@ -85,10 +257,86 @@ export const scenarioSchema = z
       'blocs',
     );
     unique(s.policies, 'policies');
+    if (s.institutions) {
+      const blocIds = new Set(s.blocs.map((b) => b.id));
+      for (const house of ['camara', 'senado'] as const) {
+        if (!blocIds.has(s.institutions.housePresidents[house])) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['institutions', 'housePresidents', house],
+            message: `bloco inexistente: ${s.institutions.housePresidents[house]}`,
+          });
+        }
+      }
+      unique(
+        s.institutions.ministries.map((m) => m.id),
+        'institutions',
+      );
+      for (const m of s.institutions.ministries) {
+        if (m.occupant !== TECHNICAL_MINISTER && !blocIds.has(m.occupant)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['institutions', 'ministries', m.id],
+            message: `ocupante deve ser "${TECHNICAL_MINISTER}" ou um bloco: ${m.occupant}`,
+          });
+        }
+      }
+    }
+    if (s.regions) {
+      const blocIds = new Set(s.blocs.map((b) => b.id));
+      const ufs = s.regions.ufs;
+      unique(
+        ufs.map((u) => u.id),
+        'regions',
+      );
+      const shares = ufs.reduce((n, u) => n + u.gdpShare, 0);
+      if (Math.abs(shares - 1) > 1e-6) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['regions', 'ufs'],
+          message: `participações somam ${shares}, esperado 1`,
+        });
+      }
+      for (const u of ufs) {
+        const sectors = Object.values(u.sectors).reduce((n, v) => n + v, 0);
+        if (Math.abs(sectors - 1) > 1e-6) {
+          ctx.addIssue({ code: 'custom', path: ['regions', u.id, 'sectors'], message: `setores somam ${sectors}` });
+        }
+        if (!blocIds.has(u.governor.bloc)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['regions', u.id, 'governor'],
+            message: `bloco inexistente: ${u.governor.bloc}`,
+          });
+        }
+      }
+    }
     unique(s.copomMonths.map(String), 'copomMonths');
     const u = s.indicators.unemployment.value;
     if (!(u > 0 && u < 1))
       ctx.addIssue({ code: 'custom', path: ['indicators', 'unemployment'], message: 'desemprego em fração (0, 1)' });
+    if (s.fiscal) {
+      const shares = Object.values(s.fiscal.revenueShares).reduce((n, v) => n + v.value, 0);
+      if (Math.abs(shares - 1) > 1e-6) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['fiscal', 'revenueShares'],
+          message: `frações somam ${shares}, esperado 1`,
+        });
+      }
+      if (Object.values(s.fiscal.transferShares).some((v) => !(v.value >= 0 && v.value < 1))) {
+        ctx.addIssue({ code: 'custom', path: ['fiscal', 'transferShares'], message: 'repasse em fração [0, 1)' });
+      }
+      const spending = Object.values(s.fiscal.spending).reduce((n, v) => n + v.value, 0);
+      const total = s.economy?.primarySpending.value;
+      if (total === undefined || Math.abs(spending - total) > 1e-6) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['fiscal', 'spending'],
+          message: `despesas somam ${spending}, esperado economy.primarySpending (${total})`,
+        });
+      }
+    }
     const a = s.indicators.approval.value;
     if (!(a >= 0 && a <= 1))
       ctx.addIssue({ code: 'custom', path: ['indicators', 'approval'], message: 'aprovação em fração [0, 1]' });

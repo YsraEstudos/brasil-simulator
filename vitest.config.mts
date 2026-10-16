@@ -9,5 +9,12 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
+    // `npm run test:coverage` gera coverage/lcov.info para o SonarCloud (sonar-project.properties).
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary', 'lcov'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.ts'],
+    },
   },
 });

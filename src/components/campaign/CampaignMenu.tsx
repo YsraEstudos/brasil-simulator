@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
@@ -6,7 +7,7 @@ import { MIN_TOUCH, Radius, Spacing, TEXT_SCALES } from '@/constants/theme';
 import type { Difficulty } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
 import { gameStore, useGame } from '@/store';
-import { PROTOTYPE_MONTHS } from '@/store/scenarios';
+import { campaignMonths } from '@/store/scenarios';
 
 import { DIFFICULTY, shortMonthLabel } from './labels';
 
@@ -71,7 +72,7 @@ export function CampaignMenu() {
             const done = c.status === 'encerrada';
             const where = done
               ? 'Encerrada'
-              : `${shortMonthLabel(c.currentMonth)} · mês ${c.currentMonth + 1} de ${PROTOTYPE_MONTHS}`;
+              : `${shortMonthLabel(c.currentMonth)} · mês ${c.currentMonth + 1} de ${campaignMonths(c.scenarioId)}`;
             return (
               <Card key={c.id} title={c.name} subtitle={`${where} · ${DIFFICULTY[c.difficulty].name}`}>
                 <View style={styles.row}>
@@ -117,6 +118,8 @@ export function CampaignMenu() {
           ))}
         </View>
       </View>
+
+      <Button label="Menu principal" variant="ghost" block onPress={() => router.navigate('/')} />
     </View>
   );
 }

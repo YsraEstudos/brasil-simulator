@@ -1,0 +1,22 @@
+{
+  "id": "rotina_integracao_criminal",
+  "name": "Rotina de integração de informações criminais",
+  "summary": "Mantém integração de bases e capacitação de equipes de segurança por portaria executiva. Dados e custos PROVISORIO.",
+  "area": "seguranca",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1600, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 3 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 1600, "lagMonths": 1 },
+    { "channel": "aprovacao", "magnitude": 0.003, "lagMonths": 2 }
+  ],
+  "risks": [{ "kind": "baixa_adesao", "probability": 0.2 }],
+  "affected": { "groups": ["populacao_urbana"], "sectors": ["servicos"], "regions": ["nacional"] },
+  "position": { "economic": 0.1, "social": 0.1 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

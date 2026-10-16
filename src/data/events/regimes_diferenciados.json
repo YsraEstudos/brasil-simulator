@@ -1,0 +1,98 @@
+{
+  "id": "regimes_diferenciados",
+  "title": "Setores pedem regimes diferenciados",
+  "description": "Entidades do agro, dos serviços e da indústria pressionam o Congresso por alíquotas reduzidas da CBS para os seus setores, com apoio de bancadas importantes.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "monthIndex",
+        "op": "lt",
+        "value": 36
+      }
+    ],
+    "probability": 0.08,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onFire": [
+    {
+      "target": "relacao_congresso",
+      "delta": -3,
+      "lagMonths": 0,
+      "durationMonths": 1
+    }
+  ],
+  "choices": [
+    {
+      "id": "recusar",
+      "label": "Recusar novos regimes",
+      "description": "Defende a base ampla da reforma e a arrecadação, mas as bancadas setoriais ficam contrariadas.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "relacao_congresso",
+          "delta": -4,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "conceder",
+      "label": "Conceder o regime",
+      "description": "Agrada as bancadas e os setores, mas cria renúncia nos próximos dois anos e enfraquece a reforma.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "receita.desoneracao_consumo",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 24,
+          "label": "Regime diferenciado na CBS"
+        },
+        {
+          "target": "relacao_congresso",
+          "delta": 8,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "transicao_negociada",
+      "label": "Transição negociada",
+      "description": "Concede uma redução temporária em troca de prazo, com custo menor e apoio parcial no Congresso.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "receita.desoneracao_consumo",
+          "delta": 0.0008,
+          "lagMonths": 0,
+          "durationMonths": 24,
+          "label": "Transição negociada na CBS"
+        },
+        {
+          "target": "relacao_congresso",
+          "delta": 4,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "recusar",
+  "dataStatus": "FICTICIO"
+}

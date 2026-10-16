@@ -1,0 +1,50 @@
+{
+  "id": "fase07_inst_tcu_alerta",
+  "title": "Tribunal de Contas emite alerta",
+  "description": "O Tribunal de Contas da União aponta execução acima do limite de despesas do arcabouço fiscal e cobra correção. O alerta pode virar parecer sobre as contas. Caso fictício; regras institucionais simplificadas (POLITICAL_RULES.md §8).",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "limitExcess", "op": "gt", "value": 0 }],
+    "probability": 0.3,
+    "cooldownMonths": 6,
+    "maxOccurrences": 3
+  },
+  "onFireFlags": ["tcu_alerta"],
+  "onFire": [{ "target": "credibilidade", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "corrigir_a_execucao",
+      "label": "Corrigir a execução",
+      "description": "Contingencia despesas de custeio por seis meses. A credibilidade sobe, mas o gasto corrente cai e custa algo à máquina pública.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "gasto.custeio", "delta": -0.002, "lagMonths": 0, "durationMonths": 6 },
+        { "target": "credibilidade", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "defender_a_execucao",
+      "label": "Defender a execução",
+      "description": "Contesta o alerta e mantém o ritmo de gastos, agradando a base. A credibilidade cai e o alerta pode virar parecer sobre as contas em três meses, com chance de 50%. Escolha padrão se você não responder.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "credibilidade", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 2, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "followUps": [{ "eventId": "fase07_inst_tcu_parecer", "delayMonths": 3, "probability": 0.5 }]
+    },
+    {
+      "id": "pedir_prazo_ao_tcu",
+      "label": "Pedir prazo ao Tribunal",
+      "description": "Apresenta plano de adequação e pede prazo. A credibilidade sobe um pouco, mas a base reclama do atraso nas emendas e a relação com o Congresso cai.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -2, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    }
+  ],
+  "defaultChoice": "defender_a_execucao",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "dataStatus": "FICTICIO"
+}

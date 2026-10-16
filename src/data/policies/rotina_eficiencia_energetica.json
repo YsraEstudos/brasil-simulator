@@ -1,0 +1,26 @@
+{
+  "id": "rotina_eficiencia_energetica",
+  "name": "Rotina de eficiência energética",
+  "summary": "Mantém programas de gestão de consumo e eficiência energética por portaria executiva. Dados e custos PROVISORIO.",
+  "area": "energia",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 900, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 3 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 900, "lagMonths": 2 },
+    { "channel": "aprovacao", "magnitude": 0.002, "lagMonths": 2 }
+  ],
+  "risks": [{ "kind": "atraso", "probability": 0.15 }],
+  "affected": {
+    "groups": ["consumidores", "empresas"],
+    "sectors": ["energia", "industria", "servicos"],
+    "regions": ["nacional"]
+  },
+  "position": { "economic": 0, "social": 0 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

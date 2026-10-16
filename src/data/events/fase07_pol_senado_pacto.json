@@ -1,0 +1,53 @@
+{
+  "id": "fase07_pol_senado_pacto",
+  "title": "Presidente do Senado propõe pacto institucional",
+  "description": "O presidente do Senado propõe um pacto entre Executivo, Câmara e Supremo para votar reformas com rito e prazos definidos e preservar as regras do jogo. Ele quer um gesto público do governo.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      { "variable": "politicalCapital", "op": "lt", "value": 55 },
+      { "variable": "congressRelation", "op": "lt", "value": 10 }
+    ],
+    "probability": 0.1,
+    "cooldownMonths": 24,
+    "maxOccurrences": 2
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "characterId": "pres_senado",
+  "onFire": [{ "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "aceitar_pacto",
+      "label": "Aceitar o pacto",
+      "description": "Assina o compromisso de rito e prazos para as reformas. Ganha credibilidade e o apoio do Senado, mas o governo abre mão de parte da agenda própria.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "credibilidade", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 5, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["pol_pacto_institucional"],
+      "characterEffects": [{ "characterId": "pres_senado", "delta": 12 }]
+    },
+    {
+      "id": "condicionar_pacto",
+      "label": "Propor condições",
+      "description": "Negocia um texto próprio, sem compromisso de prazo. Ganha um pouco de credibilidade e de relação, mas o Senado percebe a manobra e o pacto demora.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 2, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "pres_senado", "delta": 3 }]
+    },
+    {
+      "id": "recusar_pacto",
+      "label": "Recusar o pacto",
+      "description": "Mantém a agenda sem compromissos formais. Preserva a liberdade de ação do governo, mas o Senado se afasta e a relação com o Congresso piora.",
+      "agendaCost": 0,
+      "effects": [{ "target": "relacao_congresso", "delta": -6, "lagMonths": 0, "durationMonths": 1 }],
+      "characterEffects": [{ "characterId": "pres_senado", "delta": -12 }]
+    }
+  ],
+  "defaultChoice": "recusar_pacto",
+  "dataStatus": "FICTICIO"
+}

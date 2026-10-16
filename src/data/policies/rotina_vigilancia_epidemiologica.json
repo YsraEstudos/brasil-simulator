@@ -1,0 +1,19 @@
+{
+  "id": "rotina_vigilancia_epidemiologica",
+  "name": "Rotina de vigilância epidemiológica",
+  "summary": "Mantém equipes e sistemas de vigilância epidemiológica por portaria, com resposta gradual a riscos sanitários. Dados e custos PROVISORIO.",
+  "area": "saude",
+  "competence": "federal",
+  "instruments": ["decreto_regulamentar"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 2100, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 1 },
+  "conditions": [],
+  "impacts": [{ "channel": "custeio", "magnitude": 2100, "lagMonths": 1 }],
+  "risks": [{ "kind": "atraso", "probability": 0.1 }],
+  "affected": { "groups": ["usuarios_de_servicos_publicos"], "sectors": ["servicos"], "regions": ["nacional"] },
+  "position": { "economic": -0.1, "social": -0.2 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

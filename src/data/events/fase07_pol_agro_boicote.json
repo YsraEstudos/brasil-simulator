@@ -1,0 +1,58 @@
+{
+  "id": "fase07_pol_agro_boicote",
+  "title": "Confederação do agronegócio ameaça boicote",
+  "description": "A confederação do agronegócio ameaça suspender a adesão a programas de crédito e a campanhas de exportação. A ameaça chega enquanto um grupo de estados se aproxima da frente contra a reforma tributária.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "characterStanding", "op": "lt", "value": 5, "characterId": "empresario_agro" }],
+    "probability": 0.12,
+    "cooldownMonths": 18,
+    "maxOccurrences": 1,
+    "requiresFlags": ["pol_frente_sudeste"]
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "characterId": "empresario_agro",
+  "onFire": [{ "target": "relacao_congresso", "delta": -3, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "negociar_agro",
+      "label": "Negociar com o agronegócio",
+      "description": "Oferece linhas de crédito e prazos para dívidas rurais. A confederação recua, mas a demanda por crédito sobe por alguns meses e a conta de subsídio cresce.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "demanda.credito", "delta": 0.001, "lagMonths": 0, "durationMonths": 6 },
+        { "target": "relacao_congresso", "delta": 6, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "empresario_agro", "delta": 15 }]
+    },
+    {
+      "id": "manter_politica",
+      "label": "Manter a política",
+      "description": "Não cede às ameaças. Preserva a regra de crédito, mas a confederação segue hostil e a bancada rural cobra o governo no Congresso.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "relacao_congresso", "delta": -5, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "empresario_agro", "delta": -15 }]
+    },
+    {
+      "id": "aguardar_boicote",
+      "label": "Esperar a ameaça",
+      "description": "Deixa a ameaça correr. Não gera custo imediato, mas, se o boicote acontecer, freia exportações e a atividade no interior do Centro-Oeste.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "regiao.atividade",
+          "delta": -0.006,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "regions": ["centro_oeste"]
+        }
+      ],
+      "characterEffects": [{ "characterId": "empresario_agro", "delta": -8 }]
+    }
+  ],
+  "defaultChoice": "aguardar_boicote",
+  "dataStatus": "FICTICIO"
+}

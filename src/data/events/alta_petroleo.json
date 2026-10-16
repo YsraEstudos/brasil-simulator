@@ -1,0 +1,39 @@
+{
+  "id": "alta_petroleo",
+  "title": "Alta internacional do petróleo",
+  "description": "O preço do petróleo sobe forte no mercado externo e os combustíveis pressionam os preços internos. Cabe decidir quem arca com a conta.",
+  "trigger": { "monthsOfYear": [], "conditions": [], "probability": 0.05, "cooldownMonths": 12, "maxOccurrences": 2 },
+  "onFire": [{ "target": "choque.inflacao", "delta": 0.006, "lagMonths": 0, "durationMonths": 6 }],
+  "choices": [
+    {
+      "id": "absorver",
+      "label": "Absorver o choque",
+      "description": "A estatal segura os preços, sem custo direto no caixa, mas a credibilidade fiscal sofre.",
+      "agendaCost": 0,
+      "effects": [{ "target": "credibilidade", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }]
+    },
+    {
+      "id": "subsidiar_diesel",
+      "label": "Subsidiar o diesel",
+      "description": "Reduz o impacto no bolso e melhora a aprovação, mas custa caixa e desgasta a credibilidade.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "gasto.custeio", "delta": 0.002, "lagMonths": 0, "durationMonths": 6 },
+        { "target": "aprovacao", "delta": 0.012, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": -0.015, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "repassar_precos",
+      "label": "Repassar aos preços",
+      "description": "Preserva as contas públicas, mas corrói a aprovação e pressiona a inflação por alguns meses.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": -0.015, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "choque.inflacao", "delta": 0.002, "lagMonths": 0, "durationMonths": 3 }
+      ]
+    }
+  ],
+  "defaultChoice": "absorver",
+  "dataStatus": "FICTICIO"
+}

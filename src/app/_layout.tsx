@@ -1,34 +1,20 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { Tabs } from 'expo-router/js-tabs';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { useTheme } from '@/hooks/use-theme';
 import { gameStore } from '@/store';
 import { AppThemeProvider } from '@/theme/ThemeProvider';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export const unstable_settings = { initialRouteName: 'index' };
 
-const ICONS: Record<string, SymbolViewProps['name']> = {
-  index: { ios: 'building.columns', android: 'account_balance', web: 'account_balance' },
-  economia: { ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' },
-  congresso: { ios: 'person.3', android: 'groups', web: 'groups' },
-  brasil: { ios: 'globe.americas', android: 'public', web: 'public' },
-  noticias: { ios: 'newspaper', android: 'newspaper', web: 'newspaper' },
-};
-
-const TITLES: Record<string, string> = {
-  index: 'Presidência',
-  economia: 'Economia',
-  congresso: 'Congresso',
-  brasil: 'Brasil',
-  noticias: 'Notícias',
-};
-
+/**
+ * Raiz de navegação: o menu principal (`index`) abre o app em tela cheia e o jogo vive no grupo `(tabs)`,
+ * com as abas de sempre. Como o menu não é uma aba, ele fica numa pilha — e o "voltar" do Android leva de
+ * volta ao menu.
+ */
 export default function RootLayout() {
   useEffect(() => {
     // Abre o banco (migra se preciso) e carrega preferências e partidas salvas.
@@ -41,45 +27,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppThemeProvider>
-        <AppTabs />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          {/* Entrar no jogo é uma transição de abertura de jogo: esmaece em vez de deslizar. */}
+          <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        </Stack>
       </AppThemeProvider>
     </GestureHandlerRootView>
-  );
-}
-
-function AppTabs() {
-  const { scheme, colors } = useTheme();
-  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
-  // Tema da navegação (abas e cabeçalhos) derivado dos tokens do sistema de design.
-  const navTheme = {
-    ...base,
-    colors: {
-      ...base.colors,
-      primary: colors.accent,
-      background: colors.background,
-      card: colors.surface,
-      text: colors.text,
-      border: colors.border,
-      notification: colors.negative,
-    },
-  };
-
-  return (
-    <ThemeProvider value={navTheme}>
-      <Tabs
-        screenOptions={({ route }) => ({
-          title: TITLES[route.name],
-          headerShown: route.name !== 'brasil' && route.name !== 'design',
-          tabBarIcon: ({ color, size }) => <SymbolView name={ICONS[route.name]} tintColor={color} size={size} />,
-        })}>
-        <Tabs.Screen name="index" />
-        <Tabs.Screen name="economia" />
-        <Tabs.Screen name="congresso" />
-        <Tabs.Screen name="brasil" />
-        <Tabs.Screen name="noticias" />
-        {/* Vitrine do sistema de design: acessível por /design, fora da barra de abas. */}
-        <Tabs.Screen name="design" options={{ href: null }} />
-      </Tabs>
-    </ThemeProvider>
   );
 }

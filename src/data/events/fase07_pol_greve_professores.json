@@ -1,0 +1,51 @@
+{
+  "id": "fase07_pol_greve_professores",
+  "title": "Greve de professores da rede federal",
+  "description": "Professores de institutos e universidades federais entram em greve às vésperas do ano letivo, cobrando reajuste e a recomposição de verbas da educação. O impasse cria atrito com os governos estaduais.",
+  "trigger": {
+    "monthsOfYear": [2, 3, 8],
+    "conditions": [{ "variable": "primaryBalance12m", "op": "lt", "value": 0 }],
+    "probability": 0.12,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onFire": [{ "target": "aprovacao", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "acordo_categoria",
+      "label": "Fechar acordo com a categoria",
+      "description": "Aceita reajuste escalonado e recomposição de verbas por um ano. A greve termina e a aprovação sobe, mas a despesa obrigatória cresce.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "gasto.obrigatoria", "delta": 0.001, "lagMonths": 0, "durationMonths": 12 },
+        { "target": "aprovacao", "delta": 0.008, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["pol_acordo_educacao"]
+    },
+    {
+      "id": "programa_estados",
+      "label": "Propor programa de educação com os estados",
+      "description": "Lança um programa de investimento em parceria com os governos estaduais. Atrai governadores e melhora a relação com o Congresso, mas o investimento chega com atraso de dois meses e a greve segue por semanas.",
+      "agendaCost": 2,
+      "effects": [
+        { "target": "governadores.relacao", "delta": 6, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 4, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "gasto.investimento", "delta": 0.002, "lagMonths": 2, "durationMonths": 12 }
+      ]
+    },
+    {
+      "id": "manter_proposta",
+      "label": "Manter a proposta",
+      "description": "Mantém o reajuste previsto no orçamento. Preserva as contas, mas a greve se prolonga e a aprovação e o capital político caem.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "capital_politico", "delta": -2, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "followUps": [{ "eventId": "fase07_pol_sindical_convoca", "delayMonths": 2, "probability": 0.6 }]
+    }
+  ],
+  "defaultChoice": "manter_proposta",
+  "dataStatus": "FICTICIO"
+}

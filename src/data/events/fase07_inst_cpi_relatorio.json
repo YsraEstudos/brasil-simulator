@@ -1,0 +1,58 @@
+{
+  "id": "fase07_inst_cpi_relatorio",
+  "title": "Relatório final da CPI",
+  "description": "A comissão de inquérito vota o relatório final. O texto pode absolver, responsabilizar ou apenas registrar falhas. A forma como o governo responde define o fim da CPI. Caso e personagens fictícios.",
+  "characterId": "lider_oposicao",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "impeachmentPressure", "op": "gt", "value": 0.15 }],
+    "probability": 0.3,
+    "cooldownMonths": 24,
+    "maxOccurrences": 1,
+    "requiresFlags": ["cpi_instalada"],
+    "forbidsFlags": ["cpi_encerrada"]
+  },
+  "onFire": [{ "target": "relacao_congresso", "delta": -3, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "negociar_texto_final",
+      "label": "Negociar o texto final",
+      "description": "Aceita trocar ressalvas por um relatório moderado. Recupera a relação com a Casa e encerra a CPI, custando capital político. Abre a chance de um pacto institucional.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "relacao_congresso", "delta": 6, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "capital_politico", "delta": -2, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["cpi_encerrada"],
+      "followUps": [{ "eventId": "fase07_inst_pacto_institucional", "delayMonths": 2, "probability": 0.5 }],
+      "characterEffects": [{ "characterId": "lider_oposicao", "delta": 5 }]
+    },
+    {
+      "id": "enfrentar_o_relatorio",
+      "label": "Enfrentar o relatório",
+      "description": "Rejeita as conclusões em público e ganha aprovação com o discurso de enfrentamento, mas a relação com o Congresso sofre. A CPI é encerrada com o relatório da oposição.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -6, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["cpi_encerrada"],
+      "characterEffects": [{ "characterId": "lider_oposicao", "delta": -10 }]
+    },
+    {
+      "id": "deixar_relatorio_sem_resposta",
+      "label": "Deixar sem resposta",
+      "description": "O governo não responde ao relatório. A narrativa de culpa fica para a oposição, a aprovação e a credibilidade caem e o caso segue na memória pública. Escolha padrão se você não responder.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": -0.02, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": -0.02, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -8, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["cpi_encerrada", "cpi_relatorio_pesado"]
+    }
+  ],
+  "defaultChoice": "deixar_relatorio_sem_resposta",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "dataStatus": "FICTICIO"
+}

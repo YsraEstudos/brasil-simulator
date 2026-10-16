@@ -1,0 +1,31 @@
+{
+  "id": "projeto_saneamento_resiliente",
+  "name": "Saneamento resiliente",
+  "summary": "Projeto de expansão de redes de água, esgoto e drenagem com carteira de obra e manutenção anual. Dados e custos PROVISORIO.",
+  "area": "saneamento",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 11000, "disbursementProfile": [0.2, 0.55, 0.25] },
+  "fundingSources": ["credito_adicional"],
+  "timeline": { "planningMonths": 3, "expectedLegislativeMonths": 5, "executionMonths": 36, "maturationMonths": 18 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 11000, "lagMonths": 7 },
+    { "channel": "custeio", "magnitude": 700, "lagMonths": 30 },
+    { "channel": "aprovacao", "magnitude": 0.009, "lagMonths": 7 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.3 },
+    { "kind": "sobrecusto", "probability": 0.22 }
+  ],
+  "affected": {
+    "groups": ["moradores_urbanos", "baixa_renda"],
+    "sectors": ["construcao", "energia", "servicos"],
+    "regions": ["norte", "nordeste", "nacional"]
+  },
+  "position": { "economic": -0.1, "social": -0.2 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 10, "procurementMonths": 7, "efficiency": 0.74, "annualMaintenanceRate": 0.035 }
+}

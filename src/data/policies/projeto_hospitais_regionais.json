@@ -1,0 +1,31 @@
+{
+  "id": "projeto_hospitais_regionais",
+  "name": "Rede de hospitais regionais",
+  "summary": "Projeto de construção e operação inicial de hospitais regionais com fases explícitas de carteira. Dados e custos PROVISORIO.",
+  "area": "saude",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 12000, "disbursementProfile": [0.2, 0.5, 0.3] },
+  "fundingSources": ["credito_adicional"],
+  "timeline": { "planningMonths": 3, "expectedLegislativeMonths": 5, "executionMonths": 30, "maturationMonths": 12 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 12000, "lagMonths": 6 },
+    { "channel": "custeio", "magnitude": 1800, "lagMonths": 24 },
+    { "channel": "aprovacao", "magnitude": 0.01, "lagMonths": 6 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.25 },
+    { "kind": "sobrecusto", "probability": 0.2 }
+  ],
+  "affected": {
+    "groups": ["usuarios_de_servicos_publicos", "trabalhadores_da_saude"],
+    "sectors": ["construcao", "servicos"],
+    "regions": ["norte", "nordeste", "nacional"]
+  },
+  "position": { "economic": -0.2, "social": -0.2 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 8, "procurementMonths": 6, "efficiency": 0.78, "annualMaintenanceRate": 0.04 }
+}

@@ -1,0 +1,62 @@
+{
+  "id": "fase07_inst_denuncia_imprensa",
+  "title": "Reportagem aponta irregularidades",
+  "description": "Uma colunista de política publica reportagem sobre irregularidades na gestão de uma pasta ocupada por indicação de um bloco parlamentar. O texto cita documentos internos e cobra explicações do governo. Caso e personagens fictícios.",
+  "characterId": "jornalista",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      { "variable": "approval", "op": "lt", "value": 0.45 },
+      { "variable": "partisanMinistries", "op": "gt", "value": 0 }
+    ],
+    "probability": 0.1,
+    "cooldownMonths": 18,
+    "maxOccurrences": 2
+  },
+  "onFire": [{ "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "investigar_internamente",
+      "label": "Investigar internamente",
+      "description": "Abre apuração interna e promete resultados. Ganha um pouco de credibilidade e de aprovação, mas a apuração pode chegar ao Congresso como pedido de CPI, com chance de 35% em dois meses.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "credibilidade", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["escandalo_denuncia"],
+      "followUps": [{ "eventId": "fase07_inst_cpi_instalada", "delayMonths": 2, "probability": 0.35 }],
+      "characterEffects": [{ "characterId": "jornalista", "delta": 5 }]
+    },
+    {
+      "id": "negar_tudo",
+      "label": "Negar tudo",
+      "description": "Desmente a reportagem sem apresentar provas. A oposição toma o silêncio como confissão, a credibilidade cai e uma CPI fica quase certa no mês seguinte. Escolha padrão se você não responder.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "credibilidade", "delta": -0.02, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -3, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["escandalo_denuncia"],
+      "followUps": [{ "eventId": "fase07_inst_cpi_instalada", "delayMonths": 1, "probability": 0.6 }],
+      "characterEffects": [{ "characterId": "jornalista", "delta": -10 }]
+    },
+    {
+      "id": "afastar_investigado",
+      "label": "Afastar o investigado",
+      "description": "Demite o indicado há mais tempo no cargo, põe um técnico no lugar e encerra o caso sem CPI. A aprovação sobe um pouco, mas o bloco reage com força e perde a pasta.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -8, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "dismissMinister": true,
+      "characterEffects": [{ "characterId": "jornalista", "delta": 5 }]
+    }
+  ],
+  "defaultChoice": "negar_tudo",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "dataStatus": "FICTICIO"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "rotina_manutencao_rodovias",
+  "name": "Rotina de manutenção rodoviária",
+  "summary": "Direciona custeio para conservação de trechos federais já existentes, sem criar estoque novo de capital. Dados e custos PROVISORIO.",
+  "area": "infraestrutura",
+  "competence": "federal",
+  "instruments": ["decreto_programacao"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 2600, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 1 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 2600, "lagMonths": 1 },
+    { "channel": "aprovacao", "magnitude": 0.003, "lagMonths": 2 }
+  ],
+  "risks": [{ "kind": "sobrecusto", "probability": 0.15 }],
+  "affected": {
+    "groups": ["trabalhadores_construcao", "transportadores"],
+    "sectors": ["construcao", "servicos"],
+    "regions": ["nacional"]
+  },
+  "position": { "economic": -0.2, "social": 0 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

@@ -1,0 +1,132 @@
+{
+  "id": "fndr_governadores",
+  "title": "Governadores disputam o Fundo de Desenvolvimento Regional",
+  "description": "Governadores querem antecipar os aportes da União ao Fundo Nacional de Desenvolvimento Regional, previstos pela reforma tributária só a partir de 2029, e ameaçam travar votações.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "monthIndex",
+        "op": "gt",
+        "value": 6
+      },
+      {
+        "variable": "monthIndex",
+        "op": "lt",
+        "value": 30
+      }
+    ],
+    "probability": 0.06,
+    "cooldownMonths": 24,
+    "maxOccurrences": 1
+  },
+  "onFire": [
+    {
+      "target": "relacao_congresso",
+      "delta": -4,
+      "lagMonths": 0,
+      "durationMonths": 1
+    },
+    {
+      "target": "governadores.relacao",
+      "delta": -4,
+      "lagMonths": 0,
+      "durationMonths": 1,
+      "regions": ["norte", "nordeste", "centro_oeste"]
+    }
+  ],
+  "choices": [
+    {
+      "id": "manter_cronograma",
+      "label": "Manter o cronograma",
+      "description": "Cumpre o calendário da emenda constitucional e preserva o caixa, mas os governadores reagem no Congresso.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "relacao_congresso",
+          "delta": -5,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": -8,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["norte", "nordeste", "centro_oeste"]
+        }
+      ]
+    },
+    {
+      "id": "antecipar_aportes",
+      "label": "Antecipar aportes",
+      "description": "Recompõe a relação com os estados, mas cria despesa obrigatória que comprime as discricionárias por dois anos.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.obrigatoria",
+          "delta": 0.0006,
+          "lagMonths": 0,
+          "durationMonths": 24,
+          "label": "Antecipação de aportes ao FNDR",
+          "regions": ["norte", "nordeste", "centro_oeste"]
+        },
+        {
+          "target": "relacao_congresso",
+          "delta": 8,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 12,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["norte", "nordeste", "centro_oeste"]
+        }
+      ]
+    },
+    {
+      "id": "negociar_contrapartidas",
+      "label": "Negociar contrapartidas",
+      "description": "Troca o adiamento por projetos regionais escolhidos com os estados: custa capital político, mas acalma a relação.",
+      "agendaCost": 2,
+      "effects": [
+        {
+          "target": "relacao_congresso",
+          "delta": 3,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "capital_politico",
+          "delta": -3,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 5,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["norte", "nordeste", "centro_oeste"]
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "manter_cronograma",
+  "onlyScenarios": ["brasil_2027_01", "brasil_2027_01_v050", "brasil_2027_01_v060"],
+  "dataStatus": "FICTICIO"
+}

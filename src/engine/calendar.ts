@@ -7,6 +7,11 @@ export const START_YEAR = 2027;
 /** Mandato completo: jan/2027 a dez/2030 (GAME_DESIGN.md §4.1). */
 export const TERM_MONTHS = 48;
 
+/** Mandato (0, 1, …) a que pertence o mês. */
+export function termOf(monthIndex: number): number {
+  return Math.floor(monthIndex / TERM_MONTHS);
+}
+
 export interface CalendarMonth {
   year: number;
   /** 1–12 */

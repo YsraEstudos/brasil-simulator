@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { TEST_BILL, TEST_DECREE, testContent, testState } from '@/tests/fixtures';
+
 import {
   advanceMonth,
   checkInvariants,
-  createInitialState,
   createRng,
   monthKey,
   seedRng,
@@ -15,28 +16,23 @@ import {
   type MonthStep,
 } from './index';
 
-// Valores PROVISORIO só para teste; o cenário real vem na Fase 02.
-const campaign = (seed = 42) =>
-  createInitialState({
-    scenarioId: 'teste',
-    difficulty: 'estrategica',
-    seed,
-    indicators: { approval: 0.45, gdpGrowth12m: 0.02, inflation12m: 0.045, unemployment: 0.06, primaryBalance12m: 0 },
-  });
+const content = testContent();
+const campaign = (seed = 42) => testState(seed);
 
-const decision = (policyId: string, agendaCost: number): Decision => ({ policyId, agendaCost });
+const decision = (policyId: string, agendaCost = 1): Decision => ({ policyId, agendaCost });
 
 /** Etapa de teste que usa o sorteador, para provar que o RNG é encadeado entre meses. */
-const noisyApproval: MonthStep = (_state, rng) => [
-  { indicator: 'approval', cause: 'ruido_teste', delta: rng.normal() * 0.001 },
-];
+const noisyApproval: MonthStep = (state, ctx) => ({
+  state: { ...state },
+  contributions: [{ indicator: 'approval', cause: 'ruido_teste', delta: ctx.rng.normal() * 0.001 }],
+});
 
 function play(seed: number, months: number, steps: MonthStep[] = [noisyApproval]) {
   let state = campaign(seed);
   for (let m = 0; m < months; m++) {
-    const decisions = m % 3 === 0 ? [decision('infraestrutura', 1), decision('reforma_administrativa', 2)] : [];
-    const r = advanceMonth(state, decisions, steps);
-    expect(checkInvariants(state, r.state, r.report)).toEqual([]);
+    const decisions = m % 3 === 0 ? [decision(TEST_DECREE.id), decision(TEST_BILL.id)] : [];
+    const r = advanceMonth(state, { decisions }, content, steps);
+    expect(checkInvariants(state, r.state, r.report, content)).toEqual([]);
     state = r.state;
   }
   return state;
@@ -112,41 +108,53 @@ describe('advanceMonth', () => {
 
   it('salvar no meio e retomar dá o mesmo resultado (estado é serializável)', () => {
     let state: GameState = campaign(5);
-    for (let m = 0; m < 20; m++) state = advanceMonth(state, [], [noisyApproval]).state;
+    for (let m = 0; m < 20; m++) state = advanceMonth(state, { decisions: [] }, content, [noisyApproval]).state;
     const resumed: GameState = JSON.parse(JSON.stringify(state));
     let a = state;
     let b = resumed;
     for (let m = 0; m < 28; m++) {
-      a = advanceMonth(a, [], [noisyApproval]).state;
-      b = advanceMonth(b, [], [noisyApproval]).state;
+      a = advanceMonth(a, { decisions: [] }, content, [noisyApproval]).state;
+      b = advanceMonth(b, { decisions: [] }, content, [noisyApproval]).state;
     }
     expect(b).toEqual(a);
   });
 
   it('é pura: não altera o estado nem as decisões recebidas', () => {
     const state = campaign();
-    const decisions = [decision('infraestrutura', 1)];
-    const before = JSON.stringify({ state, decisions });
-    advanceMonth(state, decisions, [noisyApproval]);
-    expect(JSON.stringify({ state, decisions })).toBe(before);
+    const input = { decisions: [decision(TEST_DECREE.id)] };
+    const before = JSON.stringify({ state, input });
+    advanceMonth(state, input, content, [noisyApproval]);
+    expect(JSON.stringify({ state, input })).toBe(before);
   });
 
-  it('limita as decisões aos pontos de agenda do mês (GAME_DESIGN.md §4.3)', () => {
-    // estratégica = 3 pontos (GAME_DESIGN.md §6)
-    const { report, state } = advanceMonth(campaign(), [
-      decision('pec_reforma', 2),
-      decision('pl_irpf', 2),
-      decision('decreto_iof', 1),
-      decision('invalida', -1),
+  it('limita as decisões aos pontos de agenda e usa o custo do catálogo (GAME_DESIGN.md §4.3)', () => {
+    // estratégica = 3 pontos (GAME_DESIGN.md §6); PEC custa 2 no catálogo, mesmo se a interface mandar 0
+    const { report, state } = advanceMonth(
+      campaign(),
+      {
+        decisions: [
+          decision('teste_pec', 0),
+          decision(TEST_BILL.id),
+          decision(TEST_DECREE.id),
+          decision('inexistente'),
+          decision(TEST_BILL.id),
+        ],
+      },
+      content,
+      [],
+    );
+    expect(report.accepted.map((d) => [d.policyId, d.agendaCost])).toEqual([
+      ['teste_pec', 2],
+      [TEST_BILL.id, 1],
     ]);
-    expect(report.accepted.map((d) => d.policyId)).toEqual(['pec_reforma', 'decreto_iof']);
     expect(report.rejected.map((r) => [r.decision.policyId, r.reason])).toEqual([
-      ['pl_irpf', 'sem_pontos_de_agenda'],
-      ['invalida', 'custo_invalido'],
+      [TEST_DECREE.id, 'sem_pontos_de_agenda'],
+      ['inexistente', 'politica_desconhecida'],
+      [TEST_BILL.id, 'ja_em_andamento'],
     ]);
-    expect(state.decisionLog).toEqual([
-      { monthIndex: 0, decision: decision('pec_reforma', 2) },
-      { monthIndex: 0, decision: decision('decreto_iof', 1) },
+    expect(state.decisionLog.map((r) => [r.monthIndex, r.decision.policyId])).toEqual([
+      [0, 'teste_pec'],
+      [0, TEST_BILL.id],
     ]);
   });
 
@@ -154,22 +162,32 @@ describe('advanceMonth', () => {
     const seen: number[] = [];
     const bump: MonthStep = (s) => {
       seen.push(s.indicators.approval);
-      return [{ indicator: 'approval', cause: 'teste', delta: 0.1 }];
+      return { state: { ...s }, contributions: [{ indicator: 'approval', cause: 'teste', delta: 0.1 }] };
     };
     const prev = campaign();
-    const r = advanceMonth(prev, [], [bump, bump]);
+    const r = advanceMonth(prev, { decisions: [] }, content, [bump, bump]);
     expect(seen[1]).toBeCloseTo(seen[0] + 0.1);
     expect(r.state.indicators.approval).toBeCloseTo(prev.indicators.approval + 0.2);
-    expect(checkInvariants(prev, r.state, r.report)).toEqual([]);
+    expect(checkInvariants(prev, r.state, r.report, content)).toEqual([]);
+  });
+
+  it('indicadores só mudam por contribuição: etapa que altera o indicador direto é ignorada (§7.3)', () => {
+    const cheat: MonthStep = (s) => ({
+      state: { ...s, indicators: { ...s.indicators, approval: 1 } },
+      contributions: [],
+    });
+    const prev = campaign();
+    const r = advanceMonth(prev, { decisions: [] }, content, [cheat]);
+    expect(r.state.indicators).toEqual(prev.indicators);
   });
 
   it('o histórico guarda cópia das decisões (alterar o objeto depois não muda o save)', () => {
-    const d: Decision = { policyId: 'decreto_iof', agendaCost: 1, params: { aliquota: 0.01 } };
-    const { state } = advanceMonth(campaign(), [d]);
+    const d: Decision = { policyId: TEST_DECREE.id, agendaCost: 1, params: { aliquota: 0.01 } };
+    const { state } = advanceMonth(campaign(), { decisions: [d] }, content, []);
     (d.params as Record<string, number>).aliquota = 0.5;
     d.policyId = 'alterada';
     expect(state.decisionLog[0].decision).toEqual({
-      policyId: 'decreto_iof',
+      policyId: TEST_DECREE.id,
       agendaCost: 1,
       params: { aliquota: 0.01 },
     });
@@ -177,7 +195,7 @@ describe('advanceMonth', () => {
 
   it('decidir não altera indicadores diretamente (GAME_DESIGN.md §9)', () => {
     const state = campaign();
-    const { state: next } = advanceMonth(state, [decision('infraestrutura', 1)]);
+    const { state: next } = advanceMonth(state, { decisions: [decision(TEST_DECREE.id)] }, content, []);
     expect(next.indicators).toEqual(state.indicators);
   });
 });
@@ -185,7 +203,7 @@ describe('advanceMonth', () => {
 describe('invariantes', () => {
   it('detecta contribuição que não explica a variação e valores impossíveis', () => {
     const prev = campaign();
-    const { state, report } = advanceMonth(prev, []);
+    const { state, report } = advanceMonth(prev, { decisions: [] }, content, []);
     const broken: GameState = { ...state, indicators: { ...state.indicators, unemployment: 1.2, approval: NaN } };
     const errors = checkInvariants(prev, broken, report);
     expect(errors.some((e) => e.includes('desemprego'))).toBe(true);

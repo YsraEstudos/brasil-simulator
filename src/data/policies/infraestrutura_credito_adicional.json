@@ -1,0 +1,63 @@
+{
+  "id": "infraestrutura_credito_adicional",
+  "name": "Crédito adicional para infraestrutura",
+  "summary": "Abre crédito adicional por projeto de lei de crédito e ato de execução para obras de infraestrutura. Exige espaço no limite de despesas do arcabouço fiscal e tem efeito de demanda antes do efeito sobre a capacidade produtiva.",
+  "area": "infraestrutura",
+  "competence": "federal",
+  "instruments": ["pln", "ato_execucao"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": 15000,
+    "disbursementProfile": [0.2, 0.45, 0.35]
+  },
+  "fundingSources": ["credito_adicional", "remanejamento"],
+  "timeline": {
+    "planningMonths": 1,
+    "expectedLegislativeMonths": 3,
+    "executionMonths": 30,
+    "maturationMonths": 12
+  },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    {
+      "channel": "investimento_publico",
+      "magnitude": 5000,
+      "lagMonths": 3
+    },
+    {
+      "channel": "capital_publico",
+      "magnitude": 0.0008,
+      "lagMonths": 24
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": 0.005,
+      "lagMonths": 6
+    }
+  ],
+  "risks": [
+    {
+      "kind": "atraso",
+      "probability": 0.3
+    },
+    {
+      "kind": "sobrecusto",
+      "probability": 0.2
+    }
+  ],
+  "affected": {
+    "groups": ["trabalhadores_construcao"],
+    "sectors": ["construcao"],
+    "regions": ["nacional"]
+  },
+  "regional": {
+    "key": "populacao",
+    "scope": [],
+    "boost": {}
+  },
+  "position": {
+    "economic": -0.3,
+    "social": 0
+  },
+  "dataStatus": "PROVISORIO"
+}

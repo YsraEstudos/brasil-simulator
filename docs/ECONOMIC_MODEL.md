@@ -1,8 +1,8 @@
 # Brasil Simulator — Modelo Econômico
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (pressão sobre o BC permitida; incerteza varia com a dificuldade) • v0.2: fila de efeitos agendados, distribuição regional a partir do agregado, retorno decrescente de tributos, compressão das discricionárias, retenção do histórico, saturação de realimentações
+Versão 0.3 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (pressão sobre o BC permitida; incerteza varia com a dificuldade) • v0.2: fila de efeitos agendados, distribuição regional a partir do agregado, retorno decrescente de tributos, compressão das discricionárias, retenção do histórico, saturação de realimentações • v0.3 (Fase 03): o que o motor 0.3.0 implementa (§5.14), regra aplicada da pressão sobre o BC (§5.4.1), calibração documentada (§6 e [CALIBRATION.md](CALIBRATION.md)) • v0.4 (Fase 04): emendas, acréscimos do relator e suspensão pelo STF na fila de efeitos (§5.11), estratégia fisiológica (§9) • v0.5 (Fase 05): distribuição regional implementada (§5.15), invariante §7.9 e alvos regionais na fila de efeitos
 
-> **Status:** especificação inicial. Todas as equações são **forma reduzida simplificada** e todos os parâmetros estão marcados como `A_CALIBRAR` até a Fase 03. Nenhum número deste documento é previsão.
+> **Status:** todas as equações são **forma reduzida simplificada**. Os parâmetros têm justificativa e faixa testada ([CALIBRATION.md](CALIBRATION.md)), mas continuam `PROVISORIO` até a importação das séries oficiais. Nenhum número deste documento é previsão.
 
 ---
 
@@ -134,6 +134,7 @@ rp_t       += custo_rp * n_pressoes_12m
 - O mercado reage no mesmo mês (prêmio de risco ↑, câmbio ↑). A aprovação pode subir no curto prazo.
 - O relatório "Por que mudou?" atribui explicitamente esses efeitos à pressão.
 - Parâmetros iniciais (`A_CALIBRAR`): `sub_base` 0,6; `pressao_max_bp` 50; `custo_cred` 0,05; `custo_rp` 0,002.
+- **Regra aplicada (Fase 03):** o corte não entra no `i_alvo` (a suavização de 70% e o arredondamento de 25 bp o anulariam sempre); ele é subtraído da Selic já suavizada, em passos de 25 bp (corte abaixo de 12,5 bp não muda a decisão), e a queda total da reunião continua limitada a `max_passo` (ou `max_passo_crise`): a pressão não fura o limite de movimento. A diretoria indicada segue a LC 179/2021: 2, 4, 7 e 9 de 9 membros no 1º, 2º, 3º e 4º ano do mandato. Com `sub_base` 0,6 e autonomia percebida 0,5, o BC resiste nos três primeiros anos e cede 25 bp no quarto. O prêmio de risco sobe `custo_rp` por pressão nos últimos 12 meses (dentro da saturação do §5.5).
 - Teste de sentido obrigatório: em 24 meses, uma estratégia-robô que pressiona o BC todo trimestre deve ter inflação média **maior** e não deve ter crescimento acumulado sistematicamente maior que a mesma estratégia sem pressão.
 
 ### 5.5 Prêmio de risco e câmbio
@@ -203,10 +204,11 @@ interface ScheduledImpulse {
 
 - Em cada mês, o motor aplica os impulsos ativos **antes** das equações do §5 e registra cada um como `contribution` com o seu `label`. A auditoria sai de graça: o "Por que mudou?" lê os impulsos consumidos naquele mês.
 - Atrasos, sobrecustos e cancelamentos (§5.10) **reagendam ou removem** impulsos, sempre com causa registrada.
+- **Fase 04 (POLITICAL_RULES.md §6.5, §8):** emendas liberadas como pedágio (`emendas:<proposta>`) e acréscimos do relator (`acrescimo:<proposta>`) entram como `gasto.custeio` e, sob o limite, saem das discricionárias (§5.8), competindo com os programas do governo. Uma liminar do STF retira dos impulsos da proposta a janela suspensa (os que cruzam a janela são divididos); medida declarada inconstitucional perde tudo a partir da liminar. Política de pasta entregue a bloco rende menos: `oferta.potencial` e ganhos de `aprovacao` × (1 − `perda_execucao_partidaria`).
 - Efeitos permanentes já estabilizados são consolidados no estado (ex.: incorporados ao `Kg` ou ao potencial) e saem da fila, para ela não crescer sem limite.
 
 ### 5.12 Distribuição regional (Fase 05+)
-Decisão de arquitetura D7 (13/10/2026, [ROADMAP.md](ROADMAP.md) §6.1): **o agregado nacional é calculado primeiro e distribuído às UFs.**
+Decisão de arquitetura D7 (13/10/2026, [ROADMAP.md](ROADMAP.md) §9.1): **o agregado nacional é calculado primeiro e distribuído às UFs.**
 
 ```
 participacao_uf,t = normalizar( participacao_uf,t-1 * (1 + Σ_s sens_uf,s * crescimento_setor_s,t + bonus_regional_uf,t) )
@@ -216,12 +218,117 @@ Y_uf,t            = Y_t * participacao_uf,t
 - Cada UF tem apenas uma **matriz de participação e de sensibilidade setorial** (ex.: uma UF agrícola absorve mais do crescimento da agropecuária; uma UF industrial, mais da indústria). Fonte: Contas Regionais do IBGE.
 - Obras e programas regionais alteram `bonus_regional_uf` e a eficiência local, e geram efeito marginal no agregado via `Kg` (§5.1), sem motor macroeconômico por UF.
 - Desemprego, renda e aprovação regionais seguem a mesma lógica. A soma das UFs é igual ao total nacional por construção (invariante 9).
+- O que o motor 0.5.0 implementa está em §5.15.
+
+### 5.13 O que o protótipo 0.1 implementa (Fase 02)
+Código em `src/engine/economy/economy.ts`; coeficientes em `src/engine/economy/calibration.ts`. Simplificações em relação às equações acima, todas a revisar na Fase 03:
+
+- **Impulso fiscal como nível.** Um gasto ativo de `L` (fração do PIB ao ano) entra no hiato como `(1 − rho_h) · mult · L` por mês, de modo que o hiato estacionário seja `mult · L` (multiplicador acumulado). O §5.2 escrevia o impulso sem o fator `(1 − rho_h)`.
+- **Defasagem monetária por média móvel.** Em vez de `r_real_{t−lag_r}`, o motor guarda o juro real efetivo `effectiveRealRate`, que anda `1/lag_r` por mês em direção ao juro real ex ante (Selic − expectativa). Assim não há série histórica no estado (§11).
+- **Indicadores de 12 meses por suavização.** PIB 12m anda `(g_pot − g12)/12 + Δh` por mês; inflação 12m anda a fração `ajuste_inflacao` do caminho até `pe + kappa·h + choques`; o primário 12m anda 1/12 do caminho até o resultado do mês. Todas as parcelas são lineares, então a soma das contribuições fecha exatamente (§7.3).
+- **Sem câmbio nem prêmio de risco** (§5.5) no protótipo. O papel do risco fiscal fica com a **credibilidade** (0–1): cai com déficit abaixo da banda da meta, inflação acima do teto e dívida acima de `limiar_divida`; reduz o multiplicador e desancora as expectativas.
+- **Contas em razões ao PIB.** Receita e despesa partem das razões do cenário mais os impulsos ativos; a dívida segue `d_t = d_{t−1} + (juros − primário)/12 + ajuste`, com o ajuste do denominador `−d·(g + π)/12` (§7.2).
+- **Fila de impulsos** (§5.11) em uso por políticas e eventos. A consolidação de efeitos permanentes no estado ainda não é feita (a fila de 12 meses é pequena).
+- **Pressão sobre o BC** (§5.4.1), retorno decrescente de tributos (§5.7) e compressão das discricionárias (§5.8) ficam para a Fase 03.
+
+### 5.14 O que o motor 0.3.0 implementa (Fase 03)
+Código em `src/engine/economy/` (`economy.ts` orquestra; `external.ts`, `monetary.ts`, `fiscal.ts`). Estado v3; saves v2 são atualizados (`upgrade.ts`). Em relação ao §5.13:
+
+- **Setor externo e risco (§5.5, §8).** Juro externo e termos de troca são AR(1) com semente. O prêmio de risco anda `ajuste_risco` por mês até `premio_base + premio_extra_max · tanh(causas / premio_extra_max)`, com causas: dívida acima do limiar, déficit abaixo da banda, credibilidade abaixo da base, carga sobre a renda acima da margem (saída de capital, §5.7), pressões sobre o BC e choques `choque.risco`. O câmbio é escrito **em nível**: volta (`ajuste_cambio`) a um equilíbrio de paridade (câmbio inicial × preços internos ÷ externos), deslocado pelo diferencial de juros (saturado em `desvio_cambio_max`) e pelos termos de troca; o random walk da forma em diferenças do §5.5 acumularia ruído sem limite em 20 anos. O repasse usa a depreciação **real** de 12 meses.
+- **Banco Central.** Juro neutro do Copom = `juro_neutro + repasse_risco_neutro · (rp − premio_base)`; passo de 150 bp quando a inflação passa do teto em mais de `limiar_crise_inflacao` ou o prêmio passa da metade da saturação. O prêmio também encarece o crédito no hiato (causa "Prêmio de risco e juros de mercado") e entra na taxa implícita da dívida (`repasse_risco_divida`).
+- **Receitas por grupo (§5.7).** Renda, folha, consumo, outras e royalties, com repartição a estados e municípios (`transferShares` do cenário). Impulsos de receita mudam a carga legal do grupo; acima da carga inicial + margem do grupo, a perda é `perda_max · tanh(excesso / escala_perda)` e aparece no "Por que mudou?" como "Perda de arrecadação". Royalties seguem os termos de troca.
+- **Despesas, limite e compressão (§5.8; POLITICAL_RULES.md §4.2–4.3).** Obrigatórias por grupo crescem pela própria regra (beneficiários, folha) em relação ao PIB **potencial**; previdência (60%) e benefícios (100%) recebem em janeiro o ganho real do salário mínimo (Lei 15.077/2024 até 2030; depois `sm_ganho_apos_regra`). Vinculadas acompanham a receita sem a folha. O limite cresce em termos reais pela regra da LC 200/2023, revista em janeiro com a receita do ano anterior (ano-calendário como aproximação). As discricionárias livres ficam com o espaço que sobra (a LOA usa todo o limite), nunca abaixo de `discricionaria_minima`; gasto discricionário novo sai desse espaço; contingenciamento corta abaixo dele, até zero; a parte de um corte que passa do que resta de discricionária não é executada e, por isso, também não contrai a demanda (§4, item 3). O que passa do limite é **estouro registrado** (invariante §7.4) e derruba a credibilidade (`pena_cred_estouro`). Créditos extraordinários (`gasto.extraordinario`) ficam fora do limite. Abaixo de `piso_custeio` há paralisação: perda de aprovação e o evento "Serviços públicos começam a parar".
+- **Consequência:** sob o limite, despesa obrigatória nova **não aumenta o gasto total**: comprime as discricionárias (causa "Compressão das discricionárias"). O primário só piora com renúncia de receita, crédito extraordinário ou estouro do limite.
+- **Postura fiscal que se dissipa.** O impulso de demanda de cada política continua em nível (`(1 − rho_h) · mult · L`), mas a economia se acomoda: a referência `demandRef` anda `adaptacao_fiscal` por mês até a postura total, e a distância é o que move o hiato (causa "Economia se acomoda à política fiscal"). A deriva estrutural (limite caindo em % do PIB, compressão) entra com `mult_estrutural`. Sem isso, a queda do limite em 20 anos geraria hiato negativo permanente.
+- **Níveis.** PIB potencial e IPCA como índices; o PIB nominal corrente converte custos de políticas em R$ para fração do PIB; o ajuste do denominador da dívida usa o crescimento nominal **do mês**, e a variação cambial corrige a parcela `divida_cambial` da dívida.
+- **Dívida em 20 anos.** Com juro real neutro de 5%, crescimento potencial de 2% e primário perto de zero, `r − g ≈ 3` a `5 p.p.` e a dívida não tem estado estacionário: nas campanhas automáticas de 240 meses ela termina entre ~185% (austera) e ~240% (populista) do PIB, e ~310% com pressão trimestral sobre o BC. É trajetória com causa registrada (juros acima do crescimento, estouro do limite, prêmio de risco), não espiral numérica: o prêmio satura. Estabilizar a dívida exige primário de ~2,5% do PIB, fora do alcance das 9 políticas atuais (Fase 06). A dívida é a variável mais sensível a `g_pot_base` e `juro_neutro` ([CALIBRATION.md](CALIBRATION.md)).
+- **Ações de agenda** (`src/engine/actions.ts`): decisões sem proposta, no máximo uma por mês cada; hoje só "Pressionar o Banco Central".
+- **Não implementado ainda:** capital público explícito e carteira de projetos (§5.10, Fase 06), setores e quintis (0.5), distribuição regional (§5.12, Fase 05), consolidação de impulsos permanentes (a fila fica limitada porque cada política só tem uma execução ativa e os eventos não criam efeitos permanentes; testado em 240 meses).
+
+### 5.15 O que o motor 0.5.0 implementa (Fase 05)
+Código em `src/engine/regions/regions.ts` (etapa `regionsStep`, depois da opinião pública); estado v5 (saves v4 atualizados: a etapa parte do cenário no primeiro mês jogado). Dados das 27 UFs no cenário `brasil_2027_01` v0.4.0 ([DATA_SOURCES.md](DATA_SOURCES.md) §6). O motor nacional **não muda**: a etapa só distribui o mês já calculado.
+
+- **Participação de cada UF.** `participação = tendência × exp(desvio) / Σ`, com o desvio (log) saturado em `desvio_atividade_max` e decomposto por causa:
+  - **ciclo dos setores** em relação ao agregado: `(peso do setor na UF − peso nacional) × ciclo do setor`, com agropecuária `ciclo_agro_termos × termos de troca`, extrativa `ciclo_extrativa_termos × termos de troca` e indústria `ciclo_industria_hiato × hiato` (serviços acompanham o agregado);
+  - **gasto e tributo federal pela chave de distribuição** (`populacao`, `pobreza`, `pib`, `renda_alta`, com escopo e peso extra por UF; campo `regional` da política): para cada impulso de demanda ativo, `concentracao_regional × multiplicador × impulso × (peso da UF na chave ÷ participação − 1)`. A média ponderada é zero: o gasto não muda o total, só onde ele acontece;
+  - **choques regionais** (`regiao.atividade`, de eventos), em nível enquanto ativos.
+  A normalização ("desempenho das demais UFs") faz as participações somarem 1. A diferença explicada no relatório é `participação ÷ tendência − 1`.
+- **Tendência.** Impulsos de `oferta.potencial` com incidência regional (capital público) fazem a UF que recebe crescer `concentracao_regional × impulso × (peso ÷ participação − 1)` ao ano acima da média enquanto ativos; é o único canal que muda a participação de tendência.
+- **Crescimento em 12 meses da UF** = nacional + `growthGap12m`, suavizado como o PIB 12m nacional (§5.13).
+- **Desemprego.** Razão em log: estrutura local (desemprego inicial da UF ÷ média ponderada) − `okun_regional × atividade relativa`, normalizada para que a média ponderada pela população seja a taxa nacional (multiplicativa: nunca negativa).
+- **Aprovação.** Desvio saturado em `desvio_aprovacao_max` com quatro causas: relação com o governador (`aprovacao_governador × relação/100`), gasto ou tributo federal per capita acima da média (`aprovacao_gasto_regional × impulso × (peso ÷ população − 1)`, com sinal de benefício para gasto e desoneração e de custo para tributo e corte), atividade local (`aprovacao_atividade_regional`) e choques `regiao.aprovacao` (eventos, visita presidencial). Centrado na média nacional e encolhido por igual, se preciso, para caber em [0, 1].
+- **Governadores** (POLITICAL_RULES.md §2.1): a relação anda `ajuste_governador` por mês até `posição própria + governador_alinhamento × relação do bloco do governador + governador_aprovacao × (aprovação local − base)`, mais os impulsos `governadores.relacao`.
+- **Explicação.** Cada mês o relatório traz, por UF, as parcelas de atividade, desemprego e aprovação; elas somam exatamente as diferenças (verificado com o invariante §7.9).
+- **Alvos novos da fila (§5.11):** `regiao.atividade`, `regiao.aprovacao`, `governadores.relacao`, com escopo em regiões ou UFs. Efeitos de eventos com `regions` em alvos fiscais concentram o gasto nas UFs atingidas, por população.
+- **Não implementado:** finanças estaduais (receita, dívida e folha dos estados), municípios, migração e população variável, setores no motor nacional (o ciclo setorial é só relativo), efeito regional do reajuste do salário mínimo (ele não passa pela fila de impulsos) e efeito das UFs sobre o agregado além do capital público.
 
 ---
 
-## 6. Parâmetros iniciais (todos `A_CALIBRAR`)
+### 5.16 Sociedade e execução pública (Fase 06)
 
-Valores de partida apenas para o protótipo funcionar; serão substituídos por calibração documentada na Fase 03.
+O motor 0.6.0 acrescenta dois blocos persistidos: sociedade e execução pública.
+Saves v5 são atualizados sem reescrever propostas, impulsos ou dados do cenário.
+O cenário novo é `brasil_2027_01_v050` v0.5.0; o cenário v0.4.0 continua acessível.
+
+- **Setores e quintis:** o produto real `potentialIndex × exp(outputGap)` é
+  repartido entre seis setores; as participações são normalizadas e nunca se
+  somam novamente ao PIB. Cinco quintis guardam renda real e participação na
+  renda. Transferências e tributos vigentes alteram um componente defasado de
+  renda disponível, que converge enquanto o programa vigora e reverte quando
+  termina. Não são crescimento de renda permanente a cada pagamento.
+- **Pobreza estimada:** soma de curvas logísticas por quintil em torno de uma
+  linha real de referência provisória. É indicador do modelo, sem equivalência
+  com uma série oficial do IBGE. Fórmulas, parâmetros, incidência e limites:
+  [SOCIETY.md](SOCIETY.md).
+- **Rotinas ministeriais:** uma diretriz e dotação anual por pasta, escolhidas
+  na agenda, usam apenas espaço discricionário livre. Não criam dotação nem
+  dispensam lei para tributo ou benefício. Trocas de diretriz e renovações
+  anuais têm efeitos sujeitos à disponibilidade, sem duplicar o gasto.
+- **Projetos novos:** passam pela aprovação e sanção existentes antes da
+  carteira. Planejamento, licenciamento e licitação antecedem a obra; curva S,
+  capacidade administrativa, riscos e orçamento limitam avanço e desembolso.
+  Só o ativo concluído entra no estoque real, com eficiência, depreciação e
+  manutenção. A mudança líquida do estoque produz um impulso de oferta de
+  um mês, anualizado para as equações existentes; não se soma novamente ao
+  potencial por outro canal. Políticas legadas sem `delivery` conservam a
+  execução anterior. Regras e unidades: [PUBLIC_POLICIES.md](PUBLIC_POLICIES.md).
+- **Rastreabilidade:** mudanças sociais guardam causa e métrica no bloco
+  corrente; execução e marcas deixam notas no relatório mensal. Não guardam
+  séries históricas dentro do estado.
+
+### 5.17 Pressão de impeachment e memória de eventos (Fase 07)
+
+O motor 0.7.0 acrescenta a pressão de impeachment e a memória de eventos (marcas, cadeias, prestígio e notícias). Saves v6 são atualizados com esses blocos vazios; ver [POLITICAL_RULES.md](POLITICAL_RULES.md) §9–§10 para o significado político.
+
+- **Pressão** (`impeachmentPressure`, em [0, 1]): `1 / (1 + e^(−logit))`, com
+  `logit = intercepto + 8 × (0,5 − aprovação) − 2 × (relação média com o Congresso ÷ 100) + 0,8 × escândalos + 2 × (excesso do limite ÷ 0,01) + 1 × (desemprego − 0,08)⁺ ÷ 0,05`.
+  `escândalos` conta as marcas com prefixo `escandalo_` ou `cpi_`, até 4; o excesso do limite e o desemprego acima do neutro entram só quando positivos. Com todos os fatores neutros, a pressão é de cerca de 1%. Cada termo cresce de forma monotônica com o fator adverso, e a logística satura em 0 e 1 (§1.8).
+- **Parâmetros** (`src/engine/events/calibration.ts`; todos **PROVISORIO**, faixa entre parênteses):
+
+| Parâmetro | Valor | Faixa | Significado |
+| --- | --- | --- | --- |
+| `intercepto` | −4,5 | −6 a −3 | logit com fatores neutros |
+| `aprovacao_neutra` | 0,5 | 0,4 a 0,6 | aprovação a partir da qual a baixa passa a pesar |
+| `peso_aprovacao` | 8 | 4 a 12 | logit por unidade de aprovação abaixo da neutra |
+| `peso_relacao` | 2 | 1 a 3 | logit por 100 pontos de relação ruim com o Congresso |
+| `peso_escandalo` | 0,8 | 0,4 a 1,2 | logit por marca de escândalo ou CPI |
+| `escandalos_max` | 4 | 3 a 6 | marcas que ainda contam |
+| `escala_excesso_limite` / `peso_excesso_limite` | 0,01 / 2 | 0,005–0,02 / 1–3 | logit por ponto percentual do PIB acima do limite |
+| `desemprego_neutro` / `escala_desemprego` / `peso_desemprego` | 0,08 / 0,05 / 1 | 0,06–0,10 / 0,03–0,08 / 0,5–2 | alta do desemprego acima do neutro |
+
+- **Limiares de uso:** os eventos de impeachment comparam a pressão a 50%, 55% e 60%, e a usam como probabilidade (`probabilityFactor`) nas etapas da Câmara e do Senado. Os limiares são critérios de jogo, não parâmetros econômicos.
+- **Memória (estado v7):** `EventsState` ganha `flags` (marca → mês em que foi gravada), `scheduled` (eventos encadeados), `characters` (prestígio, −100 a 100) e `news` (até 48 manchetes). Marca não é impulso: não altera indicadores por si, e o efeito econômico de um evento continua limitado a 24 meses pela fila de efeitos (§5.11). Pendências e contadores são preservados na atualização v6 → v7; a fixture é `src/tests/saves/state_v6_fase06.json`.
+- **Notícias:** geradas depois dos indicadores e do relatório do mês, sem sorteio e sem data; não alteram o estado econômico.
+
+## 6. Parâmetros
+
+Os valores, faixas, significados e justificativas estão em `src/engine/economy/calibration.ts`.
+[CALIBRATION.md](CALIBRATION.md) preserva o último levantamento global gerado por
+`npm run sim:sensitivity` na Fase 05. Os quatro parâmetros acrescentados na Fase 06
+estão documentados em [PUBLIC_POLICIES.md](PUBLIC_POLICIES.md) e têm os dois extremos
+exercitados em campanhas de projetos de 240 meses em `src/engine/phase06.test.ts`;
+não foi repetida a matriz inteira dos parâmetros anteriores. A tabela abaixo é a
+de partida da Fase 00, mantida como registro.
 
 | Parâmetro | Valor de partida | Faixa a testar | Significado |
 | --- | --- | --- | --- |
@@ -265,7 +372,20 @@ Executados a cada mês em modo de teste e em toda simulação automatizada:
 8. Mês sem decisões e sem choques: variáveis convergem para estado estacionário (sem explosão).
 9. Soma das variáveis regionais = total nacional (Fase 05+).
 
+Situação na Fase 03 (`src/engine/invariants.ts` e testes): 1–6 verificados a cada mês, incluindo receitas e despesas por grupo somando os totais e o §7.4 como "despesa sujeita ao limite ≤ limite + estouro registrado" (exceções legais e créditos extraordinários fora do limite); 7 nos testes de determinismo; 8 no teste de estado estacionário de `economy.test.ts`, com deriva fiscal neutralizada (hiato, inflação, desemprego e Selic convergem; a dívida só precisa não explodir, porque com `r > g` e primário nulo ela não tem ponto fixo, §5.14).
+
+Situação na Fase 05: o 9 é verificado a cada mês em todas as campanhas automáticas (participações e participações de tendência somam 1; desemprego e aprovação das UFs, ponderados pela população, iguais aos nacionais; aprovação das UFs em [0, 1]; relação dos governadores em −100…100; explicações por UF somando as diferenças).
+
 ---
+
+### 7.10 Sociedade e carteira de projetos (Fase 06)
+
+As seis participações setoriais somam 1, os produtos setoriais somam exatamente
+o produto nacional e as cinco participações na renda somam 1. Renda e produto
+são positivos e finitos; pobreza fica em [0, 1]. Desembolso acumulado de um
+projeto não supera seu orçamento aprovado e o capital novo é a soma dos ativos
+líquidos da carteira. Cada ministério tem uma diretriz corrente e cada mandato
+consome no máximo três marcas, inclusive se o projeto for cancelado.
 
 ## 8. Choques
 
@@ -287,6 +407,9 @@ Executados a cada mês em modo de teste e em toda simulação automatizada:
 - **Testes de sentido (direção do efeito), não de valor exato:** por exemplo, "aumento de juros reais reduz o hiato em 6–12 meses, mantidas as demais condições".
 - **Teste de viés:** nenhuma estratégia-robô deve dominar todas as outras em todos os objetivos; cada estratégia deve ter trade-offs mensuráveis.
 - **Teste de cenários:** alta inflação, recessão, recuperação, déficit persistente, crescimento moderado, choque externo.
+- **Situação na Fase 03:** 8 estratégias-robô (inerte, populista fiscal, austera, reformista, distributiva, pró-oferta, inerte com pressão trimestral sobre o BC e aleatória; a fisiológica fica para a Fase 04). Testes: 12 e 48 meses × várias sementes, 240 meses × 3 sementes com faixas de explosão, teste de sentido da pressão sobre o BC (§5.4.1), cenários de estresse (`src/engine/sim/stress.test.ts`) e estado estacionário (§7.8). `npm run sim:balance` imprime 12, 48 e 240 meses com PIB acumulado, máximos de dívida e inflação, prêmio final e meses com estouro do limite e com discricionárias abaixo do piso. `npm run sim:sensitivity` leva cada parâmetro aos extremos da faixa em 20 anos e gera [CALIBRATION.md](CALIBRATION.md): nenhum extremo gera violação ou explosão. Trade-offs em 20 anos: a austera termina com menos dívida e menos aprovação; populista e distributiva, com mais dívida; nenhuma domina as outras. A aprovação de longo prazo converge para perto de `aprovacao_base` em todas (limitação conhecida até as eleições da Fase 08).
+- **Situação na Fase 04:** 9 estratégias-robô (entra a **fisiológica**: entrega pastas aos blocos de centro, libera emendas antes de votações difíceis, negocia quando faltam votos e envia as reformas). Sem violações em 12, 48 e 240 meses. Teste de plausibilidade da reforma (`src/engine/sim/reform.test.ts`) e `npm run sim:reform` (20 sementes, 36 meses): sem negociação, a reforma administrativa por PEC passou em 13 de 20 campanhas, em ~10 meses, com adiamentos e texto alterado; com a coalizão fisiológica, a reforma da previdência passou nas 20 (8 meses) e a administrativa em 19 (12 meses), ao custo de 5 pastas de bloco, emendas pagas e ~0,8 escândalo por campanha. Em 20 anos, a fisiológica (com a reforma da previdência) termina com a menor dívida (~178% do PIB) entre as estratégias.
+- **Situação na Fase 05:** invariante §7.9 em todas as campanhas; testes de sentido regionais (`src/engine/regions/regions.test.ts`): transferência à baixa renda eleva atividade e aprovação relativas do Nordeste; tributo sobre a renda pesa mais no Sudeste e no DF; a seca concentra a perda no Nordeste e no Centro-Oeste sem mudar o nacional; termos de troca favoráveis puxam UFs agrícolas e extrativas; governador aliado puxa a aprovação local; governadores aliados aderem mais a convênios. Em 48 meses (5 sementes), a aprovação relativa do Nordeste fica +1,8 p.p. acima da média na distributiva, contra +0,4 p.p. na inerte; a dispersão regional da renda quase não muda (0,389 → 0,388–0,390): só o capital público regional mexe na tendência. `npm run sim:sensitivity` cobre os 18 parâmetros novos (204 no total, nenhum problema); como a distribuição não muda o agregado, só os de adesão têm efeito nacional.
 
 ---
 
@@ -308,6 +431,7 @@ Para o estado não crescer sem limite em campanhas longas (240+ meses) em celula
 - O `GameState` em memória guarda só as **contribuições do mês corrente** e a fila de impulsos ativos (§5.11). Nenhuma série histórica vive dentro do estado.
 - O banco guarda, por mês, o snapshot e a decomposição causal. Nos **últimos 12 meses** a decomposição fica completa (alimenta o "Por que mudou?"); nos meses mais antigos ela é descartada e fica só o vetor de indicadores (alimenta os gráficos de longo prazo).
 - A compactação roda ao gravar o mês, na mesma transação.
+- Implementado na Fase 03 (migração 4 do banco): `month_reports` guarda os últimos 12 relatórios; `snapshots` guarda o estado completo só do mês atual e dos 12 anteriores; `indicator_history` guarda, para a campanha inteira, os indicadores, a Selic, a dívida, a credibilidade, o câmbio e o prêmio de risco (preenchida a partir dos snapshots existentes ao migrar).
 
 ---
 

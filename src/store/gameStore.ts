@@ -6,25 +6,35 @@ import {
   deleteCampaign,
   finishCampaign,
   listCampaigns,
+  loadIndicatorHistory,
   loadLatestState,
+  loadReport,
   loadStateAt,
   recordMonth,
   type CampaignSummary,
+  type IndicatorPoint,
 } from '@/database/campaignRepository';
 import { getSetting, setSetting } from '@/database/settingsRepository';
 import type { SqlDatabase } from '@/database/types';
+import { campaignMonths, DEFAULT_SCENARIO_ID, loadContent, SCENARIOS } from '@/content';
 import {
   advanceMonth,
+  campaignOutcome,
   createInitialState,
-  indicatorsFromScenario,
   type Decision,
   type Difficulty,
   type GameState,
   type Indicators,
+  type MonthInput,
   type MonthReport,
 } from '@/engine';
 
-import { DEFAULT_SCENARIO_ID, PROTOTYPE_MONTHS, SCENARIOS } from './scenarios';
+import { draftInput, EMPTY_DRAFT, toggleDecision, toggleEventChoice, type AgendaDraft } from './agendaDraft';
+
+/** Campanha encerrada: prazo do cenário cumprido ou condenação por impeachment (FASE_07.md). */
+function isFinished(state: GameState): boolean {
+  return state.monthIndex >= campaignMonths(state.scenarioId) || campaignOutcome(state) !== null;
+}
 
 export interface ActiveCampaign {
   id: string;
@@ -44,11 +54,19 @@ export interface GameStoreState {
   campaigns: CampaignSummary[];
   active: ActiveCampaign | null;
   textScale: TextScale;
+  /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
+  draft: AgendaDraft;
 
   init(): Promise<void>;
   newCampaign(input: { name: string; difficulty: Difficulty }): Promise<void>;
   continueCampaign(id: string): Promise<void>;
-  endMonth(decisions?: readonly Decision[]): Promise<void>;
+  /** Indicadores dos últimos meses gravados (série do Painel); vazio sem partida ou leitura falha. */
+  history(): Promise<IndicatorPoint[]>;
+  /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
+  endMonth(input?: MonthInput): Promise<void>;
+  toggleDecision(decision: Decision): void;
+  toggleEventChoice(eventId: string, choiceId: string): void;
+  clearDraft(): void;
   leaveCampaign(): Promise<void>;
   deleteCampaign(id: string): Promise<void>;
   setTextScale(scale: TextScale): Promise<void>;
@@ -95,6 +113,7 @@ export function createGameStore(deps: GameStoreDeps) {
       campaigns: [],
       active: null,
       textScale: 1,
+      draft: EMPTY_DRAFT,
 
       async init() {
         if (db) return;
@@ -113,15 +132,10 @@ export function createGameStore(deps: GameStoreDeps) {
           const scenario = SCENARIOS[DEFAULT_SCENARIO_ID];
           const seed = Math.floor(deps.random() * 2 ** 31);
           const id = `c_${seed.toString(36)}_${Math.floor(deps.random() * 2 ** 31).toString(36)}`;
-          const state = createInitialState({
-            scenarioId: scenario.id,
-            difficulty,
-            seed,
-            indicators: indicatorsFromScenario(scenario),
-          });
+          const state = createInitialState({ content: loadContent(scenario.id), difficulty, seed });
           const trimmed = name.trim() || 'Nova campanha';
           await createCampaign(d, { id, name: trimmed, scenarioVersion: scenario.version, state });
-          set({ active: { id, name: trimmed, state, finished: false } });
+          set({ active: { id, name: trimmed, state, finished: false }, draft: EMPTY_DRAFT });
           await refreshList(d);
         }),
 
@@ -131,8 +145,10 @@ export function createGameStore(deps: GameStoreDeps) {
           const state = await loadLatestState(d, id);
           const previous =
             state.monthIndex > 0 ? (await loadStateAt(d, id, state.monthIndex - 1))?.indicators : undefined;
+          const lastReport =
+            state.monthIndex > 0 ? ((await loadReport(d, id, state.monthIndex - 1)) ?? undefined) : undefined;
           // Saves anteriores à gravação atômica podem ter o último mês com status "ativa": corrige ao carregar.
-          const finished = summary?.status === 'encerrada' || state.monthIndex >= PROTOTYPE_MONTHS;
+          const finished = summary?.status === 'encerrada' || isFinished(state);
           if (finished && summary?.status !== 'encerrada') {
             await finishCampaign(d, id);
             await refreshList(d);
@@ -143,17 +159,31 @@ export function createGameStore(deps: GameStoreDeps) {
               name: summary?.name ?? id,
               state,
               previous,
+              lastReport,
               finished,
             },
+            draft: EMPTY_DRAFT,
           });
         }),
 
-      endMonth: (decisions = []) =>
+      async history() {
+        const active = get().active;
+        if (!active || !db) return [];
+        // Leitura para um gráfico: não marca `busy` (não pode bloquear o fechamento do mês) nem inventa erro na tela.
+        try {
+          return await loadIndicatorHistory(db, active.id);
+        } catch {
+          return [];
+        }
+      },
+
+      endMonth: (input) =>
         run(async (d) => {
           const active = get().active;
           if (!active || active.finished) return;
-          const result = advanceMonth(active.state, decisions);
-          const finished = result.state.monthIndex >= PROTOTYPE_MONTHS;
+          const content = loadContent(active.state.scenarioId);
+          const result = advanceMonth(active.state, input ?? draftInput(get().draft, content), content);
+          const finished = isFinished(result.state);
           await recordMonth(d, active.id, result, { finish: finished });
           set({
             active: {
@@ -163,13 +193,18 @@ export function createGameStore(deps: GameStoreDeps) {
               lastReport: result.report,
               finished,
             },
+            draft: EMPTY_DRAFT,
           });
           await refreshList(d);
         }),
 
+      toggleDecision: (decision) => set((s) => ({ draft: toggleDecision(s.draft, decision) })),
+      toggleEventChoice: (eventId, choiceId) => set((s) => ({ draft: toggleEventChoice(s.draft, eventId, choiceId) })),
+      clearDraft: () => set({ draft: EMPTY_DRAFT }),
+
       leaveCampaign: () =>
         run(async (d) => {
-          set({ active: null });
+          set({ active: null, draft: EMPTY_DRAFT });
           await refreshList(d);
         }),
 

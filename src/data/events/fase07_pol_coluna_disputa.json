@@ -1,0 +1,44 @@
+{
+  "id": "fase07_pol_coluna_disputa",
+  "title": "Coluna expõe disputa dentro do governo",
+  "description": "Uma coluna de política revela que integrantes do governo discutem nos bastidores quem deve conduzir a articulação no Congresso. O texto cita reuniões fechadas e falas sem identificação.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "approval", "op": "lt", "value": 0.5 }],
+    "probability": 0.05,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "chainedOnly": true,
+  "characterId": "jornalista",
+  "onFire": [{ "target": "aprovacao", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "responder_entrevista",
+      "label": "Responder em entrevista",
+      "description": "Dá entrevista e reafirma a unidade do governo. A aprovação se recupera um pouco, mas o tema continua na pauta por mais uma semana.",
+      "agendaCost": 1,
+      "effects": [{ "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }],
+      "characterEffects": [{ "characterId": "jornalista", "delta": 5 }]
+    },
+    {
+      "id": "nota_oficial",
+      "label": "Emitir nota oficial",
+      "description": "Nega a disputa em uma nota curta. Controla a narrativa por um dia, mas a nota sem fatos é lida como confirmação e a colunista fica hostil.",
+      "agendaCost": 0,
+      "effects": [{ "target": "capital_politico", "delta": -2, "lagMonths": 0, "durationMonths": 1 }],
+      "characterEffects": [{ "characterId": "jornalista", "delta": -10 }]
+    },
+    {
+      "id": "silenciar",
+      "label": "Não comentar",
+      "description": "Deixa o assunto morrer sozinho. Não gera novo desgaste, mas a crise interna segue sem resposta e a aprovação continua caindo.",
+      "agendaCost": 0,
+      "effects": [{ "target": "aprovacao", "delta": -0.008, "lagMonths": 0, "durationMonths": 1 }],
+      "characterEffects": [{ "characterId": "jornalista", "delta": -5 }]
+    }
+  ],
+  "defaultChoice": "silenciar",
+  "dataStatus": "FICTICIO"
+}

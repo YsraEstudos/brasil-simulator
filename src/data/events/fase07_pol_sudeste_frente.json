@@ -1,0 +1,68 @@
+{
+  "id": "fase07_pol_sudeste_frente",
+  "title": "Governadora do Sudeste lidera frente contra a reforma tributária",
+  "description": "A governadora de um estado do Sudeste reúne outros governadores e prefeitos em uma frente contra a proposta de reforma tributária, alegando perda de arrecadação e de autonomia fiscal. A frente também reclama das obras liberadas no Nordeste e quer participar da negociação.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      { "variable": "characterStanding", "op": "lt", "value": 0, "characterId": "governador_sudeste" },
+      { "variable": "governorRelation", "op": "lt", "value": 5 }
+    ],
+    "probability": 0.12,
+    "cooldownMonths": 18,
+    "maxOccurrences": 2,
+    "requiresFlags": ["pol_obras_nordeste"]
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onFireFlags": ["pol_frente_sudeste"],
+  "characterId": "governador_sudeste",
+  "onFire": [
+    { "target": "relacao_congresso", "delta": -4, "lagMonths": 0, "durationMonths": 1 },
+    {
+      "target": "governadores.relacao",
+      "delta": -6,
+      "lagMonths": 0,
+      "durationMonths": 1,
+      "regions": ["sudeste"]
+    }
+  ],
+  "choices": [
+    {
+      "id": "ceder_sudeste",
+      "label": "Negociar compensações para o Sudeste",
+      "description": "Oferece compensações fiscais e uma vaga na mesa da reforma. A frente se desfaz, mas a receita tributária federal cai por um ano e a agenda tributária fica mais lenta.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "governadores.relacao", "delta": 10, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 4, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "receita.tributaria", "delta": -0.002, "lagMonths": 0, "durationMonths": 12 }
+      ],
+      "characterEffects": [{ "characterId": "governador_sudeste", "delta": 15 }]
+    },
+    {
+      "id": "enfrentar_frente",
+      "label": "Enfrentar a frente",
+      "description": "Acusa a frente de defender privilégios fiscais. A aprovação sobe com o discurso, mas governadores se afastam e o Congresso endurece.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "governadores.relacao", "delta": -8, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -5, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "governador_sudeste", "delta": -15 }]
+    },
+    {
+      "id": "adiar_reforma",
+      "label": "Adiar a discussão",
+      "description": "Suspende a discussão por enquanto. Reduz o confronto, mas a credibilidade sofre com a falta de definição e os governadores seguem reunidos.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "credibilidade", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "governadores.relacao", "delta": -3, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "governador_sudeste", "delta": -5 }]
+    }
+  ],
+  "defaultChoice": "adiar_reforma",
+  "dataStatus": "FICTICIO"
+}

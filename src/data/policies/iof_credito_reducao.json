@@ -1,0 +1,54 @@
+{
+  "id": "iof_credito_reducao",
+  "name": "Redução do IOF sobre crédito",
+  "summary": "Reduz por decreto a alíquota do IOF sobre operações de crédito, com efeito imediato sobre o custo do crédito e sobre a arrecadação. A compensação exigida pela LRF é verificada pelo motor.",
+  "area": "economia",
+  "competence": "federal",
+  "instruments": ["decreto_aliquota"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": 8000,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["sem_custo"],
+  "timeline": {
+    "planningMonths": 0,
+    "expectedLegislativeMonths": 0,
+    "executionMonths": 0,
+    "maturationMonths": 0
+  },
+  "conditions": ["compensacao_lrf"],
+  "impacts": [
+    {
+      "channel": "desoneracao_consumo",
+      "magnitude": 8000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "credito",
+      "magnitude": 20000,
+      "lagMonths": 1
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": 0.003,
+      "lagMonths": 0
+    }
+  ],
+  "risks": [],
+  "affected": {
+    "groups": ["tomadores_de_credito"],
+    "sectors": ["comercio", "servicos"],
+    "regions": ["nacional"]
+  },
+  "regional": {
+    "key": "pib",
+    "scope": [],
+    "boost": {}
+  },
+  "position": {
+    "economic": 0.3,
+    "social": 0
+  },
+  "dataStatus": "PROVISORIO"
+}

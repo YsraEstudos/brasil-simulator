@@ -1,0 +1,23 @@
+{
+  "id": "rotina_seguranca_viaria",
+  "name": "Rotina de segurança viária",
+  "summary": "Reforça sinalização, inspeção e manutenção preventiva em corredores federais por ato de execução. Dados e custos PROVISORIO.",
+  "area": "infraestrutura",
+  "competence": "federal",
+  "instruments": ["ato_execucao"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1000, "disbursementProfile": [1] },
+  "fundingSources": ["remanejamento"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 2 },
+  "conditions": [],
+  "impacts": [{ "channel": "custeio", "magnitude": 1000, "lagMonths": 1 }],
+  "risks": [{ "kind": "atraso", "probability": 0.14 }],
+  "affected": {
+    "groups": ["transportadores", "motoristas"],
+    "sectors": ["construcao", "servicos"],
+    "regions": ["nacional"]
+  },
+  "position": { "economic": 0, "social": 0.1 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

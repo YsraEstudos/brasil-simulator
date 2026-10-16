@@ -1,0 +1,124 @@
+{
+  "id": "fase07_eco_boom_commodities",
+  "title": "Boom de commodities traz dólares",
+  "description": "Os preços internacionais de minério, petróleo e grãos sobem com força. Entram dólares, o saldo externo melhora e a arrecadação sobre exportações cresce. O setor exportador pede que o ganho vire investimento, e não só consumo.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "characterId": "empresario_agro",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "riskPremium",
+        "op": "lt",
+        "value": 0.02
+      },
+      {
+        "variable": "exchangeRate",
+        "op": "lt",
+        "value": 5.2
+      }
+    ],
+    "probability": 0.1,
+    "cooldownMonths": 18,
+    "maxOccurrences": 2
+  },
+  "onFire": [
+    {
+      "target": "receita.tributaria",
+      "delta": 0.002,
+      "lagMonths": 0,
+      "durationMonths": 6,
+      "label": "Exportações em alta"
+    },
+    {
+      "target": "choque.cambio",
+      "delta": -0.02,
+      "lagMonths": 0,
+      "durationMonths": 2,
+      "label": "Boom de commodities"
+    }
+  ],
+  "choices": [
+    {
+      "id": "poupar_excesso",
+      "label": "Poupar o excesso de receita",
+      "description": "Guarda a receita extra no caixa e melhora a credibilidade. Quem queria gasto cobra o retorno, e a aprovação sente a falta de obras.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "credibilidade",
+          "delta": 0.02,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "investir_setor",
+      "label": "Incentivar investimento produtivo",
+      "description": "Usa a receita extra em obras e incentivos ao investimento. Aquece a atividade e agrada o setor, mas o gasto fica por mais de um ano.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.investimento",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 12
+        },
+        {
+          "target": "choque.hiato",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 4
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "empresario_agro",
+          "delta": 6
+        }
+      ],
+      "followUps": [
+        {
+          "eventId": "fase07_eco_pacote_infraestrutura_privada",
+          "delayMonths": 3,
+          "probability": 0.5
+        }
+      ]
+    },
+    {
+      "id": "transferir_renda",
+      "label": "Ampliar programas sociais",
+      "description": "Aumenta os benefícios com a receita extra. Melhora a aprovação, mas a despesa vira compromisso e o mercado nota a pressão sobre o orçamento.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.transferencia_baixa_renda",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 6
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.012,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "poupar_excesso",
+  "dataStatus": "FICTICIO"
+}

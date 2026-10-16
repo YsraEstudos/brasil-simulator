@@ -1,0 +1,53 @@
+{
+  "id": "fase07_pol_balanco_mandato",
+  "title": "Metade do mandato: balanço e reforma ministerial",
+  "description": "Chegando à metade do mandato, partidos aliados que ganharam cargos cobram um balanço das entregas e pressionam por uma reforma ministerial. A oposição diz que o governo perdeu o rumo.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "monthIndex", "op": "gt", "value": 21 }],
+    "probability": 0.2,
+    "cooldownMonths": 36,
+    "maxOccurrences": 1,
+    "requiresFlags": ["pol_camara_cargos"]
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onFire": [{ "target": "relacao_congresso", "delta": -2, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "reforma_ampla",
+      "label": "Fazer reforma ministerial ampla",
+      "description": "Troca ministros e dá novos espaços aos aliados. Recupera a relação com o Congresso e a aprovação, mas gasta capital político e demite o ministro de bloco há mais tempo no cargo.",
+      "agendaCost": 2,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 7, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "capital_politico", "delta": -4, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "dismissMinister": true,
+      "setFlags": ["pol_reforma_ministerial"]
+    },
+    {
+      "id": "reforma_pontual",
+      "label": "Trocar um ou dois nomes",
+      "description": "Faz ajustes pontuais na equipe. Acalma os aliados com baixo custo, mas o balanço não convence e a aprovação segue estável.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "relacao_congresso", "delta": 3, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": 0.002, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["pol_reforma_ministerial"]
+    },
+    {
+      "id": "manter_equipe",
+      "label": "Manter a equipe",
+      "description": "Mantém os nomes e defende as entregas até aqui. Preserva a agenda sem custo imediato, mas os aliados se afastam e a cobrança continua.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "relacao_congresso", "delta": -4, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    }
+  ],
+  "defaultChoice": "manter_equipe",
+  "dataStatus": "FICTICIO"
+}

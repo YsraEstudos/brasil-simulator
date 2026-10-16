@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1)
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -51,6 +51,17 @@ No modo Casual a quebra continua possível e com consequências, mas mais branda
 
 **Regra do jogo:** em temas de competência comum ou estadual, o presidente atua por **programas nacionais, convênios, transferências voluntárias e normas gerais**. Os governadores decidem se aderem.
 
+### 2.1 Federação no motor (Fase 05, motor 0.5.0)
+Parâmetros em `src/engine/economy/calibration.ts` (seção Federação); distribuição econômica em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.15.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Governadores | 27 governadores fictícios (cenário v0.4.0), cada um de um bloco e com relação própria com o governo (−100…100). A relação anda até a meta: posição própria do governador + `governador_alinhamento` × relação do bloco dele + `governador_aprovacao` × aprovação do presidente no estado acima da base. Eventos movem governadores de regiões específicas (`governadores.relacao`). |
+| Governador e aprovação local | Governador aliado puxa a aprovação do presidente no estado para cima; hostil, para baixo (`aprovacao_governador`). |
+| Adesão a convênios | Política com a condição `adesao_estadual` (hoje, a cooperação em segurança): no início da execução cada estado adere com probabilidade `adesao_base + adesao_relacao × relação/100`. O gasto e o capital público alcançam só a população dos estados que aderiram e são repartidos só entre eles; substitui o risco genérico de baixa adesão. No Casual todos aderem. A mesa de despacho mostra a adesão esperada. |
+| Visita presidencial | Ação de agenda (1 ponto, uma por estado por mês): aprovação local `aprovacao_visita` por `meses_visita` meses e `relacao_visita` pontos com o governador. Não muda a aprovação nacional. |
+| Ainda não modelado | Finanças e dívidas estaduais (o evento das dívidas estaduais só mexe em relação, atividade e risco), FPE/FPM por UF, bancadas estaduais no Congresso, eleição de governadores (Fase 08), invasão de competência estadual como risco jurídico. |
+
 ---
 
 ## 3. Instrumentos normativos
@@ -69,7 +80,7 @@ No modo Casual a quebra continua possível e com consequências, mas mais branda
 | **Veto** | Presidente | Derrubada: **maioria absoluta de cada Casa** (257 / 41) em sessão conjunta | Prazo de 15 dias úteis para sancionar/vetar; Congresso aprecia em 30 dias, depois tranca a pauta da sessão conjunta | CF art. 66 |
 
 ### 3.1 Vedações à Medida Provisória (CF art. 62 §1º)
-Não pode tratar de: nacionalidade, cidadania, direitos políticos, partidos e direito eleitoral; direito penal e processual; organização do Judiciário e do Ministério Público; **PPA, LDO, orçamento e créditos adicionais** (exceto **crédito extraordinário**, só para despesas imprevisíveis e urgentes, CF art. 167 §3º); matéria reservada a lei complementar; matéria já aprovada pelo Congresso e pendente de sanção. Reedição na mesma sessão legislativa é proibida.
+Não pode tratar de: nacionalidade, cidadania, direitos políticos, partidos e direito eleitoral; direito penal e processual; organização do Judiciário e do Ministério Público; **PPA, LDO, orçamento e créditos adicionais** (exceto **crédito extraordinário**, só para despesas imprevisíveis e urgentes, CF art. 167 §3º); matéria reservada a lei complementar; matéria já aprovada pelo Congresso e pendente de sanção. Reedição na mesma sessão legislativa é proibida (CF art. 62 §10): no motor, MP rejeitada ou caducada não pode ser reenviada no mesmo ano-calendário (motivo `reedicao_vedada`).
 
 ### 3.2 Iniciativa privativa do presidente (CF art. 61 §1º)
 Efetivo das Forças Armadas; criação de cargos e aumento de remuneração na administração direta; servidores públicos da União; criação e extinção de ministérios e órgãos. Leis orçamentárias (CF art. 165).
@@ -99,6 +110,8 @@ Prazos do ADCT art. 35 §2º. Em jan/2027 vigora a **LOA 2027 votada pelo Congre
 - Exceções ao limite (lista legal): parte delas é parâmetro do cenário. A exclusão de precatórios do limite (PEC 66/2023) e as ADIs 7064/7047 no STF tornam esse ponto instável: tratar como parâmetro.
 - Pacote de dez/2024: com déficit primário a partir de 2025, fica vedada no ano seguinte a criação, ampliação ou prorrogação de benefícios tributários (gatilho no cenário).
 - Limite de despesas primárias da LOA 2026: R$ 2,428 tri (referência para calibrar o cenário de 2027).
+- **No motor (Fase 03, ECONOMIC_MODEL.md §5.14):** o limite é revisto todo janeiro pela regra acima, com a receita do ano-calendário anterior como aproximação do período de apuração; a meta é considerada cumprida se o primário de 12 meses em dezembro ficou acima de meta − banda. As discricionárias recebem o espaço que sobra depois das obrigatórias e vinculadas; o que passa do limite é registrado como estouro (com perda de credibilidade), e créditos extraordinários (calamidades, CF art. 167 §3º) ficam fora dele. Os gatilhos de contenção não são modelados além do redutor de 50% e da perda de credibilidade.
+- **Salário mínimo (Lei 15.077/2024):** reajuste de janeiro com ganho real igual ao PIB de dois anos antes, na faixa de 0,6% a 2,5%, até 2030; depois, só a reposição da inflação (parâmetro). Propaga-se para previdência (parcela de um salário mínimo) e para BPC, abono e seguro-desemprego.
 
 ### 4.3 Mínimos constitucionais e despesas vinculadas
 - Saúde: mínimo de **15% da receita corrente líquida** da União (CF art. 198, redação da EC 86/2015), em vigor desde o fim do teto de gastos. ✔ 13/10/2026 (piso de 2026: R$ 254,9 bi). Há propostas de mudar a base de cálculo e o governo já sinalizou dificuldade para cumprir os pisos em 2027: bom gancho de evento.
@@ -195,7 +208,22 @@ Cada ministério relevante tem um ocupante com `origem`: **técnico/aliado** ou 
 Todos os pesos são parâmetros a calibrar (Fase 04). Demitir um ministro de bloco custa capital político e piora a relação com o bloco.
 
 ### 6.4 Evolução
-Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamentares individuais.
+Fase 04: Câmara e Senado separadas e relatores (feito, §6.5). Comissões permanentes individuais e parlamentares individuais: Fase 09.
+
+### 6.5 No motor (Fase 04, motor 0.4.0)
+Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRATION.md](CALIBRATION.md)); o cenário define quem preside cada Casa e os ministérios (`institutions`).
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Casas separadas | A proposta vota na Câmara e só depois vai ao Senado; o prazo esperado de tramitação é repartido (`fracao_tramitacao_camara`, mínimo de 1 mês em cada Casa). PEC vota os dois turnos da mesma Casa no mesmo mês (o interstício cabe no turno mensal). PLN tramita pela Comissão Mista e vota em sessão conjunta, contada por Casa, sem ocupar a pauta das Casas. Janeiro continua recesso. |
+| Capacidade de pauta (§6.3) | Cada Casa tem `capacidade_pauta` vagas; PEC ocupa `vagas_pec`. Sem vaga, a proposta fica **parada** e entra quando abrir vaga (pauta vazia sempre aceita). As paradas têm prioridade, em ordem de criação, sobre as propostas enviadas no mês. |
+| Relator | Sorteado ao entrar em cada Casa, com peso pelas cadeiras e peso extra para o bloco que preside a Casa. Se o bloco do relator não apoia o texto, ele o altera uma vez (escala `escala_alterada`; todos os blocos passam a apoiar mais, `bonus_texto_alterado`) e pode incluir **acréscimos estranhos ao projeto** (despesa extra, `custo_acrescimo` por `meses_acrescimo`), mais provável quando o relator é de bloco que cobra emendas. Na MP o relator só reduz o texto. |
+| Presidência da Casa | Relação com o bloco que preside a Casa abaixo de `limiar_presidente_casa`: a cada votação marcada, chance `prob_nao_pautar` de adiar um mês. |
+| Emendas como pedágio (§6.3) | Votação difícil (PEC, PLP ou "sim" esperado a menos de `folga_votacao_dificil` das cadeiras do exigido) sem emendas liberadas: chance `prob_adiamento_pedagio` de os líderes adiarem. Adiamentos por presidência e pedágio são limitados a `max_adiamentos` por Casa; depois, a votação acontece. |
+| Negociação (ações de agenda, 1 ponto cada) | **Negociar com um bloco** (apoio do bloco à proposta + `negociacao_apoio`, saturado; relação melhora; custa capital). **Liberar emendas** (todos apoiam mais, quem cobra emendas mais ainda; despesa `emendas_pedagio` por `emendas_meses` que sai das discricionárias, ECONOMIC_MODEL.md §5.8). **Ceder no texto** (escala × `escala_concessao`, todos apoiam mais). **Pedir urgência** (só PL e PLP, CF art. 64: votação em até 2 meses em cada Casa; o bloco que preside a Câmara não gosta). |
+| Ministérios (§6.3.1) | Cada pasta tem peso e áreas de política. Indicação de bloco: apoio do bloco em todas as votações (`apoio_ministerio` × peso, saturado), relação melhora na nomeação; a política da pasta rende menos (`perda_execucao_partidaria` no capital público e nos ganhos de aprovação), atrasa se o bloco for ideologicamente contrário a ela (`atraso_ministerio_contrario`) e o risco mensal de escândalo cresce com os anos no cargo (`escandalo_base_mes`, `escandalo_por_ano`, saturado). O evento "Escândalo em ministério" só dispara com pasta de bloco, com probabilidade igual a esse risco; a resposta "Demitir" troca o indicado mais antigo por um técnico. Demitir indicado custa capital e a relação com o bloco. |
+| Medida provisória (§3) | Vigência imediata; se não for convertida em 4 meses (120 dias), perde a eficácia e os efeitos param. A partir do 2º mês (mais de 45 dias) tranca a pauta da Casa em que está: as demais propostas dessa Casa esperam. |
+| Ainda não modelado | Comissões permanentes, emendas de plenário, destaques, obstrução, recesso de julho, convocação extraordinária, CPIs, impeachment e TCU. |
 
 ---
 
@@ -205,19 +233,29 @@ Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamenta
 3. O Congresso aprecia o veto em sessão conjunta; derrubada exige **maioria absoluta de cada Casa**.
 4. Derrubada de veto = derrota política (capital político ↓).
 
+**No motor (Fase 04):** aprovado no Congresso, o projeto fica **aguardando sanção** no mês seguinte; sem resposta, vale a sanção tácita. O jogador pode sancionar, vetar o projeto inteiro ou, quando o relator incluiu acréscimos, vetar só os acréscimos (o motor trata os acréscimos como dispositivos inteiros, então o veto parcial é sempre possível). O veto vai à sessão conjunta no mês seguinte; a derrubada exige maioria absoluta de cada Casa e depende do interesse dos blocos no texto, menos a lealdade ao governo (relação e pastas) e a popularidade do presidente. Veto derrubado: a lei (ou os acréscimos) entra em vigor e o capital cai; veto mantido rende um pouco de capital. **PEC** é promulgada pelas Mesas, sem sanção (CF art. 60 §3º); **MP** convertida segue em vigor sem nova sanção no motor.
+
 ---
 
 ## 8. Controle judicial e de contas (simplificado)
 
 - **STF**: legitimados (partidos com representação no Congresso, governadores, Mesas, PGR, OAB, entidades de classe nacionais) podem propor ADI/ADPF. Cada medida tem um `riscoJuridico` (0–1) calculado a partir de flags (ex.: renúncia sem compensação, MP sem urgência, invasão de competência estadual). Probabilidade mensal de ação e de liminar suspendendo a medida = f(riscoJuridico, interesse dos legitimados).
 - **TCU**: emite alertas sobre execução e contas. Parecer pela rejeição das contas aumenta o risco de impeachment e afeta a credibilidade. O julgamento das contas é feito pelo Congresso.
+- **No motor (Fase 04):** o risco `judicializacao` da política, mais `risco_juridico_flag` por regra quebrada (gasto acima do limite, renúncia ou despesa sem compensação na LRF; também para políticas sem esse risco previsto), decide no início da execução se haverá ação no STF. Havendo, uma liminar suspende a execução de 1 a `liminar_lag_max` meses depois, por `suspensao_min_meses`–`suspensao_max_meses`; no julgamento a medida volta a valer ou é declarada inconstitucional (`prob_inconstitucional`, maior com regra quebrada). Os efeitos da janela suspensa são retirados da fila (ECONOMIC_MODEL.md §5.11). A janela e a derrubada valem também para os acréscimos do relator, que fazem parte da mesma lei. O TCU é modelado na Fase 07 (§9); indicações ao STF ainda não são modelados.
 - **Indicações**: vagas no STF e na diretoria do BC surgem conforme calendário do cenário (no STF, pela aposentadoria compulsória aos 75 anos — EC 88/2015 e LC 152/2015 —, ou por evento); exigem aprovação do Senado (maioria absoluta para ministro do STF, CF art. 101; maioria simples em votação secreta após arguição para presidente e diretores do BC, CF art. 52, III, d ✔).
+- **Diretoria do BC (LC 179/2021):** mandatos fixos de 4 anos, não coincidentes com o do presidente da República. O presidente do BC começa no 3º ano do mandato presidencial; os 8 diretores entram 2 por ano. No motor, a fração indicada pelo governo é 2/9, 4/9, 7/9 e 9/9 do 1º ao 4º ano, e as indicações são consideradas aprovadas pelo Senado. Ela determina quanto o BC cede à pressão pública (ECONOMIC_MODEL.md §5.4.1).
 
 ---
 
-## 9. CPIs e investigações
+## 9. CPIs, TCU e investigações (Fase 07, v0.6.0)
 - CPI: requerimento de **1/3 dos membros** da Casa (171 deputados ou 27 senadores), **fato determinado** e **prazo certo** (CF art. 58 §3º).
-- No jogo: probabilidade de CPI = f(escândalos ativos, tamanho da oposição, relação com o presidente da Casa). Efeitos: aprovação ↓, pontos de agenda ↓, risco de crise ministerial.
+- **No jogo (PROVISORIO):** a CPI não sai de uma fórmula de escândalos; chega por **cadeia de eventos** (`followUps`, GAME_DESIGN.md §11.3.1). Uma reportagem sobre ministério de indicação partidária (condições: aprovação abaixo de 45% e pelo menos um ministério partidário; 10% por mês, uma vez a cada 18 meses no máximo duas) grava a marca `escandalo_denuncia`. Investigar internamente agenda a CPI com 35% em 2 meses; negar tudo (escolha padrão), com 60% em 1 mês. Ao chegar, o evento `fase07_inst_cpi_instalada` grava `cpi_instalada`.
+- **Relatório final:** sorteado quando a pressão de impeachment passa de 15% (30%, uma vez, depois de 24 meses de intervalo). Negociar o texto ou enfrentá-lo grava `cpi_encerrada`; sem resposta, o relatório é aceito e grava `cpi_encerrada` e `cpi_relatorio_pesado`. Negociar agenda o pacto com 50% em 2 meses.
+- **Pacto entre os Poderes:** só chega depois de `cpi_encerrada` e antes de qualquer denúncia de impeachment aceita. Aceitar o pacto (ou aceitá-lo com ressalvas, a padrão) apaga `escandalo_denuncia`; a versão cheia recupera relação com o Congresso, aprovação e capital político.
+- **Marcas de CPI e escândalo:** `escandalo_denuncia`, `cpi_instalada`, `cpi_encerrada`, `cpi_relatorio_pesado`. A pressão de impeachment conta as marcas com prefixo `escandalo_` ou `cpi_` (até 4); ver ECONOMIC_MODEL.md §5.17 e o caveat abaixo.
+- **TCU (contas):** o gasto acima do limite de despesas (`limitExcess` > 0) dá o **alerta do TCU** (30%, até 3 vezes, intervalo de 6 meses; grava `tcu_alerta`). Corrigir a execução contingencia custeio por seis meses; defender a execução (padrão) ou pedir prazo deixa o alerta virar **parecer** em 3 meses com 50% (sorteio único). O parecer pela rejeição grava `tcu_parecer_rejeicao` (sem resposta, é a escolha padrão) e pesa na credibilidade. O julgamento final das contas continua **fora**: o jogo não tem votação do Congresso sobre o parecer.
+- **Contagem na pressão:** `cpi_instalada` e `cpi_encerrada` contam como uma CPI só; `cpi_relatorio_pesado` conta à parte (relatório desfavorável pesa mais).
+- **Fora da Fase 07:** CPI com comissão própria, votos por bancada e convocações (Fase 09); efeito das CPIs sobre ministérios (demissão automática).
 
 ---
 
@@ -227,7 +265,21 @@ Fase 04: Câmara e Senado separadas, comissões e relatores. Fase 09: parlamenta
 3. Senado instaura o processo (maioria simples) → presidente **afastado por até 180 dias**.
 4. Julgamento presidido pelo presidente do STF; condenação exige **2/3 do Senado (54 senadores)**; pena de perda do cargo e inabilitação por 8 anos.
 
-**Modelo no jogo:** `pressaoImpeachment = f(aprovação, tamanho da base, escândalos, flags de crime de responsabilidade (ex.: descumprimento grave da LRF/LOA), crise econômica, mobilização social)`. Cada etapa é uma votação dos blocos (§6.2) com peso adicional de opinião pública. O jogador recebe alertas antecipados e pode reagir.
+**Modelo no jogo (Fase 07, v0.6.0; PROVISORIO).** A pressão é `impeachmentPressure`, um número em [0, 1] que vem de uma função logística de aprovação, relação com o Congresso, marcas de escândalo e CPI, excesso do limite de despesa e desemprego acima do neutro (ECONOMIC_MODEL.md §5.17). Ela não é votação: só alimenta as condições de três eventos encadeados, e o jogador vê a faixa no quadro de Instituições (GAME_DESIGN.md §11.3.1).
+
+1. **Pedido** (`fase07_inst_pedido_impeachment`): pressão acima de 50%, com 25% por mês (uma vez, 24 meses de intervalo). A Presidência da Câmara decide a admissibilidade: negociar o arquivamento (grava `impeachment_arquivado`, custa relação com o Congresso) ou **enfrentar a denúncia**, que é a escolha padrão e grava `impeachment_denuncia_aceita`. Apelar ao STF também aceita a denúncia.
+2. **Câmara** (`fase07_inst_impeachment_camara`): exige `impeachment_denuncia_aceita`; pressão acima de 55%, com probabilidade mensal de 0,6 × pressão (base 60% multiplicada pelo fator `impeachmentPressure`). Mobilizar a base e negociar votos (2 pontos de agenda) arquiva o processo. Enfrentar no plenário encerra a etapa sem autorizar. **Deixar votar** (padrão) grava `impeachment_autorizado`.
+3. **Senado** (`fase07_inst_impeachment_senado`): exige `impeachment_autorizado`; pressão acima de 60%, com probabilidade mensal de 0,5 × pressão (base 50% multiplicada pelo fator `impeachmentPressure`). Mobilizar a base no Senado (2 pontos) arquiva. Resistir sem apoio e **aguardar o julgamento** (padrão) gravam `impeachment_condenado`.
+4. **Condenação:** `campaignOutcome` (`src/engine/events/outcome.ts`) devolve `impeachment` quando a marca `impeachment_condenado` existe. A campanha termina como derrota (GAME_DESIGN.md §7.1), e o save guarda a marca.
+
+**Marcas exatas da cadeia:** `impeachment_denuncia_aceita`, `impeachment_autorizado`, `impeachment_camara_votou`, `impeachment_senado_votou`, `impeachment_arquivado`, `impeachment_condenado`. Só chegam pela cadeia acima.
+
+**Caveats (medidos em 48 e 240 meses, em [ROADMAP.md](ROADMAP.md) §8.2):**
+- Quem não responde deixa a cadeia avançar: as três escolhas padrão levam à condenação. Medido com 20 sementes: em 48 meses, a cadeia só começa na estratégia fisiológica (denúncia em 11 de 20; condenação em 9 de 20). Em 240 meses, a estratégia inerte é condenada em 20 de 20 sementes, a partir do mês 161. A populista escapa em todas porque sempre escolhe a resposta de maior ganho de aprovação (arquivamento na Câmara), mas a pressão dela chega a cerca de 90% no mês 200 nas três sementes observadas, com o pico de 98,6% em 240 meses.
+- A escolha "mobilizar a base no Senado" tem a descrição "se a base não estiver pronta, a escolha perde força", e o motor não verifica a base: ela arquiva sempre.
+- A regra dos dois terços não é contada bancada por bancada: a escolha do jogador e a probabilidade fazem o papel dela.
+
+**Fora da Fase 07:** o afastamento de até 180 dias (texto do evento, sem efeito mecânico); o presidente do STF no julgamento; crimes de responsabilidade além do excesso de limite de despesa; mobilização social como fator próprio; sucessão pelo vice (a condenação encerra a campanha).
 
 ---
 

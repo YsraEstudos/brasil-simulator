@@ -1,6 +1,94 @@
-export { advanceMonth, type MonthStep } from './advanceMonth';
-export { monthKey, START_YEAR, TERM_MONTHS, toCalendar, toMonthIndex, type CalendarMonth } from './calendar';
+export { advanceMonth, DEFAULT_STEPS } from './advanceMonth';
+export { monthKey, START_YEAR, TERM_MONTHS, termOf, toCalendar, toMonthIndex, type CalendarMonth } from './calendar';
+export {
+  calibrationFromScenario,
+  DEFAULT_CALIBRATION,
+  PARAMS,
+  type Calibration,
+  type ParamName,
+  type ParamSpec,
+} from './economy/calibration';
+export {
+  actionKey,
+  AGENDA_ACTIONS,
+  AMENDMENTS_ACTION_ID,
+  APPOINT_ACTION_ID,
+  CONCEDE_ACTION_ID,
+  DIRECTIVE_ACTION_ID,
+  BRAND_ACTION_ID,
+  isAgendaAction,
+  NEGOTIATE_ACTION_ID,
+  PRESSURE_ACTION_ID,
+  SANCTION_ACTION_ID,
+  SANCTION_CHOICES,
+  URGENCY_ACTION_ID,
+  VISIT_ACTION_ID,
+  type AgendaAction,
+  type SanctionChoice,
+} from './actions';
+export { validateActionTarget } from './agenda';
+export {
+  cabinetScandalRisk,
+  cabinetSupport,
+  isPartisan,
+  ministriesOf,
+  ministryOccupant,
+  ministryScandalChance,
+  ministrySince,
+  partisanMinistries,
+  policyMinistry,
+} from './congress/cabinet';
+export {
+  blocRelation,
+  blocSupport,
+  housePresident,
+  legislativeInstrument,
+  predictVotes,
+  sessionAt,
+  sessionsOf,
+  votingPlan,
+  type Session,
+  type VotePrediction,
+  type VoteStage,
+} from './congress/congress';
+export { currentHouse, pautaOccupancy, pautaSlots, reissueBarredPolicies } from './proposals/proposals';
+export { fiscalRoom } from './economy/fiscal';
+export { BC_BOARD_SIZE, boardShare } from './economy/monetary';
+export { activeImpulses, isActive, pruneImpulses, sumActive } from './impulses';
 export { checkInvariants } from './invariants';
+export {
+  expectedAdhesion,
+  initialRegions,
+  inScope,
+  keyWeights,
+  meanGovernorRelation,
+  populationShares,
+  REGION_NAMES,
+  regionalDispersion,
+  regionalIncidence,
+  regionsOf,
+  regionsView,
+} from './regions/regions';
 export { createRng, seedRng, type Rng, type RngState } from './rng';
-export { AGENDA_POINTS, createInitialState, indicatorsFromScenario, type NewCampaign } from './state';
+export {
+  AGENDA_POINTS,
+  createInitialState,
+  currentNominalGdpMillions,
+  FALLBACK_ECONOMY,
+  FALLBACK_FISCAL,
+  indicatorsFromScenario,
+  initialEconomy,
+  INITIAL_POLITICAL_CAPITAL,
+  nominalGdpMillions,
+  type NewCampaign,
+} from './state';
 export * from './types';
+export { SaveTooNewError, upgradeGameState } from './upgrade';
+export * from './report';
+export * from './society';
+export * from './publicPolicies/types';
+export { BRANDABLE_STATUSES } from './publicPolicies/publicPolicies';
+export { eventsForScenario, hasFlag, standingOf } from './events/events';
+export { impeachmentPressure } from './events/pressure';
+export { campaignOutcome } from './events/outcome';
+export { NEWS_LIMIT, NEWS_PER_MONTH_MAX, appendNews, generateNews } from './news';

@@ -1,0 +1,22 @@
+{
+  "id": "rotina_atencao_basica",
+  "name": "Rotina de atenção básica",
+  "summary": "Reforça custeio de equipes e insumos da atenção básica federal por ato executivo. Dados e custos PROVISORIO.",
+  "area": "saude",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 3200, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 2 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 3200, "lagMonths": 1 },
+    { "channel": "aprovacao", "magnitude": 0.008, "lagMonths": 2 }
+  ],
+  "risks": [{ "kind": "baixa_adesao", "probability": 0.12 }],
+  "affected": { "groups": ["usuarios_de_servicos_publicos"], "sectors": ["servicos"], "regions": ["nacional"] },
+  "position": { "economic": -0.2, "social": -0.2 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

@@ -99,6 +99,8 @@ O cenário parte do **último dado oficial disponível** na data de congelamento
 ### 4.2 Alpha (0.5) em diante
 PIB, população, renda e emprego por UF; transferências constitucionais por UF; indicadores sociais; setores; distribuição de renda por quintis; séries para calibração (2003–2026).
 
+**Fase 05 (cenário v0.4.0):** entraram, por UF, população (Censo 2022), participação no PIB e peso de agropecuária, extrativa, demais indústrias e serviços (Contas Regionais), desemprego (PNAD Contínua) e pobreza (Síntese de Indicadores Sociais), todos `PROVISORIO` (ordens de grandeza arredondadas, a importar pelo pipeline), e os governadores, `FICTICIO`. Cada série tem um bloco de metadados (`regions.meta`, esquema `dataSeriesSchema` em `src/types/data.ts`), porque os 27 números de uma coluna têm a mesma origem e o mesmo status. Ainda faltam: FPE/FPM e transferências por UF, finanças estaduais e séries históricas por UF para calibrar as sensibilidades setoriais.
+
 ---
 
 ## 5. Pipeline de dados
@@ -116,6 +118,38 @@ scripts/data/
 
 ---
 
+## 5.1 Dados da Fase 06
+
+O cenário `brasil_2027_01_v050` v0.5.0 herda os dados iniciais da v0.4.0 sem
+alterá-la e adiciona 32 políticas com números `PROVISORIO`. Ele tem ID próprio
+para que um save não receba silenciosamente o catálogo novo. As dez políticas
+publicadas anteriormente permanecem inalteradas.
+
+Participações setoriais, rendas relativas dos quintis, linha de pobreza,
+incidências, custos, prazos e riscos de execução são calibração de jogo,
+documentada em [SOCIETY.md](SOCIETY.md), [POLICIES.md](POLICIES.md) e
+[PUBLIC_POLICIES.md](PUBLIC_POLICIES.md). Não houve importação de novas séries
+oficiais nem validação jurídica adicional. A existência de um setor ou programa
+no catálogo não representa uma projeção para janeiro/2027.
+
+## 5.2 Dados da Fase 07
+
+O cenário `brasil_2027_01_v060` v0.6.0 herda os números da v0.5.0 e acrescenta
+apenas o elenco de personagens, todo `FICTICIO`: nomes, papéis e blocos são
+fictícios e não correspondem a pessoas reais, eleitas ou em cargo em 2026
+(GAME_DESIGN.md §13). O prestígio inicial (`initialStanding`) é de design.
+
+Os 37 eventos da Fase 07 (`src/data/events/fase07_*.json`) são `FICTICIO` quanto
+aos casos, às manchetes e aos personagens. Seus números de gatilho, probabilidade,
+prazo e efeito são `PROVISORIO`, sem fonte de dados oficial: são calibração de
+jogo, sujeita à revisão do autor e às campanhas-robô de
+[ROADMAP.md](ROADMAP.md) §8.2. Eventos de impeachment, CPI e TCU são ficção
+institucional simplificada (POLITICAL_RULES.md §9–§10); não reproduzem o rito
+real nem prazos de tramitação.
+
+Nenhum dado de notícia ou de evento vem de rede: o jogo gera as manchetes a
+partir do estado (GAME_DESIGN.md §11.3.1).
+
 ## 6. Registro de verificações jurídicas e de dados
 
 | Data | Item | Fonte consultada | Resultado | Responsável |
@@ -128,6 +162,11 @@ scripts/data/
 | 13/10/2026 | Reforma tributária 2027 (CBS, IPI, IBS, IS) | Guias tributários e imprensa (fontes secundárias) | Confirmado em linhas gerais; reconferir LC 214/2025 compilada (LC 227/2026) na Fase 03 | Claude (pesquisa web) |
 | 13/10/2026 | Reeleição (PEC 12/2022) | Imprensa (CCJ do Senado, mai/2025) | Regra atual mantida; PEC não aprovada em plenário | Claude (pesquisa web) |
 | 13/10/2026 | Aprovação de diretores do BC e ministros do STF; condutas vedadas | CF arts. 52 e 101; Lei 9.504/1997 art. 73 | Confirmado pelo texto legal | Claude |
+| 13/10/2026 | Mandatos da diretoria do BC (LC 179/2021 art. 4º) | Texto da lei (Planalto/Câmara) e Agência Senado | Confirmado: presidente do BC a partir de 1º/jan do 3º ano do mandato presidencial; diretores 2 a 2, em 1º/mar do 1º ano e 1º/jan do 2º, 3º e 4º anos. O motor usa anos-calendário (2, 4, 7 e 9 de 9). Alterações posteriores da lei não verificadas | Claude (pesquisa web) |
+| 13/10/2026 | Cenário `brasil_2027_01` v0.2.0 | — | Estrutura fiscal (receitas por grupo, repartição, despesas por grupo), câmbio, prêmio de risco, juro externo e PIB de 2025 entram como `PROVISORIO` (ordens de grandeza do RTN 2024–2025); valores da v0.1.0 inalterados. Saves gravados com a v0.1.0 continuam carregando (o estado é atualizado pelo motor) | Claude |
+| 13/10/2026 | Cenário `brasil_2027_01` v0.3.0 | — | Entram as instituições: o bloco Centro preside Câmara e Senado (`FICTICIO`, coerente com o bloco de maior bancada no centro) e 11 ministérios com áreas e pesos de jogo (`FICTICIO`), todos começando com quadro técnico. Entra a política "Reforma da previdência (parâmetros)" com economia crescente de R$ 10, 25 e 45 bi/ano após 1, 3 e 6 anos (`PROVISORIO`; ordem de grandeza menor que a da EC 103/2019, por ser uma reforma de parâmetros sobre o sistema já reformado). Valores da v0.2.0 inalterados |
+| 13/10/2026 | Cenário `brasil_2027_01` v0.4.0 | — | Entram as 27 UFs (`regions`): população, participação no PIB, setores, desemprego e pobreza como `PROVISORIO` (ordens de grandeza do IBGE, arredondadas; participações somam 1, setores somam 1 por UF) e 27 governadores fictícios com bloco e relação inicial (`FICTICIO`, sem relação com os eleitos em 2026). Valores da v0.3.0 inalterados; saves com estado v4 são atualizados e a distribuição regional parte do cenário no primeiro mês jogado | Claude | Claude |
+| 16/10/2026 | Cenário `brasil_2027_01_v060` v0.6.0 (Fase 07) | — | Herda a v0.5.0 sem alterá-la. Entra o elenco de 12 personagens (`characters`, `FICTICIO`, nomes e papéis fictícios, prestígio inicial de −40 a 40). Os 37 eventos novos da Fase 07 têm `onlyScenarios` restrito a este cenário e `FICTICIO` (casos e personagens); gatilhos, probabilidades, prazos e efeitos são `PROVISORIO`. Cenários v0.4.0 e v0.5.0 inalterados | Claude | Claude |
 
 Itens marcados com ⚠ em [POLITICAL_RULES.md](POLITICAL_RULES.md) devem ser registrados aqui quando verificados.
 

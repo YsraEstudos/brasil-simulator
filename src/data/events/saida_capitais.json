@@ -1,0 +1,110 @@
+{
+  "id": "saida_capitais",
+  "title": "Saída de capitais de emergentes",
+  "description": "Investidores estrangeiros retiram recursos de países emergentes com dívida alta, e o câmbio pressiona os preços. O governo precisa escolher como reagir.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "grossDebt",
+        "op": "gt",
+        "value": 0.75
+      }
+    ],
+    "probability": 0.04,
+    "cooldownMonths": 12,
+    "maxOccurrences": 1
+  },
+  "onFire": [
+    {
+      "target": "choque.risco",
+      "delta": 0.01,
+      "lagMonths": 0,
+      "durationMonths": 6,
+      "label": "Saída de capitais de emergentes"
+    },
+    {
+      "target": "choque.cambio",
+      "delta": 0.03,
+      "lagMonths": 0,
+      "durationMonths": 2,
+      "label": "Saída de capitais de emergentes"
+    },
+    {
+      "target": "credibilidade",
+      "delta": -0.02,
+      "lagMonths": 0,
+      "durationMonths": 1
+    }
+  ],
+  "choices": [
+    {
+      "id": "comunicacao",
+      "label": "Comunicação ao mercado",
+      "description": "Acalma parte dos investidores com a mensagem certa, mas sem medidas concretas o prêmio de risco demora a ceder.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "choque.risco",
+          "delta": 0.003,
+          "lagMonths": 0,
+          "durationMonths": 3
+        }
+      ]
+    },
+    {
+      "id": "ajuste_fiscal",
+      "label": "Anunciar ajuste fiscal",
+      "description": "Recupera a confiança do mercado, mas o aperto reduz a atividade e desgasta a aprovação.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "credibilidade",
+          "delta": 0.02,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "choque.hiato",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 3
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.015,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "nada",
+      "label": "Não reagir",
+      "description": "Evita medidas impopulares e mantém a aprovação, mas a credibilidade continua a se deteriorar.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "credibilidade",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "comunicacao",
+  "dataStatus": "FICTICIO"
+}

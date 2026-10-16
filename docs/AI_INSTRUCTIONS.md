@@ -83,6 +83,24 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 | Crédito adicional | `supplementaryCredit` |
 | Capital político | `politicalCapital` |
 | Aprovação | `approval` |
+| Relator | `rapporteur` |
+| Acréscimos do relator ("jabutis") | `rider` |
+| Sanção / veto | `sanction` / `veto` |
+| Ministério, gabinete | `ministry`, `cabinet` |
+| Pauta | `pauta` (sem tradução: termo do regimento) |
+| Unidade da Federação (UF) | `uf` (id = sigla, ex.: `BA`) |
+| Participação no PIB / de tendência | `share` / `structuralShare` |
+| Governador, adesão (a convênio) | `governor`, `adherents` |
+| Chave de distribuição | `RegionalKey` (`populacao`, `pobreza`, `pib`, `renda_alta`) |
+| Diretriz ministerial | `MinistryDirective` |
+| Carteira de projetos / marca de governo | `PublicProject` / `GovernmentBrand` |
+| Renda real / quintil / pobreza estimada | `realIncome` / `quintile` / `povertyRate` |
+| Marca (memória de evento, gravada por escolha ou chegada) | `flag` (`EventsState.flags`, valor = mês) |
+| Pressão de impeachment | `impeachmentPressure` |
+| Cadeia (evento encadeado agendado por escolha) | `followUp` (`followUps`; `ScheduledEvent`) |
+| Notícia (manchete persistida, com causa) | `NewsItem` (`EventsState.news`) |
+| Prestígio de personagem | `standing` (`EventsState.characters`, −100 a 100) |
+| Elenco (personagens do cenário) | `characters` (`Scenario.characters`) |
 
 ---
 

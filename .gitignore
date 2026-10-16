@@ -47,3 +47,6 @@ data-raw/
 
 # Claude Code (configurações locais)
 .claude/settings.local.json
+
+# relatório de cobertura (vitest --coverage)
+coverage/

@@ -1,29 +1,35 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { advanceMonth, createInitialState, type GameState, type MonthStep } from '../engine';
+import { insertLegacyCampaign } from '@/tests/legacyDb';
+import { TEST_BILL, TEST_DECREE, TEST_PEC, testContent, testState } from '@/tests/fixtures';
+
+import { advanceMonth, STATE_SCHEMA_VERSION, type GameState, type MonthResult, type MonthStep } from '../engine';
 import {
   CampaignNotFoundError,
   createCampaign,
   deleteCampaign,
   listCampaigns,
+  loadIndicatorHistory,
   loadLatestState,
+  loadReport,
+  loadStateAt,
   recordMonth,
+  REPORT_RETENTION_MONTHS,
   SaveTooNewError,
+  SNAPSHOT_RETENTION_MONTHS,
 } from './campaignRepository';
 import { currentVersion, DatabaseTooNewError, migrate } from './migrate';
 import { LATEST_DB_VERSION, MIGRATIONS, type Migration } from './migrations';
 import { openNodeDatabase } from './nodeDatabase';
 import type { SqlDatabase } from './types';
 
-const newState = (seed = 7): GameState =>
-  createInitialState({
-    scenarioId: 'teste',
-    difficulty: 'estrategica',
-    seed,
-    indicators: { approval: 0.45, gdpGrowth12m: 0.02, inflation12m: 0.045, unemployment: 0.06, primaryBalance12m: 0 },
-  });
+const content = testContent();
+const newState = (seed = 7): GameState => testState(seed);
 
-const noise: MonthStep = (_s, rng) => [{ indicator: 'approval', cause: 'ruido_teste', delta: rng.normal() * 0.001 }];
+const noise: MonthStep = (s, ctx) => ({
+  state: { ...s },
+  contributions: [{ indicator: 'approval', cause: 'ruido_teste', delta: ctx.rng.normal() * 0.001 }],
+});
 
 const tables = async (db: SqlDatabase) =>
   (await db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")).map(
@@ -49,7 +55,7 @@ describe('migrações', () => {
   it('aplica só as pendentes num banco antigo, preservando os dados', async () => {
     const db = openNodeDatabase();
     await migrate(db, MIGRATIONS.slice(0, 1));
-    await createCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
+    await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
     const v2: Migration = {
       version: LATEST_DB_VERSION + 1,
       name: 'teste_coluna_nova',
@@ -73,6 +79,21 @@ describe('migrações', () => {
     expect(await tables(db)).not.toContain('tmp_ok');
   });
 
+  it('migração 3 cria month_reports', async () => {
+    const db = openNodeDatabase();
+    await migrate(db);
+    expect(await tables(db)).toContain('month_reports');
+  });
+
+  it('migra um banco v2 para v3 mantendo as campanhas', async () => {
+    const db = openNodeDatabase();
+    await migrate(db, MIGRATIONS.slice(0, 2));
+    await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
+    expect(await migrate(db)).toEqual([3, 4]);
+    expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
+    expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Antiga']);
+  });
+
   it('recusa banco criado por versão mais nova do app', async () => {
     const db = openNodeDatabase();
     await migrate(db);
@@ -94,7 +115,8 @@ describe('campanhas', () => {
     for (let m = 0; m < 6; m++) {
       const r = advanceMonth(
         state,
-        m === 0 ? [{ policyId: 'decreto_iof', agendaCost: 1, params: { aliquota: 0.01 } }] : [],
+        { decisions: m === 0 ? [{ policyId: TEST_DECREE.id, agendaCost: 1, params: { aliquota: 0.01 } }] : [] },
+        content,
         [noise],
       );
       await recordMonth(db, 'c1', r);
@@ -106,7 +128,9 @@ describe('campanhas', () => {
     expect(resumed).toEqual(state);
 
     // Continuar a partir do save dá o mesmo que continuar sem salvar (determinismo).
-    expect(advanceMonth(resumed, [], [noise]).state).toEqual(advanceMonth(state, [], [noise]).state);
+    expect(advanceMonth(resumed, { decisions: [] }, content, [noise]).state).toEqual(
+      advanceMonth(state, { decisions: [] }, content, [noise]).state,
+    );
 
     const [summary] = await listCampaigns(db);
     expect(summary).toMatchObject({ id: 'c1', currentMonth: 6, difficulty: 'estrategica', status: 'ativa' });
@@ -118,24 +142,33 @@ describe('campanhas', () => {
     await recordMonth(
       db,
       'c1',
-      advanceMonth(state, [
-        { policyId: 'pec_reforma', agendaCost: 2 },
-        { policyId: 'pl_irpf', agendaCost: 2 },
-      ]),
+      advanceMonth(
+        state,
+        {
+          decisions: [
+            { policyId: TEST_PEC.id, agendaCost: 2 },
+            { policyId: TEST_BILL.id, agendaCost: 1 },
+            { policyId: TEST_DECREE.id, agendaCost: 1 },
+          ],
+        },
+        content,
+        [],
+      ),
     );
     const rows = await db.all<{ policy_id: string; accepted: number; rejection_reason: string | null }>(
       'SELECT policy_id, accepted, rejection_reason FROM decisions ORDER BY position',
     );
     expect(rows).toEqual([
-      { policy_id: 'pec_reforma', accepted: 1, rejection_reason: null },
-      { policy_id: 'pl_irpf', accepted: 0, rejection_reason: 'sem_pontos_de_agenda' },
+      { policy_id: TEST_PEC.id, accepted: 1, rejection_reason: null },
+      { policy_id: TEST_BILL.id, accepted: 1, rejection_reason: null },
+      { policy_id: TEST_DECREE.id, accepted: 0, rejection_reason: 'sem_pontos_de_agenda' },
     ]);
   });
 
   it('recusa gravar um mês fora de ordem (não sobrescreve o save)', async () => {
     const state = newState();
     await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
-    const r = advanceMonth(state, []);
+    const r = advanceMonth(state, { decisions: [] }, content, []);
     await recordMonth(db, 'c1', r);
     await expect(recordMonth(db, 'c1', r)).rejects.toThrow(/não está no mês 0/);
     expect((await loadLatestState(db, 'c1')).monthIndex).toBe(1);
@@ -144,12 +177,165 @@ describe('campanhas', () => {
   it('apagar a campanha remove snapshots e decisões em cascata', async () => {
     const state = newState();
     await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
-    await recordMonth(db, 'c1', advanceMonth(state, [{ policyId: 'a', agendaCost: 1 }]));
+    await recordMonth(
+      db,
+      'c1',
+      advanceMonth(state, { decisions: [{ policyId: TEST_DECREE.id, agendaCost: 1 }] }, content, []),
+    );
     await deleteCampaign(db, 'c1');
     for (const t of ['campaigns', 'snapshots', 'decisions']) {
       expect(await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM ${t}`)).toEqual({ n: 0 });
     }
     await expect(loadLatestState(db, 'c1')).rejects.toBeInstanceOf(CampaignNotFoundError);
+  });
+
+  it('guarda só os últimos 12 relatórios mensais e recupera cada um pelo mês', async () => {
+    const results: MonthResult[] = [];
+    let state = newState(5);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    for (let m = 0; m < 15; m++) {
+      const r = advanceMonth(state, { decisions: [] }, content, []);
+      await recordMonth(db, 'c1', r);
+      results.push(r);
+      state = r.state;
+    }
+
+    // Mês 14 é o último: mantém 3..14 (12 meses), descarta 0..2.
+    expect(REPORT_RETENTION_MONTHS).toBe(12);
+    const kept = await db.all<{ month_index: number }>(
+      'SELECT month_index FROM month_reports WHERE campaign_id = ? ORDER BY month_index',
+      ['c1'],
+    );
+    expect(kept.map((r) => r.month_index)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+    expect(await loadReport(db, 'c1', 14)).toEqual(results[14].report);
+    expect(await loadReport(db, 'c1', 2)).toBeNull();
+  });
+
+  it('relatório gravado antes da Fase 05 (sem explicação por UF) volta com `regional` nulo', async () => {
+    const state = newState(6);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    const { regional: _omit, ...old } = advanceMonth(state, { decisions: [] }, content, []).report;
+    await db.run('INSERT INTO month_reports (campaign_id, month_index, report_json) VALUES (?, ?, ?)', [
+      'c1',
+      0,
+      JSON.stringify(old),
+    ]);
+    expect((await loadReport(db, 'c1', 0))?.regional).toBeNull();
+  });
+
+  it('guarda snapshots completos só dos últimos 13 meses e a série de indicadores inteira (ECONOMIC_MODEL.md §11)', async () => {
+    let state = newState(8);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    for (let m = 0; m < 20; m++) {
+      const r = advanceMonth(state, { decisions: [] }, content, [noise]);
+      await recordMonth(db, 'c1', r);
+      state = r.state;
+    }
+    expect(SNAPSHOT_RETENTION_MONTHS).toBe(13);
+    const snaps = await db.all<{ month_index: number }>(
+      'SELECT month_index FROM snapshots WHERE campaign_id = ? ORDER BY month_index',
+      ['c1'],
+    );
+    expect(snaps.map((r) => r.month_index)).toEqual(Array.from({ length: 13 }, (_, i) => i + 8));
+    expect(await loadLatestState(db, 'c1')).toEqual(state);
+    expect(await loadStateAt(db, 'c1', 19)).not.toBeNull();
+    expect(await loadStateAt(db, 'c1', 7)).toBeNull();
+
+    const history = await loadIndicatorHistory(db, 'c1');
+    expect(history.map((p) => p.monthIndex)).toEqual(Array.from({ length: 21 }, (_, i) => i));
+    expect(history[20]?.indicators).toEqual(state.indicators);
+    expect(history[20]?.grossDebt).toBe(state.economy.grossDebt);
+  });
+
+  it('a migração 4 preenche a série com os snapshots que já existiam', async () => {
+    const old = openNodeDatabase();
+    await migrate(old, MIGRATIONS.slice(0, 3));
+    const state = newState(2);
+    await old.run(
+      `INSERT INTO campaigns (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month)
+       VALUES ('c1', 'x', ?, '0.1.0', 'estrategica', 2, '0.2.0', 0)`,
+      [state.scenarioId],
+    );
+    await old.run(
+      'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
+      ['c1', 0, state.schemaVersion, JSON.stringify(state)],
+    );
+    expect(await migrate(old)).toEqual([4]);
+    const [point] = await loadIndicatorHistory(old, 'c1');
+    expect(point?.indicators).toEqual(state.indicators);
+    expect(point?.selic).toBe(state.economy.selic);
+  });
+
+  it('grava eventos disparados (no mês seguinte, sem escolha) e resolvidos (com a escolha)', async () => {
+    const state = newState();
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    const real = advanceMonth(state, { decisions: [] }, content, []);
+    const fake: MonthResult = {
+      ...real,
+      report: {
+        ...real.report,
+        eventsFired: ['teste_choque'],
+        eventsResolved: [{ eventId: 'teste_choque', choiceId: 'subsidiar', automatic: true }],
+      },
+    };
+    await recordMonth(db, 'c1', fake);
+    const rows = await db.all<{
+      month_index: number;
+      event_id: string;
+      choice_id: string | null;
+      payload_json: string | null;
+    }>('SELECT month_index, event_id, choice_id, payload_json FROM events ORDER BY id');
+    expect(rows).toEqual([
+      { month_index: real.report.monthIndex + 1, event_id: 'teste_choque', choice_id: null, payload_json: null },
+      {
+        month_index: real.report.monthIndex,
+        event_id: 'teste_choque',
+        choice_id: 'subsidiar',
+        payload_json: JSON.stringify({ automatic: true }),
+      },
+    ]);
+  });
+
+  it('carrega um save da v1 (Fase 01) atualizado para a versão atual, sem recusá-lo', async () => {
+    // Save real da Fase 01 gravado por SQL, como estava no banco antes da migração (AI_INSTRUCTIONS.md §2.10).
+    const v1State =
+      '{"schemaVersion":1,"engineVersion":"0.1.0","scenarioId":"prototipo_ficticio","difficulty":"casual","seed":1,"rng":[1,2,3,4],"monthIndex":3,"indicators":{"approval":0.45,"gdpGrowth12m":0.02,"inflation12m":0.045,"unemployment":0.06,"primaryBalance12m":-0.004},"resources":{"politicalCapital":70,"agendaPointsPerMonth":4},"decisionLog":[]}';
+    await db.run(
+      `INSERT INTO campaigns (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month)
+       VALUES ('antiga', 'Save v1', 'prototipo_ficticio', '0.1.0', 'casual', 1, '0.1.0', 3)`,
+    );
+    await db.run(
+      'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
+      ['antiga', 3, 1, v1State],
+    );
+
+    const state = await loadLatestState(db, 'antiga');
+    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.monthIndex).toBe(3);
+    expect(state.indicators).toEqual({
+      approval: 0.45,
+      gdpGrowth12m: 0.02,
+      inflation12m: 0.045,
+      unemployment: 0.06,
+      primaryBalance12m: -0.004,
+    });
+    expect(state.economy).toBeDefined();
+    const numbers = Object.values(state.economy).filter((v): v is number => typeof v === 'number');
+    expect(numbers.length).toBeGreaterThan(0);
+    for (const n of numbers) expect(Number.isFinite(n)).toBe(true);
+    expect(state.proposals).toEqual([]);
+    expect(state.impulses).toEqual([]);
+    expect(state.events.pending).toEqual([]);
+  });
+
+  it('apagar a campanha também remove os relatórios mensais', async () => {
+    const state = newState();
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    const r = advanceMonth(state, { decisions: [] }, content, []);
+    await recordMonth(db, 'c1', r);
+    expect(await loadReport(db, 'c1', 0)).not.toBeNull();
+    await deleteCampaign(db, 'c1');
+    expect(await db.first<{ n: number }>('SELECT COUNT(*) AS n FROM month_reports')).toEqual({ n: 0 });
   });
 
   it('recusa save com estado de versão mais nova', async () => {

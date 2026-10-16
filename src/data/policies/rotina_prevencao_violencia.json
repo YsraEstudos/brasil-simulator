@@ -1,0 +1,23 @@
+{
+  "id": "rotina_prevencao_violencia",
+  "name": "Rotina de prevenção da violência",
+  "summary": "Apoia programas federais de prevenção e atendimento a vítimas por ato executivo, com resultado gradual. Dados e custos PROVISORIO.",
+  "area": "seguranca",
+  "competence": "federal",
+  "instruments": ["decreto_regulamentar"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1200, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 4 },
+  "conditions": [],
+  "impacts": [{ "channel": "custeio", "magnitude": 1200, "lagMonths": 2 }],
+  "risks": [{ "kind": "baixa_adesao", "probability": 0.25 }],
+  "affected": {
+    "groups": ["populacao_urbana", "jovens"],
+    "sectors": ["servicos"],
+    "regions": ["nordeste", "sudeste", "nacional"]
+  },
+  "position": { "economic": -0.1, "social": -0.1 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

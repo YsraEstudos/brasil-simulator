@@ -1,0 +1,61 @@
+{
+  "id": "gastos_tributarios_revisao",
+  "name": "Revisão de gastos tributários",
+  "summary": "Propõe por projeto de lei complementar a revisão de benefícios fiscais setoriais, com aumento de receita tributária. Só produz efeito após a noventena, e a medida costuma gerar questionamentos judiciais e reação dos setores afetados.",
+  "area": "tributacao",
+  "competence": "federal",
+  "instruments": ["projeto_lei_complementar"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": -20000,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["aumento_receita"],
+  "timeline": {
+    "planningMonths": 0,
+    "expectedLegislativeMonths": 4,
+    "executionMonths": 0,
+    "maturationMonths": 0
+  },
+  "conditions": ["noventena"],
+  "impacts": [
+    {
+      "channel": "receita_tributaria",
+      "magnitude": 20000,
+      "lagMonths": 3
+    },
+    {
+      "channel": "credibilidade_fiscal",
+      "magnitude": 0.02,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": -0.005,
+      "lagMonths": 0
+    }
+  ],
+  "risks": [
+    {
+      "kind": "judicializacao",
+      "probability": 0.2
+    }
+  ],
+  "affected": {
+    "groups": ["empresas_beneficiadas"],
+    "sectors": ["industria", "agro"],
+    "regions": ["nacional"]
+  },
+  "regional": {
+    "key": "pib",
+    "scope": [],
+    "boost": {
+      "AM": 3
+    }
+  },
+  "position": {
+    "economic": 0.1,
+    "social": 0
+  },
+  "dataStatus": "PROVISORIO"
+}

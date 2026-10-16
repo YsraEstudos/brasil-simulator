@@ -1,0 +1,111 @@
+{
+  "id": "fase07_eco_queda_abrupta_cambio",
+  "title": "Dólar cai de forma abrupta",
+  "description": "Um fluxo forte de capital estrangeiro derruba o dólar em poucos dias. O real se valoriza, os importados ficam mais baratos e o setor exportador reclama da perda de competitividade.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "exchangeRate",
+        "op": "gt",
+        "value": 5.6
+      }
+    ],
+    "probability": 0.15,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onFire": [
+    {
+      "target": "choque.cambio",
+      "delta": -0.04,
+      "lagMonths": 0,
+      "durationMonths": 2,
+      "label": "Dólar em queda abrupta"
+    },
+    {
+      "target": "choque.inflacao",
+      "delta": -0.002,
+      "lagMonths": 0,
+      "durationMonths": 4,
+      "label": "Importados mais baratos"
+    }
+  ],
+  "choices": [
+    {
+      "id": "deixar_flutuar",
+      "label": "Deixar o câmbio flutuar",
+      "description": "O real segue a valorização. Os preços caem e a aprovação sobe um pouco, mas as exportações perdem competitividade e a arrecadação com elas encolhe.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "receita.tributaria",
+          "delta": -0.001,
+          "lagMonths": 0,
+          "durationMonths": 6
+        }
+      ]
+    },
+    {
+      "id": "comprar_reservas",
+      "label": "Comprar dólares para as reservas",
+      "description": "Compra moeda estrangeira para segurar a valorização. Protege o exportador e acumula reservas, mas o custo financeiro pesa no orçamento.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "choque.cambio",
+          "delta": 0.02,
+          "lagMonths": 0,
+          "durationMonths": 2
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "gasto.custeio",
+          "delta": 0.001,
+          "lagMonths": 0,
+          "durationMonths": 6
+        }
+      ]
+    },
+    {
+      "id": "credito_exportacao",
+      "label": "Estimular exportações",
+      "description": "Crédito e incentivos para exportar compensam a perda de competitividade. Agrada o setor exportador, mas a conta é paga pelo orçamento.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.custeio",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 6
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.004,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "empresario_agro",
+          "delta": 6
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "deixar_flutuar",
+  "dataStatus": "FICTICIO"
+}

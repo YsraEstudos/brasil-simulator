@@ -1,0 +1,38 @@
+{
+  "id": "revisao_rating",
+  "title": "Agência de rating revisa nota",
+  "description": "Uma agência de classificação de risco avalia rebaixar a nota do país, porque o resultado primário piorou nos últimos doze meses. O mercado espera uma resposta.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "primaryBalance12m", "op": "lt", "value": -0.006 }],
+    "probability": 0.1,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onFire": [{ "target": "credibilidade", "delta": -0.03, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "anunciar_ajuste",
+      "label": "Anunciar ajuste",
+      "description": "Recupera a credibilidade e segura a nota, mas o aperto reduz a atividade e desgasta a aprovação.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "credibilidade", "delta": 0.02, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": -0.015, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "choque.hiato", "delta": -0.001, "lagMonths": 0, "durationMonths": 3 }
+      ]
+    },
+    {
+      "id": "ignorar",
+      "label": "Ignorar a revisão",
+      "description": "Evita custo político imediato, mas a perda de credibilidade se soma ao rebaixamento da nota.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "credibilidade", "delta": -0.02, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    }
+  ],
+  "defaultChoice": "ignorar",
+  "dataStatus": "FICTICIO"
+}

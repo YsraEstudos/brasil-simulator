@@ -5,6 +5,8 @@ import { CAMERA, MAX_LEVEL, ROOT } from './config';
 import { lonLatToVec3, pointInRing, raySphere, tileBounds, tileChildren, tileId, vec3ToLonLat, type Vec3 } from './geo';
 import { blockOf, pickEvictions } from './cache';
 import { selectTiles, type LodInput } from './lod';
+import { isHole, ufFillGeometries } from './fills';
+import { findUf, UFS } from './ufs';
 
 describe('geo', () => {
   it('converte lon/lat ↔ vetor (ida e volta)', () => {
@@ -194,6 +196,57 @@ describe('cache + lod durante zoom contínuo', () => {
   it('estabiliza com a câmera parada quando os ancestrais são protegidos', () => {
     for (const cap of [14, 20]) {
       expect(simulate(true, cap).reloadsWhileStill).toBe(0);
+    }
+  });
+});
+
+describe('UFs no globo (Fase 05)', () => {
+  it('toque no DF acha o DF, não GO (o contorno de GO envolve o DF)', () => {
+    expect(findUf(-47.88, -15.79)?.sigla).toBe('DF');
+    expect(findUf(-49.25, -16.68)?.sigla).toBe('GO');
+  });
+
+  it('preenchimento: uma geometria triangulada por UF, sem vizinha de fronteira virando buraco', () => {
+    const fills = ufFillGeometries();
+    expect(fills.size).toBe(27);
+    for (const g of fills.values()) expect(g.getIndex()?.count ?? 0).toBeGreaterThan(0);
+    // Sem enclaves nos contornos atuais: cada UF usa só os próprios anéis (sem o ponto de fechamento repetido).
+    for (const uf of UFS) {
+      const own = uf.polygons.reduce((n, ring) => {
+        const closed =
+          ring.length > 1 && ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1];
+        return n + ring.length - (closed ? 1 : 0);
+      }, 0);
+      expect(fills.get(uf.sigla)?.getAttribute('position').count, uf.sigla).toBe(own);
+    }
+  });
+
+  it('isHole: enclave vira buraco; vizinha que só divide a fronteira não', () => {
+    const outer = [
+      [0, 0],
+      [10, 0],
+      [10, 10],
+      [0, 10],
+    ];
+    const enclave = [
+      [4, 4],
+      [6, 4],
+      [6, 6],
+      [4, 6],
+    ];
+    const neighbor = [
+      [10, 0],
+      [20, 0],
+      [20, 10],
+      [10, 10],
+    ];
+    expect(isHole(enclave, outer)).toBe(true);
+    expect(isHole(neighbor, outer)).toBe(false);
+  });
+
+  it('o centroide de cada uma das 27 UFs cai dentro da própria UF', () => {
+    for (const uf of UFS) {
+      expect(findUf(uf.centroid[0], uf.centroid[1])?.sigla).toBe(uf.sigla);
     }
   });
 });

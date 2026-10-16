@@ -1,0 +1,106 @@
+{
+  "id": "paralisacao_maquina",
+  "title": "Serviços públicos começam a parar",
+  "description": "Com as despesas obrigatórias ocupando quase todo o limite, as discricionárias caíram abaixo do piso de funcionamento: emissão de passaportes, manutenção de rodovias e bolsas de pesquisa começam a parar.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "discretionarySpending",
+        "op": "lt",
+        "value": 0.012
+      }
+    ],
+    "probability": 0.25,
+    "cooldownMonths": 6,
+    "maxOccurrences": 10
+  },
+  "onFire": [
+    {
+      "target": "aprovacao",
+      "delta": -0.01,
+      "lagMonths": 0,
+      "durationMonths": 1
+    },
+    {
+      "target": "capital_politico",
+      "delta": -2,
+      "lagMonths": 0,
+      "durationMonths": 1
+    }
+  ],
+  "choices": [
+    {
+      "id": "aceitar_cortes",
+      "label": "Administrar os cortes",
+      "description": "Mantém o limite, mas os serviços seguem precários e a falta de manutenção reduz a capacidade de crescer.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": -0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "oferta.potencial",
+          "delta": -0.0005,
+          "lagMonths": 0,
+          "durationMonths": 12,
+          "label": "Falta de manutenção e serviços parados"
+        }
+      ]
+    },
+    {
+      "id": "cortar_emendas",
+      "label": "Remanejar emendas",
+      "description": "Tira verbas de emendas parlamentares para manter a máquina: os serviços voltam, mas o Congresso reage mal.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.obrigatoria",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 12,
+          "label": "Emendas remanejadas para custeio"
+        },
+        {
+          "target": "relacao_congresso",
+          "delta": -8,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "adiar_pagamentos",
+      "label": "Adiar pagamentos",
+      "description": "Empurra despesas para restos a pagar: alivia agora, mas a conta volta em seis meses e o mercado percebe a manobra.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.obrigatoria",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "label": "Pagamentos adiados"
+        },
+        {
+          "target": "gasto.obrigatoria",
+          "delta": 0.002,
+          "lagMonths": 6,
+          "durationMonths": 6,
+          "label": "Restos a pagar"
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "aceitar_cortes",
+  "dataStatus": "FICTICIO"
+}

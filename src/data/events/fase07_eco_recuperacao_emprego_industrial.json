@@ -1,0 +1,112 @@
+{
+  "id": "fase07_eco_recuperacao_emprego_industrial",
+  "title": "Indústria volta a contratar",
+  "description": "Pedidos industriais sobem e fábricas voltam a contratar. O desemprego começa a cair, mas o setor cobra crédito, energia barata e proteção contra importados para manter o ritmo.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "unemployment",
+        "op": "gt",
+        "value": 0.055
+      },
+      {
+        "variable": "gdpGrowth12m",
+        "op": "gt",
+        "value": 0.015
+      }
+    ],
+    "forbidsFlags": ["eco_ruido_fiscal"],
+    "probability": 0.1,
+    "cooldownMonths": 24,
+    "maxOccurrences": 2
+  },
+  "onFire": [
+    {
+      "target": "choque.hiato",
+      "delta": 0.001,
+      "lagMonths": 0,
+      "durationMonths": 4,
+      "label": "Indústria contrata"
+    },
+    {
+      "target": "receita.renda",
+      "delta": 0.002,
+      "lagMonths": 0,
+      "durationMonths": 6,
+      "label": "Mais salários"
+    }
+  ],
+  "choices": [
+    {
+      "id": "credito_industria",
+      "label": "Ampliar crédito à indústria",
+      "description": "Libera crédito subsidiado por um banco de fomento. Acelera a recuperação, mas aquece a demanda e pode pressionar preços.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "demanda.credito",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 4
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.008,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "choque.inflacao",
+          "delta": 0.001,
+          "lagMonths": 0,
+          "durationMonths": 3
+        }
+      ]
+    },
+    {
+      "id": "desonerar_folha",
+      "label": "Desonerar a folha da indústria",
+      "description": "Reduz encargos sobre a folha das empresas. Estimula contratações e ajuda na bancada industrial, mas corta a arrecadação por mais de um ano.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "receita.tributaria",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 12,
+          "label": "Desoneração da folha"
+        },
+        {
+          "target": "relacao_congresso",
+          "delta": 5,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "deixar_recuperar",
+      "label": "Deixar a recuperação seguir",
+      "description": "Não gasta nada e aproveita a recuperação natural. O ganho político é modesto, e o desemprego pode cair mais devagar.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": 0.004,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "deixar_recuperar",
+  "dataStatus": "FICTICIO"
+}

@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.23",
+    "@expo/vector-icons": "^15.0.2",
     "@react-three/fiber": "^9.8.1",
     "eslint-config-expo": "~57.0.2",
     "expo": "~57.0.28",
@@ -40,6 +41,7 @@
     "@types/node": "22.20.5",
     "@types/react": "~19.2.2",
     "@types/three": "^0.186.0",
+    "@vitest/coverage-v8": "^5.0.4",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.10",
@@ -54,10 +56,15 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "build:globe": "python scripts/data/build_globe.py",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "sim:balance": "vitest run --config vitest.balance.config.mts scripts/sim/balance.sim.ts",
+    "sim:sensitivity": "vitest run --config vitest.balance.config.mts scripts/sim/sensitivity.sim.ts",
+    "sim:reform": "vitest run --config vitest.balance.config.mts scripts/sim/reform.sim.ts",
+    "sim:events": "vitest run --config vitest.balance.config.mts scripts/sim/events.sim.ts"
   },
   "private": true
 }

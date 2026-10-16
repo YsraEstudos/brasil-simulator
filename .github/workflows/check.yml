@@ -20,7 +20,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
+      # Mesmo conteúdo de `npm run check`, com os testes gerando coverage/lcov.info para o SonarCloud.
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test:coverage
       # O Sonar só roda quando o token e as variáveis existem no repositório; sem eles o passo é pulado.
       - name: Check SonarCloud configuration
         id: sonar

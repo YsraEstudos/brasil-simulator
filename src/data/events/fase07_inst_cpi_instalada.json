@@ -1,0 +1,58 @@
+{
+  "id": "fase07_inst_cpi_instalada",
+  "title": "CPI instalada na Câmara",
+  "description": "Com as assinaturas de um terço da Casa, uma comissão parlamentar de inquérito é instalada para apurar o caso da pasta investigada. Ela tem fato determinado e prazo certo. Caso e personagens fictícios.",
+  "characterId": "pres_camara",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [],
+    "probability": 1,
+    "cooldownMonths": 0,
+    "maxOccurrences": 1
+  },
+  "onFireFlags": ["cpi_instalada"],
+  "chainedOnly": true,
+  "onFire": [
+    { "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 },
+    { "target": "capital_politico", "delta": -2, "lagMonths": 0, "durationMonths": 1 }
+  ],
+  "choices": [
+    {
+      "id": "colaborar_com_a_cpi",
+      "label": "Colaborar com a CPI",
+      "description": "Entrega documentos e libera depoimentos. Melhora a relação com a Casa e a credibilidade, e a Presidência da Câmara reconhece a postura.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 4, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "pres_camara", "delta": 5 }]
+    },
+    {
+      "id": "acionar_auditoria_tcu",
+      "label": "Acionar auditoria do TCU",
+      "description": "Encaminha ao Tribunal de Contas os documentos da comissão e pede auditoria. Ajuda a apuração e aumenta a chance, de 40% em três meses, de um parecer sobre as contas do governo.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "relacao_congresso", "delta": 2, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "followUps": [{ "eventId": "fase07_inst_tcu_parecer", "delayMonths": 3, "probability": 0.4 }]
+    },
+    {
+      "id": "deixar_a_cpi_correr",
+      "label": "Deixar a CPI correr",
+      "description": "Não interfere nos trabalhos da comissão. O governo fica sem influência sobre a pauta da Casa, a relação com o Congresso piora e a aprovação cai. Escolha padrão se você não responder.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "relacao_congresso", "delta": -4, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "pres_camara", "delta": -5 }]
+    }
+  ],
+  "defaultChoice": "deixar_a_cpi_correr",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "dataStatus": "FICTICIO"
+}

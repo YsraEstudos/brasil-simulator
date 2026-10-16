@@ -1,0 +1,31 @@
+{
+  "id": "projeto_corredores_logisticos",
+  "name": "Corredores logísticos",
+  "summary": "Projeto de recuperação e ampliação de corredores logísticos federais, com licitação e obra rastreáveis. Dados e custos PROVISORIO.",
+  "area": "infraestrutura",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 15000, "disbursementProfile": [0.15, 0.5, 0.35] },
+  "fundingSources": ["credito_adicional"],
+  "timeline": { "planningMonths": 3, "expectedLegislativeMonths": 5, "executionMonths": 36, "maturationMonths": 12 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 15000, "lagMonths": 6 },
+    { "channel": "custeio", "magnitude": 500, "lagMonths": 30 },
+    { "channel": "aprovacao", "magnitude": 0.008, "lagMonths": 6 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.32 },
+    { "kind": "sobrecusto", "probability": 0.25 }
+  ],
+  "affected": {
+    "groups": ["transportadores", "trabalhadores_construcao"],
+    "sectors": ["construcao", "industria", "servicos"],
+    "regions": ["centro_oeste", "nordeste", "sul", "nacional"]
+  },
+  "position": { "economic": 0.1, "social": 0 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 12, "procurementMonths": 8, "efficiency": 0.72, "annualMaintenanceRate": 0.04 }
+}

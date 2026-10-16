@@ -1,0 +1,22 @@
+{
+  "id": "rotina_atendimento_previdenciario",
+  "name": "Rotina de atendimento previdenciário",
+  "summary": "Reforça canais de atendimento e triagem previdenciária por portaria, reduzindo filas operacionais. Dados e custos PROVISORIO.",
+  "area": "previdencia",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1800, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 2 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 1800, "lagMonths": 1 },
+    { "channel": "aprovacao", "magnitude": 0.005, "lagMonths": 2 }
+  ],
+  "risks": [{ "kind": "atraso", "probability": 0.2 }],
+  "affected": { "groups": ["aposentados", "trabalhadores_formais"], "sectors": ["servicos"], "regions": ["nacional"] },
+  "position": { "economic": -0.1, "social": -0.2 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

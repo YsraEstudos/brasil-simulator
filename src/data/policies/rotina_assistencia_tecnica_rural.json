@@ -1,0 +1,26 @@
+{
+  "id": "rotina_assistencia_tecnica_rural",
+  "name": "Rotina de assistência técnica rural",
+  "summary": "Mantém assistência técnica e extensão rural em programas federais por portaria executiva. Dados e custos PROVISORIO.",
+  "area": "agro",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1400, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 3 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 1400, "lagMonths": 2 },
+    { "channel": "aprovacao", "magnitude": 0.003, "lagMonths": 2 }
+  ],
+  "risks": [{ "kind": "baixa_adesao", "probability": 0.2 }],
+  "affected": {
+    "groups": ["agricultores_familiares", "produtores_rurais"],
+    "sectors": ["agropecuaria"],
+    "regions": ["nordeste", "centro_oeste", "sul", "nacional"]
+  },
+  "position": { "economic": -0.1, "social": -0.1 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

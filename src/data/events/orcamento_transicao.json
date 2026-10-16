@@ -1,0 +1,104 @@
+{
+  "id": "orcamento_transicao",
+  "title": "Orçamento de transição",
+  "description": "O orçamento de 2027 foi votado pelo governo anterior e deixa pouca margem para as prioridades da nova gestão. A equipe propõe caminhos para abrir espaço ainda no primeiro ano.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "monthIndex",
+        "op": "lt",
+        "value": 1
+      }
+    ],
+    "probability": 1,
+    "cooldownMonths": 120,
+    "maxOccurrences": 1
+  },
+  "onFire": [],
+  "choices": [
+    {
+      "id": "manter_loa",
+      "label": "Executar a lei aprovada",
+      "description": "Respeita o orçamento votado e preserva a credibilidade; as prioridades do governo esperam o orçamento de 2028.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "remanejar",
+      "label": "Remanejar dotações",
+      "description": "Desloca custeio para investimentos prioritários dentro do limite, com desgaste na base que perde verbas.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.investimento",
+          "delta": 0.001,
+          "lagMonths": 0,
+          "durationMonths": 11,
+          "label": "Remanejamento para investimentos"
+        },
+        {
+          "target": "gasto.custeio",
+          "delta": -0.001,
+          "lagMonths": 0,
+          "durationMonths": 11,
+          "label": "Remanejamento para investimentos"
+        },
+        {
+          "target": "relacao_congresso",
+          "delta": -3,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.005,
+          "lagMonths": 3,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "emenda_transicao",
+      "label": "Emenda de transição",
+      "description": "Pede ao Congresso uma exceção ao limite para 2027: amplia gastos e aprovação, mas o mercado cobra pela flexibilização da regra fiscal.",
+      "agendaCost": 2,
+      "effects": [
+        {
+          "target": "gasto.extraordinario",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 12,
+          "label": "Gasto fora do limite (emenda de transição)"
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.015,
+          "lagMonths": 2,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.03,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "capital_politico",
+          "delta": -5,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "manter_loa",
+  "dataStatus": "FICTICIO"
+}

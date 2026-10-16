@@ -1,0 +1,52 @@
+{
+  "id": "fase07_pol_oposicao_obstrui",
+  "title": "Oposição obstrui a pauta do governo",
+  "description": "A líder da oposição na Câmara anuncia obstrução de plenário e retira o apoio a votações de interesse do governo. A pauta fica trancada até que o governo responda.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      { "variable": "congressRelation", "op": "lt", "value": -10 },
+      { "variable": "proposalsInCongress", "op": "gt", "value": 0 }
+    ],
+    "probability": 0.2,
+    "cooldownMonths": 9,
+    "maxOccurrences": 3,
+    "forbidsFlags": ["pol_pacto_institucional"]
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "characterId": "lider_oposicao",
+  "onFire": [{ "target": "relacao_congresso", "delta": -3, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "negociar_oposicao",
+      "label": "Abrir negociação com a oposição",
+      "description": "Aceita pontos da agenda da oposição em troca de liberar a pauta. A relação com o Congresso melhora, mas a líder ganha espaço e parte da base reclama.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "relacao_congresso", "delta": 8, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "lider_oposicao", "delta": 10 }]
+    },
+    {
+      "id": "enfrentar_obstrucao",
+      "label": "Enfrentar a obstrução",
+      "description": "Denuncia a obstrução como chantagem e aposta no desgaste da oposição. A aprovação sobe com o discurso, mas a relação com o Congresso cai.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -6, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "lider_oposicao", "delta": -10 }]
+    },
+    {
+      "id": "esperar_pauta",
+      "label": "Esperar sem ceder",
+      "description": "A pauta segue trancada. O capital político cai a cada semana sem votação, e a oposição ganha tempo para organizar o discurso.",
+      "agendaCost": 0,
+      "effects": [{ "target": "capital_politico", "delta": -3, "lagMonths": 0, "durationMonths": 1 }]
+    }
+  ],
+  "defaultChoice": "esperar_pauta",
+  "dataStatus": "FICTICIO"
+}

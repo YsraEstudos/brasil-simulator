@@ -1,0 +1,31 @@
+{
+  "id": "projeto_conectividade_publica",
+  "name": "Conectividade pública",
+  "summary": "Projeto de conectividade para escolas e serviços federais, com implantação por lotes e manutenção anual. Dados e custos PROVISORIO.",
+  "area": "infraestrutura",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 7000, "disbursementProfile": [0.45, 0.55] },
+  "fundingSources": ["credito_adicional"],
+  "timeline": { "planningMonths": 2, "expectedLegislativeMonths": 4, "executionMonths": 24, "maturationMonths": 9 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 7000, "lagMonths": 5 },
+    { "channel": "custeio", "magnitude": 500, "lagMonths": 22 },
+    { "channel": "aprovacao", "magnitude": 0.007, "lagMonths": 5 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.24 },
+    { "kind": "sobrecusto", "probability": 0.14 }
+  ],
+  "affected": {
+    "groups": ["estudantes", "usuarios_de_servicos_publicos"],
+    "sectors": ["industria", "servicos"],
+    "regions": ["norte", "nordeste", "centro_oeste", "nacional"]
+  },
+  "position": { "economic": 0.1, "social": -0.1 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 4, "procurementMonths": 5, "efficiency": 0.82, "annualMaintenanceRate": 0.04 }
+}

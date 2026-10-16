@@ -1,0 +1,46 @@
+{
+  "id": "escandalo_ministerio",
+  "title": "Escândalo em ministério",
+  "description": "Denúncias de irregularidades atingem uma pasta ocupada por indicação de um bloco parlamentar. Quanto mais tempo os indicados ficam no cargo, maior o risco. A imprensa cobra uma resposta.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "partisanMinistries", "op": "gt", "value": 0 }],
+    "probability": 1,
+    "probabilityFactor": "cabinetScandalRisk",
+    "cooldownMonths": 12,
+    "maxOccurrences": 4
+  },
+  "onFire": [{ "target": "aprovacao", "delta": -0.02, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "demitir_ministro",
+      "label": "Demitir o ministro",
+      "description": "Demite o indicado há mais tempo no cargo e põe um técnico no lugar. Recupera parte da aprovação, mas o bloco perde a pasta, a relação com ele piora e a demissão gasta capital político.",
+      "agendaCost": 1,
+      "effects": [{ "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 }],
+      "dismissMinister": true
+    },
+    {
+      "id": "defender",
+      "label": "Defender o ministro",
+      "description": "Mantém a aliança com o bloco, mas a aprovação cai enquanto a suspeita durar.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 4, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "abrir_investigacao",
+      "label": "Abrir investigação",
+      "description": "Mostra transparência e ganha um pouco de aprovação, mas o bloco vê a investigação como ameaça e reage mal.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -6, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    }
+  ],
+  "defaultChoice": "defender",
+  "dataStatus": "FICTICIO"
+}

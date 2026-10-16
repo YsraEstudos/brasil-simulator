@@ -1,0 +1,206 @@
+import { formatNumber, formatPercent, formatPointsDelta } from '@/components/ui/format';
+import {
+  populationShares,
+  regionsOf,
+  regionsView,
+  type GameContent,
+  type GameState,
+  type RegionalPiece,
+  type UfExplanation,
+  type UfState,
+} from '@/engine';
+
+/**
+ * Indicadores do mapa da aba Brasil (GAME_DESIGN.md §4.5; ECONOMIC_MODEL.md §5.15). Funções puras: valor por
+ * UF, faixa de cor, texto e a explicação "Por que esta UF está diferente da média?".
+ */
+
+export type MapIndicator = 'crescimento' | 'desemprego' | 'aprovacao' | 'renda' | 'governador';
+
+export interface MapIndicatorSpec {
+  id: MapIndicator;
+  label: string;
+  /** `diverging`: comparação com a média nacional (cinza = na média). `sequential`: magnitude. */
+  scale: 'diverging' | 'sequential';
+  /** Subir é bom para o governo (azul) ou ruim (vermelho), nas escalas divergentes. */
+  goodWhen: 'up' | 'down';
+  /** Meia-largura da faixa central (cinza) e passo das faixas, na unidade do valor. */
+  step: number;
+  legend: string;
+}
+
+export const MAP_INDICATORS: readonly MapIndicatorSpec[] = [
+  {
+    id: 'crescimento',
+    label: 'Crescimento',
+    scale: 'diverging',
+    goodWhen: 'up',
+    step: 0.002,
+    legend: 'Crescimento em 12 meses comparado ao do Brasil',
+  },
+  {
+    id: 'desemprego',
+    label: 'Desemprego',
+    scale: 'diverging',
+    goodWhen: 'down',
+    step: 0.01,
+    legend: 'Desemprego comparado à taxa nacional',
+  },
+  {
+    id: 'aprovacao',
+    label: 'Aprovação',
+    scale: 'diverging',
+    goodWhen: 'up',
+    step: 0.01,
+    legend: 'Aprovação do governo comparada à nacional',
+  },
+  {
+    id: 'renda',
+    label: 'Renda',
+    scale: 'sequential',
+    goodWhen: 'up',
+    step: 0.25,
+    legend: 'PIB per capita (Brasil = 1)',
+  },
+  {
+    id: 'governador',
+    label: 'Governadores',
+    scale: 'diverging',
+    goodWhen: 'up',
+    step: 10,
+    legend: 'Relação do governador com o governo (−100 a 100)',
+  },
+];
+
+/**
+ * Cores das faixas, validadas para o fundo escuro do globo (skill dataviz): divergente vermelho ↔ azul com cinza
+ * neutro no meio; sequencial de um só azul, do escuro (pouco) ao claro (muito), porque no fundo escuro o claro
+ * é o que se destaca. A identidade nunca fica só na cor: o cartão e a lista mostram os números.
+ */
+export const DIVERGING = ['#e34948', '#ec9a8f', '#9a9893', '#86b6ef', '#3987e5'] as const;
+export const SEQUENTIAL = ['#184f95', '#2a78d6', '#5598e7', '#9ec5f4', '#cde2fb'] as const;
+
+export function indicatorSpec(id: MapIndicator): MapIndicatorSpec {
+  const spec = MAP_INDICATORS.find((m) => m.id === id);
+  if (!spec) throw new RangeError(`indicador desconhecido: ${id}`);
+  return spec;
+}
+
+/** Valor da UF no indicador (a comparação com a média já descontada nas escalas divergentes). */
+export function ufValue(id: MapIndicator, uf: UfState, state: GameState, populationShare: number): number {
+  switch (id) {
+    case 'crescimento':
+      return uf.growthGap12m;
+    case 'desemprego':
+      return uf.unemployment - state.indicators.unemployment;
+    case 'aprovacao':
+      return uf.approval - state.indicators.approval;
+    case 'renda':
+      return uf.share / populationShare;
+    case 'governador':
+      return uf.governorRelation;
+  }
+}
+
+/** Índice da faixa de cor (0 … 4). Divergente: 2 = na média; 0 e 4 = longe dela (vermelho = pior). */
+export function bin(spec: MapIndicatorSpec, value: number): number {
+  if (spec.scale === 'sequential') {
+    // Renda relativa: < 0,5 | 0,5–0,75 | 0,75–1 | 1–1,5 | > 1,5 da média nacional
+    const edges = [0.5, 0.75, 1, 1.5];
+    return edges.filter((e) => value >= e).length;
+  }
+  const signed = spec.goodWhen === 'up' ? value : -value;
+  if (Math.abs(signed) < spec.step) return 2;
+  if (signed > 0) return signed < 3 * spec.step ? 3 : 4;
+  return -signed < 3 * spec.step ? 1 : 0;
+}
+
+export function binColor(spec: MapIndicatorSpec, index: number): string {
+  return (spec.scale === 'sequential' ? SEQUENTIAL : DIVERGING)[index];
+}
+
+/** Rótulos das faixas da legenda, da primeira à última cor. */
+export function legendLabels(spec: MapIndicatorSpec): string[] {
+  if (spec.scale === 'sequential') return ['< 0,5', '0,5–0,75', '0,75–1', '1–1,5', '> 1,5'];
+  const worse = spec.goodWhen === 'up' ? 'abaixo' : 'acima';
+  const better = spec.goodWhen === 'up' ? 'acima' : 'abaixo';
+  if (spec.id === 'governador') return ['hostil', 'distante', 'neutro', 'próximo', 'aliado'];
+  return [`bem ${worse}`, worse, 'na média', better, `bem ${better}`];
+}
+
+/** Texto do valor na lista e no cartão. */
+export function formatValue(id: MapIndicator, value: number): string {
+  switch (id) {
+    case 'crescimento':
+    case 'desemprego':
+    case 'aprovacao':
+      return formatPointsDelta(value);
+    case 'renda':
+      return formatNumber(value, 2);
+    case 'governador':
+      return `${value > 0 ? '+' : ''}${formatNumber(value, 0)}`;
+  }
+}
+
+export interface UfRow {
+  uf: UfState;
+  name: string;
+  region: string;
+  populationShare: number;
+  value: number;
+  color: string;
+}
+
+/** Linhas do mapa e da lista (ordem do cenário), com o valor e a cor do indicador. */
+export function mapRows(id: MapIndicator, state: GameState, content: GameContent): UfRow[] {
+  const spec = indicatorSpec(id);
+  const scenarioUfs = regionsOf(content);
+  const pop = populationShares(scenarioUfs);
+  return regionsView(state, content).map((uf, i) => {
+    const value = ufValue(id, uf, state, pop[i]);
+    return {
+      uf,
+      name: scenarioUfs[i].name,
+      region: scenarioUfs[i].region,
+      populationShare: pop[i],
+      value,
+      color: binColor(spec, bin(spec, value)),
+    };
+  });
+}
+
+/** Cor por sigla, para o globo. */
+export function mapFills(rows: readonly UfRow[]): Record<string, string> {
+  return Object.fromEntries(rows.map((r) => [r.uf.id, r.color]));
+}
+
+/** Quantas parcelas mostrar no cartão; o resto vira "Outras causas". */
+export const MAX_PIECES = 5;
+/** Parcelas menores que isto (0,05 p.p. ou 0,05%) não aparecem sozinhas: somem no arredondamento. */
+export const MIN_SHOWN = 0.0005;
+
+/**
+ * Explicação da UF para o indicador escolhido, ordenada pelo tamanho, com as menores agrupadas em "Outras
+ * causas" (a soma continua igual à diferença). Crescimento usa a atividade em relação à tendência; renda e
+ * governador usam a explicação da atividade e da aprovação, respectivamente.
+ */
+export function explanationFor(id: MapIndicator, explanation: UfExplanation | undefined): RegionalPiece[] {
+  if (!explanation) return [];
+  const pieces =
+    id === 'desemprego'
+      ? explanation.unemployment
+      : id === 'aprovacao' || id === 'governador'
+        ? explanation.approval
+        : explanation.activity;
+  const sorted = [...pieces].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  const top = sorted.slice(0, MAX_PIECES - 1).filter((p) => Math.abs(p.delta) >= MIN_SHOWN);
+  const rest = sorted.slice(top.length).reduce((s, p) => s + p.delta, 0);
+  // O resto vira uma linha só, e só aparece quando chega a 0,05 (p.p. ou %) depois de arredondado.
+  return Math.abs(rest) >= MIN_SHOWN ? [...top, { cause: 'outras', label: 'Outras causas', delta: rest }] : top;
+}
+
+/** Texto de uma parcela: p.p. para desemprego e aprovação, % para a atividade. */
+export function formatPiece(id: MapIndicator, delta: number): string {
+  if (id === 'desemprego' || id === 'aprovacao' || id === 'governador') return formatPointsDelta(delta);
+  return `${delta > 0 ? '+' : ''}${formatPercent(delta)}`;
+}

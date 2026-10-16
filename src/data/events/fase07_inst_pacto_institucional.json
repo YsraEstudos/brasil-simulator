@@ -1,0 +1,52 @@
+{
+  "id": "fase07_inst_pacto_institucional",
+  "title": "Pacto entre os Poderes",
+  "description": "A Presidência do Senado propõe um pacto institucional para encerrar o desgaste das investigações. O acordo prevê trégua no Congresso e a suspensão de novas acusações contra o governo. Caso e personagens fictícios.",
+  "characterId": "pres_senado",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [],
+    "probability": 1,
+    "cooldownMonths": 0,
+    "maxOccurrences": 1,
+    "requiresFlags": ["cpi_encerrada"],
+    "forbidsFlags": ["impeachment_denuncia_aceita"]
+  },
+  "chainedOnly": true,
+  "onFire": [],
+  "choices": [
+    {
+      "id": "aceitar_o_pacto",
+      "label": "Aceitar o pacto",
+      "description": "Assina o acordo com a Presidência do Senado. Recupera parte da relação com o Congresso, da aprovação e do capital político, e encerra o caso investigado. Custa um ponto de agenda.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.015, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 8, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "capital_politico", "delta": 4, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "clearFlags": ["escandalo_denuncia"],
+      "characterEffects": [
+        { "characterId": "pres_senado", "delta": 8 },
+        { "characterId": "vice_presidente", "delta": 5 }
+      ]
+    },
+    {
+      "id": "pacto_com_ressalvas",
+      "label": "Aceitar com ressalvas",
+      "description": "Assina o pacto com ressalvas públicas. Os ganhos são menores, mas custa nada em agenda e encerra o caso investigado. Escolha padrão se você não responder.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 4, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "clearFlags": ["escandalo_denuncia"],
+      "characterEffects": [{ "characterId": "pres_senado", "delta": 4 }]
+    }
+  ],
+  "defaultChoice": "pacto_com_ressalvas",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "dataStatus": "FICTICIO"
+}

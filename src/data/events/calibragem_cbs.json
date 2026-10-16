@@ -1,0 +1,103 @@
+{
+  "id": "calibragem_cbs",
+  "title": "Calibragem da alíquota da CBS",
+  "description": "No primeiro ano de cobrança integral da CBS, a arrecadação diverge da estimativa e a alíquota de referência precisa ser recalibrada. Setores e governadores acompanham de perto.",
+  "trigger": {
+    "monthsOfYear": [3, 4, 5, 6],
+    "conditions": [
+      {
+        "variable": "monthIndex",
+        "op": "lt",
+        "value": 12
+      }
+    ],
+    "probability": 0.35,
+    "cooldownMonths": 12,
+    "maxOccurrences": 1
+  },
+  "onFire": [],
+  "choices": [
+    {
+      "id": "manter_aliquota",
+      "label": "Manter a alíquota",
+      "description": "Preserva a previsibilidade da transição e um pouco da credibilidade, sem efeito imediato no bolso.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "reduzir_aliquota",
+      "label": "Reduzir a alíquota",
+      "description": "Alivia os preços e agrada o consumidor, mas a arrecadação cai nos próximos dois anos e o mercado desconfia da meta.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "receita.desoneracao_consumo",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 24,
+          "label": "Redução da alíquota da CBS"
+        },
+        {
+          "target": "choque.inflacao",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 6
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "elevar_aliquota",
+      "label": "Elevar a alíquota",
+      "description": "Garante a arrecadação prometida e ajuda a meta fiscal, mas encarece produtos e desgasta a aprovação.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "receita.consumo",
+          "delta": 0.003,
+          "lagMonths": 0,
+          "durationMonths": 24,
+          "label": "Elevação da alíquota da CBS"
+        },
+        {
+          "target": "choque.inflacao",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 6
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "manter_aliquota",
+  "dataStatus": "FICTICIO"
+}

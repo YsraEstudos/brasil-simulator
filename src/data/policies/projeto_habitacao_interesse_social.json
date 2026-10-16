@@ -1,0 +1,31 @@
+{
+  "id": "projeto_habitacao_interesse_social",
+  "name": "Habitação de interesse social",
+  "summary": "Projeto de construção e urbanização de moradias de interesse social com fases de carteira e manutenção prevista. Dados e custos PROVISORIO.",
+  "area": "habitacao",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 13000, "disbursementProfile": [0.2, 0.5, 0.3] },
+  "fundingSources": ["credito_adicional"],
+  "timeline": { "planningMonths": 3, "expectedLegislativeMonths": 5, "executionMonths": 30, "maturationMonths": 12 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 13000, "lagMonths": 6 },
+    { "channel": "custeio", "magnitude": 650, "lagMonths": 28 },
+    { "channel": "aprovacao", "magnitude": 0.012, "lagMonths": 6 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.27 },
+    { "kind": "sobrecusto", "probability": 0.2 }
+  ],
+  "affected": {
+    "groups": ["baixa_renda", "moradores_urbanos"],
+    "sectors": ["construcao", "servicos"],
+    "regions": ["nordeste", "norte", "sudeste", "nacional"]
+  },
+  "position": { "economic": -0.2, "social": -0.3 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 8, "procurementMonths": 6, "efficiency": 0.77, "annualMaintenanceRate": 0.03 }
+}

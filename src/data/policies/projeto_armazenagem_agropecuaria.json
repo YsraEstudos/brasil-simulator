@@ -1,0 +1,31 @@
+{
+  "id": "projeto_armazenagem_agropecuaria",
+  "name": "Armazenagem agropecuária",
+  "summary": "Projeto de armazéns e estruturas de apoio à armazenagem agrícola, com obra e manutenção rastreáveis. Dados e custos PROVISORIO.",
+  "area": "agro",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 6000, "disbursementProfile": [0.4, 0.6] },
+  "fundingSources": ["operacao_credito"],
+  "timeline": { "planningMonths": 2, "expectedLegislativeMonths": 4, "executionMonths": 24, "maturationMonths": 9 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 6000, "lagMonths": 5 },
+    { "channel": "custeio", "magnitude": 250, "lagMonths": 22 },
+    { "channel": "aprovacao", "magnitude": 0.005, "lagMonths": 5 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.23 },
+    { "kind": "sobrecusto", "probability": 0.17 }
+  ],
+  "affected": {
+    "groups": ["produtores_rurais", "consumidores"],
+    "sectors": ["agropecuaria", "construcao", "industria"],
+    "regions": ["centro_oeste", "sul", "nacional"]
+  },
+  "position": { "economic": 0.1, "social": 0 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 5, "procurementMonths": 5, "efficiency": 0.79, "annualMaintenanceRate": 0.025 }
+}

@@ -3,7 +3,7 @@
     "name": "brasil-simulator",
     "slug": "brasil-simulator",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "brasilsimulator",
     "userInterfaceStyle": "automatic",
