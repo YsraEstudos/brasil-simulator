@@ -121,4 +121,4 @@ function load(raw: unknown, index: number): GameEvent {
   return r.event;
 }
 
-export const EVENTS: readonly GameEvent[] = RAW_EVENTS.map(load);
+export const EVENTS: readonly GameEvent[] = RAW_EVENTS.map((raw, index) => load(raw, index));

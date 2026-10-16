@@ -327,7 +327,7 @@ export function proposalForecast(state: GameState, proposal: Proposal, content: 
   if (session === null) return null;
   const votes = predictVotes(state, policy, content, proposal).slice(0, session.stages.length);
   if (votes.length === 0) return null;
-  const tightest = votes.reduce((a, b) => (slack(b) < slack(a) ? b : a));
+  const tightest = votes.reduce((a, b) => (slack(b) < slack(a) ? b : a), votes[0]);
   return votesOpinion(state, policy.id, tightest);
 }
 
@@ -351,7 +351,7 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
   if (legislativeInstrument(policy) !== null) {
     votes = predictVotes(state, policy, content);
     // Etapa mais apertada: menor folga entre votos esperados e exigidos, em fração das cadeiras da Casa.
-    const tightest = votes.reduce((a, b) => (slack(b) < slack(a) ? b : a));
+    const tightest = votes.reduce((a, b) => (slack(b) < slack(a) ? b : a), votes[0]);
     articulacao = votesOpinion(state, policy.id, tightest);
     const warnings = congressWarnings(state, policy, content);
     if (warnings.length > 0) {

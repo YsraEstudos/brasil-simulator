@@ -478,7 +478,8 @@ export function regionalIncidence(
     const people = ufs.reduce((n, u, i) => (u.region === id ? n + pop[i] : n), 0);
     return { id, ratio: people > 0 ? weight / people : 0 };
   });
-  const top = ufs.map((u, i) => ({ id: u.id, ratio: w[i] / pop[i] })).reduce((a, b) => (b.ratio > a.ratio ? b : a));
+  const ratios = ufs.map((u, i) => ({ id: u.id, ratio: w[i] / pop[i] }));
+  const top = ratios.reduce((a, b) => (b.ratio > a.ratio ? b : a), ratios[0]);
   return { regions, topUf: top };
 }
 

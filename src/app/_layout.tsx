@@ -6,7 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { gameStore } from '@/store';
 import { AppThemeProvider } from '@/theme/ThemeProvider';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export const unstable_settings = { initialRouteName: 'index' };
 
