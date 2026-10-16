@@ -1,0 +1,114 @@
+{
+  "id": "fase07_eco_crise_hidrica_conta_luz",
+  "title": "Reservatórios baixos encarecem a conta de luz",
+  "description": "Os reservatórios das hidrelétricas chegam a níveis críticos. O operador aciona usinas térmicas caras e a bandeira tarifária sobe. A conta de luz pesa no orçamento das famílias e na inflação.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "chainedOnly": true,
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "inflation12m",
+        "op": "gt",
+        "value": 0.04
+      }
+    ],
+    "probability": 0.05,
+    "cooldownMonths": 18,
+    "maxOccurrences": 2
+  },
+  "onFire": [
+    {
+      "target": "choque.inflacao",
+      "delta": 0.003,
+      "lagMonths": 0,
+      "durationMonths": 4,
+      "label": "Conta de luz"
+    }
+  ],
+  "choices": [
+    {
+      "id": "subsidiar_conta",
+      "label": "Subsidiar a conta de luz",
+      "description": "Paga parte da conta com recursos públicos. Alivia o consumidor e melhora a aprovação, mas a despesa de custeio dura meses.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.custeio",
+          "delta": 0.003,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "label": "Subsídio à conta de luz"
+        },
+        {
+          "target": "choque.inflacao",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 4
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "repassar_tarifa",
+      "label": "Repassar o custo à tarifa",
+      "description": "Deixa a bandeira cheia chegar ao consumidor. Não custa caixa, mas a conta sobe, a inflação aumenta e a aprovação cai.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "choque.inflacao",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 3
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.015,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "regiao.atividade",
+          "delta": -0.004,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "label": "Conta de luz alta",
+          "regions": ["sudeste", "nordeste"]
+        }
+      ]
+    },
+    {
+      "id": "racionar_industria",
+      "label": "Racionar a indústria",
+      "description": "Reduz o consumo industrial por algumas semanas para proteger o abastecimento. Protege as famílias, mas trava a produção e desagrada sindicatos.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "choque.hiato",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 2
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "lider_sindical",
+          "delta": -6
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "repassar_tarifa",
+  "dataStatus": "FICTICIO"
+}

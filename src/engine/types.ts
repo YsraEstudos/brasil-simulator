@@ -4,12 +4,14 @@ import type { RegionalKey, RegionalScope } from '../types/regions';
 import type { Scenario } from '../types/scenario';
 import type { Calibration } from './economy/calibration';
 import type { Rng, RngState } from './rng';
+import type { SocietyState } from './society/types';
+import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 5;
+export const STATE_SCHEMA_VERSION = 7;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.5.0';
+export const ENGINE_VERSION = '0.7.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -391,12 +393,49 @@ export interface PendingEvent {
   monthIndex: number;
 }
 
+/** Evento encadeado já sorteado, à espera do mês de chegada (FASE_07.md). */
+export interface ScheduledEvent {
+  eventId: string;
+  /** Mês em que chega à caixa de entrada. */
+  monthIndex: number;
+  /** Evento e escolha que o originaram (rastro de causa para as notícias). */
+  causeEventId: string;
+  causeChoiceId: string;
+}
+
+/** Tom editorial de uma notícia. */
+export type NewsTone = 'positiva' | 'negativa' | 'neutra';
+export type NewsKind = 'economia' | 'congresso' | 'evento' | 'personagem' | 'institucional';
+
+/** Notícia persistida do mês, com a causa identificável (FASE_07.md). Texto fictício, em português. */
+export interface NewsItem {
+  /** `${monthIndex}_${ordem}` */
+  id: string;
+  monthIndex: number;
+  kind: NewsKind;
+  tone: NewsTone;
+  headline: string;
+  /** Frase curta de causa, ex.: "Causa: o Copom subiu a Selic". */
+  cause: string;
+  /** Evento, proposta ou política de origem, quando houver. */
+  sourceId?: string;
+  characterId?: string;
+}
+
 export interface EventsState {
   pending: PendingEvent[];
   /** Último mês em que cada evento disparou (para o intervalo mínimo entre ocorrências). */
   lastFired: Record<string, number>;
   /** Quantas vezes cada evento já disparou. */
   count: Record<string, number>;
+  /** Memória persistente: marca → mês em que foi gravada (FASE_07.md). */
+  flags: Record<string, number>;
+  /** Eventos encadeados agendados. */
+  scheduled: ScheduledEvent[];
+  /** Prestígio atual dos personagens (id → −100…100); ausente = `initialStanding` do cenário. */
+  characters: Record<string, number>;
+  /** Notícias mais recentes, da mais antiga para a mais nova, limitadas a `NEWS_LIMIT`. */
+  news: NewsItem[];
 }
 
 /**
@@ -469,6 +508,8 @@ export interface GameState {
   decisionLog: DecisionRecord[];
   /** Distribuição do agregado às UFs (ECONOMIC_MODEL.md §5.12, §5.15). */
   regions: RegionsState;
+  society: SocietyState;
+  publicPolicies: PublicPolicyState;
 }
 
 /**

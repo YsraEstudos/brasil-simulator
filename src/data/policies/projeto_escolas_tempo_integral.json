@@ -1,0 +1,31 @@
+{
+  "id": "projeto_escolas_tempo_integral",
+  "name": "Escolas de tempo integral",
+  "summary": "Projeto de ampliação de infraestrutura escolar e jornada integral com carteira de obra e manutenção. Dados e custos PROVISORIO.",
+  "area": "educacao",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 9000, "disbursementProfile": [0.4, 0.6] },
+  "fundingSources": ["credito_adicional"],
+  "timeline": { "planningMonths": 2, "expectedLegislativeMonths": 4, "executionMonths": 24, "maturationMonths": 12 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 9000, "lagMonths": 5 },
+    { "channel": "custeio", "magnitude": 1200, "lagMonths": 18 },
+    { "channel": "aprovacao", "magnitude": 0.012, "lagMonths": 5 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.22 },
+    { "kind": "sobrecusto", "probability": 0.15 }
+  ],
+  "affected": {
+    "groups": ["estudantes", "professores"],
+    "sectors": ["construcao", "servicos"],
+    "regions": ["nordeste", "norte", "nacional"]
+  },
+  "position": { "economic": -0.2, "social": -0.3 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 6, "procurementMonths": 5, "efficiency": 0.8, "annualMaintenanceRate": 0.03 }
+}

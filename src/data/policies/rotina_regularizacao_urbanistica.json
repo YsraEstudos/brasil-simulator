@@ -1,0 +1,26 @@
+{
+  "id": "rotina_regularizacao_urbanistica",
+  "name": "Rotina de regularização urbanística",
+  "summary": "Presta apoio técnico e custeio a ações federais de regularização urbanística por ato executivo. Dados e custos PROVISORIO.",
+  "area": "habitacao",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 900, "disbursementProfile": [1] },
+  "fundingSources": ["remanejamento"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 3 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 900, "lagMonths": 1 },
+    { "channel": "aprovacao", "magnitude": 0.004, "lagMonths": 2 }
+  ],
+  "risks": [{ "kind": "atraso", "probability": 0.2 }],
+  "affected": {
+    "groups": ["baixa_renda", "moradores_urbanos"],
+    "sectors": ["construcao", "servicos"],
+    "regions": ["nordeste", "norte", "nacional"]
+  },
+  "position": { "economic": -0.2, "social": -0.2 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

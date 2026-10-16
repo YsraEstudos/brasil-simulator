@@ -1,0 +1,120 @@
+{
+  "id": "fase07_eco_fuga_capitais_ruido_fiscal",
+  "title": "Investidores saem por ruído fiscal",
+  "description": "Gestores estrangeiros reduzem posições em títulos do país depois de declarações contraditórias sobre as contas públicas. O prêmio de risco sobe e o dólar pressiona o câmbio.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "riskPremium",
+        "op": "gt",
+        "value": 0.03
+      }
+    ],
+    "probability": 0.12,
+    "cooldownMonths": 18,
+    "maxOccurrences": 2
+  },
+  "onFireFlags": ["eco_ruido_fiscal"],
+  "onFire": [
+    {
+      "target": "choque.risco",
+      "delta": 0.006,
+      "lagMonths": 0,
+      "durationMonths": 4,
+      "label": "Fuga de capitais"
+    },
+    {
+      "target": "choque.cambio",
+      "delta": 0.02,
+      "lagMonths": 0,
+      "durationMonths": 2,
+      "label": "Fuga de capitais"
+    }
+  ],
+  "choices": [
+    {
+      "id": "plano_de_contas",
+      "label": "Anunciar plano de contas",
+      "description": "Anuncia corte de despesa e recupera a credibilidade. O mercado respira, mas o corte de custeio pesa na aprovação e nos serviços.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "choque.risco",
+          "delta": 0.001,
+          "lagMonths": 0,
+          "durationMonths": 2
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.015,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "gasto.custeio",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 6
+        }
+      ],
+      "clearFlags": ["eco_ruido_fiscal"]
+    },
+    {
+      "id": "esperar",
+      "label": "Esperar a poeira baixar",
+      "description": "Não reage e deixa o mercado digerir. Não custa nada agora, mas o prêmio de risco continua alto por mais meses.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "choque.risco",
+          "delta": 0.003,
+          "lagMonths": 0,
+          "durationMonths": 3
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "controle_capitais",
+      "label": "Restringir a saída de capitais",
+      "description": "Controle temporário sobre a saída de dólares estanca a fuga e segura o câmbio. Assusta investidores, e a credibilidade cai junto com a confiança de longo prazo.",
+      "agendaCost": 2,
+      "effects": [
+        {
+          "target": "choque.cambio",
+          "delta": -0.02,
+          "lagMonths": 0,
+          "durationMonths": 2
+        },
+        {
+          "target": "choque.risco",
+          "delta": 0.004,
+          "lagMonths": 0,
+          "durationMonths": 3
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.02,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "setFlags": ["eco_controle_capitais"]
+    }
+  ],
+  "defaultChoice": "esperar",
+  "dataStatus": "FICTICIO"
+}

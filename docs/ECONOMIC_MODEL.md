@@ -264,9 +264,71 @@ Código em `src/engine/regions/regions.ts` (etapa `regionsStep`, depois da opini
 
 ---
 
+### 5.16 Sociedade e execução pública (Fase 06)
+
+O motor 0.6.0 acrescenta dois blocos persistidos: sociedade e execução pública.
+Saves v5 são atualizados sem reescrever propostas, impulsos ou dados do cenário.
+O cenário novo é `brasil_2027_01_v050` v0.5.0; o cenário v0.4.0 continua acessível.
+
+- **Setores e quintis:** o produto real `potentialIndex × exp(outputGap)` é
+  repartido entre seis setores; as participações são normalizadas e nunca se
+  somam novamente ao PIB. Cinco quintis guardam renda real e participação na
+  renda. Transferências e tributos vigentes alteram um componente defasado de
+  renda disponível, que converge enquanto o programa vigora e reverte quando
+  termina. Não são crescimento de renda permanente a cada pagamento.
+- **Pobreza estimada:** soma de curvas logísticas por quintil em torno de uma
+  linha real de referência provisória. É indicador do modelo, sem equivalência
+  com uma série oficial do IBGE. Fórmulas, parâmetros, incidência e limites:
+  [SOCIETY.md](SOCIETY.md).
+- **Rotinas ministeriais:** uma diretriz e dotação anual por pasta, escolhidas
+  na agenda, usam apenas espaço discricionário livre. Não criam dotação nem
+  dispensam lei para tributo ou benefício. Trocas de diretriz e renovações
+  anuais têm efeitos sujeitos à disponibilidade, sem duplicar o gasto.
+- **Projetos novos:** passam pela aprovação e sanção existentes antes da
+  carteira. Planejamento, licenciamento e licitação antecedem a obra; curva S,
+  capacidade administrativa, riscos e orçamento limitam avanço e desembolso.
+  Só o ativo concluído entra no estoque real, com eficiência, depreciação e
+  manutenção. A mudança líquida do estoque produz um impulso de oferta de
+  um mês, anualizado para as equações existentes; não se soma novamente ao
+  potencial por outro canal. Políticas legadas sem `delivery` conservam a
+  execução anterior. Regras e unidades: [PUBLIC_POLICIES.md](PUBLIC_POLICIES.md).
+- **Rastreabilidade:** mudanças sociais guardam causa e métrica no bloco
+  corrente; execução e marcas deixam notas no relatório mensal. Não guardam
+  séries históricas dentro do estado.
+
+### 5.17 Pressão de impeachment e memória de eventos (Fase 07)
+
+O motor 0.7.0 acrescenta a pressão de impeachment e a memória de eventos (marcas, cadeias, prestígio e notícias). Saves v6 são atualizados com esses blocos vazios; ver [POLITICAL_RULES.md](POLITICAL_RULES.md) §9–§10 para o significado político.
+
+- **Pressão** (`impeachmentPressure`, em [0, 1]): `1 / (1 + e^(−logit))`, com
+  `logit = intercepto + 8 × (0,5 − aprovação) − 2 × (relação média com o Congresso ÷ 100) + 0,8 × escândalos + 2 × (excesso do limite ÷ 0,01) + 1 × (desemprego − 0,08)⁺ ÷ 0,05`.
+  `escândalos` conta as marcas com prefixo `escandalo_` ou `cpi_`, até 4; o excesso do limite e o desemprego acima do neutro entram só quando positivos. Com todos os fatores neutros, a pressão é de cerca de 1%. Cada termo cresce de forma monotônica com o fator adverso, e a logística satura em 0 e 1 (§1.8).
+- **Parâmetros** (`src/engine/events/calibration.ts`; todos **PROVISORIO**, faixa entre parênteses):
+
+| Parâmetro | Valor | Faixa | Significado |
+| --- | --- | --- | --- |
+| `intercepto` | −4,5 | −6 a −3 | logit com fatores neutros |
+| `aprovacao_neutra` | 0,5 | 0,4 a 0,6 | aprovação a partir da qual a baixa passa a pesar |
+| `peso_aprovacao` | 8 | 4 a 12 | logit por unidade de aprovação abaixo da neutra |
+| `peso_relacao` | 2 | 1 a 3 | logit por 100 pontos de relação ruim com o Congresso |
+| `peso_escandalo` | 0,8 | 0,4 a 1,2 | logit por marca de escândalo ou CPI |
+| `escandalos_max` | 4 | 3 a 6 | marcas que ainda contam |
+| `escala_excesso_limite` / `peso_excesso_limite` | 0,01 / 2 | 0,005–0,02 / 1–3 | logit por ponto percentual do PIB acima do limite |
+| `desemprego_neutro` / `escala_desemprego` / `peso_desemprego` | 0,08 / 0,05 / 1 | 0,06–0,10 / 0,03–0,08 / 0,5–2 | alta do desemprego acima do neutro |
+
+- **Limiares de uso:** os eventos de impeachment comparam a pressão a 50%, 55% e 60%, e a usam como probabilidade (`probabilityFactor`) nas etapas da Câmara e do Senado. Os limiares são critérios de jogo, não parâmetros econômicos.
+- **Memória (estado v7):** `EventsState` ganha `flags` (marca → mês em que foi gravada), `scheduled` (eventos encadeados), `characters` (prestígio, −100 a 100) e `news` (até 48 manchetes). Marca não é impulso: não altera indicadores por si, e o efeito econômico de um evento continua limitado a 24 meses pela fila de efeitos (§5.11). Pendências e contadores são preservados na atualização v6 → v7; a fixture é `src/tests/saves/state_v6_fase06.json`.
+- **Notícias:** geradas depois dos indicadores e do relatório do mês, sem sorteio e sem data; não alteram o estado econômico.
+
 ## 6. Parâmetros
 
-Os valores, faixas, significados e justificativas estão em `src/engine/economy/calibration.ts`; a tabela completa, com a faixa testada e o resultado de sensibilidade de cada parâmetro em campanhas de 20 anos, é gerada em [CALIBRATION.md](CALIBRATION.md) por `npm run sim:sensitivity`. A tabela abaixo é a de partida da Fase 00, mantida como registro.
+Os valores, faixas, significados e justificativas estão em `src/engine/economy/calibration.ts`.
+[CALIBRATION.md](CALIBRATION.md) preserva o último levantamento global gerado por
+`npm run sim:sensitivity` na Fase 05. Os quatro parâmetros acrescentados na Fase 06
+estão documentados em [PUBLIC_POLICIES.md](PUBLIC_POLICIES.md) e têm os dois extremos
+exercitados em campanhas de projetos de 240 meses em `src/engine/phase06.test.ts`;
+não foi repetida a matriz inteira dos parâmetros anteriores. A tabela abaixo é a
+de partida da Fase 00, mantida como registro.
 
 | Parâmetro | Valor de partida | Faixa a testar | Significado |
 | --- | --- | --- | --- |
@@ -315,6 +377,15 @@ Situação na Fase 03 (`src/engine/invariants.ts` e testes): 1–6 verificados a
 Situação na Fase 05: o 9 é verificado a cada mês em todas as campanhas automáticas (participações e participações de tendência somam 1; desemprego e aprovação das UFs, ponderados pela população, iguais aos nacionais; aprovação das UFs em [0, 1]; relação dos governadores em −100…100; explicações por UF somando as diferenças).
 
 ---
+
+### 7.10 Sociedade e carteira de projetos (Fase 06)
+
+As seis participações setoriais somam 1, os produtos setoriais somam exatamente
+o produto nacional e as cinco participações na renda somam 1. Renda e produto
+são positivos e finitos; pobreza fica em [0, 1]. Desembolso acumulado de um
+projeto não supera seu orçamento aprovado e o capital novo é a soma dos ativos
+líquidos da carteira. Cada ministério tem uma diretriz corrente e cada mandato
+consome no máximo três marcas, inclusive se o projeto for cancelado.
 
 ## 8. Choques
 

@@ -6,17 +6,20 @@ import {
   deleteCampaign,
   finishCampaign,
   listCampaigns,
+  loadIndicatorHistory,
   loadLatestState,
   loadReport,
   loadStateAt,
   recordMonth,
   type CampaignSummary,
+  type IndicatorPoint,
 } from '@/database/campaignRepository';
 import { getSetting, setSetting } from '@/database/settingsRepository';
 import type { SqlDatabase } from '@/database/types';
-import { DEFAULT_SCENARIO_ID, loadContent, PROTOTYPE_MONTHS, SCENARIOS } from '@/content';
+import { campaignMonths, DEFAULT_SCENARIO_ID, loadContent, SCENARIOS } from '@/content';
 import {
   advanceMonth,
+  campaignOutcome,
   createInitialState,
   type Decision,
   type Difficulty,
@@ -27,6 +30,11 @@ import {
 } from '@/engine';
 
 import { draftInput, EMPTY_DRAFT, toggleDecision, toggleEventChoice, type AgendaDraft } from './agendaDraft';
+
+/** Campanha encerrada: prazo do cenário cumprido ou condenação por impeachment (FASE_07.md). */
+function isFinished(state: GameState): boolean {
+  return state.monthIndex >= campaignMonths(state.scenarioId) || campaignOutcome(state) !== null;
+}
 
 export interface ActiveCampaign {
   id: string;
@@ -52,6 +60,8 @@ export interface GameStoreState {
   init(): Promise<void>;
   newCampaign(input: { name: string; difficulty: Difficulty }): Promise<void>;
   continueCampaign(id: string): Promise<void>;
+  /** Indicadores dos últimos meses gravados (série do Painel); vazio sem partida ou leitura falha. */
+  history(): Promise<IndicatorPoint[]>;
   /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
   endMonth(input?: MonthInput): Promise<void>;
   toggleDecision(decision: Decision): void;
@@ -138,7 +148,7 @@ export function createGameStore(deps: GameStoreDeps) {
           const lastReport =
             state.monthIndex > 0 ? ((await loadReport(d, id, state.monthIndex - 1)) ?? undefined) : undefined;
           // Saves anteriores à gravação atômica podem ter o último mês com status "ativa": corrige ao carregar.
-          const finished = summary?.status === 'encerrada' || state.monthIndex >= PROTOTYPE_MONTHS;
+          const finished = summary?.status === 'encerrada' || isFinished(state);
           if (finished && summary?.status !== 'encerrada') {
             await finishCampaign(d, id);
             await refreshList(d);
@@ -156,13 +166,24 @@ export function createGameStore(deps: GameStoreDeps) {
           });
         }),
 
+      async history() {
+        const active = get().active;
+        if (!active || !db) return [];
+        // Leitura para um gráfico: não marca `busy` (não pode bloquear o fechamento do mês) nem inventa erro na tela.
+        try {
+          return await loadIndicatorHistory(db, active.id);
+        } catch {
+          return [];
+        }
+      },
+
       endMonth: (input) =>
         run(async (d) => {
           const active = get().active;
           if (!active || active.finished) return;
           const content = loadContent(active.state.scenarioId);
           const result = advanceMonth(active.state, input ?? draftInput(get().draft, content), content);
-          const finished = result.state.monthIndex >= PROTOTYPE_MONTHS;
+          const finished = isFinished(result.state);
           await recordMonth(d, active.id, result, { finish: finished });
           set({
             active: {

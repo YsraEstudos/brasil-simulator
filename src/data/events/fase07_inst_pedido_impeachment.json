@@ -1,0 +1,96 @@
+{
+  "id": "fase07_inst_pedido_impeachment",
+  "title": "Pedido de impeachment protocolado",
+  "description": "Parlamentares de oposição protocolam pedido de impeachment por suposto crime de responsabilidade. A admissibilidade cabe à Presidência da Câmara. Caso e personagens fictícios; o pedido não tem efeito sem a decisão da Casa.",
+  "characterId": "pres_camara",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "impeachmentPressure",
+        "op": "gt",
+        "value": 0.5
+      }
+    ],
+    "probability": 0.25,
+    "cooldownMonths": 24,
+    "maxOccurrences": 1,
+    "forbidsFlags": ["impeachment_denuncia_aceita", "impeachment_arquivado"]
+  },
+  "onFire": [
+    {
+      "target": "aprovacao",
+      "delta": -0.01,
+      "lagMonths": 0,
+      "durationMonths": 1
+    },
+    {
+      "target": "capital_politico",
+      "delta": -3,
+      "lagMonths": 0,
+      "durationMonths": 1
+    }
+  ],
+  "choices": [
+    {
+      "id": "negociar_arquivamento",
+      "label": "Negociar o arquivamento",
+      "description": "Negocia com a Presidência da Câmara o arquivamento do pedido. Ele não é admitido, mas a relação com o Congresso sofre pelas concessões feitas.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "relacao_congresso",
+          "delta": -6,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "setFlags": ["impeachment_arquivado"],
+      "characterEffects": [
+        {
+          "characterId": "pres_camara",
+          "delta": 10
+        }
+      ]
+    },
+    {
+      "id": "enfrentar_a_denuncia",
+      "label": "Enfrentar a denúncia",
+      "description": "Deixa a Presidência da Câmara admitir a denúncia e o processo segue para a comissão especial. A relação com a Casa cai. Escolha padrão se você não responder.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "relacao_congresso",
+          "delta": -4,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "setFlags": ["impeachment_denuncia_aceita"]
+    },
+    {
+      "id": "apelar_ao_stf",
+      "label": "Apelar ao STF",
+      "description": "Pede ao Supremo a suspensão do pedido. O processo fica parado sem ser admitido, custa capital político e, com chance de 50% em dois meses, um pacto entre os Poderes é proposto. Ministro fictício. O recurso não arquiva a denúncia: ela segue para a Câmara.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "capital_politico",
+          "delta": -2,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "ministro_stf",
+          "delta": 10
+        }
+      ],
+      "setFlags": ["impeachment_denuncia_aceita"]
+    }
+  ],
+  "defaultChoice": "enfrentar_a_denuncia",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "dataStatus": "FICTICIO"
+}

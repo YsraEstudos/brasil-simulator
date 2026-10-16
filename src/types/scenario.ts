@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { contentIdSchema, dataSeriesSchema, dataValueSchema } from './data';
+import { contentIdSchema, dataSeriesSchema, dataStatusSchema, dataValueSchema } from './data';
 import { regionIdSchema, ufIdSchema } from './regions';
 
 /**
@@ -191,6 +191,23 @@ export const scenarioRegionsSchema = z
   .strict();
 export type ScenarioRegions = z.infer<typeof scenarioRegionsSchema>;
 
+/** Personagem fictício recorrente (FASE_07.md). Nunca baseado em pessoa real (GAME_DESIGN.md §13). */
+export const characterSchema = z
+  .object({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    /** Cargo ou papel, em português (ex.: "Ministra da Fazenda"). */
+    role: z.string().min(1),
+    description: z.string().min(1),
+    /** Bloco a que pertence, se houver. */
+    blocId: contentIdSchema.optional(),
+    /** Prestígio inicial com o governo, −100…100. */
+    initialStanding: z.number().min(-100).max(100),
+    dataStatus: dataStatusSchema,
+  })
+  .strict();
+export type Character = z.infer<typeof characterSchema>;
+
 export const scenarioSchema = z
   .object({
     /** Ex.: `brasil_2027_01` */
@@ -211,6 +228,8 @@ export const scenarioSchema = z
     copomMonths: z.array(z.number().int().min(1).max(12)).length(8),
     /** IDs das políticas disponíveis neste cenário. */
     policies: z.array(contentIdSchema).min(1),
+    /** Elenco de personagens fictícios (Fase 07); ausente nos cenários anteriores. */
+    characters: z.array(characterSchema).optional(),
   })
   .strict()
   .superRefine((s, ctx) => {

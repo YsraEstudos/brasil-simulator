@@ -1108,11 +1108,26 @@ function startExecution(run: Run, p: Proposal, start: number, scale: number): vo
   const policy = policyOf(run.ctx.content, p.policyId);
   const schedule = scheduleImpulses(policy, p.id, start, scale, votingState(run), run.ctx);
   p.executionStart = start + schedule.delayMonths;
-  p.executionEnd = policy.timeline.executionMonths > 0 ? p.executionStart + policy.timeline.executionMonths - 1 : null;
+  // Fase 06 projects own their lifecycle and monthly disbursement. Keep the single risk/adhesion/STF draw,
+  // but leave the proposal open until the explicit physical progress reaches 100%.
+  p.executionEnd =
+    policy.delivery === 'projeto'
+      ? null
+      : policy.timeline.executionMonths > 0
+        ? p.executionStart + policy.timeline.executionMonths - 1
+        : null;
   // Se a medida for derrubada, a data final passa a ser a da liminar no julgamento (`judicialTransitions`).
   p.judicial = schedule.judicial;
   p.adherents = schedule.adherents;
-  run.impulses.push(...schedule.impulses);
+  // The explicit project ledger owns investment disbursement and capital stock. Preserve every other
+  // scheduled channel from the single risk draw, including operating cost, approval and credibility effects.
+  run.impulses.push(
+    ...schedule.impulses.filter(
+      (impulse) =>
+        policy.delivery !== 'projeto' ||
+        (impulse.target !== 'gasto.investimento' && impulse.target !== 'oferta.potencial'),
+    ),
+  );
   run.ctx.draft.notes.push(...schedule.notes);
   for (const r of schedule.riskEvents) pushTransition(run, p, p.status, r.cause, r.detail);
 }

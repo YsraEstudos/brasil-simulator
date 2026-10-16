@@ -5,6 +5,7 @@ import { MANDATORY_GROUPS, REVENUE_GROUPS, type MandatoryGroup, type RevenueGrou
 import type { ActiveCampaign } from '@/store';
 
 import { signedPercent, StatRow } from './StatRow';
+import { SocietyPanel } from './SocietyPanel';
 
 const PER_GDP = '% do PIB, anualizado';
 
@@ -172,6 +173,8 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
       <Card title="Último Copom">
         <Text variant="body">{copomText}</Text>
       </Card>
+
+      <SocietyPanel state={state} />
     </>
   );
 }

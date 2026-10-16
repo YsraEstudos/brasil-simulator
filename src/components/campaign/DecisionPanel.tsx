@@ -1,13 +1,14 @@
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Card, Text } from '@/components/ui';
+import { Button, Card, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import type { GameContent, GameState, Proposal } from '@/engine';
 import { legislativeInstrument } from '@/engine/congress/congress';
 import type { Policy } from '@/types/policy';
 
 import { DispatchCard } from './DispatchCard';
-import { INSTRUMENT_LABEL, PROPOSAL_IN_PROGRESS, PROPOSAL_STATUS_LABEL, costText } from './labels';
+import { INSTRUMENT_LABEL, PROPOSAL_IN_PROGRESS, PROPOSAL_STATUS_LABEL, areaLabel, costText } from './labels';
 
 export interface DecisionPanelProps {
   state: GameState;
@@ -38,8 +39,11 @@ export function DecisionPanel({
 }: DecisionPanelProps) {
   const policies = content.scenario.policies.flatMap((id) => {
     const policy = content.policies[id];
-    return policy ? [policy] : [];
+    return policy && policy.delivery !== 'rotina' ? [policy] : [];
   });
+  const areas = [...new Set(policies.map((policy) => policy.area))];
+  const [area, setArea] = useState<string | null>(null);
+  const visiblePolicies = area === null ? policies : policies.filter((policy) => policy.area === area);
 
   return (
     <View style={styles.root}>
@@ -49,7 +53,23 @@ export function DecisionPanel({
           Pontos usados: {pointsUsed} de {pointsMax}
         </Text>
       </View>
-      {policies.map((policy) => {
+      <View style={styles.filters} accessibilityLabel="Filtrar catálogo de políticas por área">
+        <Button label="Todas" variant={area === null ? 'secondary' : 'ghost'} onPress={() => setArea(null)} />
+        {areas.map((id) => (
+          <Button
+            key={id}
+            label={areaLabel(id)}
+            variant={area === id ? 'secondary' : 'ghost'}
+            onPress={() => setArea(id)}
+          />
+        ))}
+      </View>
+      {visiblePolicies.length === 0 && (
+        <Text variant="body" color="textSecondary">
+          Nenhuma política legislativa ou executiva disponível nesta área.
+        </Text>
+      )}
+      {visiblePolicies.map((policy) => {
         const current = latestProposal(state.proposals, policy.id);
         const inProgress = current !== undefined && PROPOSAL_IN_PROGRESS.has(current.status);
         const isSelected = selected.includes(policy.id);
@@ -126,5 +146,6 @@ function latestProposal(proposals: readonly Proposal[], policyId: string): Propo
 const styles = StyleSheet.create({
   root: { gap: Spacing.two },
   header: { gap: Spacing.half },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
   item: { gap: Spacing.two },
 });

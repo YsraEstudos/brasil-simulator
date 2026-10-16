@@ -32,11 +32,31 @@ export const APPOINT_ACTION_ID = 'nomear_ministro';
 export const SANCTION_ACTION_ID = 'sancao';
 /** Visita presidencial a uma UF (POLITICAL_RULES.md §2.1). Params: `uf` (sigla). */
 export const VISIT_ACTION_ID = 'visitar_estado';
+/** Diretriz e dotação anual de rotina: ministryId, policyId, annualMillions. */
+export const DIRECTIVE_ACTION_ID = 'definir_diretriz';
+/** Marca de governo por proposta: proposalId, name. */
+export const BRAND_ACTION_ID = 'marcar_governo';
 
 export const SANCTION_CHOICES = ['sancionar', 'vetar_acrescimos', 'vetar_total'] as const;
 export type SanctionChoice = (typeof SANCTION_CHOICES)[number];
 
 export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
+  [DIRECTIVE_ACTION_ID]: {
+    id: DIRECTIVE_ACTION_ID,
+    name: 'Definir diretriz do ministério',
+    summary: 'Escolhe a rotina da pasta e sua dotação anual dentro das discricionárias disponíveis.',
+    agendaCost: 1,
+    targetParams: ['ministryId'],
+    listed: false,
+  },
+  [BRAND_ACTION_ID]: {
+    id: BRAND_ACTION_ID,
+    name: 'Escolher marca de governo',
+    summary: 'Nomeia um projeto como uma das três marcas do mandato e acompanha seus resultados.',
+    agendaCost: 1,
+    targetParams: ['proposalId'],
+    listed: false,
+  },
   [PRESSURE_ACTION_ID]: {
     id: PRESSURE_ACTION_ID,
     name: 'Pressionar o Banco Central',

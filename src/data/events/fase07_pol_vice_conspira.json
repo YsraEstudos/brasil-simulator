@@ -1,0 +1,56 @@
+{
+  "id": "fase07_pol_vice_conspira",
+  "title": "Vice-presidente articula com a oposição",
+  "description": "O vice-presidente, com base própria no Congresso, passa a se reunir com lideranças da oposição e a discutir alternativas à condução da agenda do governo. Aliados pedem uma resposta.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      { "variable": "approval", "op": "lt", "value": 0.46 },
+      { "variable": "characterStanding", "op": "gt", "value": -30, "characterId": "vice_presidente" }
+    ],
+    "probability": 0.12,
+    "cooldownMonths": 18,
+    "maxOccurrences": 2
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "characterId": "vice_presidente",
+  "onFire": [{ "target": "relacao_congresso", "delta": -4, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "prestigiar_vice",
+      "label": "Dar palco ao vice",
+      "description": "Entrega ao vice a coordenação de uma frente da base. A conversa com a oposição perde força, mas o vice ganha peso próprio dentro do governo e passa a cobrar espaço.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 4, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["pol_vice_aliado"],
+      "characterEffects": [{ "characterId": "vice_presidente", "delta": 15 }]
+    },
+    {
+      "id": "afastar_vice",
+      "label": "Afastar o vice da articulação",
+      "description": "Retira do vice qualquer função de coordenação. Corta a conversa com a oposição, mas a base perde um canal de diálogo e a relação com o Congresso sofre.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "relacao_congresso", "delta": -5, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "capital_politico", "delta": -2, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["pol_vice_rompeu"],
+      "characterEffects": [{ "characterId": "vice_presidente", "delta": -25 }]
+    },
+    {
+      "id": "deixar_correr",
+      "label": "Deixar a articulação correr",
+      "description": "Não se manifesta. O vice ganha tempo e prestígio com a oposição, a imprensa passa a cobrar uma definição do governo e a disputa interna pode vazar.",
+      "agendaCost": 0,
+      "effects": [{ "target": "capital_politico", "delta": -2, "lagMonths": 0, "durationMonths": 1 }],
+      "setFlags": ["pol_vice_conspirou"],
+      "characterEffects": [{ "characterId": "vice_presidente", "delta": 5 }],
+      "followUps": [{ "eventId": "fase07_pol_coluna_disputa", "delayMonths": 2, "probability": 0.6 }]
+    }
+  ],
+  "defaultChoice": "deixar_correr",
+  "dataStatus": "FICTICIO"
+}

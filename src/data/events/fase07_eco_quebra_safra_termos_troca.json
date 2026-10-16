@@ -1,0 +1,125 @@
+{
+  "id": "fase07_eco_quebra_safra_termos_troca",
+  "title": "Quebra de safra piora os termos de troca",
+  "description": "Uma quebra de safra em grandes culturas reduz a oferta interna e derruba o preço do que o país exporta. A conta externa piora, a renda do campo encolhe e o câmbio tende a se desvalorizar.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "trigger": {
+    "monthsOfYear": [3, 4, 5, 6],
+    "conditions": [],
+    "probability": 0.12,
+    "cooldownMonths": 18,
+    "maxOccurrences": 2
+  },
+  "onFire": [
+    {
+      "target": "choque.cambio",
+      "delta": 0.02,
+      "lagMonths": 0,
+      "durationMonths": 2,
+      "label": "Termos de troca em queda"
+    },
+    {
+      "target": "choque.hiato",
+      "delta": -0.002,
+      "lagMonths": 0,
+      "durationMonths": 3
+    },
+    {
+      "target": "receita.tributaria",
+      "delta": -0.002,
+      "lagMonths": 0,
+      "durationMonths": 6,
+      "label": "Menos tributo sobre o agro"
+    }
+  ],
+  "choices": [
+    {
+      "id": "credito_rural_antecipado",
+      "label": "Antecipar crédito e seguro rural",
+      "description": "Renegocia dívidas e antecipa crédito ao produtor. Ajuda a safra seguinte e agrada o agronegócio, mas a despesa de custeio se estende por meses.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.custeio",
+          "delta": 0.003,
+          "lagMonths": 0,
+          "durationMonths": 6
+        },
+        {
+          "target": "choque.hiato",
+          "delta": 0.001,
+          "lagMonths": 0,
+          "durationMonths": 3
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "empresario_agro",
+          "delta": 8
+        }
+      ],
+      "setFlags": ["eco_safra_perdida"]
+    },
+    {
+      "id": "importar_alimentos",
+      "label": "Importar alimentos",
+      "description": "Compra alimentos no exterior para conter preços internos. Modera a inflação e o câmbio, mas tira mercado do produtor e o agronegócio reage mal.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "choque.inflacao",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 4
+        },
+        {
+          "target": "choque.cambio",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 2
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.004,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "empresario_agro",
+          "delta": -10
+        }
+      ]
+    },
+    {
+      "id": "nao_intervir",
+      "label": "Não intervir",
+      "description": "Deixa o mercado reagir. Não custa caixa agora, mas a arrecadação e a renda do campo caem por mais tempo.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "receita.tributaria",
+          "delta": -0.001,
+          "lagMonths": 0,
+          "durationMonths": 6
+        }
+      ],
+      "setFlags": ["eco_safra_perdida"]
+    }
+  ],
+  "defaultChoice": "nao_intervir",
+  "dataStatus": "FICTICIO"
+}

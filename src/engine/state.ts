@@ -4,6 +4,8 @@ import type { Calibration } from './economy/calibration';
 import { initialFiscal, type FiscalValues } from './economy/fiscal';
 import { initialRegions } from './regions/regions';
 import { seedRng } from './rng';
+import { initialSociety, initialSocietyForGame } from './society/society';
+import { initialPublicPolicies } from './publicPolicies/types';
 import {
   ENGINE_VERSION,
   MANDATORY_GROUPS,
@@ -100,11 +102,13 @@ export function createInitialState(c: NewCampaign): GameState {
     },
     proposals: [],
     impulses: [],
-    events: { pending: [], lastFired: {}, count: {} },
+    events: { pending: [], lastFired: {}, count: {}, flags: {}, scheduled: [], characters: {}, news: [] },
     decisionLog: [],
     regions: { ufs: [] },
+    society: initialSociety(),
+    publicPolicies: initialPublicPolicies(),
   };
-  return { ...state, regions: { ufs: initialRegions(state, c.content).ufs } };
+  return { ...state, society: initialSocietyForGame(state), regions: { ufs: initialRegions(state, c.content).ufs } };
 }
 
 /** Indicadores iniciais do cenário (só os valores; status e fonte ficam no cenário). */

@@ -1,0 +1,22 @@
+{
+  "id": "rotina_execucao_orcamentaria",
+  "name": "Rotina de acompanhamento da execução orçamentária",
+  "summary": "Reforça o acompanhamento mensal de empenhos e pagamentos discricionários por ato executivo. Dados e custos PROVISORIO.",
+  "area": "fiscal",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 900, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 1 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 900, "lagMonths": 1 },
+    { "channel": "aprovacao", "magnitude": 0.002, "lagMonths": 1 }
+  ],
+  "risks": [{ "kind": "atraso", "probability": 0.1 }],
+  "affected": { "groups": ["gestores_publicos"], "sectors": ["servicos"], "regions": ["nacional"] },
+  "position": { "economic": 0.2, "social": 0 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

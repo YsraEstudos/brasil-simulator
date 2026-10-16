@@ -1,0 +1,19 @@
+{
+  "id": "rotina_compras_publicas",
+  "name": "Rotina de revisão de compras públicas",
+  "summary": "Padroniza a revisão de contratos e compras recorrentes por portaria, com foco em continuidade de serviços. Dados e custos PROVISORIO.",
+  "area": "fiscal",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 700, "disbursementProfile": [1] },
+  "fundingSources": ["remanejamento"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 2 },
+  "conditions": [],
+  "impacts": [{ "channel": "custeio", "magnitude": 700, "lagMonths": 1 }],
+  "risks": [{ "kind": "atraso", "probability": 0.12 }],
+  "affected": { "groups": ["fornecedores_publicos"], "sectors": ["servicos", "industria"], "regions": ["nacional"] },
+  "position": { "economic": 0.3, "social": 0 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { INSTRUMENT_LABEL, PROPOSAL_STATUS_LABEL, costText, shortMonthLabel } from '@/components/campaign/labels';
+import { CongressHemicycle } from '@/components/congress/CongressHemicycle';
 import { Button, Card, formatNumber, formatPercent, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { loadContent } from '@/content';
@@ -31,23 +32,19 @@ import {
 } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
 import { draftPoints, findDecision, fits, gameStore, hasDecision, useGame, type ActiveCampaign } from '@/store';
-import { CHAMBER_SEATS, SENATE_SEATS, TECHNICAL_MINISTER, type Bloc, type Ministry } from '@/types/scenario';
+import { TECHNICAL_MINISTER, type Bloc, type Ministry } from '@/types/scenario';
 
 import { signedInt } from './StatRow';
 
-/** Relação acima deste valor conta como base aproximada no painel (aproximação de interface). */
-const ALLY_RELATION = 20;
-/** Maioria de 3/5 para PEC, em cada turno de cada Casa (CF art. 60 §2º). */
-const PEC_CHAMBER = Math.ceil((CHAMBER_SEATS * 3) / 5);
-const PEC_SENATE = Math.ceil((SENATE_SEATS * 3) / 5);
 const HOUSES: readonly House[] = ['camara', 'senado'];
 const HOUSE_LABEL: Record<House, string> = { camara: 'Câmara', senado: 'Senado' };
 /** Situações mostradas em "Propostas no Congresso". */
 const IN_CONGRESS = new Set(['em_tramitacao', 'parada', 'apreciacao_veto']);
 
 /**
- * Aba Congresso (POLITICAL_RULES.md §6): Mesas e pauta das Casas, propostas por etapa com votos previstos e
- * negociação, blocos e ministérios. Negociar e nomear entram na agenda do mês (mesmos pontos da Presidência).
+ * Aba Congresso (POLITICAL_RULES.md §6): hemiciclo da Câmara com a base do governo, Mesas e pauta das Casas,
+ * propostas por etapa com votos previstos e negociação, blocos e ministérios. Negociar e nomear entram na
+ * agenda do mês (mesmos pontos da Presidência).
  */
 export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
   const { state } = campaign;
@@ -69,21 +66,11 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
     toggle: (d: Decision) => gameStore.getState().toggleDecision(d),
   };
 
-  const allies = blocs.filter((b) => blocRelation(state, b) > ALLY_RELATION);
-  const allyChamber = allies.reduce((n, b) => n + b.chamberSeats, 0);
-  const allySenate = allies.reduce((n, b) => n + b.senateSeats, 0);
   const proposals = state.proposals.filter((p) => IN_CONGRESS.has(p.status));
 
   return (
     <>
-      <Card>
-        <Text variant="heading">
-          {`Base aproximada: ${formatNumber(allyChamber)} deputados, ${formatNumber(allySenate)} senadores (${PEC_CHAMBER}/${PEC_SENATE} para PEC)`}
-        </Text>
-        <Text variant="body" color="textSecondary" tabular>
-          {`Pontos de agenda do mês: ${pointsUsed} de ${pointsMax}. Negociações e nomeações marcadas aqui entram na agenda e valem ao encerrar o mês na Presidência.`}
-        </Text>
-      </Card>
+      <CongressHemicycle state={state} content={content} pointsUsed={pointsUsed} pointsMax={pointsMax} />
 
       <Card title="Mesas e pauta">
         {HOUSES.map((house) => {

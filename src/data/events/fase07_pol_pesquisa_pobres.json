@@ -1,0 +1,54 @@
+{
+  "id": "fase07_pol_pesquisa_pobres",
+  "title": "Pesquisa mostra queda entre os mais pobres",
+  "description": "Uma pesquisa de opinião mostra queda na avaliação do governo entre os brasileiros de renda mais baixa, que sentem a inflação nos alimentos e no transporte. A oposição já usa os dados no Congresso.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "approval", "op": "lt", "value": 0.44 }],
+    "probability": 0.05,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "chainedOnly": true,
+  "characterId": "min_fazenda",
+  "onFire": [{ "target": "aprovacao", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "ampliar_transferencias",
+      "label": "Ampliar transferências",
+      "description": "Amplia transferências para os mais pobres por um ano. A avaliação melhora entre eles, mas a despesa sobe e a credibilidade fiscal recua.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "gasto.transferencia_baixa_renda", "delta": 0.002, "lagMonths": 0, "durationMonths": 12 },
+        { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "min_fazenda", "delta": -10 }]
+    },
+    {
+      "id": "explicar_politica",
+      "label": "Explicar a política econômica",
+      "description": "Comunicação do ministério sobre o quadro de preços. Não custa recursos, mas o efeito é limitado e a percepção de piora continua.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.003, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "capital_politico", "delta": 2, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "min_fazenda", "delta": 5 }]
+    },
+    {
+      "id": "manter_rota",
+      "label": "Manter a rota fiscal",
+      "description": "Mantém a política sem mudanças e preserva a credibilidade. Os mais pobres seguem descontentes e a aprovação cai mais.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": -0.008, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "min_fazenda", "delta": 5 }]
+    }
+  ],
+  "defaultChoice": "manter_rota",
+  "dataStatus": "FICTICIO"
+}

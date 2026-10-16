@@ -5,7 +5,10 @@ import { congressStep } from './congress/congress';
 import { economyStep } from './economy/economy';
 import { resolveEventsStep, triggerEventsStep } from './events/events';
 import { pruneImpulses } from './impulses';
+import { appendNews, generateNews } from './news';
 import { opinionStep } from './politics/opinion';
+import { publicPoliciesStep, reservePublicAction } from './publicPolicies/publicPolicies';
+import { societyStep } from './society/society';
 import { proposalsStep } from './proposals/proposals';
 import { regionsStep } from './regions/regions';
 import { createRng } from './rng';
@@ -19,6 +22,7 @@ import {
   type GameState,
   type Indicators,
   type MonthInput,
+  type MonthReport,
   type MonthResult,
   type MonthStep,
   type ReportDraft,
@@ -35,7 +39,9 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
   cabinetStep,
   proposalsStep,
   congressStep,
+  publicPoliciesStep,
   economyStep,
+  societyStep,
   opinionStep,
   regionsStep,
   triggerEventsStep,
@@ -84,21 +90,21 @@ export function advanceMonth(
     ],
   };
 
-  return {
-    state: next,
-    report: {
-      monthIndex: state.monthIndex,
-      accepted: screened.accepted,
-      rejected: screened.rejected,
-      contributions,
-      proposalChanges: draft.proposalChanges,
-      eventsResolved: draft.eventsResolved,
-      eventsFired: draft.eventsFired,
-      copom: draft.copom,
-      notes: draft.notes,
-      regional: draft.regional,
-    },
+  const report: MonthReport = {
+    monthIndex: state.monthIndex,
+    accepted: screened.accepted,
+    rejected: screened.rejected,
+    contributions,
+    proposalChanges: draft.proposalChanges,
+    eventsResolved: draft.eventsResolved,
+    eventsFired: draft.eventsFired,
+    copom: draft.copom,
+    notes: draft.notes,
+    regional: draft.regional,
   };
+  // Notícias (FASE_07.md): geradas depois dos indicadores e do relatório finais, com causa; o relatório não muda.
+  const news = generateNews({ previous: state, next, report, content });
+  return { state: appendNews(next, news), report };
 }
 
 /**
@@ -122,12 +128,14 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
   const rejected: { decision: Decision; reason: DecisionRejection }[] = [];
   const sent = new Set(state.proposals.filter((p) => PROPOSAL_IN_PROGRESS.has(p.status)).map((p) => p.policyId));
   const actionsDone = new Set<string>();
+  let actionState = state;
   for (const decision of input.decisions) {
     // Ação de agenda (sem proposta): uma vez por mês para cada alvo, custo do catálogo de ações.
     const action = Object.hasOwn(AGENDA_ACTIONS, decision.policyId) ? AGENDA_ACTIONS[decision.policyId] : undefined;
     if (action) {
       const key = actionKey(action, decision.params);
-      const invalid = validateActionTarget(action, decision, state, content);
+      const normalized = { ...decision, agendaCost: action.agendaCost };
+      const invalid = validateActionTarget(action, normalized, actionState, content);
       if (invalid) {
         rejected.push({ decision, reason: invalid });
       } else if (actionsDone.has(key)) {
@@ -138,6 +146,7 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
         left -= action.agendaCost;
         actionsDone.add(key);
         accepted.push({ ...copyDecision(decision), agendaCost: action.agendaCost });
+        actionState = reservePublicAction(actionState, normalized, content);
       }
       continue;
     }
@@ -145,6 +154,8 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
     const cost = policy ? policy.agendaCost : decision.agendaCost;
     if (!policy || !content.scenario.policies.includes(decision.policyId)) {
       rejected.push({ decision, reason: 'politica_desconhecida' });
+    } else if (policy.delivery === 'rotina') {
+      rejected.push({ decision, reason: 'alvo_invalido' });
     } else if (sent.has(decision.policyId)) {
       rejected.push({ decision, reason: 'ja_em_andamento' });
     } else if (!Number.isFinite(cost) || cost < 0) {

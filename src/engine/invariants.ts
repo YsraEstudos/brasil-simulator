@@ -1,4 +1,6 @@
 import { populationShares, regionsOf } from './regions/regions';
+import { checkSociety } from './society/society';
+import { checkPublicPolicies } from './publicPolicies/publicPolicies';
 import {
   MANDATORY_GROUPS,
   REVENUE_GROUPS,
@@ -144,5 +146,7 @@ export function checkInvariants(
     }
   }
 
+  if (next.society !== prev.society) errors.push(...checkSociety(next.society, next));
+  errors.push(...checkPublicPolicies(next));
   return errors;
 }

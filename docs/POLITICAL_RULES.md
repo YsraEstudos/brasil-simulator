@@ -241,15 +241,21 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 
 - **STF**: legitimados (partidos com representação no Congresso, governadores, Mesas, PGR, OAB, entidades de classe nacionais) podem propor ADI/ADPF. Cada medida tem um `riscoJuridico` (0–1) calculado a partir de flags (ex.: renúncia sem compensação, MP sem urgência, invasão de competência estadual). Probabilidade mensal de ação e de liminar suspendendo a medida = f(riscoJuridico, interesse dos legitimados).
 - **TCU**: emite alertas sobre execução e contas. Parecer pela rejeição das contas aumenta o risco de impeachment e afeta a credibilidade. O julgamento das contas é feito pelo Congresso.
-- **No motor (Fase 04):** o risco `judicializacao` da política, mais `risco_juridico_flag` por regra quebrada (gasto acima do limite, renúncia ou despesa sem compensação na LRF; também para políticas sem esse risco previsto), decide no início da execução se haverá ação no STF. Havendo, uma liminar suspende a execução de 1 a `liminar_lag_max` meses depois, por `suspensao_min_meses`–`suspensao_max_meses`; no julgamento a medida volta a valer ou é declarada inconstitucional (`prob_inconstitucional`, maior com regra quebrada). Os efeitos da janela suspensa são retirados da fila (ECONOMIC_MODEL.md §5.11). TCU e indicações ao STF ainda não são modelados.
+- **No motor (Fase 04):** o risco `judicializacao` da política, mais `risco_juridico_flag` por regra quebrada (gasto acima do limite, renúncia ou despesa sem compensação na LRF; também para políticas sem esse risco previsto), decide no início da execução se haverá ação no STF. Havendo, uma liminar suspende a execução de 1 a `liminar_lag_max` meses depois, por `suspensao_min_meses`–`suspensao_max_meses`; no julgamento a medida volta a valer ou é declarada inconstitucional (`prob_inconstitucional`, maior com regra quebrada). Os efeitos da janela suspensa são retirados da fila (ECONOMIC_MODEL.md §5.11). O TCU é modelado na Fase 07 (§9); indicações ao STF ainda não são modelados.
 - **Indicações**: vagas no STF e na diretoria do BC surgem conforme calendário do cenário (no STF, pela aposentadoria compulsória aos 75 anos — EC 88/2015 e LC 152/2015 —, ou por evento); exigem aprovação do Senado (maioria absoluta para ministro do STF, CF art. 101; maioria simples em votação secreta após arguição para presidente e diretores do BC, CF art. 52, III, d ✔).
 - **Diretoria do BC (LC 179/2021):** mandatos fixos de 4 anos, não coincidentes com o do presidente da República. O presidente do BC começa no 3º ano do mandato presidencial; os 8 diretores entram 2 por ano. No motor, a fração indicada pelo governo é 2/9, 4/9, 7/9 e 9/9 do 1º ao 4º ano, e as indicações são consideradas aprovadas pelo Senado. Ela determina quanto o BC cede à pressão pública (ECONOMIC_MODEL.md §5.4.1).
 
 ---
 
-## 9. CPIs e investigações
+## 9. CPIs, TCU e investigações (Fase 07, v0.6.0)
 - CPI: requerimento de **1/3 dos membros** da Casa (171 deputados ou 27 senadores), **fato determinado** e **prazo certo** (CF art. 58 §3º).
-- No jogo: probabilidade de CPI = f(escândalos ativos, tamanho da oposição, relação com o presidente da Casa). Efeitos: aprovação ↓, pontos de agenda ↓, risco de crise ministerial.
+- **No jogo (PROVISORIO):** a CPI não sai de uma fórmula de escândalos; chega por **cadeia de eventos** (`followUps`, GAME_DESIGN.md §11.3.1). Uma reportagem sobre ministério de indicação partidária (condições: aprovação abaixo de 45% e pelo menos um ministério partidário; 10% por mês, uma vez a cada 18 meses no máximo duas) grava a marca `escandalo_denuncia`. Investigar internamente agenda a CPI com 35% em 2 meses; negar tudo (escolha padrão), com 60% em 1 mês. Ao chegar, o evento `fase07_inst_cpi_instalada` grava `cpi_instalada`.
+- **Relatório final:** sorteado quando a pressão de impeachment passa de 15% (30%, uma vez, depois de 24 meses de intervalo). Negociar o texto ou enfrentá-lo grava `cpi_encerrada`; sem resposta, o relatório é aceito e grava `cpi_encerrada` e `cpi_relatorio_pesado`. Negociar agenda o pacto com 50% em 2 meses.
+- **Pacto entre os Poderes:** só chega depois de `cpi_encerrada` e antes de qualquer denúncia de impeachment aceita. Aceitar o pacto (ou aceitá-lo com ressalvas, a padrão) apaga `escandalo_denuncia`; a versão cheia recupera relação com o Congresso, aprovação e capital político.
+- **Marcas de CPI e escândalo:** `escandalo_denuncia`, `cpi_instalada`, `cpi_encerrada`, `cpi_relatorio_pesado`. A pressão de impeachment conta as marcas com prefixo `escandalo_` ou `cpi_` (até 4); ver ECONOMIC_MODEL.md §5.17 e o caveat abaixo.
+- **TCU (contas):** o gasto acima do limite de despesas (`limitExcess` > 0) dá o **alerta do TCU** (30%, até 3 vezes, intervalo de 6 meses; grava `tcu_alerta`). Corrigir a execução contingencia custeio por seis meses; defender a execução (padrão) ou pedir prazo deixa o alerta virar **parecer** em 3 meses com 50% (sorteio único). O parecer pela rejeição grava `tcu_parecer_rejeicao` (sem resposta, é a escolha padrão) e pesa na credibilidade. O julgamento final das contas continua **fora**: o jogo não tem votação do Congresso sobre o parecer.
+- **Contagem na pressão:** `cpi_instalada` e `cpi_encerrada` contam como uma CPI só; `cpi_relatorio_pesado` conta à parte (relatório desfavorável pesa mais).
+- **Fora da Fase 07:** CPI com comissão própria, votos por bancada e convocações (Fase 09); efeito das CPIs sobre ministérios (demissão automática).
 
 ---
 
@@ -259,7 +265,21 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 3. Senado instaura o processo (maioria simples) → presidente **afastado por até 180 dias**.
 4. Julgamento presidido pelo presidente do STF; condenação exige **2/3 do Senado (54 senadores)**; pena de perda do cargo e inabilitação por 8 anos.
 
-**Modelo no jogo:** `pressaoImpeachment = f(aprovação, tamanho da base, escândalos, flags de crime de responsabilidade (ex.: descumprimento grave da LRF/LOA), crise econômica, mobilização social)`. Cada etapa é uma votação dos blocos (§6.2) com peso adicional de opinião pública. O jogador recebe alertas antecipados e pode reagir.
+**Modelo no jogo (Fase 07, v0.6.0; PROVISORIO).** A pressão é `impeachmentPressure`, um número em [0, 1] que vem de uma função logística de aprovação, relação com o Congresso, marcas de escândalo e CPI, excesso do limite de despesa e desemprego acima do neutro (ECONOMIC_MODEL.md §5.17). Ela não é votação: só alimenta as condições de três eventos encadeados, e o jogador vê a faixa no quadro de Instituições (GAME_DESIGN.md §11.3.1).
+
+1. **Pedido** (`fase07_inst_pedido_impeachment`): pressão acima de 50%, com 25% por mês (uma vez, 24 meses de intervalo). A Presidência da Câmara decide a admissibilidade: negociar o arquivamento (grava `impeachment_arquivado`, custa relação com o Congresso) ou **enfrentar a denúncia**, que é a escolha padrão e grava `impeachment_denuncia_aceita`. Apelar ao STF também aceita a denúncia.
+2. **Câmara** (`fase07_inst_impeachment_camara`): exige `impeachment_denuncia_aceita`; pressão acima de 55%, com probabilidade igual à própria pressão. Mobilizar a base e negociar votos (2 pontos de agenda) arquiva o processo. Enfrentar no plenário encerra a etapa sem autorizar. **Deixar votar** (padrão) grava `impeachment_autorizado`.
+3. **Senado** (`fase07_inst_impeachment_senado`): exige `impeachment_autorizado`; pressão acima de 60%, com probabilidade igual à própria pressão. Mobilizar a base no Senado (2 pontos) arquiva. Resistir sem apoio e **aguardar o julgamento** (padrão) gravam `impeachment_condenado`.
+4. **Condenação:** `campaignOutcome` (`src/engine/events/outcome.ts`) devolve `impeachment` quando a marca `impeachment_condenado` existe. A campanha termina como derrota (GAME_DESIGN.md §7.1), e o save guarda a marca.
+
+**Marcas exatas da cadeia:** `impeachment_denuncia_aceita`, `impeachment_autorizado`, `impeachment_camara_votou`, `impeachment_senado_votou`, `impeachment_arquivado`, `impeachment_condenado`. Só chegam pela cadeia acima.
+
+**Caveats (medidos em 48 e 240 meses, em [ROADMAP.md](ROADMAP.md) §8.2):**
+- Quem não responde deixa a cadeia avançar: as três escolhas padrão levam à condenação. Medido com 20 sementes: em 48 meses, a cadeia só começa na estratégia fisiológica (denúncia em 11 de 20; condenação em 9 de 20). Em 240 meses, a estratégia inerte é condenada em 20 de 20 sementes, a partir do mês 161. A populista escapa em todas porque sempre escolhe a resposta de maior ganho de aprovação (arquivamento na Câmara), mas a pressão dela chega a cerca de 90% no mês 200 nas três sementes observadas, com o pico de 98,6% em 240 meses.
+- A escolha "mobilizar a base no Senado" tem a descrição "se a base não estiver pronta, a escolha perde força", e o motor não verifica a base: ela arquiva sempre.
+- A regra dos dois terços não é contada bancada por bancada: a escolha do jogador e a probabilidade fazem o papel dela.
+
+**Fora da Fase 07:** o afastamento de até 180 dias (texto do evento, sem efeito mecânico); o presidente do STF no julgamento; crimes de responsabilidade além do excesso de limite de despesa; mobilização social como fator próprio; sucessão pelo vice (a condenação encerra a campanha).
 
 ---
 

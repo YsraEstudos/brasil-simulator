@@ -69,6 +69,10 @@ export const conditionVariableSchema = z.enum([
   'cabinetScandalRisk',
   /** Média das relações dos governadores com o governo, ponderada pela população (−100…100). */
   'governorRelation',
+  /** Pressão de impeachment (0–1): função de aprovação, base, escândalos e crise (POLITICAL_RULES.md §10). */
+  'impeachmentPressure',
+  /** Prestígio de um personagem com o governo (−100…100); exige `characterId` na condição (FASE_07.md). */
+  'characterStanding',
 ]);
 export type ConditionVariable = z.infer<typeof conditionVariableSchema>;
 
@@ -77,8 +81,15 @@ export const eventConditionSchema = z
     variable: conditionVariableSchema,
     op: z.enum(['gt', 'lt']),
     value: z.number(),
+    /** Obrigatório (e só válido) quando `variable` é `characterStanding`. */
+    characterId: contentIdSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((c, ctx) => {
+    if ((c.variable === 'characterStanding') !== (c.characterId !== undefined)) {
+      ctx.addIssue({ code: 'custom', path: ['characterId'], message: 'characterId só com characterStanding' });
+    }
+  });
 export type EventCondition = z.infer<typeof eventConditionSchema>;
 
 export const eventEffectSchema = z
@@ -101,6 +112,27 @@ export const eventEffectSchema = z
   .strict();
 export type EventEffect = z.infer<typeof eventEffectSchema>;
 
+/** Evento encadeado: agendado quando a escolha é aplicada (FASE_07.md §Contratos). */
+export const eventFollowUpSchema = z
+  .object({
+    eventId: contentIdSchema,
+    /** Meses entre a escolha e a chegada à caixa de entrada (mínimo 1). */
+    delayMonths: z.number().int().min(1).max(24),
+    /** Sorteada com a semente no momento em que a escolha é aplicada. */
+    probability: z.number().min(0).max(1),
+  })
+  .strict();
+export type EventFollowUp = z.infer<typeof eventFollowUpSchema>;
+
+/** Mudança no prestígio de um personagem (−100…100 no estado; delta limitado por escolha). */
+export const characterEffectSchema = z
+  .object({
+    characterId: contentIdSchema,
+    delta: z.number().min(-30).max(30),
+  })
+  .strict();
+export type CharacterEffect = z.infer<typeof characterEffectSchema>;
+
 export const eventChoiceSchema = z
   .object({
     id: contentIdSchema,
@@ -114,6 +146,12 @@ export const eventChoiceSchema = z
      * (POLITICAL_RULES.md §6.3.1). Sem ministro de bloco, não faz nada.
      */
     dismissMinister: z.boolean().optional(),
+    /** Memória persistente: marcas gravadas no estado (`EventsState.flags`) para eventos futuros lerem. */
+    setFlags: z.array(contentIdSchema).optional(),
+    clearFlags: z.array(contentIdSchema).optional(),
+    /** Consequências posteriores (cadeias de eventos). */
+    followUps: z.array(eventFollowUpSchema).optional(),
+    characterEffects: z.array(characterEffectSchema).optional(),
   })
   .strict();
 export type EventChoiceDefinition = z.infer<typeof eventChoiceSchema>;
@@ -137,8 +175,26 @@ export const gameEventSchema = z
         /** Meses mínimos entre duas ocorrências. */
         cooldownMonths: z.number().int().min(0).max(120),
         maxOccurrences: z.number().int().min(1).max(100),
+        /** Todas as marcas precisam estar gravadas (`EventsState.flags`). */
+        requiresFlags: z.array(contentIdSchema).optional(),
+        /** Nenhuma destas marcas pode estar gravada. */
+        forbidsFlags: z.array(contentIdSchema).optional(),
       })
       .strict(),
+    /** Marcas gravadas quando o evento chega à caixa de entrada. */
+    onFireFlags: z.array(contentIdSchema).optional(),
+    /**
+     * Cenários em que o evento existe (ex.: `['brasil_2027_01_v060']`). Ausente = todos. Cenários e saves
+     * antigos não recebem eventos novos (AI_INSTRUCTIONS.md §8).
+     */
+    onlyScenarios: z.array(contentIdSchema).min(1).optional(),
+    /** Personagem fictício em destaque (ID de `scenario.characters`); aparece no briefing e nas manchetes. */
+    characterId: contentIdSchema.optional(),
+    /**
+     * Evento que só chega encadeado (via `followUps` de uma escolha): o sorteio mensal ignora o gatilho e ele
+     * dispara no mês agendado, uma vez por agendamento.
+     */
+    chainedOnly: z.boolean().optional(),
     /** Efeitos automáticos no mês em que o evento dispara, antes da escolha (ex.: o choque em si). */
     onFire: z.array(eventEffectSchema),
     choices: z.array(eventChoiceSchema).min(2).max(4),
@@ -148,6 +204,13 @@ export const gameEventSchema = z
   })
   .strict()
   .superRefine((e, ctx) => {
+    if (e.trigger.probabilityFactor === 'characterStanding') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['trigger', 'probabilityFactor'],
+        message: 'characterStanding exige characterId',
+      });
+    }
     const ids = e.choices.map((c) => c.id);
     const dup = ids.find((id, i) => ids.indexOf(id) !== i);
     if (dup) ctx.addIssue({ code: 'custom', path: ['choices'], message: `escolha repetida: ${dup}` });

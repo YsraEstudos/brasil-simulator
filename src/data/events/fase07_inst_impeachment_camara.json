@@ -1,0 +1,61 @@
+{
+  "id": "fase07_inst_impeachment_camara",
+  "title": "Votação do impeachment na Câmara",
+  "description": "A denúncia de crime de responsabilidade chega ao plenário da Câmara. Autorizar o processo exige dois terços dos deputados. Se a Casa autorizar, o Senado julga o caso. Caso e personagens fictícios.",
+  "characterId": "pres_camara",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "impeachmentPressure", "op": "gt", "value": 0.55 }],
+    "probability": 0.6,
+    "probabilityFactor": "impeachmentPressure",
+    "cooldownMonths": 0,
+    "maxOccurrences": 1,
+    "requiresFlags": ["impeachment_denuncia_aceita"],
+    "forbidsFlags": ["impeachment_arquivado", "impeachment_camara_votou"]
+  },
+  "onFire": [
+    { "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 },
+    { "target": "capital_politico", "delta": -2, "lagMonths": 0, "durationMonths": 1 }
+  ],
+  "choices": [
+    {
+      "id": "mobilizar_base_e_negociar",
+      "label": "Mobilizar a base e negociar votos",
+      "description": "Custa dois pontos de agenda e capital político. Mobiliza a base, negocia votos com a Presidência da Câmara e a aprovação sobe com a mobilização popular. A votação é adiada e o pedido é arquivado.",
+      "agendaCost": 2,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 8, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "capital_politico", "delta": -3, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["impeachment_camara_votou", "impeachment_arquivado"],
+      "characterEffects": [{ "characterId": "pres_camara", "delta": 10 }]
+    },
+    {
+      "id": "enfrentar_no_plenario",
+      "label": "Enfrentar no plenário",
+      "description": "Vai ao plenário sem negociar. A votação não alcança dois terços dos deputados e o processo para na Câmara. A relação com a Casa sofre com o confronto.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -6, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["impeachment_camara_votou"]
+    },
+    {
+      "id": "deixar_votar",
+      "label": "Deixar a votação ocorrer",
+      "description": "A Câmara autoriza o processo com dois terços dos votos. O Senado instaura o julgamento e o presidente é afastado por até 180 dias. Escolha padrão se você não responder.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": -0.02, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -8, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "capital_politico", "delta": -4, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["impeachment_camara_votou", "impeachment_autorizado"]
+    }
+  ],
+  "defaultChoice": "deixar_votar",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "dataStatus": "FICTICIO"
+}

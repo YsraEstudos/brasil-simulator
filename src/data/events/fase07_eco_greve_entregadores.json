@@ -1,0 +1,113 @@
+{
+  "id": "fase07_eco_greve_entregadores",
+  "title": "Entregadores param as plataformas",
+  "description": "Entregadores de aplicativos e de plataformas de delivery cruzam os braços em várias capitais, pedindo pagamento mínimo por entrega e seguro contra acidentes. Os pedidos caem e o comércio reclama.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "characterId": "lider_sindical",
+  "chainedOnly": true,
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "unemployment",
+        "op": "gt",
+        "value": 0.06
+      }
+    ],
+    "probability": 0.05,
+    "cooldownMonths": 24,
+    "maxOccurrences": 1
+  },
+  "onFire": [
+    {
+      "target": "choque.hiato",
+      "delta": -0.001,
+      "lagMonths": 0,
+      "durationMonths": 2,
+      "label": "Entregas paradas"
+    },
+    {
+      "target": "aprovacao",
+      "delta": -0.005,
+      "lagMonths": 0,
+      "durationMonths": 1
+    }
+  ],
+  "choices": [
+    {
+      "id": "piso_por_entrega",
+      "label": "Negociar piso por entrega e seguro",
+      "description": "Abre mesa com as plataformas e cria um seguro mínimo para entregadores. Melhora a relação com os sindicatos, mas o seguro custa ao orçamento.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.custeio",
+          "delta": 0.001,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "label": "Seguro para entregadores"
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "lider_sindical",
+          "delta": 8
+        }
+      ]
+    },
+    {
+      "id": "levar_ao_congresso",
+      "label": "Levar a pauta ao Congresso",
+      "description": "Envia a discussão ao Congresso, que deve demorar. Ganha tempo e algum apoio de bancadas, mas a categoria vê demora e a aprovação sofre.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "relacao_congresso",
+          "delta": 3,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "lider_sindical",
+          "delta": 3
+        }
+      ]
+    },
+    {
+      "id": "nao_intervir",
+      "label": "Não intervir",
+      "description": "Espera a greve perder força. Não custa nada agora, mas o sindicato sai rompido e a imagem de descaso pesa.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "lider_sindical",
+          "delta": -8
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "nao_intervir",
+  "dataStatus": "FICTICIO"
+}

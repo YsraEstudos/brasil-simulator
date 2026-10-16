@@ -1,0 +1,107 @@
+{
+  "id": "fase07_eco_onda_calor_demanda_energia",
+  "title": "Onda de calor puxa a demanda de energia",
+  "description": "Uma onda de calor fora de época eleva o consumo de energia, com ar-condicionado ligado em todo o país. A demanda bate recordes e as usinas trabalham no limite.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "trigger": {
+    "monthsOfYear": [10, 11, 12, 1, 2],
+    "conditions": [],
+    "probability": 0.12,
+    "cooldownMonths": 12,
+    "maxOccurrences": 3
+  },
+  "onFire": [
+    {
+      "target": "choque.hiato",
+      "delta": 0.001,
+      "lagMonths": 0,
+      "durationMonths": 2,
+      "label": "Calor aquece o consumo"
+    },
+    {
+      "target": "choque.inflacao",
+      "delta": 0.002,
+      "lagMonths": 0,
+      "durationMonths": 3,
+      "label": "Energia mais cara no calor"
+    }
+  ],
+  "choices": [
+    {
+      "id": "acionar_termicas",
+      "label": "Acionar usinas térmicas",
+      "description": "Mantém a luz acesa com geração cara. A aprovação não sente agora, mas o custo vira despesa e o risco de racionamento cresce nos meses seguintes.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "gasto.custeio",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "label": "Usinas térmicas"
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "followUps": [
+        {
+          "eventId": "fase07_eco_crise_hidrica_conta_luz",
+          "delayMonths": 2,
+          "probability": 0.4
+        }
+      ]
+    },
+    {
+      "id": "reducao_voluntaria",
+      "label": "Pagar por redução voluntária do consumo",
+      "description": "Paga grandes consumidores para reduzir o uso nos horários de pico. Evita o racionamento, mas a atividade desacelera um pouco e o custo sai do caixa.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "choque.hiato",
+          "delta": -0.001,
+          "lagMonths": 0,
+          "durationMonths": 2
+        },
+        {
+          "target": "gasto.custeio",
+          "delta": 0.001,
+          "lagMonths": 0,
+          "durationMonths": 3
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.006,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "campanha_consumo",
+      "label": "Campanha de uso consciente",
+      "description": "Comunicação pública pede economia de energia. Custa pouco e melhora a imagem, mas o efeito sobre a demanda é pequeno.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": 0.003,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "choque.inflacao",
+          "delta": -0.001,
+          "lagMonths": 0,
+          "durationMonths": 3
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "acionar_termicas",
+  "dataStatus": "FICTICIO"
+}

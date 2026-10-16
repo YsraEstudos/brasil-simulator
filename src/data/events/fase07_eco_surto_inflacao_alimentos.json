@@ -1,0 +1,107 @@
+{
+  "id": "fase07_eco_surto_inflacao_alimentos",
+  "title": "Alimentos disparam no mercado",
+  "description": "Os preços de alimentos básicos sobem mais que o restante da economia e empurram a inflação dos últimos doze meses para cima. As famílias de baixa renda sentem primeiro, e a autoridade monetária acompanha de perto as expectativas.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "inflation12m",
+        "op": "gt",
+        "value": 0.05
+      }
+    ],
+    "probability": 0.15,
+    "cooldownMonths": 12,
+    "maxOccurrences": 3
+  },
+  "onFireFlags": ["eco_alimentos_em_alta"],
+  "onFire": [
+    {
+      "target": "choque.inflacao",
+      "delta": 0.006,
+      "lagMonths": 0,
+      "durationMonths": 4,
+      "label": "Alta de alimentos"
+    }
+  ],
+  "choices": [
+    {
+      "id": "estoques_reguladores",
+      "label": "Abrir estoques reguladores",
+      "description": "Vende estoques públicos a preço de custo e segura a alta por alguns meses. Custa despesa de custeio e exige logística que nem sempre funciona bem.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "choque.inflacao",
+          "delta": -0.003,
+          "lagMonths": 0,
+          "durationMonths": 4,
+          "label": "Estoques reguladores"
+        },
+        {
+          "target": "gasto.custeio",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 4
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "setFlags": ["eco_estoques_reguladores"]
+    },
+    {
+      "id": "subsidio_cesta",
+      "label": "Ampliar a cesta subsidiada",
+      "description": "Aumenta a transferência a famílias de baixa renda e melhora a aprovação, mas injeta demanda e pode repassar parte da alta aos preços.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.transferencia_baixa_renda",
+          "delta": 0.003,
+          "lagMonths": 0,
+          "durationMonths": 6
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.012,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "choque.inflacao",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 3
+        }
+      ]
+    },
+    {
+      "id": "deixar_mercado",
+      "label": "Deixar o mercado se ajustar",
+      "description": "Não custa caixa agora, mas a alta persiste e a sensação de descaso desgasta a aprovação e a credibilidade.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "deixar_mercado",
+  "dataStatus": "FICTICIO"
+}

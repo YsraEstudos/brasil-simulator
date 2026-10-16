@@ -1,4 +1,4 @@
-import type { GameContent, IndicatorKey, MonthReport } from '../types';
+import type { GameContent, IndicatorKey, MonthReport, ProposalTransition } from '../types';
 
 import { pct } from './format';
 
@@ -88,6 +88,12 @@ const VOTE_HEADLINE_PREFIX: Readonly<Record<string, string>> = {
   parada: 'Avança no Congresso',
 };
 
+/** Prefixo da manchete de uma transição de proposta; `undefined` quando a transição não vira manchete. */
+export function proposalHeadlinePrefix(transition: ProposalTransition): string | undefined {
+  const { cause, status } = transition;
+  return cause === 'votacao' ? VOTE_HEADLINE_PREFIX[status] : PROPOSAL_HEADLINE_PREFIX[cause];
+}
+
 function copomHeadline(copom: NonNullable<MonthReport['copom']>): string {
   const pressure =
     copom.pressureCut !== undefined
@@ -109,8 +115,7 @@ export function headlines(report: MonthReport, content: GameContent): string[] {
   if (report.copom) lines.push(copomHeadline(report.copom));
 
   for (const change of report.proposalChanges) {
-    const { cause, status } = change.transition;
-    const prefix = cause === 'votacao' ? VOTE_HEADLINE_PREFIX[status] : PROPOSAL_HEADLINE_PREFIX[cause];
+    const prefix = proposalHeadlinePrefix(change.transition);
     if (!prefix) continue;
     const name = content.policies[change.policyId]?.name ?? change.policyId;
     const detail = change.transition.detail ? ` (${change.transition.detail})` : '';

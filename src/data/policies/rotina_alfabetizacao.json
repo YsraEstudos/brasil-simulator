@@ -1,0 +1,26 @@
+{
+  "id": "rotina_alfabetizacao",
+  "name": "Rotina de apoio à alfabetização",
+  "summary": "Mantém formação e materiais de apoio à alfabetização com custeio discricionário e ato executivo. Dados e custos PROVISORIO.",
+  "area": "educacao",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1800, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 3 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 1800, "lagMonths": 2 },
+    { "channel": "aprovacao", "magnitude": 0.006, "lagMonths": 3 }
+  ],
+  "risks": [{ "kind": "baixa_adesao", "probability": 0.2 }],
+  "affected": {
+    "groups": ["estudantes", "professores"],
+    "sectors": ["servicos"],
+    "regions": ["nordeste", "norte", "nacional"]
+  },
+  "position": { "economic": -0.2, "social": -0.2 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

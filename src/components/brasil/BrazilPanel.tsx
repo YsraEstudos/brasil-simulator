@@ -72,7 +72,9 @@ export function BrazilPanel({ campaign }: { campaign: ActiveCampaign }) {
       onReady={(api) => {
         fly.current = api.flyToUf;
       }}>
-      <View pointerEvents="box-none" style={[styles.chips, { top: insets.top + 52 }]}>
+      <View
+        pointerEvents="box-none"
+        style={[styles.chips, { top: insets.top + 52, paddingLeft: insets.left, paddingRight: insets.right }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
           {MAP_INDICATORS.map((m) => (
             <Chip key={m.id} label={m.label} active={m.id === indicator} onPress={() => setIndicator(m.id)} />
@@ -82,11 +84,16 @@ export function BrazilPanel({ campaign }: { campaign: ActiveCampaign }) {
       </View>
 
       {listOpen ? (
-        <View style={[styles.list, panel, { top: insets.top + 104 }]}>
+        <View
+          style={[
+            styles.list,
+            panel,
+            { top: insets.top + 104, left: Spacing.three + insets.left, right: Spacing.three + insets.right },
+          ]}>
           <UfList rows={rows} indicator={indicator} onChoose={choose} />
         </View>
       ) : row ? (
-        <View style={[styles.card, panel]}>
+        <View style={[styles.card, panel, { left: Spacing.three + insets.left, right: Spacing.three + insets.right }]}>
           <UfCard
             row={row}
             indicator={indicator}
@@ -98,7 +105,9 @@ export function BrazilPanel({ campaign }: { campaign: ActiveCampaign }) {
           />
         </View>
       ) : (
-        <View style={[styles.legend, panel]} accessibilityRole="summary">
+        <View
+          style={[styles.legend, panel, { left: Spacing.three + insets.left, right: Spacing.three + insets.right }]}
+          accessibilityRole="summary">
           <Text variant="label">{spec.legend}</Text>
           <View style={styles.legendRow}>
             {legendLabels(spec).map((label, i) => (
@@ -311,8 +320,6 @@ const styles = StyleSheet.create({
   },
   legend: {
     position: 'absolute',
-    left: Spacing.three,
-    right: Spacing.three,
     bottom: Spacing.three,
     padding: Spacing.three,
     gap: Spacing.two,
@@ -324,8 +331,6 @@ const styles = StyleSheet.create({
   swatch: { width: 14, height: 14, borderRadius: 4 },
   card: {
     position: 'absolute',
-    left: Spacing.three,
-    right: Spacing.three,
     bottom: Spacing.three,
     maxHeight: '62%',
     borderRadius: Radius.lg,
@@ -337,8 +342,6 @@ const styles = StyleSheet.create({
   reference: { minWidth: 96, textAlign: 'right' },
   list: {
     position: 'absolute',
-    left: Spacing.three,
-    right: Spacing.three,
     bottom: Spacing.three,
     borderRadius: Radius.lg,
     borderWidth: 1,

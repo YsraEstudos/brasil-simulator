@@ -60,6 +60,33 @@ export function costText(points: number): string {
   return `${points} ${points === 1 ? 'ponto' : 'pontos'}`;
 }
 
+const AREA_LABELS: Record<string, string> = {
+  agro: 'Agricultura',
+  agropecuaria: 'Agropecuária',
+  cidades: 'Cidades',
+  educacao: 'Educação',
+  economia: 'Economia',
+  energia: 'Energia',
+  estado: 'Estado',
+  fiscal: 'Fiscal',
+  habitacao: 'Habitação',
+  infraestrutura: 'Infraestrutura',
+  previdencia: 'Previdência',
+  saude: 'Saúde',
+  saneamento: 'Saneamento',
+  seguranca: 'Segurança',
+  social: 'Social',
+  tributacao: 'Tributação',
+};
+
+/** Nome legível de uma área do catálogo, sem expor o identificador interno. */
+export function areaLabel(area: string): string {
+  const known = AREA_LABELS[area];
+  if (known) return known;
+  const humanized = area.replaceAll('_', ' ').trim();
+  return humanized ? humanized.charAt(0).toUpperCase() + humanized.slice(1) : 'Área';
+}
+
 export const PROPOSAL_STATUS_LABEL: Record<ProposalStatus, string> = {
   bloqueada: 'Bloqueada',
   em_tramitacao: 'Em tramitação',

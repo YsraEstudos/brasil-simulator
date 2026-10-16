@@ -1,0 +1,52 @@
+{
+  "id": "fase07_pol_stf_suspende",
+  "title": "Ministro do STF suspende liberação de emendas",
+  "description": "Um ministro do Supremo suspende em caráter liminar a liberação de emendas e cargos acertada com a Câmara, por considerar que a barganha afronta critérios de impessoalidade. A decisão vale até o julgamento pelo plenário.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "limitExcess", "op": "gt", "value": 0 }],
+    "probability": 0.05,
+    "cooldownMonths": 24,
+    "maxOccurrences": 2
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "chainedOnly": true,
+  "characterId": "ministro_stf",
+  "onFire": [{ "target": "relacao_congresso", "delta": -4, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "cumprir_revisar",
+      "label": "Cumprir e revisar a barganha",
+      "description": "Suspende os acordos e envia nova proposta com critérios claros. A credibilidade sobe, mas a base da Câmara fica irritada e a pauta atrasa.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "credibilidade", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -4, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "characterEffects": [{ "characterId": "ministro_stf", "delta": 10 }]
+    },
+    {
+      "id": "recorrer_plenario",
+      "label": "Recorrer ao plenário",
+      "description": "Leva a liminar ao plenário do Supremo. A base do Congresso reage a favor, mas o confronto com a Corte desgasta o governo e a credibilidade cai.",
+      "agendaCost": 2,
+      "effects": [
+        { "target": "capital_politico", "delta": -4, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 3, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["pol_stf_recurso"],
+      "characterEffects": [{ "characterId": "ministro_stf", "delta": -20 }]
+    },
+    {
+      "id": "acatar_sem_recurso",
+      "label": "Acatar sem recurso",
+      "description": "Cumpre a liminar sem comentar. O custo político é baixo, mas os acordos ficam suspensos e a pauta fica parada até o julgamento.",
+      "agendaCost": 0,
+      "effects": [{ "target": "relacao_congresso", "delta": -6, "lagMonths": 0, "durationMonths": 1 }],
+      "characterEffects": [{ "characterId": "ministro_stf", "delta": 5 }]
+    }
+  ],
+  "defaultChoice": "acatar_sem_recurso",
+  "dataStatus": "FICTICIO"
+}

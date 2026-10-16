@@ -27,11 +27,13 @@ export interface GlobeViewProps {
   onSelect?: (sigla: string | null) => void;
   /** Recebe a função que leva a câmera até uma UF (lista da aba Brasil). */
   onReady?: (api: { flyToUf: (sigla: string) => void }) => void;
+  /** Cabeçalho interno (título "Brasil" + botão Centralizar). `false` deixa o globo limpo para a mesa do Painel. */
+  chrome?: boolean;
   /** Camadas da interface por cima do globo (legenda, cartão, lista). */
   children?: ReactNode;
 }
 
-export function GlobeView({ initial, fills, selectedId, onSelect, onReady, children }: GlobeViewProps) {
+export function GlobeView({ initial, fills, selectedId, onSelect, onReady, chrome = true, children }: GlobeViewProps) {
   const controller = useMemo(() => {
     const c = new GlobeController();
     if (initial) c.state = clampCamera(initial);
@@ -129,21 +131,28 @@ export function GlobeView({ initial, fills, selectedId, onSelect, onReady, child
         </View>
       </GestureDetector>
 
-      <View pointerEvents="box-none" style={[styles.top, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.title}>Brasil</Text>
-        <Pressable
-          style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-          onPress={() => controller.flyTo(BRASIL_VIEW)}
-          accessibilityRole="button"
-          accessibilityLabel="Centralizar no Brasil">
-          <Text style={styles.buttonText}>Centralizar</Text>
-        </Pressable>
-      </View>
+      {chrome && (
+        <View
+          pointerEvents="box-none"
+          style={[
+            styles.top,
+            { paddingTop: insets.top + 8, paddingLeft: 16 + insets.left, paddingRight: 16 + insets.right },
+          ]}>
+          <Text style={styles.title}>Brasil</Text>
+          <Pressable
+            style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+            onPress={() => controller.flyTo(BRASIL_VIEW)}
+            accessibilityRole="button"
+            accessibilityLabel="Centralizar no Brasil">
+            <Text style={styles.buttonText}>Centralizar</Text>
+          </Pressable>
+        </View>
+      )}
 
       {children}
 
       {!controlled && selected && (
-        <View style={styles.card}>
+        <View style={[styles.card, { left: 16 + insets.left, right: 16 + insets.right }]}>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>
               {selected.nome} <Text style={styles.cardSigla}>{selected.sigla}</Text>
@@ -161,7 +170,7 @@ export function GlobeView({ initial, fills, selectedId, onSelect, onReady, child
       )}
 
       {stats && (
-        <Text style={[styles.stats, { top: insets.top + 52 }]} pointerEvents="none">
+        <Text style={[styles.stats, { top: insets.top + 52, left: 16 + insets.left }]} pointerEvents="none">
           tiles {stats.tiles} · cache {stats.cached} · nível {stats.maxLevel}
         </Text>
       )}
@@ -177,7 +186,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -195,8 +203,6 @@ const styles = StyleSheet.create({
   buttonText: { color: '#ffe27a', fontWeight: '600' },
   card: {
     position: 'absolute',
-    left: 16,
-    right: 16,
     bottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,5 +216,5 @@ const styles = StyleSheet.create({
   cardTitle: { color: '#f4f1e8', fontSize: 18, fontWeight: '700' },
   cardSigla: { color: '#ffe27a', fontSize: 14, fontWeight: '600' },
   cardSub: { color: '#a9b1c3', marginTop: 2 },
-  stats: { position: 'absolute', left: 16, color: '#7f8aa3', fontSize: 11 },
+  stats: { position: 'absolute', color: '#7f8aa3', fontSize: 11 },
 });

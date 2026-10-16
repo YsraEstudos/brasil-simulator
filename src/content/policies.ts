@@ -10,6 +10,38 @@ import reformaPrevidencia from '@/data/policies/reforma_previdencia.json';
 import salarioMinimoValorizacao from '@/data/policies/salario_minimo_valorizacao.json';
 import segurancaCooperacao from '@/data/policies/seguranca_cooperacao.json';
 import transferenciaRendaAmpliacao from '@/data/policies/transferencia_renda_ampliacao.json';
+import projetoArmazenagemAgropecuaria from '@/data/policies/projeto_armazenagem_agropecuaria.json';
+import projetoConectividadePublica from '@/data/policies/projeto_conectividade_publica.json';
+import projetoCorredoresLogisticos from '@/data/policies/projeto_corredores_logisticos.json';
+import projetoEscolasTempoIntegral from '@/data/policies/projeto_escolas_tempo_integral.json';
+import projetoHabitacaoInteresseSocial from '@/data/policies/projeto_habitacao_interesse_social.json';
+import projetoHospitaisRegionais from '@/data/policies/projeto_hospitais_regionais.json';
+import projetoMobilidadeUrbana from '@/data/policies/projeto_mobilidade_urbana.json';
+import projetoRequalificacaoPortuaria from '@/data/policies/projeto_requalificacao_portuaria.json';
+import projetoSaneamentoResiliente from '@/data/policies/projeto_saneamento_resiliente.json';
+import projetoTransmissaoEnergia from '@/data/policies/projeto_transmissao_energia.json';
+import rotinaAlfabetizacao from '@/data/policies/rotina_alfabetizacao.json';
+import rotinaAssistenciaTecnicaRural from '@/data/policies/rotina_assistencia_tecnica_rural.json';
+import rotinaAtencaoBasica from '@/data/policies/rotina_atencao_basica.json';
+import rotinaAtendimentoPrevidenciario from '@/data/policies/rotina_atendimento_previdenciario.json';
+import rotinaAvaliacaoContratos from '@/data/policies/rotina_avaliacao_contratos.json';
+import rotinaBuscaAtivaSocial from '@/data/policies/rotina_busca_ativa_social.json';
+import rotinaComprasPublicas from '@/data/policies/rotina_compras_publicas.json';
+import rotinaDefesaAgropecuaria from '@/data/policies/rotina_defesa_agropecuaria.json';
+import rotinaEficienciaEnergetica from '@/data/policies/rotina_eficiencia_energetica.json';
+import rotinaEficienciaSaneamento from '@/data/policies/rotina_eficiencia_saneamento.json';
+import rotinaExecucaoOrcamentaria from '@/data/policies/rotina_execucao_orcamentaria.json';
+import rotinaFormacaoDocente from '@/data/policies/rotina_formacao_docente.json';
+import rotinaIntegracaoCriminal from '@/data/policies/rotina_integracao_criminal.json';
+import rotinaManutencaoRodovias from '@/data/policies/rotina_manutencao_rodovias.json';
+import rotinaMonitoramentoMineral from '@/data/policies/rotina_monitoramento_mineral.json';
+import rotinaPericiaPrevidenciaria from '@/data/policies/rotina_pericia_previdenciaria.json';
+import rotinaPrevencaoViolencia from '@/data/policies/rotina_prevencao_violencia.json';
+import rotinaQualificacaoCadastros from '@/data/policies/rotina_qualificacao_cadastros.json';
+import rotinaRegularizacaoUrbanistica from '@/data/policies/rotina_regularizacao_urbanistica.json';
+import rotinaSegurancaViaria from '@/data/policies/rotina_seguranca_viaria.json';
+import rotinaServicosDigitais from '@/data/policies/rotina_servicos_digitais.json';
+import rotinaVigilanciaEpidemiologica from '@/data/policies/rotina_vigilancia_epidemiologica.json';
 
 /** Catálogo de políticas (src/data/policies/*.json), validado ao carregar: um JSON inválido é erro de desenvolvimento. */
 const RAW: readonly unknown[] = [
@@ -23,6 +55,38 @@ const RAW: readonly unknown[] = [
   reformaAdministrativa,
   salarioMinimoValorizacao,
   reformaPrevidencia,
+  rotinaExecucaoOrcamentaria,
+  rotinaComprasPublicas,
+  rotinaServicosDigitais,
+  rotinaAvaliacaoContratos,
+  rotinaAtendimentoPrevidenciario,
+  rotinaPericiaPrevidenciaria,
+  rotinaBuscaAtivaSocial,
+  rotinaQualificacaoCadastros,
+  rotinaManutencaoRodovias,
+  rotinaSegurancaViaria,
+  rotinaAtencaoBasica,
+  rotinaVigilanciaEpidemiologica,
+  rotinaAlfabetizacao,
+  rotinaFormacaoDocente,
+  rotinaIntegracaoCriminal,
+  rotinaPrevencaoViolencia,
+  rotinaRegularizacaoUrbanistica,
+  rotinaEficienciaSaneamento,
+  rotinaAssistenciaTecnicaRural,
+  rotinaDefesaAgropecuaria,
+  rotinaEficienciaEnergetica,
+  rotinaMonitoramentoMineral,
+  projetoHospitaisRegionais,
+  projetoEscolasTempoIntegral,
+  projetoSaneamentoResiliente,
+  projetoCorredoresLogisticos,
+  projetoTransmissaoEnergia,
+  projetoHabitacaoInteresseSocial,
+  projetoConectividadePublica,
+  projetoArmazenagemAgropecuaria,
+  projetoMobilidadeUrbana,
+  projetoRequalificacaoPortuaria,
 ];
 
 function loadPolicies(raw: readonly unknown[]): Record<string, Policy> {

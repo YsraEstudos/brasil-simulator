@@ -65,8 +65,9 @@ describe('eventos (GAME_DESIGN.md §11.3)', () => {
     }
   });
 
-  it('há os 10 eventos do protótipo, os 5 de 2027 e o das dívidas estaduais, com ids únicos', () => {
-    expect(EVENTS).toHaveLength(16);
+  it('há os 16 eventos anteriores e os 37 da Fase 07, com ids únicos', () => {
+    expect(EVENTS).toHaveLength(53);
+    expect(EVENTS.filter((e) => e.id.startsWith('fase07_'))).toHaveLength(37);
     const ids = EVENTS.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -96,5 +97,52 @@ describe('eventos (GAME_DESIGN.md §11.3)', () => {
       }
     }
     expect(problems).toEqual([]);
+  });
+
+  // FASE_07.md: eventos novos só existem no cenário v0.6.0 e só citam personagens do elenco.
+  it('eventos da Fase 07 ficam restritos ao cenário v0.6.0 e citam o elenco', () => {
+    const cast = new Set((SCENARIOS.brasil_2027_01_v060.characters ?? []).map((c) => c.id));
+    const ids = new Set(EVENTS.map((e) => e.id));
+    for (const event of EVENTS.filter((e) => e.id.startsWith('fase07_'))) {
+      expect(event.onlyScenarios, event.id).toEqual(['brasil_2027_01_v060']);
+      expect(event.dataStatus, event.id).toBe('FICTICIO');
+      if (event.characterId) expect(cast.has(event.characterId), `${event.id}: ${event.characterId}`).toBe(true);
+      for (const c of event.trigger.conditions) {
+        if (c.characterId) expect(cast.has(c.characterId), `${event.id}: ${c.characterId}`).toBe(true);
+      }
+      for (const choice of event.choices) {
+        for (const fx of choice.characterEffects ?? []) expect(cast.has(fx.characterId), event.id).toBe(true);
+        for (const f of choice.followUps ?? []) {
+          expect(ids.has(f.eventId), `${event.id}: followUp ${f.eventId}`).toBe(true);
+          expect(EVENTS.find((e) => e.id === f.eventId)?.chainedOnly, `${event.id}: ${f.eventId}`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('toda marca lida por um evento é gravada por algum evento', () => {
+    const written = new Set<string>();
+    for (const e of EVENTS) {
+      for (const f of e.onFireFlags ?? []) written.add(f);
+      for (const c of e.choices) for (const f of c.setFlags ?? []) written.add(f);
+    }
+    for (const e of EVENTS) {
+      for (const f of [...(e.trigger.requiresFlags ?? []), ...(e.trigger.forbidsFlags ?? [])]) {
+        expect(written.has(f), `${e.id}: marca ${f} nunca gravada`).toBe(true);
+      }
+    }
+  });
+
+  it('há cadeias e eventos com memória suficientes (FASE_07.md, critérios)', () => {
+    const phase7 = EVENTS.filter((e) => e.id.startsWith('fase07_'));
+    const chains = phase7.filter((e) => e.choices.some((c) => (c.followUps ?? []).length > 0));
+    const withFlags = phase7.filter(
+      (e) =>
+        (e.onFireFlags ?? []).length > 0 ||
+        (e.trigger.requiresFlags ?? []).length > 0 ||
+        e.choices.some((c) => (c.setFlags ?? []).length > 0),
+    );
+    expect(chains.length).toBeGreaterThanOrEqual(6);
+    expect(withFlags.length).toBeGreaterThanOrEqual(10);
   });
 });

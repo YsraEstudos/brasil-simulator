@@ -60,7 +60,11 @@ const useDefault: EventChooser = (event) => event.defaultChoice;
 /** Políticas do cenário que podem ser enviadas agora (existem no catálogo e não estão em andamento). */
 function sendablePolicies(state: GameState, content: GameContent): Set<string> {
   const busy = new Set(state.proposals.filter((p) => PROPOSAL_IN_PROGRESS.has(p.status)).map((p) => p.policyId));
-  return new Set(content.scenario.policies.filter((id) => content.policies[id] !== undefined && !busy.has(id)));
+  return new Set(
+    content.scenario.policies.filter(
+      (id) => content.policies[id] !== undefined && content.policies[id].delivery !== 'rotina' && !busy.has(id),
+    ),
+  );
 }
 
 function decisionFor(content: GameContent, policyId: string): Decision {

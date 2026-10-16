@@ -1,0 +1,19 @@
+{
+  "id": "rotina_avaliacao_contratos",
+  "name": "Rotina de avaliação de contratos federais",
+  "summary": "Institui avaliação periódica de contratos administrativos para reduzir interrupções e desperdícios. Dados e custos PROVISORIO.",
+  "area": "estado",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 500, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 2 },
+  "conditions": [],
+  "impacts": [{ "channel": "custeio", "magnitude": 500, "lagMonths": 1 }],
+  "risks": [{ "kind": "atraso", "probability": 0.15 }],
+  "affected": { "groups": ["gestores_publicos"], "sectors": ["servicos"], "regions": ["nacional"] },
+  "position": { "economic": 0.2, "social": 0 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

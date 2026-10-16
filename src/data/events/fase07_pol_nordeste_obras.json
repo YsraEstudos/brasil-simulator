@@ -1,0 +1,100 @@
+{
+  "id": "fase07_pol_nordeste_obras",
+  "title": "Governador do Nordeste pede obras e ameaça romper",
+  "description": "O governador de um estado do Nordeste cobra obras federais paradas e diz que sua base vai se afastar do governo se nada for liberado. A pressão cresce com a seca e a falta de investimento na região.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      { "variable": "governorRelation", "op": "lt", "value": 0 },
+      { "variable": "characterStanding", "op": "gt", "value": -20, "characterId": "governador_nordeste" }
+    ],
+    "probability": 0.12,
+    "cooldownMonths": 12,
+    "maxOccurrences": 2
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "characterId": "governador_nordeste",
+  "onFire": [
+    {
+      "target": "governadores.relacao",
+      "delta": -5,
+      "lagMonths": 0,
+      "durationMonths": 1,
+      "regions": ["nordeste"]
+    }
+  ],
+  "choices": [
+    {
+      "id": "atender_obras",
+      "label": "Liberar obras no estado",
+      "description": "Libera convênios de obras e investimento no estado. Melhora a base no Nordeste e a atividade local, mas a conta de investimento cresce por um ano.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.investimento",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 12,
+          "regions": ["nordeste"]
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 10,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["nordeste"]
+        },
+        {
+          "target": "regiao.atividade",
+          "delta": 0.003,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "regions": ["nordeste"]
+        }
+      ],
+      "setFlags": ["pol_obras_nordeste"],
+      "characterEffects": [{ "characterId": "governador_nordeste", "delta": 15 }]
+    },
+    {
+      "id": "recusar_obras",
+      "label": "Recusar o pedido",
+      "description": "Mantém o orçamento de investimento. Economiza recursos, mas o governador rompe e a região passa a cobrar o governo publicamente.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "governadores.relacao",
+          "delta": -10,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["nordeste"]
+        },
+        {
+          "target": "regiao.aprovacao",
+          "delta": -0.015,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "regions": ["nordeste"]
+        }
+      ],
+      "characterEffects": [{ "characterId": "governador_nordeste", "delta": -20 }]
+    },
+    {
+      "id": "prometer_estudo",
+      "label": "Prometer estudo dos pedidos",
+      "description": "Promete analisar os pedidos sem compromisso. Ganha tempo, mas o governador perde paciência e a região fica desconfiada da União.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "governadores.relacao",
+          "delta": -4,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["nordeste"]
+        }
+      ],
+      "characterEffects": [{ "characterId": "governador_nordeste", "delta": -5 }]
+    }
+  ],
+  "defaultChoice": "prometer_estudo",
+  "dataStatus": "FICTICIO"
+}

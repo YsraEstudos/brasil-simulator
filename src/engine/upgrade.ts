@@ -1,7 +1,9 @@
 import { DEFAULT_CALIBRATION } from './economy/calibration';
 import { initialFiscal } from './economy/fiscal';
 import { FALLBACK_ECONOMY, fiscalValues, initialEconomy } from './state';
-import { STATE_SCHEMA_VERSION, type GameState } from './types';
+import { ENGINE_VERSION, STATE_SCHEMA_VERSION, type GameState } from './types';
+import { initialSocietyForGame } from './society/society';
+import { initialPublicPolicies } from './publicPolicies/types';
 
 /** O save foi gravado com uma estrutura de estado mais nova que a deste app. */
 export class SaveTooNewError extends Error {
@@ -27,7 +29,38 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   if (version < 3) state = v2ToV3(state);
   if (version < 4) state = v3ToV4(state);
   if (version < 5) state = v4ToV5(state);
+  if (version < 6) state = v5ToV6(state);
+  if (version < 7) state = v6ToV7(state);
   return state as unknown as GameState;
+}
+
+/**
+ * v6 (Fase 06) → v7 (Fase 07): entram marcas, cadeias agendadas, prestígio de personagens e notícias. Todos
+ * começam vazios; pendências, eventos já disparados e contadores são preservados. Os passos anteriores que criam
+ * `events` (v1→v2 e saves sem o bloco) passam por este, então todo save antigo ganha os campos novos.
+ */
+function v6ToV7(s: Raw): Raw {
+  const events = (s.events ?? {}) as Raw;
+  return {
+    ...s,
+    schemaVersion: 7,
+    engineVersion: ENGINE_VERSION,
+    events: { ...events, flags: {}, scheduled: [], characters: {}, news: [] },
+  };
+}
+
+/** Blocos novos partem de referências provisórias; propostas e impulsos legados são preservados. */
+function v5ToV6(s: Raw): Raw {
+  return {
+    ...s,
+    schemaVersion: 6,
+    engineVersion: ENGINE_VERSION,
+    society: initialSocietyForGame({
+      economy: s.economy as GameState['economy'],
+      indicators: s.indicators as GameState['indicators'],
+    }),
+    publicPolicies: initialPublicPolicies(),
+  };
 }
 
 /**

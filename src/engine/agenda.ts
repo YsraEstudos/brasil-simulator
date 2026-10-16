@@ -2,6 +2,8 @@ import {
   AMENDMENTS_ACTION_ID,
   APPOINT_ACTION_ID,
   CONCEDE_ACTION_ID,
+  DIRECTIVE_ACTION_ID,
+  BRAND_ACTION_ID,
   NEGOTIATE_ACTION_ID,
   SANCTION_ACTION_ID,
   SANCTION_CHOICES,
@@ -11,6 +13,7 @@ import {
 } from './actions';
 import { ministriesOf, ministryOccupant } from './congress/cabinet';
 import { legislativeInstrument } from './congress/congress';
+import { validatePublicAction } from './publicPolicies/publicPolicies';
 import {
   PROPOSAL_IN_CONGRESS,
   TECHNICAL_OCCUPANT,
@@ -37,6 +40,9 @@ export function validateActionTarget(
   const inCongress = (p: Proposal | undefined): p is Proposal => p !== undefined && PROPOSAL_IN_CONGRESS.has(p.status);
 
   switch (action.id) {
+    case DIRECTIVE_ACTION_ID:
+    case BRAND_ACTION_ID:
+      return validatePublicAction(decision, state, content);
     case NEGOTIATE_ACTION_ID: {
       const p = proposal();
       const blocOk = content.scenario.blocs.some((b) => b.id === params.blocId);

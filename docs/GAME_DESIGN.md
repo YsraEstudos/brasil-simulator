@@ -27,7 +27,7 @@ Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RU
 
 ## 2. Plataforma e escopo técnico (resumo)
 
-- Android primeiro, iOS depois. Orientação vertical. Funciona offline.
+- Android primeiro, iOS depois. Orientação vertical e horizontal (auto-rotação). Funciona offline.
 - React Native + Expo + TypeScript. Motor de simulação em TypeScript puro, sem dependência de React.
 - Persistência local em SQLite. Detalhes em [ROADMAP.md](ROADMAP.md) e [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md).
 
@@ -250,6 +250,24 @@ Administrar 30+ políticas uma a uma, mês a mês, cansa no celular. Por isso as
 
 ---
 
+### 9.3 Implementação da Fase 06
+
+O cenário `brasil_2027_01_v050` permite jogar os 48 meses até dezembro/2030 para
+acompanhar obras e marcas. Campanhas legadas continuam com o limite de 12 meses.
+O fim desta campanha gera legado; eleição e sucessão continuam para a Fase 08.
+
+O catálogo tem 42 políticas: 10 legadas, 22 rotinas e 10 projetos novos.
+Na Presidência, a agenda normal filtra políticas por área; rotinas ficam nas
+diretrizes ministeriais. Escolher orçamento/diretriz ou nomear uma marca apenas
+prepara a agenda: o motor aplica a decisão ao encerrar o mês, pelo custo de um
+ponto. A carteira mostra fase, avanço, desembolso, atraso e manutenção.
+
+Na Economia, o painel social mostra os seis setores e cinco quintis, renda
+real, salário mínimo, desemprego e pobreza estimada, com números provisórios
+e causas rastreáveis. O legado acompanha essas medidas e as marcas sem
+inventar uma nova pontuação de sucesso social. Catálogo, custos, canais e
+atrasos: [POLICIES.md](POLICIES.md).
+
 ## 10. Exemplo completo: da decisão ao indicador
 
 Este é o critério de conclusão da Fase 00: explicar, sem código, como uma decisão presidencial chega ao Congresso, afeta o orçamento, é implementada e modifica os indicadores.
@@ -320,6 +338,66 @@ Os valores e o desenho exato de cada decisão serão especificados em `src/data/
 Eventos são determinados por **condições verificáveis + probabilidade configurada + sorteio com semente** (reprodutível).
 
 **Eventos de 2027 implementados na Fase 03** (`src/data/events/`): "Orçamento de transição" (sempre em fevereiro de 2027: executar a LOA votada, remanejar dotações ou pedir emenda de transição fora do limite), "Calibragem da alíquota da CBS", "Setores pedem regimes diferenciados", "Governadores disputam o Fundo de Desenvolvimento Regional" e "Serviços públicos começam a parar" (dispara quando as discricionárias ficam abaixo do piso de funcionamento). Eventos não criam efeitos permanentes: duram até 24 meses. Candidatos originais: calibragem da alíquota de referência da CBS no primeiro ano de cobrança integral; setores (agro, serviços, indústria) pressionando por regimes diferenciados; disputa com governadores pelo Fundo Nacional de Desenvolvimento Regional; "orçamento de transição" opcional no início do mandato (remanejamento ou crédito para dar margem fiscal em 2027, já que a LOA foi votada pelo governo anterior); paralisação da máquina por compressão das discricionárias ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.8).
+
+### 11.3.1 Fase 07 (cenário v0.6.0): eventos, cadeias, marcas, personagens e notícias
+
+Status: **FICTICIO** (casos, partidos, personagens e manchetes são fictícios; nenhuma conduta é atribuída a pessoa real, §13). Gatilhos, probabilidades, prazos e efeitos são **PROVISORIO** e aguardam a revisão do autor. Implementação: [POLITICAL_RULES.md](POLITICAL_RULES.md) §9–§10, [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.17, [FASE_07.md](FASE_07.md).
+
+**Escopo.** O cenário `brasil_2027_01_v060` (48 meses) traz **37 eventos novos**, todos com `onlyScenarios` restrito a ele: saves e cenários anteriores não recebem nenhum deles. Por área: 14 de economia, mercado, setores e clima (`fase07_eco_*`); 14 de Congresso, governadores, STF, sociedade e mandato (`fase07_pol_*`); e 9 de instituições (`fase07_inst_*`).
+
+**Causa identificável.** Todo evento tem condições verificáveis (ex.: "inflação de 12 meses acima de 4,5%"), probabilidade, intervalo mínimo entre ocorrências e número máximo de ocorrências. Quando o evento tem personagem em destaque, o briefing o mostra e a manchete leva o nome dele. A causa de cada manchete aponta a condição que mais se moveu no mês, o indicador que mais contribuiu ou a escolha que originou o evento.
+
+**Marcas (memória).** Eventos de 2027 podem gravar marcas: uma escolha grava com `setFlags` (ou apaga com `clearFlags`), e a chegada do evento grava com `onFireFlags`. Cada marca guarda o mês em que foi gravada. Marcas liberam ou bloqueiam outros eventos (`requiresFlags`, `forbidsFlags`). 29 dos 37 eventos usam marcas. Exemplos: `cpi_instalada` libera o relatório final da CPI; `impeachment_denuncia_aceita` libera a votação na Câmara; `cpi_encerrada` bloqueia um segundo relatório. O quadro de Instituições (abaixo) mostra as marcas institucionais ativas.
+
+**Cadeias (eventos encadeados).** Dez eventos só chegam por cadeia (`chainedOnly`): o sorteio mensal os ignora. Uma escolha ou um evento agenda outro com atraso de 1 a 3 meses e uma probabilidade:
+
+| Origem (escolha) | Destino | Atraso | Probabilidade |
+| --- | --- | --- | --- |
+| Reportagem aponta irregularidades → investigar internamente | CPI instalada na Câmara | 2 meses | 35% |
+| Reportagem aponta irregularidades → negar tudo (padrão) | CPI instalada na Câmara | 1 mês | 60% |
+| CPI instalada → acionar auditoria do TCU | Parecer do Tribunal sobre as contas | 3 meses | 40% |
+| Alerta do TCU → defender a execução (padrão) | Parecer do Tribunal sobre as contas | 3 meses | 50% |
+| Relatório final da CPI → negociar o texto final | Pacto entre os Poderes | 2 meses | 50% |
+| Greve de caminhoneiros → reprimir bloqueios | Entregadores param as plataformas | 2 meses | 40% |
+| Greve de caminhoneiros → aguardar negociação | Entregadores param as plataformas | 1 mês | 25% |
+| Onda de calor → acionar térmicas | Reservatórios baixos encarecem a conta de luz | 2 meses | 40% |
+| Boom de commodities → investir no setor | Pacote privado de infraestrutura | 3 meses | 50% |
+| Greve de professores → manter a proposta | Central sindical convoca manifestação | 2 meses | 60% |
+| Central sindical convoca → ignorar a convocação | Pesquisa mostra queda entre os mais pobres | 3 meses | 50% |
+| Vice conspira → deixar correr | Coluna expõe disputa dentro do governo | 2 meses | 60% |
+| Câmara cobra cargos → liberar cargos | Ministro do STF suspende liberação de emendas | 3 meses | 30% |
+
+Os 10 eventos só encadeados são: Reservatórios baixos encarecem a conta de luz, Entregadores param as plataformas, Pacote privado de infraestrutura, CPI instalada na Câmara, Pacto entre os Poderes, Parecer do Tribunal sobre as contas, Coluna expõe disputa dentro do governo, Pesquisa mostra queda entre os mais pobres, Central sindical convoca manifestação e Ministro do STF suspende liberação de emendas.
+
+**Escolha padrão e cadeias.** As escolhas padrão encaminham a cadeia de impeachment sem resposta: aceitar a denúncia no pedido, deixar a Câmara votar e aguardar o julgamento no Senado. Quem não responde deixa a cadeia avançar; ver POLITICAL_RULES.md §10.
+
+**Personagens (elenco fictício).** O cenário v0.6.0 traz 12 personagens com prestígio de −100 a 100. O prestígio muda pelas escolhas (`characterEffects`), pode ser condição de evento (`characterStanding`) e aparece nas manchetes. Não há agenda própria: personagens não tomam decisões sozinhos.
+
+| id | Nome (fictício) | Papel | Bloco | Prestígio inicial |
+| --- | --- | --- | --- | --- |
+| `min_fazenda` | Teodoro Vilar | Ministro da Fazenda | — | 40 |
+| `pres_camara` | Anselmo Rocha | Presidente da Câmara dos Deputados | centro | 10 |
+| `pres_senado` | Odete Brandão | Presidente do Senado | centro | 15 |
+| `lider_oposicao` | Cleusa Marante | Líder da oposição na Câmara | direita | −40 |
+| `presidente_bc` | Rui Coutinho | Presidente do Banco Central | — | 20 |
+| `ministro_stf` | Álvaro Peixoto | Ministro do Supremo Tribunal Federal | — | 0 |
+| `governador_nordeste` | Jair Amorim | Governador de um estado do Nordeste | esquerda | 30 |
+| `governador_sudeste` | Lúcia Fontenelle | Governadora de um estado do Sudeste | centro_direita | −10 |
+| `jornalista` | Beatriz Camargo | Colunista de política | — | 0 |
+| `empresario_agro` | Hélio Prado | Presidente de uma confederação do agronegócio | centro_direita | −5 |
+| `lider_sindical` | Marlene Duarte | Dirigente de uma central sindical | esquerda | 25 |
+| `vice_presidente` | Nelson Arantes | Vice-presidente da República | centro | 35 |
+
+**Aba Notícias.** O feed é gerado pelo motor a cada mês e persistido no save, com até 48 manchetes (as mais antigas saem primeiro) e até 6 por mês, em ordem de prioridade: institucional, evento, personagem, Congresso e, por último, economia. Cada manchete traz:
+- **Causa** em uma linha ("Causa: ..."), obrigatória, rastreável ao evento, à escolha, à proposta, à decisão do Copom ou ao indicador que cruzou um nível;
+- **Tom** (positiva, negativa ou neutra), com texto e marca própria, para que a cor não seja o único sinal;
+- **Filtro** por tipo: Todas, Economia, Congresso, Eventos, Personagens e Instituições; as manchetes são agrupadas por mês.
+
+Notícias não vêm de rede: são geradas a partir do estado e do relatório do mês. Nenhuma manchete é reportagem real.
+
+**Quadro de Instituições.** Na aba Notícias, mostra a pressão de impeachment em faixas — **Baixa** (abaixo de 15%), **Moderada** (15% a 35%), **Alta** (35% a 60%) e **Crítica** (60% ou mais) — e as marcas institucionais ativas (CPI instalada, alerta ou parecer do TCU, denúncia de impeachment aceita, Câmara que autorizou o processo). Uma marca superada por outra deixa de aparecer. Os limites são **PROVISORIO**.
+
+**Fora da Fase 07:** eleições e memória do eleitor (Fase 08); comissões, emendas de plenário e parlamentares individuais (Fase 09); personagens com agenda própria; imprensa com rede; julgamento de contas pelo Congresso como votação própria.
 
 ### 11.4 Critério de conclusão do protótipo
 Jogar os 12 meses, tomar decisões diferentes em duas campanhas, observar consequências diferentes e explicáveis, e conseguir reiniciar ou retomar a campanha.

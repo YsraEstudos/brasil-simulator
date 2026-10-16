@@ -3,8 +3,9 @@
  *
  * Todo coeficiente usado pela lógica do motor mora aqui, com faixa, significado (`note`) e justificativa
  * (`basis`: fonte, regra legal ou critério de jogo). Os valores continuam `PROVISORIO` até a importação das
- * séries oficiais; a faixa de cada um foi testada por `npm run sim:sensitivity` (resultado em
- * docs/CALIBRATION.md). O cenário pode sobrescrever qualquer um pelo mesmo nome em `scenario.parameters`
+ * séries oficiais. O levantamento global da Fase 05 está em docs/CALIBRATION.md; os quatro parâmetros
+ * novos da Fase 06 têm extremos verificados em phase06.test.ts (documentados em PUBLIC_POLICIES.md).
+ * O cenário pode sobrescrever qualquer um pelo mesmo nome em `scenario.parameters`
  * (ver `calibrationFromScenario`).
  *
  * Convenções: taxas anuais em fração; "por mês" quando o coeficiente é aplicado a cada turno.
@@ -26,6 +27,35 @@ const JOGO = 'critério de jogo: legibilidade e ritmo da campanha; testado na fa
 const SATURACAO = 'saturação de segurança (ECONOMIC_MODEL.md §1.8)';
 
 export const PARAMS = {
+  // Fase 06: capital dos projetos novos, sem recontar o estoque herdado.
+  dep_kg: {
+    value: 0.04,
+    min: 0.03,
+    max: 0.06,
+    note: 'depreciação anual do capital público novo',
+    basis: 'ECONOMIC_MODEL.md §5.1 e §6; calibração provisória',
+  },
+  elast_kg: {
+    value: 0.1,
+    min: 0.05,
+    max: 0.2,
+    note: 'elasticidade do potencial ao capital público concluído',
+    basis: 'ECONOMIC_MODEL.md §5.1 e §6; forma reduzida provisória',
+  },
+  curva_s_projetos: {
+    value: 8,
+    min: 4,
+    max: 12,
+    note: 'inclinação logística da curva de desembolso dos projetos',
+    basis: 'ritmo de execução em S, normalizado ao orçamento e ao perfil anual',
+  },
+  capacidade_minima_projetos: {
+    value: 0.1,
+    min: 0.05,
+    max: 0.2,
+    note: 'piso da capacidade de execução em pasta partidária',
+    basis: SATURACAO,
+  },
   // ── Produção (ECONOMIC_MODEL.md §5.1–5.2) ─────────────────────────────────────────────────────────
   g_pot_base: {
     value: 0.02,

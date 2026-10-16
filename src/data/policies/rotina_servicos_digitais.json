@@ -1,0 +1,22 @@
+{
+  "id": "rotina_servicos_digitais",
+  "name": "Rotina de serviços públicos digitais",
+  "summary": "Amplia a integração e a manutenção de serviços federais digitais por ato executivo. Dados e custos PROVISORIO.",
+  "area": "estado",
+  "competence": "federal",
+  "instruments": ["decreto_regulamentar"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1200, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 3 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 1200, "lagMonths": 1 },
+    { "channel": "aprovacao", "magnitude": 0.004, "lagMonths": 2 }
+  ],
+  "risks": [{ "kind": "atraso", "probability": 0.2 }],
+  "affected": { "groups": ["usuarios_de_servicos_publicos"], "sectors": ["servicos"], "regions": ["nacional"] },
+  "position": { "economic": 0.1, "social": -0.1 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

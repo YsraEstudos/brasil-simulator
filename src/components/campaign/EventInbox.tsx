@@ -6,6 +6,7 @@ import type { PendingEvent, Proposal, SanctionChoice } from '@/engine';
 import type { GameEvent } from '@/types/event';
 
 import { ChoiceOption } from './ChoiceOption';
+import { characterHeading, standingText, type CharacterBrief } from './characterView';
 import { monthLabel } from './labels';
 
 export interface PendingItem {
@@ -30,6 +31,8 @@ export interface EventInboxProps {
   /** Decisão de sanção marcada, por proposta. */
   sanctionChosen: Readonly<Partial<Record<string, SanctionChoice>>>;
   onSanction: (proposalId: string, choice: SanctionChoice) => void;
+  /** Personagens do cenário com prestígio atual; usado nos eventos com `characterId` (FASE_07.md). */
+  characters?: readonly CharacterBrief[];
 }
 
 const SANCTION_OPTIONS: Record<SanctionChoice, { label: string; description: string }> = {
@@ -58,6 +61,7 @@ export function EventInbox({
   sanctions,
   sanctionChosen,
   onSanction,
+  characters = [],
 }: EventInboxProps) {
   return (
     <View style={styles.root}>
@@ -98,8 +102,17 @@ export function EventInbox({
       {items.map(({ event, pending }) => {
         const selectedId = chosen[event.id];
         const deadline = monthLabel(pending.monthIndex + 1);
+        const character = event.characterId ? characters.find((c) => c.id === event.characterId) : undefined;
         return (
           <Card key={event.id} title={event.title} subtitle={`Sem resposta até o fim de ${deadline}, vale o padrão.`}>
+            {character && (
+              <View style={styles.character}>
+                <Text variant="label">{characterHeading(character)}</Text>
+                <Text variant="caption" color="textSecondary">
+                  {standingText(character.standing)}
+                </Text>
+              </View>
+            )}
             <Text variant="body">{event.description}</Text>
             <View style={styles.options} accessibilityRole="radiogroup">
               {event.choices.map((choice) => {
@@ -128,4 +141,5 @@ export function EventInbox({
 const styles = StyleSheet.create({
   root: { gap: Spacing.two },
   options: { gap: Spacing.two },
+  character: { gap: Spacing.half },
 });

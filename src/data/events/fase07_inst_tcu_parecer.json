@@ -1,0 +1,50 @@
+{
+  "id": "fase07_inst_tcu_parecer",
+  "title": "Parecer do Tribunal sobre as contas",
+  "description": "O Tribunal de Contas da União emite parecer pela rejeição das contas do governo, por falhas de execução. O julgamento final cabe ao Congresso, mas o parecer pesa sobre a credibilidade. Caso fictício.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [],
+    "probability": 1,
+    "cooldownMonths": 0,
+    "maxOccurrences": 1
+  },
+  "chainedOnly": true,
+  "onFire": [{ "target": "credibilidade", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "acatar_e_corrigir",
+      "label": "Acatar e corrigir",
+      "description": "Reconhece as falhas e apresenta correções. A credibilidade se recupera em parte, mas o bloco vê a confissão como fraqueza e a relação com o Congresso cai um pouco.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "credibilidade", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -2, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "contestar_no_congresso",
+      "label": "Contestar no Congresso",
+      "description": "Leva a contestação ao Congresso, que julga as contas. Custa dois pontos de agenda e mobilização da base, com ganho de relação e pequeno custo de credibilidade.",
+      "agendaCost": 2,
+      "effects": [
+        { "target": "relacao_congresso", "delta": 6, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "aceitar_a_rejeicao",
+      "label": "Aceitar a rejeição",
+      "description": "Não responde ao parecer. As contas ficam marcadas como rejeitadas pelo Tribunal, a credibilidade cai e o Congresso passa a cobrar o governo. Escolha padrão se você não responder.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "credibilidade", "delta": -0.02, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -5, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["tcu_parecer_rejeicao"]
+    }
+  ],
+  "defaultChoice": "aceitar_a_rejeicao",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "dataStatus": "FICTICIO"
+}

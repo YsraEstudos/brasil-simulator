@@ -1,0 +1,22 @@
+{
+  "id": "rotina_busca_ativa_social",
+  "name": "Rotina de busca ativa social",
+  "summary": "Apoia a identificação e o atendimento de famílias vulneráveis com ato executivo e rede federal. Dados e custos PROVISORIO.",
+  "area": "social",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1100, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 2 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 1100, "lagMonths": 1 },
+    { "channel": "aprovacao", "magnitude": 0.006, "lagMonths": 2 }
+  ],
+  "risks": [{ "kind": "baixa_adesao", "probability": 0.15 }],
+  "affected": { "groups": ["baixa_renda"], "sectors": ["servicos"], "regions": ["nordeste", "norte", "nacional"] },
+  "position": { "economic": -0.3, "social": -0.3 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { LEGISLATIVE_INSTRUMENTS, parsePolicy } from '@/types/policy';
 
-import { SCENARIOS } from './scenarios';
+import { DEFAULT_SCENARIO_ID, SCENARIOS } from './scenarios';
 import { POLICIES } from './policies';
 
 /** As 8 políticas do protótipo (GAME_DESIGN.md §11.2). */
@@ -27,7 +27,8 @@ const POLICIES_DIR = fileURLToPath(new URL('../data/policies', import.meta.url))
 
 describe('catálogo de políticas', () => {
   it('contém as 8 políticas do protótipo, a valorização do salário mínimo e a reforma da previdência', () => {
-    expect(Object.keys(POLICIES).sort()).toEqual(EXPECTED_IDS);
+    expect(Object.keys(POLICIES)).toEqual(expect.arrayContaining(EXPECTED_IDS));
+    expect(Object.keys(POLICIES).length).toBeGreaterThanOrEqual(30);
   });
 
   it('cada política é válida pelo esquema Zod', () => {
@@ -42,7 +43,7 @@ describe('catálogo de políticas', () => {
       .filter((f) => f.endsWith('.json'))
       .map((f) => f.replace(/\.json$/, ''))
       .sort();
-    expect(files).toEqual(EXPECTED_IDS);
+    expect(files).toEqual(Object.keys(POLICIES).sort());
     for (const [key, policy] of Object.entries(POLICIES)) {
       expect(policy.id).toBe(key);
     }
@@ -57,6 +58,10 @@ describe('catálogo de políticas', () => {
 
   it('todas as políticas são citadas pelo cenário brasil_2027_01', () => {
     expect([...(SCENARIOS.brasil_2027_01?.policies ?? [])].sort()).toEqual(EXPECTED_IDS);
+  });
+
+  it('o cenário novo disponibiliza todas as políticas sem expandir o catálogo legado', () => {
+    expect([...SCENARIOS[DEFAULT_SCENARIO_ID].policies].sort()).toEqual(Object.keys(POLICIES).sort());
   });
 
   it('prazo legislativo é positivo só quando há instrumento legislativo', () => {

@@ -1,0 +1,114 @@
+{
+  "id": "fase07_eco_pacote_infraestrutura_privada",
+  "title": "Pacote privado de infraestrutura",
+  "description": "Grupos de investimento anunciam um pacote de rodovias, portos, saneamento e energia, animados com a confiança no país. Pedem regras estáveis e licitações rápidas para começar as obras.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "chainedOnly": true,
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "credibility",
+        "op": "gt",
+        "value": 0.7
+      },
+      {
+        "variable": "gdpGrowth12m",
+        "op": "gt",
+        "value": 0.02
+      }
+    ],
+    "probability": 0.06,
+    "cooldownMonths": 24,
+    "maxOccurrences": 1
+  },
+  "onFire": [
+    {
+      "target": "oferta.potencial",
+      "delta": 0.001,
+      "lagMonths": 0,
+      "durationMonths": 12,
+      "label": "Pacote de infraestrutura"
+    },
+    {
+      "target": "demanda.credito",
+      "delta": 0.002,
+      "lagMonths": 0,
+      "durationMonths": 4,
+      "label": "Investimento privado"
+    }
+  ],
+  "choices": [
+    {
+      "id": "licitacoes_rapidas",
+      "label": "Acelerar licitações e concessões",
+      "description": "Libera licitações e concessões em ritmo acelerado. O potencial da economia cresce com as obras, mas a fiscalização fica mais frágil e aumenta o risco de contratos ruins.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "oferta.potencial",
+          "delta": 0.0015,
+          "lagMonths": 0,
+          "durationMonths": 18
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.008,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "setFlags": ["eco_infra_privada"]
+    },
+    {
+      "id": "regras_atuais",
+      "label": "Aceitar com as regras atuais",
+      "description": "Segue o processo normal, sem atalhos. O pacote anda devagar, e o ganho de potencial e de aprovação é menor.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "oferta.potencial",
+          "delta": 0.0005,
+          "lagMonths": 0,
+          "durationMonths": 12
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "tarifa_modica",
+      "label": "Condicionar à tarifa módica e a obras regionais",
+      "description": "Exige tarifa baixa e obras no interior do Norte e do Nordeste. A região ganha, mas os investidores reduzem o apetite e o pacote encolhe.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "regiao.atividade",
+          "delta": 0.003,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "label": "Obras regionais",
+          "regions": ["norte", "nordeste"]
+        },
+        {
+          "target": "oferta.potencial",
+          "delta": 0.0005,
+          "lagMonths": 0,
+          "durationMonths": 12
+        },
+        {
+          "target": "relacao_congresso",
+          "delta": 3,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "regras_atuais",
+  "dataStatus": "FICTICIO"
+}

@@ -1,0 +1,126 @@
+{
+  "id": "fase07_eco_pressao_meta_fiscal",
+  "title": "Mercado cobra meta fiscal mais dura",
+  "description": "Com a dívida bruta em alta, analistas e investidores passam a exigir uma meta de resultado primário mais rígida. O Ministério da Fazenda precisa dizer se aperta o gasto ou mantém o cronograma.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "characterId": "min_fazenda",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "grossDebt",
+        "op": "gt",
+        "value": 0.82
+      }
+    ],
+    "probability": 0.1,
+    "cooldownMonths": 18,
+    "maxOccurrences": 2
+  },
+  "onFire": [
+    {
+      "target": "credibilidade",
+      "delta": -0.01,
+      "lagMonths": 0,
+      "durationMonths": 1,
+      "label": "Dívida em alta"
+    },
+    {
+      "target": "choque.risco",
+      "delta": 0.002,
+      "lagMonths": 0,
+      "durationMonths": 3,
+      "label": "Pressão por meta mais dura"
+    }
+  ],
+  "choices": [
+    {
+      "id": "meta_mais_dura",
+      "label": "Anunciar meta mais dura",
+      "description": "Promete ajuste maior e corta despesa de custeio por meses. Recupera credibilidade e fortalece o ministro, mas a aprovação cai com o aperto.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "credibilidade",
+          "delta": 0.02,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "gasto.custeio",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 6
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "min_fazenda",
+          "delta": 8
+        }
+      ],
+      "setFlags": ["eco_meta_dura"]
+    },
+    {
+      "id": "manter_meta",
+      "label": "Manter a meta atual",
+      "description": "Mantém o cronograma e evita o aperto. O mercado exige prêmio maior e o ministro sai desgastado.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "choque.risco",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 3
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "min_fazenda",
+          "delta": -6
+        }
+      ]
+    },
+    {
+      "id": "teto_mais_rigido",
+      "label": "Propor teto mais rígido ao arcabouço",
+      "description": "Muda a regra fiscal para um teto mais rígido. Ganha credibilidade, mas o Congresso reage mal e o governo gasta capital político para aprovar.",
+      "agendaCost": 2,
+      "effects": [
+        {
+          "target": "credibilidade",
+          "delta": 0.015,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "relacao_congresso",
+          "delta": -10,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "capital_politico",
+          "delta": -3,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "setFlags": ["eco_meta_dura"]
+    }
+  ],
+  "defaultChoice": "manter_meta",
+  "dataStatus": "FICTICIO"
+}

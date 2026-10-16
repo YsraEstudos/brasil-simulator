@@ -1,0 +1,23 @@
+{
+  "id": "rotina_defesa_agropecuaria",
+  "name": "Rotina de defesa agropecuária",
+  "summary": "Reforça inspeção, vigilância e resposta a riscos sanitários agropecuários por ato executivo. Dados e custos PROVISORIO.",
+  "area": "agro",
+  "competence": "federal",
+  "instruments": ["decreto_regulamentar"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1700, "disbursementProfile": [1] },
+  "fundingSources": ["remanejamento"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 2 },
+  "conditions": [],
+  "impacts": [{ "channel": "custeio", "magnitude": 1700, "lagMonths": 1 }],
+  "risks": [{ "kind": "atraso", "probability": 0.15 }],
+  "affected": {
+    "groups": ["produtores_rurais", "consumidores"],
+    "sectors": ["agropecuaria", "industria"],
+    "regions": ["nacional"]
+  },
+  "position": { "economic": 0.1, "social": 0 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

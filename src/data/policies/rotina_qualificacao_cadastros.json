@@ -1,0 +1,23 @@
+{
+  "id": "rotina_qualificacao_cadastros",
+  "name": "Rotina de qualificação de cadastros sociais",
+  "summary": "Financia revisão de cadastros e interoperabilidade de dados para melhorar a focalização de serviços. Dados e custos PROVISORIO.",
+  "area": "social",
+  "competence": "federal",
+  "instruments": ["decreto_regulamentar"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 800, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 3 },
+  "conditions": [],
+  "impacts": [{ "channel": "custeio", "magnitude": 800, "lagMonths": 1 }],
+  "risks": [{ "kind": "atraso", "probability": 0.18 }],
+  "affected": {
+    "groups": ["baixa_renda", "usuarios_de_servicos_publicos"],
+    "sectors": ["servicos"],
+    "regions": ["nacional"]
+  },
+  "position": { "economic": -0.1, "social": -0.2 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

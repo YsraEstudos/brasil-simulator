@@ -1,0 +1,23 @@
+{
+  "id": "rotina_eficiencia_saneamento",
+  "name": "Rotina de eficiência do saneamento",
+  "summary": "Financia apoio técnico, regulação e monitoramento de serviços de saneamento por ato executivo. Dados e custos PROVISORIO.",
+  "area": "saneamento",
+  "competence": "federal",
+  "instruments": ["decreto_regulamentar"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1000, "disbursementProfile": [1] },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 3 },
+  "conditions": [],
+  "impacts": [{ "channel": "custeio", "magnitude": 1000, "lagMonths": 2 }],
+  "risks": [{ "kind": "baixa_adesao", "probability": 0.2 }],
+  "affected": {
+    "groups": ["moradores_urbanos", "baixa_renda"],
+    "sectors": ["construcao", "servicos"],
+    "regions": ["nacional"]
+  },
+  "position": { "economic": -0.1, "social": -0.1 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

@@ -1,20 +1,22 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { PROTOTYPE_MONTHS, loadContent } from '@/content';
+import { campaignMonths, loadContent } from '@/content';
 import { Button, Indicator, formatNumber, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { SANCTION_ACTION_ID, type Decision, type IndicatorKey, type SanctionChoice } from '@/engine';
+import { SANCTION_ACTION_ID, standingOf, type Decision, type IndicatorKey, type SanctionChoice } from '@/engine';
 import type { Policy } from '@/types/policy';
 import { decisionCost, draftPoints, fits, gameStore, useGame, type ActiveCampaign } from '@/store';
 
 import { AgendaActions } from './AgendaActions';
 import { DecisionPanel } from './DecisionPanel';
+import type { CharacterBrief } from './characterView';
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER, monthLabel } from './labels';
 import { EventInbox, type PendingItem, type SanctionItem } from './EventInbox';
 import { LegacyReport } from './LegacyReport';
 import { MonthSummary } from './MonthSummary';
 import { ProposalList } from './ProposalList';
+import { PublicPoliciesPanel } from './PublicPoliciesPanel';
 import { WhyChanged } from './WhyChanged';
 
 /** Partida aberta: mês, indicadores, caixa de entrada, agenda, propostas e encerrar o mês (GAME_DESIGN.md §4.2). */
@@ -23,6 +25,16 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
   const { state, previous, lastReport, finished } = campaign;
   const content = useMemo(() => loadContent(state.scenarioId), [state.scenarioId]);
   const eventsById = useMemo(() => new Map(content.events.map((e) => [e.id, e])), [content]);
+  const characters = useMemo<CharacterBrief[]>(
+    () =>
+      (content.scenario.characters ?? []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        role: c.role,
+        standing: standingOf(state.events.characters, content, c.id),
+      })),
+    [content, state.events.characters],
+  );
 
   const draft = useGame((s) => s.draft);
   const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
@@ -30,6 +42,7 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
   const [openProposal, setOpenProposal] = useState<string | null>(null);
 
   const pointsMax = state.resources.agendaPointsPerMonth;
+  const totalMonths = campaignMonths(state.scenarioId);
   const pointsUsed = draftPoints(draft, content);
   const { toggleDecision, toggleEventChoice } = gameStore.getState();
 
@@ -85,11 +98,11 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
         <Text variant="caption" color="textSecondary">
           {campaign.name} · {DIFFICULTY[state.difficulty].name}
         </Text>
-        <Text variant="display">{finished ? 'Fim do protótipo' : monthLabel(state.monthIndex)}</Text>
+        <Text variant="display">{finished ? 'Fim da campanha' : monthLabel(state.monthIndex)}</Text>
         <Text color="textSecondary">
           {finished
-            ? 'Campanha encerrada em dezembro de 2027.'
-            : `Mês ${state.monthIndex + 1} de ${PROTOTYPE_MONTHS} · ${pointsMax} pontos de agenda · capital político ${formatNumber(state.resources.politicalCapital)}`}
+            ? `Campanha encerrada em ${monthLabel(state.monthIndex - 1)}.`
+            : `Mês ${state.monthIndex + 1} de ${totalMonths} · ${pointsMax} pontos de agenda · capital político ${formatNumber(state.resources.politicalCapital)}`}
         </Text>
       </View>
 
@@ -134,6 +147,7 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
             chosen={draft.eventChoices}
             canChoose={canChoose}
             onChoose={toggleEventChoice}
+            characters={characters}
             sanctions={sanctions}
             sanctionChosen={sanctionChosen}
             onSanction={(proposalId, choice) =>
@@ -152,6 +166,8 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
             onToggle={toggleSimple}
             canInclude={canInclude}
           />
+
+          <PublicPoliciesPanel state={state} content={content} pointsMax={pointsMax} />
 
           <AgendaActions
             state={state}

@@ -11,7 +11,15 @@ export default function DesignScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.three }]}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.content,
+        {
+          paddingTop: insets.top + Spacing.three,
+          paddingLeft: Spacing.three + insets.left,
+          paddingRight: Spacing.three + insets.right,
+        },
+      ]}>
       <Text variant="display">Sistema de design</Text>
       <Text color="textSecondary">
         Tema {scheme === 'dark' ? 'escuro' : 'claro'} · texto {Math.round(textScale * 100)}%

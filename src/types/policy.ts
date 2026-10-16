@@ -70,8 +70,34 @@ export const impactChannelSchema = z.enum([
 
 export const riskKindSchema = z.enum(['atraso', 'sobrecusto', 'judicializacao', 'baixa_adesao', 'escandalo']);
 
+/** Forma de entrega usada pela carteira explícita da Fase 06. Ausente = política legada. */
+export const deliverySchema = z.enum(['rotina', 'projeto']);
+export type PolicyDelivery = z.infer<typeof deliverySchema>;
+
 const monthsSchema = z.number().int().min(0).max(240);
 const probabilitySchema = z.number().min(0).max(1);
+const finiteNumberSchema = z.number().refine(Number.isFinite, 'valor precisa ser finito');
+
+/** Metadados da carteira de projetos (planejamento → licenciamento → licitação → obra → operação). */
+export const projectSchema = z
+  .object({
+    licensingMonths: z.number().int().min(0),
+    procurementMonths: z.number().int().min(0),
+    efficiency: finiteNumberSchema.gt(0).lte(1),
+    annualMaintenanceRate: finiteNumberSchema.min(0).max(1),
+  })
+  .strict();
+export type PolicyProject = z.infer<typeof projectSchema>;
+
+const EXECUTIVE_INSTRUMENTS: readonly Instrument[] = [
+  'decreto_regulamentar',
+  'decreto_aliquota',
+  'decreto_programacao',
+  'portaria',
+  'ato_execucao',
+];
+
+const ROUTINE_IMPACT_CHANNELS: readonly string[] = ['custeio', 'aprovacao'];
 
 export const policySchema = z
   .object({
@@ -139,6 +165,10 @@ export const policySchema = z
     position: z.object({ economic: z.number().min(-1).max(1), social: z.number().min(-1).max(1) }).strict(),
     /** Status dos números desta política (DATA_SOURCES.md §2.1). */
     dataStatus: dataStatusSchema,
+    /** Entrega opcional da carteira da Fase 06; ausente conserva o fluxo legado. */
+    delivery: deliverySchema.optional(),
+    /** Metadados de fases de um projeto explícito. */
+    project: projectSchema.optional(),
   })
   .strict()
   .superRefine((p, ctx) => {
@@ -161,6 +191,114 @@ export const policySchema = z
         path: ['instruments'],
         message: 'MP não pode abrir crédito adicional comum (só extraordinário)',
       });
+    }
+
+    if (p.project && p.delivery !== 'projeto') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['project'],
+        message: 'metadados de projeto exigem delivery projeto',
+      });
+    }
+
+    if (p.delivery === 'projeto') {
+      if (!p.project) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['project'],
+          message: 'delivery projeto exige metadados project',
+        });
+      }
+      if (!(Number.isFinite(p.cost.annualMillions) && p.cost.annualMillions > 0)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['cost', 'annualMillions'],
+          message: 'projeto exige custo anual positivo e finito',
+        });
+      }
+      if (p.timeline.executionMonths <= 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['timeline', 'executionMonths'],
+          message: 'projeto exige duração de obra positiva',
+        });
+      } else {
+        const expectedProfileYears = Math.ceil(p.timeline.executionMonths / 12);
+        if (p.cost.disbursementProfile.length !== expectedProfileYears) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['cost', 'disbursementProfile'],
+            message: `perfil de desembolso do projeto deve ter ${expectedProfileYears} frações anuais`,
+          });
+        }
+      }
+      if (!p.impacts.some((impact) => impact.channel === 'investimento_publico' && impact.magnitude > 0)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['impacts'],
+          message: 'projeto exige impacto investimento_publico positivo',
+        });
+      }
+      if (p.impacts.some((impact) => impact.channel === 'capital_publico')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['impacts'],
+          message: 'projeto não pode usar canal capital_publico; a oferta é estoque explícito',
+        });
+      }
+    }
+
+    if (p.delivery === 'rotina') {
+      if (p.project) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['project'],
+          message: 'rotina não aceita metadados de projeto',
+        });
+      }
+      if (!p.instruments.every((instrument) => EXECUTIVE_INSTRUMENTS.includes(instrument))) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['instruments'],
+          message: 'rotina aceita somente atos executivos',
+        });
+      }
+      if (!(Number.isFinite(p.cost.annualMillions) && p.cost.annualMillions > 0)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['cost', 'annualMillions'],
+          message: 'rotina exige custo anual positivo e finito',
+        });
+      }
+      if (p.conditions.includes('adesao_estadual')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['conditions'],
+          message: 'rotina não pode exigir adesao_estadual',
+        });
+      }
+      if (p.impacts.length < 1 || p.impacts.some((impact) => !ROUTINE_IMPACT_CHANNELS.includes(impact.channel))) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['impacts'],
+          message: 'rotina aceita somente impactos custeio e aprovacao',
+        });
+      }
+      const custeio = p.impacts.filter((impact) => impact.channel === 'custeio');
+      if (custeio.length !== 1 || !(Number.isFinite(custeio[0]?.magnitude) && custeio[0].magnitude > 0)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['impacts'],
+          message: 'rotina exige exatamente um impacto custeio positivo',
+        });
+      }
+      if (p.impacts.filter((impact) => impact.channel === 'aprovacao').length > 1) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['impacts'],
+          message: 'rotina aceita no máximo um impacto aprovacao',
+        });
+      }
     }
   });
 export type Policy = z.infer<typeof policySchema>;

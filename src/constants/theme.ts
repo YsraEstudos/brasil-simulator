@@ -29,10 +29,12 @@ const palette = {
   green400: '#5fd38d',
   green700: '#1e7a46',
   red400: '#ff7b72',
+  red500: '#d95447',
   red700: '#b3261e',
   amber400: '#ffb547',
   amber700: '#9a5b00',
   blue400: '#7cb7ff',
+  blue500: '#6f9fe0',
   blue700: '#1f5fae',
 } as const;
 
@@ -60,6 +62,10 @@ export interface ThemeColors {
   negativeSoft: string;
   warningSoft: string;
   infoSoft: string;
+  /** Espectro político do hemiciclo do Congresso (esquerda, centro, direita). */
+  spectrumLeft: string;
+  spectrumCenter: string;
+  spectrumRight: string;
 }
 
 export const Colors: Record<ColorScheme, ThemeColors> = {
@@ -81,6 +87,9 @@ export const Colors: Record<ColorScheme, ThemeColors> = {
     negativeSoft: '#fbe6e4',
     warningSoft: '#fdf0d9',
     infoSoft: '#e2edf9',
+    spectrumLeft: palette.red700,
+    spectrumCenter: palette.gold700,
+    spectrumRight: palette.blue700,
   },
   dark: {
     background: palette.navy950,
@@ -100,6 +109,9 @@ export const Colors: Record<ColorScheme, ThemeColors> = {
     negativeSoft: '#331617',
     warningSoft: '#33240c',
     infoSoft: '#0f2238',
+    spectrumLeft: palette.red500,
+    spectrumCenter: palette.gold500,
+    spectrumRight: palette.blue500,
   },
 };
 

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Alert } from '@/components/ui';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -17,6 +18,9 @@ export function TabScreen({ render }: { render: (campaign: ActiveCampaign) => Re
   const status = useGame((s) => s.status);
   const error = useGame((s) => s.error);
   const active = useGame((s) => s.active);
+  const insets = useSafeAreaInsets();
+  // Em paisagem o entalhe/gaveta fica nas laterais: o conteúdo rola dentro da área segura.
+  const sideInsets = { paddingLeft: Spacing.three + insets.left, paddingRight: Spacing.three + insets.right };
 
   if (status === 'iniciando') {
     return (
@@ -30,7 +34,9 @@ export function TabScreen({ render }: { render: (campaign: ActiveCampaign) => Re
 
   if (!active) {
     return (
-      <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.content, styles.fill]}>
+      <ScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={[styles.content, styles.fill, sideInsets]}>
         {alert}
         <NoCampaign />
       </ScrollView>
@@ -39,7 +45,10 @@ export function TabScreen({ render }: { render: (campaign: ActiveCampaign) => Re
 
   return (
     // key: trocar de partida recria a rolagem, voltando ao topo
-    <ScrollView key={active.id} style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+    <ScrollView
+      key={active.id}
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={[styles.content, sideInsets]}>
       {alert}
       {render(active)}
     </ScrollView>

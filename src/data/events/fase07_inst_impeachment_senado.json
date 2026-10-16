@@ -1,0 +1,57 @@
+{
+  "id": "fase07_inst_impeachment_senado",
+  "title": "Julgamento do impeachment no Senado",
+  "description": "A Câmara autorizou o processo. O Senado instaura o julgamento, e o presidente fica afastado por até 180 dias. Se a condenação alcançar dois terços dos senadores, o mandato termina e a campanha acaba. Caso e personagens fictícios.",
+  "characterId": "pres_senado",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "impeachmentPressure", "op": "gt", "value": 0.6 }],
+    "probability": 0.5,
+    "probabilityFactor": "impeachmentPressure",
+    "cooldownMonths": 0,
+    "maxOccurrences": 1,
+    "requiresFlags": ["impeachment_autorizado"],
+    "forbidsFlags": ["impeachment_arquivado", "impeachment_senado_votou"]
+  },
+  "onFire": [{ "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "mobilizar_a_base_no_senado",
+      "label": "Mobilizar a base no Senado",
+      "description": "Custa dois pontos de agenda e exige apoio já construído na Casa. Consegue votos para barrar a condenação e o processo é arquivado.",
+      "agendaCost": 2,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 10, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["impeachment_senado_votou", "impeachment_arquivado"],
+      "characterEffects": [{ "characterId": "pres_senado", "delta": 10 }]
+    },
+    {
+      "id": "resistir_sem_apoio",
+      "label": "Resistir sem apoio",
+      "description": "Enfrenta o julgamento sem votos suficientes. A condenação por dois terços encerra o mandato: é o fim da campanha.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "relacao_congresso", "delta": -4, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["impeachment_senado_votou", "impeachment_condenado"]
+    },
+    {
+      "id": "aguardar_o_julgamento",
+      "label": "Aguardar o julgamento",
+      "description": "Não reage e deixa o julgamento seguir. Sem votos suficientes, o Senado condena e o mandato termina: a condenação encerra a campanha. Escolha padrão se você não responder.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "relacao_congresso", "delta": -6, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": -0.02, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["impeachment_senado_votou", "impeachment_condenado"]
+    }
+  ],
+  "defaultChoice": "aguardar_o_julgamento",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "dataStatus": "FICTICIO"
+}

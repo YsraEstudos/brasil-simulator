@@ -1,0 +1,19 @@
+{
+  "id": "rotina_pericia_previdenciaria",
+  "name": "Rotina de perícia previdenciária",
+  "summary": "Organiza a capacidade de perícia e revisão de filas por ato executivo, com implementação gradual. Dados e custos PROVISORIO.",
+  "area": "previdencia",
+  "competence": "federal",
+  "instruments": ["decreto_regulamentar"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 1500, "disbursementProfile": [1] },
+  "fundingSources": ["remanejamento"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 3 },
+  "conditions": [],
+  "impacts": [{ "channel": "custeio", "magnitude": 1500, "lagMonths": 1 }],
+  "risks": [{ "kind": "atraso", "probability": 0.22 }],
+  "affected": { "groups": ["aposentados", "trabalhadores_formais"], "sectors": ["servicos"], "regions": ["nacional"] },
+  "position": { "economic": 0, "social": -0.1 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina"
+}

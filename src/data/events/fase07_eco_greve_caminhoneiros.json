@@ -1,0 +1,134 @@
+{
+  "id": "fase07_eco_greve_caminhoneiros",
+  "title": "Caminhoneiros ameaçam parar",
+  "description": "Entidades do transporte de carga anunciam paralisação por causa do preço do diesel e do frete. Com a inflação alta e o crescimento fraco, a categoria cobra subsídio e alerta para o risco de desabastecimento.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "inflation12m",
+        "op": "gt",
+        "value": 0.045
+      },
+      {
+        "variable": "gdpGrowth12m",
+        "op": "lt",
+        "value": 0.02
+      }
+    ],
+    "probability": 0.08,
+    "cooldownMonths": 24,
+    "maxOccurrences": 2
+  },
+  "onFire": [
+    {
+      "target": "choque.hiato",
+      "delta": -0.002,
+      "lagMonths": 0,
+      "durationMonths": 2,
+      "label": "Greve de caminhoneiros"
+    },
+    {
+      "target": "choque.inflacao",
+      "delta": 0.002,
+      "lagMonths": 0,
+      "durationMonths": 3,
+      "label": "Frete e diesel mais caros"
+    }
+  ],
+  "choices": [
+    {
+      "id": "negociar_diesel",
+      "label": "Negociar subsídio ao diesel",
+      "description": "Acordo com a categoria: subsídio temporário ao diesel. Encerra a paralisação, mas aumenta o custeio por meses e a categoria volta a cobrar o acordo.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.custeio",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "label": "Subsídio ao diesel"
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.008,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "choque.inflacao",
+          "delta": -0.001,
+          "lagMonths": 0,
+          "durationMonths": 3
+        }
+      ],
+      "setFlags": ["eco_acordo_diesel"]
+    },
+    {
+      "id": "reprimir_bloqueios",
+      "label": "Reprimir os bloqueios",
+      "description": "A polícia desobstrui as rodovias. A pauta sai do noticiário no curto prazo, mas a imagem de confronto derruba a aprovação e o frete continua caro.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": -0.02,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "choque.hiato",
+          "delta": -0.001,
+          "lagMonths": 0,
+          "durationMonths": 2
+        },
+        {
+          "target": "regiao.atividade",
+          "delta": -0.006,
+          "lagMonths": 0,
+          "durationMonths": 2,
+          "label": "Bloqueios nas rodovias",
+          "regions": ["sul", "sudeste"]
+        }
+      ],
+      "followUps": [
+        {
+          "eventId": "fase07_eco_greve_entregadores",
+          "delayMonths": 2,
+          "probability": 0.4
+        }
+      ]
+    },
+    {
+      "id": "aguardar_negociacao",
+      "label": "Aguardar a negociação",
+      "description": "Não gasta nada e deixa a categoria cansar. Mas a paralisação se arrasta, o desabastecimento cresce e outros setores podem aderir.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "choque.hiato",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 2
+        }
+      ],
+      "followUps": [
+        {
+          "eventId": "fase07_eco_greve_entregadores",
+          "delayMonths": 1,
+          "probability": 0.25
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "aguardar_negociacao",
+  "dataStatus": "FICTICIO"
+}

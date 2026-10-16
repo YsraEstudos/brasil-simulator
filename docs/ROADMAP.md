@@ -28,8 +28,8 @@ Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 | 03 | Motor econômico | 4–6 sem | Campanhas automáticas de 20 anos sem inconsistências ou explosões injustificadas | 🟡 Implementada em 13/10/2026 (itens 1–10 do §6); falta a revisão do autor da trajetória da dívida de longo prazo |
 | 04 | Congresso e instituições | 3–5 sem | Propor, negociar e acompanhar uma reforma com resultado plausível | 🟡 Implementada em 13/10/2026 (itens 1–11 do §7); falta a revisão do autor da calibração política (força dos ministérios e das emendas) |
 | 05 | Mapa e federação | 3–4 sem | Decisões federais com efeitos regionais diferentes e explicáveis | 🟡 Implementada em 14/10/2026 (itens 1–10 do §8); falta a revisão do autor dos dados das UFs e da força dos efeitos regionais |
-| 06 | Sociedade e políticas públicas | 3–5 sem | ≥ 30 políticas com custos, efeitos e atrasos documentados | ⬜ |
-| 07 | Eventos, notícias, personagens | 2–4 sem | Campanha de 4 anos com eventos variados, causas identificáveis e efeitos persistentes | ⬜ |
+| 06 | Sociedade e políticas públicas | 3–5 sem | ≥ 30 políticas com custos, efeitos e atrasos documentados | 🟡 Implementada em 15/10/2026 (42 políticas, sociedade, diretrizes, projetos e marcas); falta a revisão do autor da calibração social e da execução |
+| 07 | Eventos, notícias, personagens | 2–4 sem | Campanha de 4 anos com eventos variados, causas identificáveis e efeitos persistentes | 🟡 Implementada em 16/10/2026 (37 eventos, cadeias, marcas, notícias e personagens; ver §8.2); falta a revisão do autor de calibração e conteúdo |
 | 08 | Eleições e mandatos | 2–4 sem | Mandato completo + eleição + novo ciclo ou encerramento | ⬜ |
 | 09 | Realismo Extremo | 4–8 sem | Consistência e desempenho em campanhas de décadas; efeitos rastreáveis | ⬜ |
 | 10 | Testes e publicação | 4–6 sem | Versão estável aprovada na Play Store | ⬜ |
@@ -181,6 +181,122 @@ Branch `feat/fase-05-federacao` (a partir da Fase 04). Estado v5 (saves v4 atual
 **Fora do escopo da Fase 05:** motor econômico por UF (D7 proíbe), finanças estaduais (receita, dívida e folha dos estados), municípios, eleições de governadores (Fase 08), bancadas estaduais no Congresso (Fase 09), setores no motor nacional e quintis de renda (Fase 06), rótulos de capitais no globo.
 
 ---
+
+## 8.1 Fase 06 — sociedade e políticas públicas
+
+Branch `codex/fase-06-sociedade`. Plano e decisões: [FASE_06.md](FASE_06.md).
+Estado v6, motor 0.6.0, cenário `brasil_2027_01_v050` v0.5.0. Cenários e
+políticas legadas preservados, com migração sequencial e fixture v5 real.
+
+1. **Catálogo:** 42 políticas validadas — 10 legadas, 22 rotinas e 10 projetos.
+   Cada uma tem custo, canais, prazos, riscos e incidência; documentação em
+   [POLICIES.md](POLICIES.md).
+2. **Sociedade:** seis setores reconciliados com o produto nacional, cinco
+   quintis, renda real, salário mínimo, desemprego e pobreza estimada. Incidência
+   de impulsos ativos com saturação e reversão após o fim dos programas.
+3. **Diretrizes:** orçamento anual de rotina por pasta, troca na agenda e
+   renovação anual limitada pela disponibilidade discricionária, sem criar
+   dotação ou contornar a tramitação das demais políticas.
+4. **Carteira:** planejamento, licenciamento, licitação, obra e operação;
+   desembolso e avanço físico, atrasos, suspensão, ativo concluído, depreciação
+   e manutenção. Os projetos novos não duplicam oferta ou gasto do fluxo legado.
+5. **Marcas:** até três projetos nomeados por mandato; acompanhamento mensal
+   e legado, inclusive cancelamentos que consomem a escolha.
+6. **Interface:** catálogo por área, pastas recolhíveis, dotação, carteira e
+   marcas na Presidência; setores e quintis na Economia; resultados no legado.
+   Seleção apenas prepara a agenda, aplicada ao encerrar o mês.
+7. **Jogabilidade:** 48 meses no cenário novo para acompanhar os projetos;
+   campanhas antigas continuam limitadas a 12 meses. Eleições e expansão do
+   conteúdo de eventos permanecem nas Fases 07–08.
+
+**Limitações para homologação:** todos os números novos são `PROVISORIO`;
+pobreza e quintis são forma reduzida de jogo, sem importação de séries
+oficiais; setores distribuem o agregado e não formam um modelo insumo-produto.
+Desempenho e gestos em aparelhos Android/iPhone continuam dependendo de teste
+físico. A revisão humana da força dos efeitos e da diversão não é substituída
+pelas campanhas automáticas.
+
+**Validação de 15/10/2026:** 496 testes em 31 arquivos; tipos, lint e
+formatação verificados. Campanhas com diretriz, obra e marca por 48/240 meses
+em três sementes, mais extremos dos quatro parâmetros novos por 240 meses.
+Bundle web exportado e verificado a 390 px: seleção de diretriz sem executar,
+encerramento do mês, persistência após recarregar/continuar e painel social
+na Economia. Revisão independente sem P1; inconsistências de catálogo e UI
+corrigidas. Não houve teste físico Android/iPhone nem publicação.
+
+## 8.2 Fase 07 — eventos, notícias e personagens
+
+Branch `codex/fase-06-sociedade`. Plano e decisões: [FASE_07.md](FASE_07.md).
+Estado v7, motor 0.7.0, cenário `brasil_2027_01_v060` v0.6.0 (48 meses).
+Cenários e saves anteriores não recebem nenhum evento novo.
+
+1. **Eventos:** 37 novos (`fase07_*`), todos restritos ao v0.6.0. 29 usam
+   marcas, 10 só chegam por cadeia e há 13 ligações de encadeamento
+   ([GAME_DESIGN.md](GAME_DESIGN.md) §11.3.1).
+2. **Instituições:** CPI, TCU e impeachment como cadeias de eventos, com a
+   pressão `impeachmentPressure` ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.17).
+   A condenação no Senado grava `impeachment_condenado` e encerra a campanha
+   como derrota ([POLITICAL_RULES.md](POLITICAL_RULES.md) §9–§10).
+3. **Notícias:** feed persistido de até 48 manchetes, com causa, tom e filtro
+   por tipo, gerado pelo motor sem rede.
+4. **Personagens:** elenco fictício de 12, com prestígio de −100 a 100 que muda
+   por escolhas e vale como condição. Não tem agenda própria.
+5. **Save:** v6 → v7 por `upgradeGameState`, sem alterar os campos antigos;
+   fixture real `state_v6_fase06.json`.
+
+**Validação por simulação (16/10/2026, T8):** `src/engine/sim/phase07.test.ts`
+e `npm run sim:events` (`scripts/sim/events.sim.ts`). Nove estratégias, 20
+sementes, 48 meses: nenhuma violação de invariante; 45 tipos de evento
+distintos disparam, 29 deles `fase07_*`; manchetes de todos os cinco tipos.
+Determinismo, persistência de marcas e isolamento do v0.5.0 (nenhum `fase07_*`
+em 48 meses) testados.
+
+Pressão de impeachment, 48 meses, 20 sementes (`PROVISORIO`):
+
+| Estratégia | Pressão média | Pressão máx. | Denúncia aceita | Condenado |
+| --- | --- | --- | --- | --- |
+| Inerte (linha de base) | 4,5% | 15,2% | 0/20 | 0/20 |
+| Populista fiscal | 7,2% | 41,0% | 0/20 | 0/20 |
+| Austera | 4,9% | 11,6% | 0/20 | 0/20 |
+| Reformista | 4,6% | 19,1% | 0/20 | 0/20 |
+| Distributiva | 6,0% | 23,6% | 0/20 | 0/20 |
+| Pró-oferta | 4,1% | 12,6% | 0/20 | 0/20 |
+| Fisiológica | 17,5% | 78,5% | 4/20 | **1/20** |
+| Inerte + pressão sobre o BC | 5,0% | 16,5% | 0/20 | 0/20 |
+| Aleatória | 5,0% | 22,8% | 0/20 | 0/20 |
+
+Em 240 meses, 20 sementes, a condenação é quase universal (populista, 0/20,
+é a exceção): inerte 20/20 (primeiro mês 161), distributiva 20/20 (106),
+aleatória 20/20 (138), inerte + BC 20/20 (134), pró-oferta 17/20 (160),
+fisiológica 17/20 (17), austera 19/20 (175) e reformista 15/20 (186). Cada
+campanha das estratégias que chegam à condenação tem em média 2,8 a 3,7
+eventos encadeados distintos antes do fim (a populista, 0,9).
+
+**Limitações conhecidas (para revisão do autor):**
+- **Calibração do impeachment:** na primeira medição a fisiológica era
+  condenada em 9 de 20 campanhas de 48 meses; depois de corrigir a dupla
+  contagem da CPI (abaixo) caiu para 1 de 20 (denúncia aceita em 4 de 20, CPI
+  em 15 de 20). Em 240 meses a condenação continua quase universal nas
+  estratégias passivas, porque a pressão se acumula com o tempo e as escolhas
+  padrão da cadeia (aceitar a denúncia, deixar a Câmara votar, aguardar o
+  julgamento) levam à condenação sem resposta do jogador. Fora da campanha de
+  48 meses; parâmetros `PROVISORIO` para revisão do autor.
+- **Corrigido na revisão do coordenador:** (1) `cpi_instalada` e `cpi_encerrada`
+  contavam como duas marcas na pressão; agora são uma CPI só
+  (`scandalFlagCount`). (2) A causa de um encadeado com atraso de 1 mês caía em
+  "acontecimento do mês"; agora a origem vem das escolhas resolvidas no
+  relatório (teste em `phase07.test.ts`).
+- **Mobilizar a base no Senado:** a descrição diz que a escolha "perde força"
+  se a base não estiver pronta, mas o motor arquiva sempre.
+- **Prazo de resposta:** o evento chega no mês em que deve ser respondido. Sem
+  resposta, a escolha padrão vale nesse mesmo mês. O ramo de prazo futuro em
+  `resolveEventsStep` não é alcançado pelo sorteio atual.
+- Números de gatilho e efeito são `PROVISORIO`; não houve teste com pessoas.
+  Personagens não têm agenda própria. Eleições e a memória do eleitor ficam na
+  Fase 08.
+
+**Fora do escopo da Fase 07:** eleições (Fase 08); comissões, emendas de
+plenário e parlamentares individuais (Fase 09); i18n; imprensa com rede.
 
 ## 9. Decisões
 

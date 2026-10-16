@@ -1,0 +1,56 @@
+{
+  "id": "fase07_pol_camara_cargos",
+  "title": "Presidente da Câmara cobra cargos e emendas",
+  "description": "O presidente da Câmara condiciona a votação dos projetos do governo à nomeação de aliados para cargos e à liberação de emendas. A cobrança é feita em público, e a pauta depende da resposta.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      { "variable": "politicalCapital", "op": "lt", "value": 60 },
+      { "variable": "proposalsInCongress", "op": "gt", "value": 1 }
+    ],
+    "probability": 0.15,
+    "cooldownMonths": 12,
+    "maxOccurrences": 3
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "characterId": "pres_camara",
+  "onFire": [{ "target": "relacao_congresso", "delta": -3, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "liberar_cargos",
+      "label": "Liberar cargos e emendas",
+      "description": "Libera cargos e emendas para o grupo do presidente da Câmara. A pauta anda, mas a despesa de custeio sobe por meses e a credibilidade sofre com a barganha.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "relacao_congresso", "delta": 8, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "gasto.custeio", "delta": 0.001, "lagMonths": 0, "durationMonths": 6 },
+        { "target": "credibilidade", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["pol_camara_cargos"],
+      "characterEffects": [{ "characterId": "pres_camara", "delta": 12 }],
+      "followUps": [{ "eventId": "fase07_pol_stf_suspende", "delayMonths": 3, "probability": 0.3 }]
+    },
+    {
+      "id": "negar_barganha",
+      "label": "Negar a barganha",
+      "description": "Mantém critérios técnicos para cargos e emendas. Preserva a credibilidade, mas o presidente da Câmara fecha a pauta e a relação com o Congresso cai.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "relacao_congresso", "delta": -7, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "credibilidade", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }
+      ],
+      "setFlags": ["pol_camara_rompeu"],
+      "characterEffects": [{ "characterId": "pres_camara", "delta": -15 }]
+    },
+    {
+      "id": "adiar_resposta",
+      "label": "Adiar a resposta",
+      "description": "Espera a poeira baixar. Custa capital político, porque a pauta fica parada enquanto o presidente da Câmara mantém a pressão.",
+      "agendaCost": 0,
+      "effects": [{ "target": "capital_politico", "delta": -3, "lagMonths": 0, "durationMonths": 1 }],
+      "characterEffects": [{ "characterId": "pres_camara", "delta": -5 }]
+    }
+  ],
+  "defaultChoice": "adiar_resposta",
+  "dataStatus": "FICTICIO"
+}

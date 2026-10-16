@@ -1,0 +1,133 @@
+{
+  "id": "fase07_eco_guerra_fiscal_estados",
+  "title": "Estados disputam fábricas com incentivos",
+  "description": "No ano eleitoral dos governadores, estados passam a oferecer isenções de ICMS e terrenos para atrair fábricas. A disputa desvia investimento entre regiões e pressiona as contas dos estados e da União.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "characterId": "governador_nordeste",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "monthIndex",
+        "op": "gt",
+        "value": 35
+      },
+      {
+        "variable": "monthIndex",
+        "op": "lt",
+        "value": 48
+      }
+    ],
+    "probability": 0.1,
+    "cooldownMonths": 24,
+    "maxOccurrences": 1
+  },
+  "onFire": [
+    {
+      "target": "governadores.relacao",
+      "delta": -4,
+      "lagMonths": 0,
+      "durationMonths": 1,
+      "label": "Disputa entre estados"
+    },
+    {
+      "target": "regiao.atividade",
+      "delta": 0.002,
+      "lagMonths": 0,
+      "durationMonths": 3,
+      "label": "Fábricas atraídas por incentivos",
+      "regions": ["nordeste", "norte"]
+    }
+  ],
+  "choices": [
+    {
+      "id": "teto_nacional",
+      "label": "Pactuar teto nacional de incentivos",
+      "description": "Negocia com os governadores um teto nacional para incentivos fiscais. Acalma a disputa e melhora a relação com os estados, mas exige capital político para convencer o Congresso.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "governadores.relacao",
+          "delta": 6,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "capital_politico",
+          "delta": -2,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "governador_nordeste",
+          "delta": 5
+        }
+      ],
+      "setFlags": ["eco_guerra_fiscal_pactuada"]
+    },
+    {
+      "id": "incentivo_federal",
+      "label": "Entrar na disputa com incentivo federal",
+      "description": "A União oferece incentivos próprios e atrai fábricas para as regiões que pediram ajuda. Custa caixa por mais de um ano e aprofunda a guerra fiscal.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "regiao.atividade",
+          "delta": 0.004,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "label": "Incentivo federal",
+          "regions": ["nordeste", "norte"]
+        },
+        {
+          "target": "gasto.custeio",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 12
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 8,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "deixar_disputa",
+      "label": "Deixar os estados se entenderem",
+      "description": "Não entra na disputa e não gasta caixa. Os governadores ficam sem apoio, o investimento se divide de forma desigual e a aprovação perde.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "governadores.relacao",
+          "delta": -6,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ],
+      "characterEffects": [
+        {
+          "characterId": "governador_nordeste",
+          "delta": -6
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "deixar_disputa",
+  "dataStatus": "FICTICIO"
+}

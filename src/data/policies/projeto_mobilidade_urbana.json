@@ -1,0 +1,31 @@
+{
+  "id": "projeto_mobilidade_urbana",
+  "name": "Mobilidade urbana integrada",
+  "summary": "Projeto de corredores e terminais de transporte urbano com carteira de obra e manutenção previstas. Dados e custos PROVISORIO.",
+  "area": "cidades",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 9500, "disbursementProfile": [0.2, 0.55, 0.25] },
+  "fundingSources": ["credito_adicional"],
+  "timeline": { "planningMonths": 3, "expectedLegislativeMonths": 5, "executionMonths": 30, "maturationMonths": 12 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 9500, "lagMonths": 6 },
+    { "channel": "custeio", "magnitude": 550, "lagMonths": 28 },
+    { "channel": "aprovacao", "magnitude": 0.009, "lagMonths": 6 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.3 },
+    { "kind": "sobrecusto", "probability": 0.2 }
+  ],
+  "affected": {
+    "groups": ["moradores_urbanos", "trabalhadores_formais"],
+    "sectors": ["construcao", "industria", "servicos"],
+    "regions": ["sudeste", "nordeste", "sul", "nacional"]
+  },
+  "position": { "economic": -0.1, "social": -0.1 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 9, "procurementMonths": 7, "efficiency": 0.75, "annualMaintenanceRate": 0.035 }
+}

@@ -1,0 +1,124 @@
+{
+  "id": "fase07_eco_bancos_preveem_recessao",
+  "title": "Bancos preveem recessão",
+  "description": "Relatórios de bancos e consultorias passam a prever recessão no ano seguinte, com o hiato do produto negativo e a confiança em queda. Pedem estímulo ou um ajuste mais claro, sem concordar entre si.",
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [
+      {
+        "variable": "outputGap",
+        "op": "lt",
+        "value": -0.002
+      }
+    ],
+    "requiresFlags": ["eco_meta_dura"],
+    "probability": 0.15,
+    "cooldownMonths": 18,
+    "maxOccurrences": 2
+  },
+  "onFire": [
+    {
+      "target": "credibilidade",
+      "delta": -0.01,
+      "lagMonths": 0,
+      "durationMonths": 1,
+      "label": "Cartas de bancos"
+    },
+    {
+      "target": "choque.risco",
+      "delta": 0.002,
+      "lagMonths": 0,
+      "durationMonths": 3,
+      "label": "Recessão no radar"
+    }
+  ],
+  "choices": [
+    {
+      "id": "estimular_atividade",
+      "label": "Estimular a atividade com investimento",
+      "description": "Acelera obras e investimento para reagir. Ajuda a atividade no curto prazo, mas a despesa cresce quando a meta já está apertada.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "choque.hiato",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 3
+        },
+        {
+          "target": "gasto.investimento",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 6
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "manter_rumo",
+      "label": "Manter o rumo fiscal",
+      "description": "Mantém a meta e espera a economia reagir. A credibilidade sobe, mas a atividade desacelera e a aprovação cai.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "credibilidade",
+          "delta": 0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "choque.hiato",
+          "delta": -0.002,
+          "lagMonths": 0,
+          "durationMonths": 3
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.008,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    },
+    {
+      "id": "credito_publico",
+      "label": "Ampliar o crédito de bancos públicos",
+      "description": "Aumenta o crédito oferecido por bancos públicos. Aquece a demanda sem gasto direto, mas pode pressionar preços e elevar o risco.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "demanda.credito",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 4
+        },
+        {
+          "target": "choque.inflacao",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 3
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.006,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "manter_rumo",
+  "dataStatus": "FICTICIO"
+}

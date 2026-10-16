@@ -92,6 +92,15 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 | Participação no PIB / de tendência | `share` / `structuralShare` |
 | Governador, adesão (a convênio) | `governor`, `adherents` |
 | Chave de distribuição | `RegionalKey` (`populacao`, `pobreza`, `pib`, `renda_alta`) |
+| Diretriz ministerial | `MinistryDirective` |
+| Carteira de projetos / marca de governo | `PublicProject` / `GovernmentBrand` |
+| Renda real / quintil / pobreza estimada | `realIncome` / `quintile` / `povertyRate` |
+| Marca (memória de evento, gravada por escolha ou chegada) | `flag` (`EventsState.flags`, valor = mês) |
+| Pressão de impeachment | `impeachmentPressure` |
+| Cadeia (evento encadeado agendado por escolha) | `followUp` (`followUps`; `ScheduledEvent`) |
+| Notícia (manchete persistida, com causa) | `NewsItem` (`EventsState.news`) |
+| Prestígio de personagem | `standing` (`EventsState.characters`, −100 a 100) |
+| Elenco (personagens do cenário) | `characters` (`Scenario.characters`) |
 
 ---
 

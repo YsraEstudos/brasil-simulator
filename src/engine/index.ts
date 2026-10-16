@@ -14,6 +14,8 @@ export {
   AMENDMENTS_ACTION_ID,
   APPOINT_ACTION_ID,
   CONCEDE_ACTION_ID,
+  DIRECTIVE_ACTION_ID,
+  BRAND_ACTION_ID,
   isAgendaAction,
   NEGOTIATE_ACTION_ID,
   PRESSURE_ACTION_ID,
@@ -83,3 +85,10 @@ export {
 export * from './types';
 export { SaveTooNewError, upgradeGameState } from './upgrade';
 export * from './report';
+export * from './society';
+export * from './publicPolicies/types';
+export { BRANDABLE_STATUSES } from './publicPolicies/publicPolicies';
+export { eventsForScenario, hasFlag, standingOf } from './events/events';
+export { impeachmentPressure } from './events/pressure';
+export { campaignOutcome } from './events/outcome';
+export { NEWS_LIMIT, NEWS_PER_MONTH_MAX, appendNews, generateNews } from './news';

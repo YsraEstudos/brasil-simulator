@@ -1,0 +1,101 @@
+{
+  "id": "fase07_pol_seguranca_regiao",
+  "title": "Crise de segurança pública no Norte",
+  "description": "Uma onda de violência em capitais do Norte, com ataques a delegacias e rebeliões em presídios, coloca a segurança pública no centro do debate. Governadores pedem apoio federal e a população cobra resposta imediata.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "unemployment", "op": "gt", "value": 0.05 }],
+    "probability": 0.1,
+    "cooldownMonths": 18,
+    "maxOccurrences": 2
+  },
+  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onFire": [
+    {
+      "target": "regiao.aprovacao",
+      "delta": -0.015,
+      "lagMonths": 0,
+      "durationMonths": 4,
+      "label": "Crise de segurança",
+      "regions": ["norte"]
+    },
+    {
+      "target": "regiao.atividade",
+      "delta": -0.004,
+      "lagMonths": 0,
+      "durationMonths": 3,
+      "label": "Crise de segurança",
+      "regions": ["norte"]
+    }
+  ],
+  "choices": [
+    {
+      "id": "forca_federal",
+      "label": "Enviar força-tarefa federal",
+      "description": "Envia reforço federal e recursos extraordinários para o Norte. A aprovação regional se recupera e os governadores se aproximam, mas a despesa extraordinária sobe por meses.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.extraordinario",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "regions": ["norte"]
+        },
+        {
+          "target": "regiao.aprovacao",
+          "delta": 0.015,
+          "lagMonths": 0,
+          "durationMonths": 4,
+          "regions": ["norte"]
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 6,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["norte"]
+        }
+      ]
+    },
+    {
+      "id": "repassar_estados",
+      "label": "Repassar a responsabilidade aos estados",
+      "description": "Diz que a segurança é competência estadual e não envia reforço. Preserva o orçamento, mas os governadores do Norte se afastam e a crise segue sem resposta federal.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "regiao.aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "regions": ["norte"]
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": -6,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "regions": ["norte"]
+        }
+      ]
+    },
+    {
+      "id": "apoio_simbolico",
+      "label": "Enviar nota de apoio",
+      "description": "Manifesta solidariedade sem recursos. Não custa nada, mas a população cobra ações e a aprovação regional continua caindo.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "regiao.aprovacao",
+          "delta": -0.012,
+          "lagMonths": 0,
+          "durationMonths": 4,
+          "regions": ["norte"]
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "apoio_simbolico",
+  "dataStatus": "FICTICIO"
+}
