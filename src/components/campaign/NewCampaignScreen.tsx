@@ -232,7 +232,6 @@ function NewCampaignForm({ insetTop, insetBottom, insetX }: { insetTop: number; 
                 onBlur={() => setNameTouched(true)}
                 placeholder="Ex.: Governo de união nacional"
                 placeholderTextColor={colors.textMuted}
-                maxLength={CAMPAIGN_NAME_MAX}
                 multiline={false}
                 returnKeyType="done"
                 autoCapitalize="sentences"
@@ -255,8 +254,11 @@ function NewCampaignForm({ insetTop, insetBottom, insetX }: { insetTop: number; 
                 ) : (
                   <View style={styles.flex} />
                 )}
-                <Text variant="caption" color="textMuted" tabular>
-                  {`${form.name.length}/${CAMPAIGN_NAME_MAX}`}
+                <Text
+                  variant="caption"
+                  color={(summary.name?.length ?? 0) > CAMPAIGN_NAME_MAX ? 'negative' : 'textMuted'}
+                  tabular>
+                  {`${summary.name?.length ?? 0}/${CAMPAIGN_NAME_MAX}`}
                 </Text>
               </View>
             </Card>

@@ -21,7 +21,7 @@ interface MenuItem {
   icon: SymbolViewProps['name'];
 }
 
-/** Botões do mockup, na ordem: os três primeiros entram no jogo; o resto ainda avisa "em breve". */
+/** Botões do mockup, na ordem: os três primeiros entram no jogo e CONFIGURAÇÕES abre os ajustes; o resto avisa "em breve". */
 const ITEMS: readonly MenuItem[] = [
   { id: 'novo', label: 'NOVO JOGO', icon: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' } },
   { id: 'continuar', label: 'CONTINUAR', icon: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' } },
@@ -35,7 +35,6 @@ const ITEMS: readonly MenuItem[] = [
 /** O que ainda não tem tela: o toque mostra "em breve" em vez de navegar. */
 const SOON: Partial<Record<MenuItem['id'], string>> = {
   multi: 'Multijogador',
-  config: 'Configurações',
   conquistas: 'Conquistas',
   sair: 'Sair',
 };
@@ -156,13 +155,18 @@ export function MainMenuScreen() {
 
   const onPressItem = useCallback(
     (id: MenuItem['id']) => {
-      // NOVO JOGO e CARREGAR JOGO têm telas próprias: abri-las não fecha a partida em andamento nem o rascunho.
+      // NOVO JOGO, CARREGAR JOGO e CONFIGURAÇÕES têm telas próprias: abri-las não fecha a partida em andamento
+      // nem o rascunho do mês.
       if (id === 'novo') {
         router.push('/novo-jogo');
         return;
       }
       if (id === 'carregar') {
         router.push('/carregar-jogo');
+        return;
+      }
+      if (id === 'config') {
+        router.push('/configuracoes');
         return;
       }
       if (id === 'continuar') {

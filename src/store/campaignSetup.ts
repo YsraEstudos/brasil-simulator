@@ -8,7 +8,7 @@ import type { Scenario } from '@/types/scenario';
  * para que o que o jogador vê no resumo seja exatamente o que vai para o banco.
  */
 
-/** Tamanho máximo do nome, em unidades UTF-16 (o mesmo que o `maxLength` do campo de texto). */
+/** Tamanho máximo do nome, em unidades UTF-16. O campo não corta a digitação: o excesso vira erro de validação. */
 export const CAMPAIGN_NAME_MAX = 60;
 
 /** Maior semente aceita: o motor converte a semente para inteiro sem sinal de 32 bits (`seedRng`: `seed >>> 0`). */
