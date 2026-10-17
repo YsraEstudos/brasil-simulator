@@ -269,6 +269,67 @@ function institutionalCandidates(args: NewsArgs): NewsCandidate[] {
   return out;
 }
 
+// ── Eleições ───────────────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Manchetes eleitorais (FASE_08.md): declaração de candidatura, eleição municipal e eleição geral acontecem no
+ * mês gravado no estado (`politics`), então a manchete sai quando o mês do pleito é o mês do relatório. Sem
+ * `politics` ou sem bloco `elections` no cenário, não há manchete.
+ */
+function electionCandidates(args: NewsArgs): NewsCandidate[] {
+  const { report, next, content } = args;
+  const politics = next.politics;
+  if (!politics || !content.scenario.elections) return [];
+  const out: NewsCandidate[] = [];
+
+  if (politics.declaracao === report.monthIndex) {
+    out.push({
+      kind: 'institucional',
+      tone: 'neutra',
+      headline: 'Presidente declara candidatura à reeleição',
+      cause: 'Causa: agenda "Declarar candidatura à reeleição" na janela do calendário eleitoral',
+      sourceId: 'declaracao_reeleicao',
+    });
+  }
+
+  if (politics.eleicao_municipal?.monthIndex === report.monthIndex) {
+    const efeito = report.contributions.find((c) => c.indicator === 'approval' && c.cause === 'municipais');
+    const positiva = (efeito?.delta ?? 0) >= 0;
+    out.push({
+      kind: 'institucional',
+      tone: positiva ? 'positiva' : 'negativa',
+      headline: positiva
+        ? 'Eleições municipais: governo sai fortalecido das urnas'
+        : 'Eleições municipais: governo sai desgastado das urnas',
+      cause: `Causa: eleições municipais; memória do eleitor mexeu ${pp(efeito?.delta ?? 0)} na aprovação`,
+      sourceId: 'eleicao_municipal',
+    });
+  }
+
+  const geral = politics.eleicao_geral;
+  if (geral?.monthIndex === report.monthIndex) {
+    const turno = geral.turno2 ? 'no segundo turno' : 'no primeiro turno';
+    const headline = geral.venceu
+      ? geral.candidatura
+        ? `Presidente é reeleito ${turno}`
+        : `Governo faz o sucessor ${turno}`
+      : geral.candidatura
+        ? `Presidente perde a disputa pela reeleição ${turno}`
+        : `Governo perde a eleição geral ${turno}`;
+    out.push({
+      kind: 'institucional',
+      tone: geral.venceu ? 'positiva' : 'negativa',
+      headline,
+      cause: geral.candidatura
+        ? 'Causa: apuração da eleição geral; candidatura declarada na janela eleitoral'
+        : 'Causa: apuração da eleição geral; sucessor herda a intenção de voto do governo',
+      sourceId: 'eleicao_geral',
+    });
+  }
+
+  return out;
+}
+
 // ── Congresso ──────────────────────────────────────────────────────────────────────────────────────────────────
 
 /** Tom da manchete por causa da transição (o governo ganha ou perde). Causas fora da lista saem neutras. */
@@ -483,12 +544,13 @@ function economyCandidates(args: NewsArgs): NewsCandidate[] {
 // ── Geração e persistência ─────────────────────────────────────────────────────────────────────────────────────
 
 /**
- * Manchetes do mês, até `NEWS_PER_MONTH_MAX`, na ordem de prioridade: institucional, evento, personagem, congresso
- * e economia. Id `${monthIndex}_${ordem}`. Função pura: mesma entrada, mesma saída.
+ * Manchetes do mês, até `NEWS_PER_MONTH_MAX`, na ordem de prioridade: eleições, institucional, evento, personagem,
+ * congresso e economia. Id `${monthIndex}_${ordem}`. Função pura: mesma entrada, mesma saída.
  */
 export function generateNews(args: NewsArgs): NewsItem[] {
   const personagem = personagemCandidate(args);
   const candidates: NewsCandidate[] = [
+    ...electionCandidates(args),
     ...institutionalCandidates(args),
     ...eventCandidates(args),
     ...(personagem ? [personagem] : []),

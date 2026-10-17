@@ -6,7 +6,7 @@ import { openNodeDatabase } from '@/database/nodeDatabase';
 import type { SqlDatabase } from '@/database/types';
 import { createCampaign } from '@/database/campaignRepository';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
-import { createInitialState, DIRECTIVE_ACTION_ID } from '@/engine';
+import { campaignOutcome, createInitialState, DIRECTIVE_ACTION_ID } from '@/engine';
 
 import { createGameStore } from './gameStore';
 import { campaignMonths, PROTOTYPE_MONTHS, SCENARIOS } from './scenarios';
@@ -120,17 +120,24 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     expect(app.getState().draft.decisions).toEqual([]);
   });
 
-  it('cenário novo continua após 12 meses e encerra no mês 48, sem avançar mais', async () => {
+  it('cenário novo continua após 12 meses e encerra no primeiro mandato (derrota ou fim), sem avançar mais', async () => {
     const { launchApp } = await device();
     const app = await launchApp();
     await app.getState().newCampaign({ name: 'Curta', difficulty: 'estrategica' });
     const months = campaignMonths(app.getState().active!.state.scenarioId);
+    expect(months).toBe(96);
     for (let m = 0; m < PROTOTYPE_MONTHS; m++) await app.getState().endMonth();
     expect(app.getState().active!.finished).toBe(false);
-    expect(months).toBe(48);
-    for (let m = PROTOTYPE_MONTHS; m < months + 2; m++) await app.getState().endMonth();
-    expect(app.getState().active!.finished).toBe(true);
-    expect(app.getState().active!.state.monthIndex).toBe(months);
+    // Sem candidatura declarada, o 1º mandato termina na eleição geral (derrota) ou na posse (fim de mandato).
+    for (let m = PROTOTYPE_MONTHS; m < months + 2 && !app.getState().active!.finished; m++) {
+      await app.getState().endMonth();
+    }
+    const ended = app.getState().active!;
+    expect(ended.finished).toBe(true);
+    expect(ended.state.monthIndex).toBeLessThanOrEqual(48);
+    expect(campaignOutcome(ended.state)).not.toBeNull();
+    await app.getState().endMonth();
+    expect(app.getState().active!.state.monthIndex).toBe(ended.state.monthIndex);
     expect(app.getState().campaigns[0].status).toBe('encerrada');
   });
 
@@ -140,7 +147,9 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     await app.getState().newCampaign({ name: 'Interrompida', difficulty: 'casual' });
     const id = app.getState().active!.id;
     const months = campaignMonths(app.getState().active!.state.scenarioId);
-    for (let m = 0; m < months; m++) await app.getState().endMonth();
+    for (let m = 0; m < months && !app.getState().active!.finished; m++) await app.getState().endMonth();
+    const lastMonth = app.getState().active!.state.monthIndex;
+    expect(app.getState().active!.finished).toBe(true);
     // Simula um save antigo: último mês gravado, status não atualizado.
     await db.run("UPDATE campaigns SET status = 'ativa' WHERE id = ?", [id]);
 
@@ -148,7 +157,7 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     await app.getState().continueCampaign(id);
     expect(app.getState().active!.finished).toBe(true);
     await app.getState().endMonth();
-    expect(app.getState().active!.state.monthIndex).toBe(months);
+    expect(app.getState().active!.state.monthIndex).toBe(lastMonth);
     expect(app.getState().campaigns[0].status).toBe('encerrada');
   });
 

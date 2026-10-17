@@ -339,7 +339,7 @@ function evolveRelations(state: Readonly<GameState>, content: GameContent, ufs: 
 }
 
 /** UFs no estado, ou as do cenário quando o estado ainda não as tem (save antigo). */
-function currentUfs(state: Readonly<GameState>, content: GameContent): UfState[] {
+export function currentUfs(state: Readonly<GameState>, content: GameContent): UfState[] {
   const ufs = regionsOf(content);
   return state.regions.ufs.length === ufs.length ? state.regions.ufs : seedUfs(ufs);
 }

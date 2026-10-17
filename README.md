@@ -14,7 +14,8 @@ Jogo de estratégia e simulação política por turnos para Android (e, depois, 
 | [docs/ECONOMIC_MODEL.md](docs/ECONOMIC_MODEL.md) | Modelo econômico, equações, parâmetros e invariantes |
 | [docs/POLITICAL_RULES.md](docs/POLITICAL_RULES.md) | Competências, instrumentos legais, orçamento, Congresso, impeachment |
 | [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) | Fontes oficiais, status dos dados e pipeline |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Fases, versões, tarefas e decisões em aberto |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Fases 00–08: versões, tarefas e decisões em aberto |
+| [docs/ROADMAP_2.0.md](docs/ROADMAP_2.0.md) | Fases 09–11: Realismo Extremo, testes e publicação, expansões |
 | [docs/AI_INSTRUCTIONS.md](docs/AI_INSTRUCTIONS.md) | Regras para agentes de IA que trabalham no projeto |
 
 ## Tecnologia planejada

@@ -14,6 +14,7 @@ export {
   AMENDMENTS_ACTION_ID,
   APPOINT_ACTION_ID,
   CONCEDE_ACTION_ID,
+  DECLARE_CANDIDACY_ACTION_ID,
   DIRECTIVE_ACTION_ID,
   BRAND_ACTION_ID,
   isAgendaAction,
@@ -21,6 +22,7 @@ export {
   PRESSURE_ACTION_ID,
   SANCTION_ACTION_ID,
   SANCTION_CHOICES,
+  SUPPORT_CANDIDATE_ACTION_ID,
   URGENCY_ACTION_ID,
   VISIT_ACTION_ID,
   type AgendaAction,
@@ -90,5 +92,5 @@ export * from './publicPolicies/types';
 export { BRANDABLE_STATUSES } from './publicPolicies/publicPolicies';
 export { eventsForScenario, hasFlag, standingOf } from './events/events';
 export { impeachmentPressure } from './events/pressure';
-export { campaignOutcome } from './events/outcome';
+export { campaignOutcome, type CampaignOutcome } from './events/outcome';
 export { NEWS_LIMIT, NEWS_PER_MONTH_MAX, appendNews, generateNews } from './news';

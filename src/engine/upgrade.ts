@@ -31,7 +31,17 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   if (version < 5) state = v4ToV5(state);
   if (version < 6) state = v5ToV6(state);
   if (version < 7) state = v6ToV7(state);
+  if (version < 8) state = v7ToV8(state);
   return state as unknown as GameState;
+}
+
+/**
+ * v7 (Fase 07) → v8 (Fase 08): entra o estado eleitoral (`politics`). Sem acesso ao cenário, o campo fica
+ * ausente: o `electionsStep` o cria no primeiro mês processado de um cenário com eleições, e campanhas sem
+ * eleições nunca o ganham. Os campos da Fase 07 são preservados.
+ */
+function v7ToV8(s: Raw): Raw {
+  return { ...s, schemaVersion: 8, engineVersion: ENGINE_VERSION };
 }
 
 /**

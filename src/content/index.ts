@@ -6,7 +6,14 @@ import { SCENARIOS } from './scenarios';
 
 export { EVENTS } from './events';
 export { POLICIES } from './policies';
-export { DEFAULT_SCENARIO_ID, PROTOTYPE_MONTHS, CAMPAIGN_MONTHS, campaignMonths, SCENARIOS } from './scenarios';
+export {
+  DEFAULT_SCENARIO_ID,
+  PROTOTYPE_MONTHS,
+  CAMPAIGN_MONTHS,
+  TWO_TERM_MONTHS,
+  campaignMonths,
+  SCENARIOS,
+} from './scenarios';
 
 const cache = new Map<string, GameContent>();
 

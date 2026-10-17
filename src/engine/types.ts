@@ -8,10 +8,10 @@ import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 7;
+export const STATE_SCHEMA_VERSION = 8;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.7.0';
+export const ENGINE_VERSION = '0.8.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -169,6 +169,7 @@ export interface EconomyState {
  * | `credibilidade` | variação da credibilidade em cada mês ativo (0–1) | economia |
  * | `aprovacao` | variação da aprovação em cada mês ativo (fração) | opinião |
  * | `capital_politico` | variação do capital político em cada mês ativo (pontos 0–100) | opinião |
+ * | `intencao` | variação da intenção de voto em cada mês ativo (fração; Fase 08) | eleições |
  * | `relacao_congresso` | variação da relação de **todos** os blocos com o governo em cada mês ativo (−100…100) | Congresso |
  * | `regiao.atividade` | desvio da atividade (log) das UFs do escopo enquanto ativo; não muda o total nacional | regiões |
  * | `regiao.aprovacao` | desvio da aprovação (fração) nas UFs do escopo enquanto ativo; a média segue a nacional | regiões |
@@ -195,6 +196,7 @@ export type ImpulseTarget =
   | 'salario_minimo'
   | 'credibilidade'
   | 'aprovacao'
+  | 'intencao'
   | 'capital_politico'
   | 'relacao_congresso'
   | 'regiao.atividade'
@@ -471,12 +473,18 @@ export type DecisionRejection =
   | 'ja_em_andamento'
   /** MP rejeitada ou caducada não pode ser reeditada na mesma sessão legislativa (CF art. 62 §10). */
   | 'reedicao_vedada'
+  /** Novo benefício na janela de vedação eleitoral, sem quebra declarada (Lei 9.504/97 art. 73 §10; Fase 08). */
+  | 'vedacao_eleitoral'
   | 'evento_nao_pendente'
   | 'escolha_invalida';
 
 /** Parcela de uma variação, com causa, para o "Por que mudou?" (ECONOMIC_MODEL.md §1.6). */
 export interface Contribution {
-  indicator: IndicatorKey;
+  /**
+   * Indicador `Indicators` de destino ou o pseudo-indicador `'votingIntention'` (Fase 08): a intenção de voto
+   * não pertence ao `Indicators`; contribuições para ela servem apenas ao relatório ("Por que mudou?").
+   */
+  indicator: IndicatorKey | 'votingIntention';
   /** ID da causa: proposta, choque, Banco Central, tendência… */
   cause: string;
   delta: number;
@@ -488,6 +496,36 @@ export interface Contribution {
 export interface DecisionRecord {
   monthIndex: number;
   decision: Decision;
+}
+
+/** Resultado de uma eleição geral para o jogador: registro permanente (Fase 08). */
+export interface PresidentialElection {
+  monthIndex: number;
+  /** O jogador declarou candidatura nessa eleição. */
+  candidatura: boolean;
+  /** Candidatura do governo venceu a eleição (jogador ou sucessor apoiado). */
+  venceu: boolean;
+  /** Decidida no 2º turno. */
+  turno2: boolean;
+}
+
+/**
+ * Estado eleitoral (FASE_08.md): só existe quando o cenário tem o bloco `elections`. A migração não o cria; o
+ * `electionsStep` cria no primeiro mês processado com um cenário de eleições e de lá em diante mantém.
+ */
+export interface PoliticsState {
+  /** Intenção de voto na candidatura do governo, 0–1 (com candidatura ou sucessor apoiado; 0–1 pela base). */
+  votingIntention: number;
+  /** Clima mensal do governo (−1…1), do mais antigo para o mais novo; até 12 entradas. */
+  memoria: number[];
+  /** Mês da declaração de candidatura aprovada (`null` sem declaração). */
+  declaracao: number | null;
+  /** Bloco apoiado para a sucessão (`apoiar_candidato`); `null` = sem apoio escolhido. */
+  apoio: string | null;
+  /** Última eleição geral processada (mês 45 ou 93 do índice nacional). */
+  eleicao_geral?: PresidentialElection;
+  /** Última eleição municipal processada (mês 21 ou 69). */
+  eleicao_municipal?: { monthIndex: number };
 }
 
 export interface GameState {
@@ -512,6 +550,8 @@ export interface GameState {
   regions: RegionsState;
   society: SocietyState;
   publicPolicies: PublicPolicyState;
+  /** Eleições e intenção de voto (Fase 08); cenários sem eleições e saves antigos ficam sem o campo. */
+  politics?: PoliticsState;
 }
 
 /**

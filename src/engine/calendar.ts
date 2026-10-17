@@ -12,6 +12,11 @@ export function termOf(monthIndex: number): number {
   return Math.floor(monthIndex / TERM_MONTHS);
 }
 
+/** Mês dentro do mandato (0 = jan do ano da posse), usado pelo calendário eleitoral (Fase 08). */
+export function monthOfTerm(monthIndex: number): number {
+  return monthIndex % TERM_MONTHS;
+}
+
 export interface CalendarMonth {
   year: number;
   /** 1–12 */

@@ -1,0 +1,1112 @@
+{
+  "id": "brasil_2027_01_v070",
+  "version": "0.7.0",
+  "name": "Brasil, janeiro de 2027 (dados provisórios)",
+  "startPeriod": "2027-01",
+  "indicators": {
+    "approval": {
+      "value": 0.48,
+      "unit": "fração",
+      "status": "FICTICIO",
+      "note": "Presidente fictício: aprovação inicial de design, sem origem em pesquisa. Substituir apenas por decisão de design, não por dado de pesquisa sem nova versão do cenário."
+    },
+    "gdpGrowth12m": {
+      "value": 0.018,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: crescimento de 12 meses ainda não importado. Substituir pelo PIB real (IBGE, Contas Nacionais) conforme DATA_SOURCES.md §4.1."
+    },
+    "inflation12m": {
+      "value": 0.042,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: IPCA de 12 meses ainda não importado. Substituir pelo IPCA real (IBGE/BCB) conforme DATA_SOURCES.md §4.1."
+    },
+    "unemployment": {
+      "value": 0.06,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: taxa de desocupação ainda não importada. Substituir pela PNAD Contínua (IBGE) conforme DATA_SOURCES.md §4.1."
+    },
+    "primaryBalance12m": {
+      "value": -0.004,
+      "unit": "fração do PIB",
+      "status": "PROVISORIO",
+      "note": "Placeholder: resultado primário de 12 meses ainda não importado. Substituir pelo RTN (Tesouro) conforme DATA_SOURCES.md §4.1."
+    }
+  },
+  "economy": {
+    "nominalGdpMillions": {
+      "value": 13600000,
+      "unit": "R$ milhões",
+      "status": "PROVISORIO",
+      "note": "Placeholder: PIB nominal de 12 meses ainda não importado (IBGE, Contas Nacionais). Ordem de grandeza apenas."
+    },
+    "outputGap": {
+      "value": 0.005,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: hiato do produto ainda não estimado a partir de dados reais."
+    },
+    "selic": {
+      "value": 0.13,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: Selic ainda não importada (BCB, SGS). Não reflete a meta oficial do Copom."
+    },
+    "inflationExpectation": {
+      "value": 0.04,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: expectativa de inflação ainda não importada (BCB, Focus). Não é projeção oficial."
+    },
+    "credibility": {
+      "value": 0.65,
+      "unit": "índice 0–1",
+      "status": "PROVISORIO",
+      "note": "Placeholder: índice de credibilidade do banco central sem método documentado. Calibração na Fase 03."
+    },
+    "grossDebt": {
+      "value": 0.8,
+      "unit": "fração do PIB",
+      "status": "PROVISORIO",
+      "note": "Placeholder: dívida bruta (DBGG) ainda não importada (BCB, Estatísticas Fiscais)."
+    },
+    "implicitRate": {
+      "value": 0.12,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: taxa implícita da dívida ainda não calculada a partir de dados reais."
+    },
+    "revenue": {
+      "value": 0.187,
+      "unit": "fração do PIB",
+      "status": "PROVISORIO",
+      "note": "Placeholder: receita primária ainda não importada (Tesouro, RTN)."
+    },
+    "primarySpending": {
+      "value": 0.191,
+      "unit": "fração do PIB",
+      "status": "PROVISORIO",
+      "note": "Placeholder: despesa primária ainda não importada (Tesouro, RTN). Diferença com a receita coincide com o resultado primário placeholder."
+    },
+    "exchangeRate": {
+      "value": 5.4,
+      "unit": "R$/US$",
+      "status": "PROVISORIO",
+      "note": "Placeholder: câmbio ainda não importado (BCB, PTAX). Ordem de grandeza de 2026."
+    },
+    "riskPremium": {
+      "value": 0.025,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: prêmio de risco soberano (CDS de 5 anos) ainda não importado. Ordem de grandeza de períodos calmos."
+    },
+    "externalRate": {
+      "value": 0.04,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: juro externo de referência (Fed funds) ainda não importado."
+    },
+    "gdpGrowthTwoYearsAgo": {
+      "value": 0.023,
+      "unit": "fração",
+      "status": "PROVISORIO",
+      "note": "Placeholder: crescimento real do PIB de 2025 (IBGE) ainda não importado; usado no reajuste do salário mínimo de 2027 (Lei 15.077/2024)."
+    }
+  },
+  "fiscal": {
+    "revenueShares": {
+      "renda": {
+        "value": 0.36,
+        "unit": "fração da receita bruta",
+        "status": "PROVISORIO",
+        "note": "IR e CSLL. Placeholder: participação na receita bruta do governo central, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027."
+      },
+      "folha": {
+        "value": 0.23,
+        "unit": "fração da receita bruta",
+        "status": "PROVISORIO",
+        "note": "Contribuições previdenciárias (RGPS). Placeholder: participação na receita bruta do governo central, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027."
+      },
+      "consumo": {
+        "value": 0.2,
+        "unit": "fração da receita bruta",
+        "status": "PROVISORIO",
+        "note": "CBS, Imposto Seletivo e IPI residual (Zona Franca). Placeholder: participação na receita bruta do governo central, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027."
+      },
+      "outras": {
+        "value": 0.15,
+        "unit": "fração da receita bruta",
+        "status": "PROVISORIO",
+        "note": "IOF, comércio exterior e demais receitas. Placeholder: participação na receita bruta do governo central, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027."
+      },
+      "royalties": {
+        "value": 0.06,
+        "unit": "fração da receita bruta",
+        "status": "PROVISORIO",
+        "note": "Royalties, participações especiais e dividendos. Placeholder: participação na receita bruta do governo central, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027."
+      }
+    },
+    "transferShares": {
+      "renda": {
+        "value": 0.43,
+        "unit": "fração do grupo",
+        "status": "PROVISORIO",
+        "note": "FPE (21,5%), FPM (25,5%) e fundos regionais (3%) incidem sobre o IR, não sobre a CSLL (CF art. 159). Aproximação do grupo."
+      },
+      "folha": {
+        "value": 0,
+        "unit": "fração do grupo",
+        "status": "PROVISORIO",
+        "note": "Contribuições previdenciárias não são repartidas."
+      },
+      "consumo": {
+        "value": 0,
+        "unit": "fração do grupo",
+        "status": "PROVISORIO",
+        "note": "A CBS não é repartida; o IPI residual é desprezado."
+      },
+      "outras": {
+        "value": 0,
+        "unit": "fração do grupo",
+        "status": "PROVISORIO",
+        "note": "Aproximação: repartição desprezada."
+      },
+      "royalties": {
+        "value": 0.5,
+        "unit": "fração do grupo",
+        "status": "PROVISORIO",
+        "note": "Placeholder: parcela de royalties e participações destinada a estados e municípios (Lei 9.478/1997)."
+      }
+    },
+    "spending": {
+      "previdencia": {
+        "value": 0.0831,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Benefícios do RGPS. Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "beneficios": {
+        "value": 0.0191,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "BPC, abono salarial e seguro-desemprego. Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "pessoal": {
+        "value": 0.0309,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Pessoal e encargos. Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "outras": {
+        "value": 0.0099,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Demais obrigatórias (subsídios, sentenças e outras). Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "linked": {
+        "value": 0.0269,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Vinculadas à receita: mínimos de saúde e educação e emendas impositivas (CF arts. 166, 198 e 212). Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "discretionary": {
+        "value": 0.0161,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Discricionárias do Executivo (custeio e investimento). Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      },
+      "exceptions": {
+        "value": 0.005,
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Despesas fora do limite (complementação do Fundeb e demais exceções da LC 200/2023). Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
+      }
+    }
+  },
+  "parameters": {},
+  "blocs": [
+    {
+      "id": "esquerda",
+      "name": "Esquerda",
+      "chamberSeats": 110,
+      "senateSeats": 14,
+      "ideology": {
+        "economic": -0.7,
+        "social": -0.6
+      },
+      "cohesion": 0.85,
+      "governmentRelation": 0,
+      "interests": ["social"]
+    },
+    {
+      "id": "centro_esquerda",
+      "name": "Centro-Esquerda",
+      "chamberSeats": 70,
+      "senateSeats": 10,
+      "ideology": {
+        "economic": -0.3,
+        "social": -0.2
+      },
+      "cohesion": 0.7,
+      "governmentRelation": 0,
+      "interests": ["educacao"]
+    },
+    {
+      "id": "centro",
+      "name": "Centro",
+      "chamberSeats": 150,
+      "senateSeats": 24,
+      "ideology": {
+        "economic": 0.1,
+        "social": 0.2
+      },
+      "cohesion": 0.5,
+      "governmentRelation": 10,
+      "interests": ["emendas", "infraestrutura"]
+    },
+    {
+      "id": "centro_direita",
+      "name": "Centro-Direita",
+      "chamberSeats": 98,
+      "senateSeats": 18,
+      "ideology": {
+        "economic": 0.5,
+        "social": 0.4
+      },
+      "cohesion": 0.65,
+      "governmentRelation": 0,
+      "interests": ["agro", "industria"]
+    },
+    {
+      "id": "direita",
+      "name": "Direita",
+      "chamberSeats": 85,
+      "senateSeats": 15,
+      "ideology": {
+        "economic": 0.7,
+        "social": 0.8
+      },
+      "cohesion": 0.8,
+      "governmentRelation": 0,
+      "interests": ["seguranca"]
+    }
+  ],
+  "institutions": {
+    "housePresidents": {
+      "camara": "centro",
+      "senado": "centro"
+    },
+    "ministries": [
+      {
+        "id": "fazenda",
+        "name": "Fazenda",
+        "areas": ["economia", "tributacao", "fiscal"],
+        "weight": 1,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "gestao",
+        "name": "Gestão e Serviços Públicos",
+        "areas": ["estado"],
+        "weight": 0.4,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "previdencia",
+        "name": "Previdência Social",
+        "areas": ["previdencia"],
+        "weight": 0.5,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "desenvolvimento_social",
+        "name": "Desenvolvimento Social",
+        "areas": ["social"],
+        "weight": 0.8,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "transportes",
+        "name": "Transportes e Infraestrutura",
+        "areas": ["infraestrutura"],
+        "weight": 0.8,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "saude",
+        "name": "Saúde",
+        "areas": ["saude"],
+        "weight": 0.9,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "educacao",
+        "name": "Educação",
+        "areas": ["educacao"],
+        "weight": 0.7,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "justica_seguranca",
+        "name": "Justiça e Segurança Pública",
+        "areas": ["seguranca"],
+        "weight": 0.6,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "cidades",
+        "name": "Cidades",
+        "areas": ["cidades", "habitacao", "saneamento"],
+        "weight": 0.6,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "agricultura",
+        "name": "Agricultura",
+        "areas": ["agro"],
+        "weight": 0.5,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "minas_energia",
+        "name": "Minas e Energia",
+        "areas": ["energia"],
+        "weight": 0.6,
+        "occupant": "tecnico"
+      }
+    ]
+  },
+  "regions": {
+    "meta": {
+      "population": {
+        "unit": "milhares de pessoas",
+        "status": "PROVISORIO",
+        "note": "Ordem de grandeza do Censo 2022 (IBGE), arredondada; conferir na importação (DATA_SOURCES.md §4.2). População fixa durante a campanha."
+      },
+      "gdpShare": {
+        "unit": "fração do PIB",
+        "status": "PROVISORIO",
+        "note": "Ordem de grandeza das Contas Regionais do IBGE (início da década de 2020), arredondada a 0,1 p.p.; soma 1. Substituir pela série importada."
+      },
+      "sectors": {
+        "unit": "fração do valor adicionado da UF",
+        "status": "PROVISORIO",
+        "note": "Peso aproximado de agropecuária, indústria extrativa, demais indústrias (transformação, construção, energia) e serviços, a partir da ordem de grandeza das Contas Regionais do IBGE; soma 1 por UF."
+      },
+      "unemployment": {
+        "unit": "fração da força de trabalho",
+        "status": "PROVISORIO",
+        "note": "Ordem de grandeza da PNAD Contínua por UF (2024–2025). O motor usa só a diferença relativa entre as UFs: a média ponderada é sempre a taxa nacional."
+      },
+      "poverty": {
+        "unit": "fração da população",
+        "status": "PROVISORIO",
+        "note": "Ordem de grandeza da Síntese de Indicadores Sociais do IBGE (linha de pobreza internacional); usada só como chave de distribuição de transferências."
+      },
+      "governors": {
+        "unit": "bloco e relação −100…100",
+        "status": "FICTICIO",
+        "note": "Governadores fictícios: o bloco de cada um e a relação inicial com o presidente fictício são de design e não reproduzem os eleitos em 2026 (GAME_DESIGN.md §13)."
+      }
+    },
+    "ufs": [
+      {
+        "id": "RO",
+        "name": "Rondônia",
+        "region": "norte",
+        "population": 1581,
+        "gdpShare": 0.006,
+        "sectors": {
+          "agropecuaria": 0.2,
+          "extrativa": 0.01,
+          "industria": 0.14,
+          "servicos": 0.65
+        },
+        "unemployment": 0.035,
+        "poverty": 0.25,
+        "governor": {
+          "bloc": "direita",
+          "relation": -10
+        }
+      },
+      {
+        "id": "AC",
+        "name": "Acre",
+        "region": "norte",
+        "population": 830,
+        "gdpShare": 0.002,
+        "sectors": {
+          "agropecuaria": 0.12,
+          "extrativa": 0,
+          "industria": 0.1,
+          "servicos": 0.78
+        },
+        "unemployment": 0.075,
+        "poverty": 0.42,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": 0
+        }
+      },
+      {
+        "id": "AM",
+        "name": "Amazonas",
+        "region": "norte",
+        "population": 3941,
+        "gdpShare": 0.014,
+        "sectors": {
+          "agropecuaria": 0.06,
+          "extrativa": 0.03,
+          "industria": 0.3,
+          "servicos": 0.61
+        },
+        "unemployment": 0.08,
+        "poverty": 0.45,
+        "governor": {
+          "bloc": "centro",
+          "relation": 10
+        }
+      },
+      {
+        "id": "RR",
+        "name": "Roraima",
+        "region": "norte",
+        "population": 636,
+        "gdpShare": 0.002,
+        "sectors": {
+          "agropecuaria": 0.08,
+          "extrativa": 0,
+          "industria": 0.1,
+          "servicos": 0.82
+        },
+        "unemployment": 0.065,
+        "poverty": 0.38,
+        "governor": {
+          "bloc": "direita",
+          "relation": -15
+        }
+      },
+      {
+        "id": "PA",
+        "name": "Pará",
+        "region": "norte",
+        "population": 8121,
+        "gdpShare": 0.026,
+        "sectors": {
+          "agropecuaria": 0.12,
+          "extrativa": 0.3,
+          "industria": 0.12,
+          "servicos": 0.46
+        },
+        "unemployment": 0.075,
+        "poverty": 0.42,
+        "governor": {
+          "bloc": "centro",
+          "relation": 15
+        }
+      },
+      {
+        "id": "AP",
+        "name": "Amapá",
+        "region": "norte",
+        "population": 733,
+        "gdpShare": 0.002,
+        "sectors": {
+          "agropecuaria": 0.04,
+          "extrativa": 0.03,
+          "industria": 0.1,
+          "servicos": 0.83
+        },
+        "unemployment": 0.09,
+        "poverty": 0.4,
+        "governor": {
+          "bloc": "centro_esquerda",
+          "relation": 10
+        }
+      },
+      {
+        "id": "TO",
+        "name": "Tocantins",
+        "region": "norte",
+        "population": 1511,
+        "gdpShare": 0.005,
+        "sectors": {
+          "agropecuaria": 0.18,
+          "extrativa": 0.01,
+          "industria": 0.15,
+          "servicos": 0.66
+        },
+        "unemployment": 0.05,
+        "poverty": 0.3,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": 0
+        }
+      },
+      {
+        "id": "MA",
+        "name": "Maranhão",
+        "region": "nordeste",
+        "population": 6775,
+        "gdpShare": 0.014,
+        "sectors": {
+          "agropecuaria": 0.14,
+          "extrativa": 0.02,
+          "industria": 0.15,
+          "servicos": 0.69
+        },
+        "unemployment": 0.075,
+        "poverty": 0.5,
+        "governor": {
+          "bloc": "centro_esquerda",
+          "relation": 20
+        }
+      },
+      {
+        "id": "PI",
+        "name": "Piauí",
+        "region": "nordeste",
+        "population": 3271,
+        "gdpShare": 0.007,
+        "sectors": {
+          "agropecuaria": 0.1,
+          "extrativa": 0,
+          "industria": 0.14,
+          "servicos": 0.76
+        },
+        "unemployment": 0.08,
+        "poverty": 0.43,
+        "governor": {
+          "bloc": "esquerda",
+          "relation": 25
+        }
+      },
+      {
+        "id": "CE",
+        "name": "Ceará",
+        "region": "nordeste",
+        "population": 8794,
+        "gdpShare": 0.022,
+        "sectors": {
+          "agropecuaria": 0.05,
+          "extrativa": 0,
+          "industria": 0.18,
+          "servicos": 0.77
+        },
+        "unemployment": 0.07,
+        "poverty": 0.43,
+        "governor": {
+          "bloc": "esquerda",
+          "relation": 20
+        }
+      },
+      {
+        "id": "RN",
+        "name": "Rio Grande do Norte",
+        "region": "nordeste",
+        "population": 3302,
+        "gdpShare": 0.009,
+        "sectors": {
+          "agropecuaria": 0.04,
+          "extrativa": 0.04,
+          "industria": 0.18,
+          "servicos": 0.74
+        },
+        "unemployment": 0.085,
+        "poverty": 0.38,
+        "governor": {
+          "bloc": "centro",
+          "relation": 0
+        }
+      },
+      {
+        "id": "PB",
+        "name": "Paraíba",
+        "region": "nordeste",
+        "population": 3974,
+        "gdpShare": 0.009,
+        "sectors": {
+          "agropecuaria": 0.04,
+          "extrativa": 0,
+          "industria": 0.18,
+          "servicos": 0.78
+        },
+        "unemployment": 0.085,
+        "poverty": 0.42,
+        "governor": {
+          "bloc": "centro_esquerda",
+          "relation": 15
+        }
+      },
+      {
+        "id": "PE",
+        "name": "Pernambuco",
+        "region": "nordeste",
+        "population": 9058,
+        "gdpShare": 0.024,
+        "sectors": {
+          "agropecuaria": 0.04,
+          "extrativa": 0,
+          "industria": 0.2,
+          "servicos": 0.76
+        },
+        "unemployment": 0.1,
+        "poverty": 0.45,
+        "governor": {
+          "bloc": "centro",
+          "relation": 5
+        }
+      },
+      {
+        "id": "AL",
+        "name": "Alagoas",
+        "region": "nordeste",
+        "population": 3127,
+        "gdpShare": 0.008,
+        "sectors": {
+          "agropecuaria": 0.08,
+          "extrativa": 0.01,
+          "industria": 0.15,
+          "servicos": 0.76
+        },
+        "unemployment": 0.085,
+        "poverty": 0.46,
+        "governor": {
+          "bloc": "centro",
+          "relation": 10
+        }
+      },
+      {
+        "id": "SE",
+        "name": "Sergipe",
+        "region": "nordeste",
+        "population": 2210,
+        "gdpShare": 0.006,
+        "sectors": {
+          "agropecuaria": 0.05,
+          "extrativa": 0.04,
+          "industria": 0.18,
+          "servicos": 0.73
+        },
+        "unemployment": 0.09,
+        "poverty": 0.42,
+        "governor": {
+          "bloc": "centro_esquerda",
+          "relation": 5
+        }
+      },
+      {
+        "id": "BA",
+        "name": "Bahia",
+        "region": "nordeste",
+        "population": 14141,
+        "gdpShare": 0.039,
+        "sectors": {
+          "agropecuaria": 0.09,
+          "extrativa": 0.02,
+          "industria": 0.22,
+          "servicos": 0.67
+        },
+        "unemployment": 0.1,
+        "poverty": 0.43,
+        "governor": {
+          "bloc": "esquerda",
+          "relation": 20
+        }
+      },
+      {
+        "id": "MG",
+        "name": "Minas Gerais",
+        "region": "sudeste",
+        "population": 20539,
+        "gdpShare": 0.094,
+        "sectors": {
+          "agropecuaria": 0.08,
+          "extrativa": 0.09,
+          "industria": 0.22,
+          "servicos": 0.61
+        },
+        "unemployment": 0.05,
+        "poverty": 0.2,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": -15
+        }
+      },
+      {
+        "id": "ES",
+        "name": "Espírito Santo",
+        "region": "sudeste",
+        "population": 3834,
+        "gdpShare": 0.021,
+        "sectors": {
+          "agropecuaria": 0.05,
+          "extrativa": 0.12,
+          "industria": 0.2,
+          "servicos": 0.63
+        },
+        "unemployment": 0.04,
+        "poverty": 0.21,
+        "governor": {
+          "bloc": "centro",
+          "relation": 5
+        }
+      },
+      {
+        "id": "RJ",
+        "name": "Rio de Janeiro",
+        "region": "sudeste",
+        "population": 16055,
+        "gdpShare": 0.107,
+        "sectors": {
+          "agropecuaria": 0.01,
+          "extrativa": 0.16,
+          "industria": 0.14,
+          "servicos": 0.69
+        },
+        "unemployment": 0.08,
+        "poverty": 0.22,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": -5
+        }
+      },
+      {
+        "id": "SP",
+        "name": "São Paulo",
+        "region": "sudeste",
+        "population": 44412,
+        "gdpShare": 0.304,
+        "sectors": {
+          "agropecuaria": 0.02,
+          "extrativa": 0,
+          "industria": 0.22,
+          "servicos": 0.76
+        },
+        "unemployment": 0.055,
+        "poverty": 0.16,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": -20
+        }
+      },
+      {
+        "id": "PR",
+        "name": "Paraná",
+        "region": "sul",
+        "population": 11444,
+        "gdpShare": 0.065,
+        "sectors": {
+          "agropecuaria": 0.11,
+          "extrativa": 0,
+          "industria": 0.24,
+          "servicos": 0.65
+        },
+        "unemployment": 0.04,
+        "poverty": 0.15,
+        "governor": {
+          "bloc": "direita",
+          "relation": -20
+        }
+      },
+      {
+        "id": "SC",
+        "name": "Santa Catarina",
+        "region": "sul",
+        "population": 7610,
+        "gdpShare": 0.048,
+        "sectors": {
+          "agropecuaria": 0.07,
+          "extrativa": 0,
+          "industria": 0.28,
+          "servicos": 0.65
+        },
+        "unemployment": 0.03,
+        "poverty": 0.1,
+        "governor": {
+          "bloc": "direita",
+          "relation": -25
+        }
+      },
+      {
+        "id": "RS",
+        "name": "Rio Grande do Sul",
+        "region": "sul",
+        "population": 10883,
+        "gdpShare": 0.063,
+        "sectors": {
+          "agropecuaria": 0.1,
+          "extrativa": 0,
+          "industria": 0.22,
+          "servicos": 0.68
+        },
+        "unemployment": 0.05,
+        "poverty": 0.15,
+        "governor": {
+          "bloc": "centro",
+          "relation": -5
+        }
+      },
+      {
+        "id": "MS",
+        "name": "Mato Grosso do Sul",
+        "region": "centro_oeste",
+        "population": 2757,
+        "gdpShare": 0.016,
+        "sectors": {
+          "agropecuaria": 0.22,
+          "extrativa": 0.01,
+          "industria": 0.18,
+          "servicos": 0.59
+        },
+        "unemployment": 0.035,
+        "poverty": 0.18,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": -10
+        }
+      },
+      {
+        "id": "MT",
+        "name": "Mato Grosso",
+        "region": "centro_oeste",
+        "population": 3659,
+        "gdpShare": 0.025,
+        "sectors": {
+          "agropecuaria": 0.3,
+          "extrativa": 0.01,
+          "industria": 0.12,
+          "servicos": 0.57
+        },
+        "unemployment": 0.028,
+        "poverty": 0.18,
+        "governor": {
+          "bloc": "centro_direita",
+          "relation": -10
+        }
+      },
+      {
+        "id": "GO",
+        "name": "Goiás",
+        "region": "centro_oeste",
+        "population": 7056,
+        "gdpShare": 0.03,
+        "sectors": {
+          "agropecuaria": 0.12,
+          "extrativa": 0.01,
+          "industria": 0.2,
+          "servicos": 0.67
+        },
+        "unemployment": 0.05,
+        "poverty": 0.2,
+        "governor": {
+          "bloc": "centro",
+          "relation": -5
+        }
+      },
+      {
+        "id": "DF",
+        "name": "Distrito Federal",
+        "region": "centro_oeste",
+        "population": 2817,
+        "gdpShare": 0.032,
+        "sectors": {
+          "agropecuaria": 0,
+          "extrativa": 0,
+          "industria": 0.05,
+          "servicos": 0.95
+        },
+        "unemployment": 0.085,
+        "poverty": 0.15,
+        "governor": {
+          "bloc": "centro_esquerda",
+          "relation": 0
+        }
+      }
+    ]
+  },
+  "copomMonths": [1, 3, 5, 6, 7, 9, 11, 12],
+  "policies": [
+    "infraestrutura_credito_adicional",
+    "iof_credito_reducao",
+    "irpf_tabela",
+    "contingenciamento",
+    "transferencia_renda_ampliacao",
+    "seguranca_cooperacao",
+    "gastos_tributarios_revisao",
+    "reforma_administrativa",
+    "salario_minimo_valorizacao",
+    "reforma_previdencia",
+    "rotina_execucao_orcamentaria",
+    "rotina_compras_publicas",
+    "rotina_servicos_digitais",
+    "rotina_avaliacao_contratos",
+    "rotina_atendimento_previdenciario",
+    "rotina_pericia_previdenciaria",
+    "rotina_busca_ativa_social",
+    "rotina_qualificacao_cadastros",
+    "rotina_manutencao_rodovias",
+    "rotina_seguranca_viaria",
+    "rotina_atencao_basica",
+    "rotina_vigilancia_epidemiologica",
+    "rotina_alfabetizacao",
+    "rotina_formacao_docente",
+    "rotina_integracao_criminal",
+    "rotina_prevencao_violencia",
+    "rotina_regularizacao_urbanistica",
+    "rotina_eficiencia_saneamento",
+    "rotina_assistencia_tecnica_rural",
+    "rotina_defesa_agropecuaria",
+    "rotina_eficiencia_energetica",
+    "rotina_monitoramento_mineral",
+    "projeto_hospitais_regionais",
+    "projeto_escolas_tempo_integral",
+    "projeto_saneamento_resiliente",
+    "projeto_corredores_logisticos",
+    "projeto_transmissao_energia",
+    "projeto_habitacao_interesse_social",
+    "projeto_conectividade_publica",
+    "projeto_armazenagem_agropecuaria",
+    "projeto_mobilidade_urbana",
+    "projeto_requalificacao_portuaria"
+  ],
+  "characters": [
+    {
+      "id": "min_fazenda",
+      "name": "Teodoro Vilar",
+      "role": "Ministro da Fazenda",
+      "description": "Economista de carreira que defende a previsibilidade das contas públicas e o cumprimento da meta fiscal. Negocia com o Congresso em nome da responsabilidade orçamentária.",
+      "initialStanding": 40,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "pres_camara",
+      "name": "Anselmo Rocha",
+      "role": "Presidente da Câmara dos Deputados",
+      "description": "Parlamentar experiente que comanda a pauta da Casa e equilibra os interesses dos blocos. Costuma ser cauteloso com votações de impacto fiscal.",
+      "blocId": "centro",
+      "initialStanding": 10,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "pres_senado",
+      "name": "Odete Brandão",
+      "role": "Presidente do Senado Federal",
+      "description": "Senadora de longa trajetória que conduz as sessões e a tramitação das propostas na Casa. Prioriza acordos entre as bancadas antes de levar temas ao plenário.",
+      "blocId": "centro",
+      "initialStanding": 15,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "lider_oposicao",
+      "name": "Cleusa Marante",
+      "role": "Líder da oposição na Câmara dos Deputados",
+      "description": "Deputada que faz oposição firme ao governo e cobra transparência nos gastos. Usa a tribuna e as comissões para pressionar a Presidência.",
+      "blocId": "direita",
+      "initialStanding": -40,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "presidente_bc",
+      "name": "Rui Coutinho",
+      "role": "Presidente do Banco Central",
+      "description": "Dirigente técnico que preza pela autonomia da instituição e pelo cumprimento da meta de inflação. Suas decisões sobre a taxa de juros repercutem em todo o mercado.",
+      "initialStanding": 20,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "ministro_stf",
+      "name": "Álvaro Peixoto",
+      "role": "Ministro do Supremo Tribunal Federal",
+      "description": "Magistrado frequentemente acionado em disputas sobre competências entre os Poderes e entre a União e os estados. Seus votos são acompanhados de perto pelo governo e pelo Congresso.",
+      "initialStanding": 0,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "governador_nordeste",
+      "name": "Jair Amorim",
+      "role": "Governador de um estado do Nordeste",
+      "description": "Governador fictício que defende mais transferências federais e programas de combate à pobreza. Mantém boa relação com as bancadas de esquerda.",
+      "blocId": "esquerda",
+      "initialStanding": 30,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "governador_sudeste",
+      "name": "Lúcia Fontenelle",
+      "role": "Governadora de um estado do Sudeste",
+      "description": "Governadora fictícia que cobra responsabilidade na partilha de receitas e mais autonomia para os estados. Negocia com o governo caso a caso.",
+      "blocId": "centro_direita",
+      "initialStanding": -10,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "jornalista",
+      "name": "Beatriz Camargo",
+      "role": "Colunista de política",
+      "description": "Comentarista fictícia que acompanha o Congresso e o Palácio em coluna semanal. Sua repercussão pode ampliar ou desgastar os temas em debate.",
+      "initialStanding": 0,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "empresario_agro",
+      "name": "Hélio Prado",
+      "role": "Presidente de uma confederação do agronegócio",
+      "description": "Dirigente fictício de entidade do setor agropecuário que pede estabilidade regulatória, crédito e infraestrutura logística. Mantém uma pauta forte no Congresso.",
+      "blocId": "centro_direita",
+      "initialStanding": -5,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "lider_sindical",
+      "name": "Marlene Duarte",
+      "role": "Dirigente de uma central sindical",
+      "description": "Dirigente fictícia que defende a valorização do salário mínimo e a preservação de direitos trabalhistas e previdenciários. Mobiliza categorias em momentos de negociação.",
+      "blocId": "esquerda",
+      "initialStanding": 25,
+      "dataStatus": "FICTICIO"
+    },
+    {
+      "id": "vice_presidente",
+      "name": "Nelson Arantes",
+      "role": "Vice-presidente da República",
+      "description": "Vice-presidente fictício e aliado de primeira hora do governo, com trânsito entre os blocos de centro. Pode ser chamado a representar o Planalto em negociações difíceis.",
+      "blocId": "centro",
+      "initialStanding": 35,
+      "dataStatus": "FICTICIO"
+    }
+  ],
+  "elections": {
+    "reeleicaoPermitida": true,
+    "mesEleicaoMunicipal": 21,
+    "mesEleicaoGeral": 45,
+    "janelaDeclaracao": {
+      "inicio": 39,
+      "fim": 44
+    },
+    "candidatos": [
+      {
+        "blocId": "esquerda",
+        "name": "Sônia Bittencourt"
+      },
+      {
+        "blocId": "centro_esquerda",
+        "name": "Caetano Ribeiro"
+      },
+      {
+        "blocId": "centro",
+        "name": "Alice Torquato"
+      },
+      {
+        "blocId": "centro_direita",
+        "name": "Édson Vilela"
+      },
+      {
+        "blocId": "direita",
+        "name": "Wagner Castilho"
+      }
+    ]
+  }
+}

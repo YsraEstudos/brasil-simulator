@@ -32,6 +32,10 @@ export const APPOINT_ACTION_ID = 'nomear_ministro';
 export const SANCTION_ACTION_ID = 'sancao';
 /** Visita presidencial a uma UF (POLITICAL_RULES.md §2.1). Params: `uf` (sigla). */
 export const VISIT_ACTION_ID = 'visitar_estado';
+/** Declaração de candidatura à reeleição (Fase 08), na janela do calendário eleitoral. Sem params. */
+export const DECLARE_CANDIDACY_ACTION_ID = 'declarar_reeleicao';
+/** Apoio do governo a um bloco na sucessão (Fase 08). Params: `blocId`. */
+export const SUPPORT_CANDIDATE_ACTION_ID = 'apoiar_candidato';
 /** Diretriz e dotação anual de rotina: ministryId, policyId, annualMillions. */
 export const DIRECTIVE_ACTION_ID = 'definir_diretriz';
 /** Marca de governo por proposta: proposalId, name. */
@@ -133,6 +137,26 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
       'meses e a relação com o governador melhora; não muda a aprovação nacional.',
     agendaCost: 1,
     targetParams: ['uf'],
+    listed: false,
+  },
+  [DECLARE_CANDIDACY_ACTION_ID]: {
+    id: DECLARE_CANDIDACY_ACTION_ID,
+    name: 'Declarar candidatura à reeleição',
+    summary:
+      'Assume a candidatura à reeleição dentro da janela do calendário eleitoral (uma reeleição, no 1º ' +
+      'mandato): a intenção de voto sobe no mês da declaração.',
+    agendaCost: 0,
+    targetParams: [],
+    listed: true,
+  },
+  [SUPPORT_CANDIDATE_ACTION_ID]: {
+    id: SUPPORT_CANDIDATE_ACTION_ID,
+    name: 'Apoiar candidato à sucessão',
+    summary:
+      'Declara apoio a um bloco na sucessão, dentro da janela eleitoral e uma vez por campanha: a relação com o ' +
+      'bloco sobe e o candidato herdeiro disputa com a intenção de voto do governo.',
+    agendaCost: 1,
+    targetParams: [],
     listed: false,
   },
 };

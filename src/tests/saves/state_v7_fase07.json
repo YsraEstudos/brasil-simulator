@@ -1,0 +1,1619 @@
+{
+  "schemaVersion": 7,
+  "engineVersion": "0.7.0",
+  "scenarioId": "brasil_2027_01_v060",
+  "difficulty": "estrategica",
+  "seed": 4,
+  "rng": [1533052842, 3900800548, 3712504906, 970577347],
+  "monthIndex": 7,
+  "indicators": {
+    "approval": 0.436021045553942,
+    "gdpGrowth12m": 0.015052901478567396,
+    "inflation12m": 0.04135499579964336,
+    "unemployment": 0.062326236627632634,
+    "primaryBalance12m": -0.00361676494603382
+  },
+  "resources": {
+    "politicalCapital": 61.048967289985534,
+    "agendaPointsPerMonth": 3
+  },
+  "economy": {
+    "outputGap": -0.00009064584237168823,
+    "potentialGrowth": 0.02,
+    "potentialIndex": 1.011618509187693,
+    "priceLevel": 1.0234325799927932,
+    "selic": 0.0975,
+    "effectiveRealRate": 0.07741737324888992,
+    "inflationExpectation": 0.03366013254660773,
+    "credibility": 0.6604956017839447,
+    "riskPremium": 0.03309453812605801,
+    "exchangeRate": 5.769104070045862,
+    "depreciation12m": 0.07049323026893224,
+    "externalRate": 0.04333653760009544,
+    "termsOfTrade": 0.020145963118681977,
+    "grossDebt": 0.8371656649211945,
+    "implicitRate": 0.11817965260917913,
+    "revenue": 0.18711767300699336,
+    "primarySpending": 0.19021164930462123,
+    "monthlyPrimary": -0.003093976297627865,
+    "interest": 0.09829722047190761,
+    "debtAdjustment": -0.0030445544127010926,
+    "fiscal": {
+      "mandatory": {
+        "previdencia": 0.08333738043901098,
+        "beneficios": 0.019209009948329702,
+        "pessoal": 0.0305451113432197,
+        "outras": 0.0099
+      },
+      "linked": 0.026918918460832882,
+      "policyMandatory": 0,
+      "discretionary": 0.013701229113227954,
+      "policyDiscretionary": 0.0016,
+      "exceptions": 0.005,
+      "extraordinary": 0,
+      "spendingLimit": 0.18521164930462122,
+      "limitRealGrowth": 0.012599999999999998,
+      "limitExcess": 0,
+      "revenueByGroup": {
+        "renda": 0.04709190336087002,
+        "folha": 0.052783322480507336,
+        "consumo": 0.04589854128739769,
+        "outras": 0.03442390596554826,
+        "royalties": 0.006919999912670063
+      },
+      "revenueLoss": 0,
+      "revenue12m": 0.1871598597191932,
+      "revenue12mAtReview": 0.187,
+      "gdpGrowthHistory": [0.023, 0.018],
+      "minimumWageIndex": 1,
+      "demandRef": -0.00003450425194082574
+    },
+    "bcPressure": {
+      "months": [],
+      "pendingCut": 0
+    }
+  },
+  "congress": {
+    "blocs": [
+      {
+        "id": "esquerda",
+        "governmentRelation": -13
+      },
+      {
+        "id": "centro_esquerda",
+        "governmentRelation": 5
+      },
+      {
+        "id": "centro",
+        "governmentRelation": 49.5
+      },
+      {
+        "id": "centro_direita",
+        "governmentRelation": 21.5
+      },
+      {
+        "id": "direita",
+        "governmentRelation": -1
+      }
+    ],
+    "cabinet": [
+      {
+        "id": "transportes",
+        "occupant": "centro",
+        "since": 0
+      },
+      {
+        "id": "cidades",
+        "occupant": "centro",
+        "since": 1
+      },
+      {
+        "id": "agricultura",
+        "occupant": "centro_direita",
+        "since": 2
+      },
+      {
+        "id": "minas_energia",
+        "occupant": "centro_direita",
+        "since": 3
+      },
+      {
+        "id": "saude",
+        "occupant": "centro",
+        "since": 4
+      }
+    ]
+  },
+  "proposals": [
+    {
+      "id": "reforma_previdencia_0",
+      "policyId": "reforma_previdencia",
+      "createdMonth": 0,
+      "status": "em_tramitacao",
+      "scale": 1,
+      "voteMonth": 8,
+      "stage": 2,
+      "rapporteur": "centro",
+      "textAltered": false,
+      "postponements": 0,
+      "negotiation": {
+        "blocs": {},
+        "amendments": true,
+        "textConceded": false,
+        "urgency": false
+      },
+      "rider": 0,
+      "veto": null,
+      "judicial": null,
+      "executionStart": null,
+      "executionEnd": null,
+      "adherents": null,
+      "votes": [
+        {
+          "monthIndex": 4,
+          "house": "camara",
+          "round": 1,
+          "yes": 392,
+          "no": 121,
+          "required": 308,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": -0.11478032671363018,
+              "yes": 1,
+              "no": 109
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.20299445880129072,
+              "yes": 60,
+              "no": 10
+            },
+            {
+              "blocId": "centro",
+              "support": 1.0556514220751736,
+              "yes": 150,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 1.0001769810721193,
+              "yes": 98,
+              "no": 0
+            },
+            {
+              "blocId": "direita",
+              "support": 0.45620577791257827,
+              "yes": 83,
+              "no": 2
+            }
+          ]
+        },
+        {
+          "monthIndex": 4,
+          "house": "camara",
+          "round": 2,
+          "yes": 395,
+          "no": 118,
+          "required": 308,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": -0.060920403771856056,
+              "yes": 2,
+              "no": 108
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.2678721991322848,
+              "yes": 62,
+              "no": 8
+            },
+            {
+              "blocId": "centro",
+              "support": 1.027482742711148,
+              "yes": 150,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 1.0023419216826472,
+              "yes": 98,
+              "no": 0
+            },
+            {
+              "blocId": "direita",
+              "support": 0.43265228936000794,
+              "yes": 83,
+              "no": 2
+            }
+          ]
+        }
+      ],
+      "history": [
+        {
+          "monthIndex": 0,
+          "status": "em_tramitacao",
+          "cause": "enviada",
+          "detail": "Enviada ao Congresso. Votação prevista na Câmara em 2027-05; relator do bloco Centro."
+        },
+        {
+          "monthIndex": 3,
+          "status": "em_tramitacao",
+          "cause": "emendas_liberadas",
+          "detail": "Emendas parlamentares liberadas para a votação."
+        },
+        {
+          "monthIndex": 4,
+          "status": "em_tramitacao",
+          "cause": "votacao",
+          "detail": "Aprovada: Câmara (1º turno) 392/121, Câmara (2º turno) 395/118. Votação prevista no Senado em 2027-09; relator do bloco Centro."
+        }
+      ]
+    },
+    {
+      "id": "reforma_administrativa_1",
+      "policyId": "reforma_administrativa",
+      "createdMonth": 1,
+      "status": "em_tramitacao",
+      "scale": 1,
+      "voteMonth": 9,
+      "stage": 0,
+      "rapporteur": "centro",
+      "textAltered": false,
+      "postponements": 0,
+      "negotiation": {
+        "blocs": {},
+        "amendments": false,
+        "textConceded": false,
+        "urgency": false
+      },
+      "rider": 0,
+      "veto": null,
+      "judicial": null,
+      "executionStart": null,
+      "executionEnd": null,
+      "adherents": null,
+      "votes": [],
+      "history": [
+        {
+          "monthIndex": 1,
+          "status": "parada",
+          "cause": "capacidade_pauta",
+          "detail": "Enviada ao Congresso. Pauta da Câmara cheia: aguarda vaga."
+        },
+        {
+          "monthIndex": 5,
+          "status": "em_tramitacao",
+          "cause": "pauta_liberada",
+          "detail": "Vaga na pauta. Votação prevista na Câmara em 2027-10; relator do bloco Centro."
+        }
+      ]
+    },
+    {
+      "id": "gastos_tributarios_revisao_2",
+      "policyId": "gastos_tributarios_revisao",
+      "createdMonth": 2,
+      "status": "aguardando_sancao",
+      "scale": 1,
+      "voteMonth": 7,
+      "stage": 2,
+      "rapporteur": null,
+      "textAltered": false,
+      "postponements": 0,
+      "negotiation": {
+        "blocs": {},
+        "amendments": true,
+        "textConceded": false,
+        "urgency": false
+      },
+      "rider": 0,
+      "veto": null,
+      "judicial": null,
+      "executionStart": null,
+      "executionEnd": null,
+      "adherents": null,
+      "votes": [
+        {
+          "monthIndex": 4,
+          "house": "camara",
+          "round": 1,
+          "yes": 494,
+          "no": 19,
+          "required": 257,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": 0.20523871312587594,
+              "yes": 102,
+              "no": 8
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.31460226448549955,
+              "yes": 64,
+              "no": 6
+            },
+            {
+              "blocId": "centro",
+              "support": 1.2455354817353101,
+              "yes": 150,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 0.7853241838022981,
+              "yes": 98,
+              "no": 0
+            },
+            {
+              "blocId": "direita",
+              "support": 0.30663305457978585,
+              "yes": 80,
+              "no": 5
+            }
+          ]
+        },
+        {
+          "monthIndex": 6,
+          "house": "senado",
+          "round": 1,
+          "yes": 66,
+          "no": 15,
+          "required": 41,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": 0.06149014468870888,
+              "yes": 1,
+              "no": 13
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.39917495096854694,
+              "yes": 9,
+              "no": 1
+            },
+            {
+              "blocId": "centro",
+              "support": 1.2507757645473612,
+              "yes": 24,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 0.7582436607145502,
+              "yes": 18,
+              "no": 0
+            },
+            {
+              "blocId": "direita",
+              "support": 0.22192212891958488,
+              "yes": 14,
+              "no": 1
+            }
+          ]
+        }
+      ],
+      "history": [
+        {
+          "monthIndex": 2,
+          "status": "em_tramitacao",
+          "cause": "enviada",
+          "detail": "Enviada ao Congresso. Votação prevista na Câmara em 2027-05; relator do bloco Centro-Direita."
+        },
+        {
+          "monthIndex": 3,
+          "status": "em_tramitacao",
+          "cause": "emendas_liberadas",
+          "detail": "Emendas parlamentares liberadas para a votação."
+        },
+        {
+          "monthIndex": 4,
+          "status": "em_tramitacao",
+          "cause": "votacao",
+          "detail": "Aprovada: Câmara 494/19. Votação prevista no Senado em 2027-07; relator do bloco Centro."
+        },
+        {
+          "monthIndex": 6,
+          "status": "aprovada",
+          "cause": "votacao",
+          "detail": "Aprovada: Senado 66/15."
+        },
+        {
+          "monthIndex": 6,
+          "status": "aguardando_sancao",
+          "cause": "enviada_a_sancao",
+          "detail": "Enviada à sanção: decida em 2027-08 (sem resposta, sanção tácita)."
+        }
+      ]
+    },
+    {
+      "id": "infraestrutura_credito_adicional_2",
+      "policyId": "infraestrutura_credito_adicional",
+      "createdMonth": 2,
+      "status": "em_execucao",
+      "scale": 1,
+      "voteMonth": null,
+      "stage": 2,
+      "rapporteur": null,
+      "textAltered": false,
+      "postponements": 0,
+      "negotiation": {
+        "blocs": {},
+        "amendments": false,
+        "textConceded": false,
+        "urgency": false
+      },
+      "rider": 0,
+      "veto": null,
+      "judicial": null,
+      "executionStart": 7,
+      "executionEnd": 36,
+      "adherents": null,
+      "votes": [
+        {
+          "monthIndex": 5,
+          "house": "camara",
+          "round": 1,
+          "yes": 425,
+          "no": 88,
+          "required": 257,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": 0.37447720689318054,
+              "yes": 107,
+              "no": 3
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.4120857830270277,
+              "yes": 67,
+              "no": 3
+            },
+            {
+              "blocId": "centro",
+              "support": 1.148724237777208,
+              "yes": 150,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 0.5631254726423965,
+              "yes": 96,
+              "no": 2
+            },
+            {
+              "blocId": "direita",
+              "support": 0.10384447065359823,
+              "yes": 5,
+              "no": 80
+            }
+          ]
+        },
+        {
+          "monthIndex": 5,
+          "house": "senado",
+          "round": 1,
+          "yes": 51,
+          "no": 30,
+          "required": 41,
+          "approved": true,
+          "blocs": [
+            {
+              "blocId": "esquerda",
+              "support": 0.17656541773668397,
+              "yes": 1,
+              "no": 13
+            },
+            {
+              "blocId": "centro_esquerda",
+              "support": 0.35683761063209635,
+              "yes": 9,
+              "no": 1
+            },
+            {
+              "blocId": "centro",
+              "support": 0.9848513389601457,
+              "yes": 24,
+              "no": 0
+            },
+            {
+              "blocId": "centro_direita",
+              "support": 0.4590330179928885,
+              "yes": 17,
+              "no": 1
+            },
+            {
+              "blocId": "direita",
+              "support": -0.05316868723192341,
+              "yes": 0,
+              "no": 15
+            }
+          ]
+        }
+      ],
+      "history": [
+        {
+          "monthIndex": 2,
+          "status": "em_tramitacao",
+          "cause": "enviada",
+          "detail": "Enviada ao Congresso. Votação prevista em sessão conjunta em 2027-06; relator do bloco Esquerda."
+        },
+        {
+          "monthIndex": 5,
+          "status": "aprovada",
+          "cause": "votacao",
+          "detail": "Aprovada: Câmara 425/88, Senado 51/30."
+        },
+        {
+          "monthIndex": 5,
+          "status": "aguardando_sancao",
+          "cause": "enviada_a_sancao",
+          "detail": "Enviada à sanção: decida em 2027-07 (sem resposta, sanção tácita)."
+        },
+        {
+          "monthIndex": 6,
+          "status": "em_execucao",
+          "cause": "sancao_tacita",
+          "detail": "Sanção tácita."
+        }
+      ]
+    }
+  ],
+  "impulses": [
+    {
+      "sourceId": "evento:alta_petroleo_2",
+      "label": "Alta internacional do petróleo",
+      "target": "choque.inflacao",
+      "delta": 0.006,
+      "startMonth": 2,
+      "endMonth": 7
+    },
+    {
+      "sourceId": "emendas:reforma_previdencia_0",
+      "label": "Emendas liberadas: Reforma da previdência (parâmetros)",
+      "target": "gasto.custeio",
+      "delta": 0.0008,
+      "startMonth": 3,
+      "endMonth": 8
+    },
+    {
+      "sourceId": "emendas:gastos_tributarios_revisao_2",
+      "label": "Emendas liberadas: Revisão de gastos tributários",
+      "target": "gasto.custeio",
+      "delta": 0.0008,
+      "startMonth": 3,
+      "endMonth": 8
+    },
+    {
+      "sourceId": "evento:fase07_pol_seguranca_regiao_5",
+      "label": "Crise de segurança",
+      "target": "regiao.aprovacao",
+      "delta": -0.015,
+      "startMonth": 5,
+      "endMonth": 8,
+      "regional": {
+        "key": "populacao",
+        "scope": ["norte"]
+      }
+    },
+    {
+      "sourceId": "evento:fase07_pol_seguranca_regiao_5",
+      "label": "Crise de segurança",
+      "target": "regiao.atividade",
+      "delta": -0.004,
+      "startMonth": 5,
+      "endMonth": 7,
+      "regional": {
+        "key": "populacao",
+        "scope": ["norte"]
+      }
+    },
+    {
+      "sourceId": "evento:fase07_pol_seguranca_regiao_5",
+      "label": "Crise de segurança pública no Norte",
+      "target": "regiao.aprovacao",
+      "delta": -0.012,
+      "startMonth": 5,
+      "endMonth": 8,
+      "regional": {
+        "key": "populacao",
+        "scope": ["norte"]
+      }
+    },
+    {
+      "sourceId": "evento:fase07_eco_fuga_capitais_ruido_fiscal_6",
+      "label": "Fuga de capitais",
+      "target": "choque.risco",
+      "delta": 0.006,
+      "startMonth": 6,
+      "endMonth": 9
+    },
+    {
+      "sourceId": "evento:fase07_eco_fuga_capitais_ruido_fiscal_6",
+      "label": "Fuga de capitais",
+      "target": "choque.cambio",
+      "delta": 0.02,
+      "startMonth": 6,
+      "endMonth": 7
+    },
+    {
+      "sourceId": "evento:fase07_eco_fuga_capitais_ruido_fiscal_6",
+      "label": "Investidores saem por ruído fiscal",
+      "target": "choque.risco",
+      "delta": 0.003,
+      "startMonth": 6,
+      "endMonth": 8
+    },
+    {
+      "sourceId": "proposta:infraestrutura_credito_adicional_2",
+      "label": "Crédito adicional para infraestrutura",
+      "target": "gasto.investimento",
+      "regional": {
+        "key": "populacao",
+        "scope": []
+      },
+      "delta": 0.00035852406924674173,
+      "startMonth": 10,
+      "endMonth": 39
+    },
+    {
+      "sourceId": "proposta:infraestrutura_credito_adicional_2",
+      "label": "Crédito adicional para infraestrutura",
+      "target": "oferta.potencial",
+      "regional": {
+        "key": "populacao",
+        "scope": []
+      },
+      "delta": 0.0006000000000000001,
+      "startMonth": 31,
+      "endMonth": null
+    },
+    {
+      "sourceId": "proposta:infraestrutura_credito_adicional_2",
+      "label": "Crédito adicional para infraestrutura",
+      "target": "aprovacao",
+      "delta": 0.00375,
+      "startMonth": 13,
+      "endMonth": 13
+    },
+    {
+      "sourceId": "evento:fase07_eco_pressao_meta_fiscal_7",
+      "label": "Dívida em alta",
+      "target": "credibilidade",
+      "delta": -0.01,
+      "startMonth": 7,
+      "endMonth": 7
+    },
+    {
+      "sourceId": "evento:fase07_eco_pressao_meta_fiscal_7",
+      "label": "Pressão por meta mais dura",
+      "target": "choque.risco",
+      "delta": 0.002,
+      "startMonth": 7,
+      "endMonth": 9
+    },
+    {
+      "sourceId": "evento:fase07_eco_queda_abrupta_cambio_7",
+      "label": "Dólar em queda abrupta",
+      "target": "choque.cambio",
+      "delta": -0.04,
+      "startMonth": 7,
+      "endMonth": 8
+    },
+    {
+      "sourceId": "evento:fase07_eco_queda_abrupta_cambio_7",
+      "label": "Importados mais baratos",
+      "target": "choque.inflacao",
+      "delta": -0.002,
+      "startMonth": 7,
+      "endMonth": 10
+    }
+  ],
+  "events": {
+    "pending": [
+      {
+        "eventId": "fase07_eco_pressao_meta_fiscal",
+        "monthIndex": 7
+      },
+      {
+        "eventId": "fase07_eco_queda_abrupta_cambio",
+        "monthIndex": 7
+      }
+    ],
+    "lastFired": {
+      "orcamento_transicao": 1,
+      "dados_emprego_surpreendem": 1,
+      "alta_petroleo": 2,
+      "fase07_pol_camara_cargos": 3,
+      "calibragem_cbs": 4,
+      "fase07_pol_seguranca_regiao": 5,
+      "fase07_pol_vice_conspira": 5,
+      "fase07_eco_fuga_capitais_ruido_fiscal": 6,
+      "fase07_eco_pressao_meta_fiscal": 7,
+      "fase07_eco_queda_abrupta_cambio": 7
+    },
+    "count": {
+      "orcamento_transicao": 1,
+      "dados_emprego_surpreendem": 1,
+      "alta_petroleo": 1,
+      "fase07_pol_camara_cargos": 1,
+      "calibragem_cbs": 1,
+      "fase07_pol_seguranca_regiao": 1,
+      "fase07_pol_vice_conspira": 1,
+      "fase07_eco_fuga_capitais_ruido_fiscal": 1,
+      "fase07_eco_pressao_meta_fiscal": 1,
+      "fase07_eco_queda_abrupta_cambio": 1
+    },
+    "flags": {
+      "pol_vice_conspirou": 5,
+      "eco_ruido_fiscal": 6
+    },
+    "scheduled": [],
+    "characters": {
+      "pres_camara": 5,
+      "vice_presidente": 40
+    },
+    "news": [
+      {
+        "id": "0_0",
+        "monthIndex": 0,
+        "kind": "evento",
+        "tone": "neutra",
+        "headline": "Orçamento de transição",
+        "cause": "Causa: calendário do mandato",
+        "sourceId": "orcamento_transicao"
+      },
+      {
+        "id": "0_1",
+        "monthIndex": 0,
+        "kind": "evento",
+        "tone": "neutra",
+        "headline": "Dados de emprego surpreendem",
+        "cause": "Causa: Hiato do produto acima de 0,00",
+        "sourceId": "dados_emprego_surpreendem"
+      },
+      {
+        "id": "0_2",
+        "monthIndex": 0,
+        "kind": "congresso",
+        "tone": "neutra",
+        "headline": "Em tramitação: Reforma da previdência (parâmetros)",
+        "cause": "Causa: Enviada ao Congresso. Votação prevista na Câmara em 2027-05; relator do bloco Centro",
+        "sourceId": "reforma_previdencia"
+      },
+      {
+        "id": "0_3",
+        "monthIndex": 0,
+        "kind": "economia",
+        "tone": "positiva",
+        "headline": "Copom corta a Selic para 12,00%",
+        "cause": "Causa: o Copom cortou a Selic (de 13,00% para 12,00%)"
+      },
+      {
+        "id": "1_0",
+        "monthIndex": 1,
+        "kind": "evento",
+        "tone": "neutra",
+        "headline": "Alta internacional do petróleo",
+        "cause": "Causa: acontecimento do mês",
+        "sourceId": "alta_petroleo"
+      },
+      {
+        "id": "1_1",
+        "monthIndex": 1,
+        "kind": "congresso",
+        "tone": "negativa",
+        "headline": "Tramitação parada: Reforma administrativa",
+        "cause": "Causa: Enviada ao Congresso. Pauta da Câmara cheia: aguarda vaga",
+        "sourceId": "reforma_administrativa"
+      },
+      {
+        "id": "2_0",
+        "monthIndex": 2,
+        "kind": "evento",
+        "tone": "neutra",
+        "headline": "Presidente da Câmara cobra cargos e emendas",
+        "cause": "Causa: Propostas em tramitação acima de 1",
+        "sourceId": "fase07_pol_camara_cargos",
+        "characterId": "pres_camara"
+      },
+      {
+        "id": "2_1",
+        "monthIndex": 2,
+        "kind": "personagem",
+        "tone": "neutra",
+        "headline": "Anselmo Rocha (Presidente da Câmara dos Deputados): Presidente da Câmara cobra cargos e emendas",
+        "cause": "Causa: Propostas em tramitação acima de 1",
+        "sourceId": "fase07_pol_camara_cargos",
+        "characterId": "pres_camara"
+      },
+      {
+        "id": "2_2",
+        "monthIndex": 2,
+        "kind": "congresso",
+        "tone": "neutra",
+        "headline": "Em tramitação: Revisão de gastos tributários",
+        "cause": "Causa: Enviada ao Congresso. Votação prevista na Câmara em 2027-05; relator do bloco Centro-Direita",
+        "sourceId": "gastos_tributarios_revisao"
+      },
+      {
+        "id": "2_3",
+        "monthIndex": 2,
+        "kind": "congresso",
+        "tone": "neutra",
+        "headline": "Em tramitação: Crédito adicional para infraestrutura",
+        "cause": "Causa: Enviada ao Congresso. Votação prevista em sessão conjunta em 2027-06; relator do bloco Esquerda",
+        "sourceId": "infraestrutura_credito_adicional"
+      },
+      {
+        "id": "2_4",
+        "monthIndex": 2,
+        "kind": "economia",
+        "tone": "positiva",
+        "headline": "Copom corta a Selic para 11,00%",
+        "cause": "Causa: o Copom cortou a Selic (de 12,00% para 11,00%)"
+      },
+      {
+        "id": "3_0",
+        "monthIndex": 3,
+        "kind": "evento",
+        "tone": "neutra",
+        "headline": "Calibragem da alíquota da CBS",
+        "cause": "Causa: calendário do mandato",
+        "sourceId": "calibragem_cbs"
+      },
+      {
+        "id": "4_0",
+        "monthIndex": 4,
+        "kind": "evento",
+        "tone": "neutra",
+        "headline": "Crise de segurança pública no Norte",
+        "cause": "Causa: Desemprego acima de 5,0%",
+        "sourceId": "fase07_pol_seguranca_regiao"
+      },
+      {
+        "id": "4_1",
+        "monthIndex": 4,
+        "kind": "evento",
+        "tone": "neutra",
+        "headline": "Vice-presidente articula com a oposição",
+        "cause": "Causa: Aprovação do governo abaixo de 46,0%",
+        "sourceId": "fase07_pol_vice_conspira",
+        "characterId": "vice_presidente"
+      },
+      {
+        "id": "4_2",
+        "monthIndex": 4,
+        "kind": "personagem",
+        "tone": "neutra",
+        "headline": "Nelson Arantes (Vice-presidente da República): Vice-presidente articula com a oposição",
+        "cause": "Causa: Aprovação do governo abaixo de 46,0%",
+        "sourceId": "fase07_pol_vice_conspira",
+        "characterId": "vice_presidente"
+      },
+      {
+        "id": "4_3",
+        "monthIndex": 4,
+        "kind": "congresso",
+        "tone": "neutra",
+        "headline": "Avança no Congresso: Reforma da previdência (parâmetros)",
+        "cause": "Causa: Aprovada: Câmara (1º turno) 392/121, Câmara (2º turno) 395/118. Votação prevista no Senado em 2027-09; relator do bloco Centro",
+        "sourceId": "reforma_previdencia"
+      },
+      {
+        "id": "4_4",
+        "monthIndex": 4,
+        "kind": "congresso",
+        "tone": "neutra",
+        "headline": "Avança no Congresso: Revisão de gastos tributários",
+        "cause": "Causa: Aprovada: Câmara 494/19. Votação prevista no Senado em 2027-07; relator do bloco Centro",
+        "sourceId": "gastos_tributarios_revisao"
+      },
+      {
+        "id": "4_5",
+        "monthIndex": 4,
+        "kind": "economia",
+        "tone": "positiva",
+        "headline": "Copom corta a Selic para 10,50%",
+        "cause": "Causa: o Copom cortou a Selic (de 11,00% para 10,50%)"
+      },
+      {
+        "id": "5_0",
+        "monthIndex": 5,
+        "kind": "evento",
+        "tone": "neutra",
+        "headline": "Investidores saem por ruído fiscal",
+        "cause": "Causa: Prêmio de risco acima de 3,0%",
+        "sourceId": "fase07_eco_fuga_capitais_ruido_fiscal"
+      },
+      {
+        "id": "5_1",
+        "monthIndex": 5,
+        "kind": "congresso",
+        "tone": "positiva",
+        "headline": "Congresso aprova: Crédito adicional para infraestrutura",
+        "cause": "Causa: Aprovada: Câmara 425/88, Senado 51/30",
+        "sourceId": "infraestrutura_credito_adicional"
+      },
+      {
+        "id": "5_2",
+        "monthIndex": 5,
+        "kind": "economia",
+        "tone": "positiva",
+        "headline": "Copom corta a Selic para 10,00%",
+        "cause": "Causa: o Copom cortou a Selic (de 10,50% para 10,00%)"
+      },
+      {
+        "id": "5_3",
+        "monthIndex": 5,
+        "kind": "economia",
+        "tone": "negativa",
+        "headline": "Prêmio de risco sobe acima de 3,0%",
+        "cause": "Causa: prêmio de risco passou de 2,98% para 3,01% no mês"
+      },
+      {
+        "id": "6_0",
+        "monthIndex": 6,
+        "kind": "evento",
+        "tone": "neutra",
+        "headline": "Mercado cobra meta fiscal mais dura",
+        "cause": "Causa: Dívida bruta acima de 82%",
+        "sourceId": "fase07_eco_pressao_meta_fiscal",
+        "characterId": "min_fazenda"
+      },
+      {
+        "id": "6_1",
+        "monthIndex": 6,
+        "kind": "evento",
+        "tone": "neutra",
+        "headline": "Dólar cai de forma abrupta",
+        "cause": "Causa: Câmbio (R$/US$) acima de 5,60",
+        "sourceId": "fase07_eco_queda_abrupta_cambio"
+      },
+      {
+        "id": "6_2",
+        "monthIndex": 6,
+        "kind": "personagem",
+        "tone": "neutra",
+        "headline": "Teodoro Vilar (Ministro da Fazenda): Mercado cobra meta fiscal mais dura",
+        "cause": "Causa: Dívida bruta acima de 82%",
+        "sourceId": "fase07_eco_pressao_meta_fiscal",
+        "characterId": "min_fazenda"
+      },
+      {
+        "id": "6_3",
+        "monthIndex": 6,
+        "kind": "congresso",
+        "tone": "positiva",
+        "headline": "Congresso aprova: Revisão de gastos tributários",
+        "cause": "Causa: Aprovada: Senado 66/15",
+        "sourceId": "gastos_tributarios_revisao"
+      },
+      {
+        "id": "6_4",
+        "monthIndex": 6,
+        "kind": "economia",
+        "tone": "positiva",
+        "headline": "Copom corta a Selic para 9,75%",
+        "cause": "Causa: o Copom cortou a Selic (de 10,00% para 9,75%)"
+      },
+      {
+        "id": "6_5",
+        "monthIndex": 6,
+        "kind": "economia",
+        "tone": "positiva",
+        "headline": "Selic cai abaixo de 10,00%",
+        "cause": "Causa: decisão do Copom (de 10,00% para 9,75%)"
+      }
+    ]
+  },
+  "decisionLog": [
+    {
+      "monthIndex": 0,
+      "decision": {
+        "policyId": "nomear_ministro",
+        "agendaCost": 1,
+        "params": {
+          "ministryId": "transportes",
+          "occupant": "centro"
+        }
+      }
+    },
+    {
+      "monthIndex": 0,
+      "decision": {
+        "policyId": "reforma_previdencia",
+        "agendaCost": 2
+      }
+    },
+    {
+      "monthIndex": 1,
+      "decision": {
+        "policyId": "nomear_ministro",
+        "agendaCost": 1,
+        "params": {
+          "ministryId": "cidades",
+          "occupant": "centro"
+        }
+      }
+    },
+    {
+      "monthIndex": 1,
+      "decision": {
+        "policyId": "reforma_administrativa",
+        "agendaCost": 2
+      }
+    },
+    {
+      "monthIndex": 2,
+      "decision": {
+        "policyId": "nomear_ministro",
+        "agendaCost": 1,
+        "params": {
+          "ministryId": "agricultura",
+          "occupant": "centro_direita"
+        }
+      }
+    },
+    {
+      "monthIndex": 2,
+      "decision": {
+        "policyId": "gastos_tributarios_revisao",
+        "agendaCost": 1
+      }
+    },
+    {
+      "monthIndex": 2,
+      "decision": {
+        "policyId": "infraestrutura_credito_adicional",
+        "agendaCost": 1
+      }
+    },
+    {
+      "monthIndex": 3,
+      "decision": {
+        "policyId": "liberar_emendas",
+        "agendaCost": 1,
+        "params": {
+          "proposalId": "reforma_previdencia_0"
+        }
+      }
+    },
+    {
+      "monthIndex": 3,
+      "decision": {
+        "policyId": "liberar_emendas",
+        "agendaCost": 1,
+        "params": {
+          "proposalId": "gastos_tributarios_revisao_2"
+        }
+      }
+    },
+    {
+      "monthIndex": 3,
+      "decision": {
+        "policyId": "nomear_ministro",
+        "agendaCost": 1,
+        "params": {
+          "ministryId": "minas_energia",
+          "occupant": "centro_direita"
+        }
+      }
+    },
+    {
+      "monthIndex": 4,
+      "decision": {
+        "policyId": "nomear_ministro",
+        "agendaCost": 1,
+        "params": {
+          "ministryId": "saude",
+          "occupant": "centro"
+        }
+      }
+    }
+  ],
+  "regions": {
+    "ufs": [
+      {
+        "id": "RO",
+        "share": 0.005988658457266882,
+        "structuralShare": 0.006,
+        "growthGap12m": -0.0007535807745727764,
+        "unemployment": 0.03462736099548275,
+        "approval": 0.406274665940973,
+        "governorRelation": -9.321151492146374
+      },
+      {
+        "id": "AC",
+        "share": 0.0019924171801955614,
+        "structuralShare": 0.002,
+        "growthGap12m": -0.0029364019761516816,
+        "unemployment": 0.07505518323418965,
+        "approval": 0.40945611332159404,
+        "governorRelation": 4.591008436926541
+      },
+      {
+        "id": "AM",
+        "share": 0.013942335199044644,
+        "structuralShare": 0.014,
+        "growthGap12m": -0.004475133896337478,
+        "unemployment": 0.08021696050782777,
+        "approval": 0.41444173684558616,
+        "governorRelation": 18.85628759817475
+      },
+      {
+        "id": "RR",
+        "share": 0.001990815412729203,
+        "structuralShare": 0.002,
+        "growthGap12m": -0.003952229764792039,
+        "unemployment": 0.0653624743029596,
+        "approval": 0.4018034225937999,
+        "governorRelation": -14.380940815486415
+      },
+      {
+        "id": "PA",
+        "share": 0.026137065942575033,
+        "structuralShare": 0.026,
+        "growthGap12m": 0.008375262691809332,
+        "unemployment": 0.07108557314954846,
+        "approval": 0.4255690225681434,
+        "governorRelation": 23.776794555777183
+      },
+      {
+        "id": "AP",
+        "share": 0.0019910154993305726,
+        "structuralShare": 0.002,
+        "growthGap12m": -0.0038252844195715164,
+        "unemployment": 0.0904473314181098,
+        "approval": 0.41174649751675446,
+        "governorRelation": 11.707533152925699
+      },
+      {
+        "id": "TO",
+        "share": 0.004988532636596695,
+        "structuralShare": 0.005,
+        "growthGap12m": -0.0013198945059877515,
+        "unemployment": 0.04958773170823819,
+        "approval": 0.41089087484640163,
+        "governorRelation": 4.570441496706022
+      },
+      {
+        "id": "MA",
+        "share": 0.014016805577795333,
+        "structuralShare": 0.014,
+        "growthGap12m": 0.0017105159825562995,
+        "unemployment": 0.0728377128903686,
+        "approval": 0.44833196567930983,
+        "governorRelation": 22.479803293652925
+      },
+      {
+        "id": "PI",
+        "share": 0.00699853613323569,
+        "structuralShare": 0.007,
+        "growthGap12m": -0.000011969448791072275,
+        "unemployment": 0.0783530833558071,
+        "approval": 0.4486273906058695,
+        "governorRelation": 25.92040461775935
+      },
+      {
+        "id": "CE",
+        "share": 0.021973137161302034,
+        "structuralShare": 0.022,
+        "growthGap12m": -0.0015151247713352698,
+        "unemployment": 0.06897676853758236,
+        "approval": 0.4456019814685092,
+        "governorRelation": 20.837497120462526
+      },
+      {
+        "id": "RN",
+        "share": 0.008998068948141142,
+        "structuralShare": 0.009,
+        "growthGap12m": -0.0002435311642088795,
+        "unemployment": 0.08325286771863337,
+        "approval": 0.44119245762580106,
+        "governorRelation": 9.218503995380882
+      },
+      {
+        "id": "PB",
+        "share": 0.00898720035122088,
+        "structuralShare": 0.009,
+        "growthGap12m": -0.0017694017931520947,
+        "unemployment": 0.08385878406568213,
+        "approval": 0.4437171764603995,
+        "governorRelation": 17.423277318414264
+      },
+      {
+        "id": "PE",
+        "share": 0.023965802448909397,
+        "structuralShare": 0.024,
+        "growthGap12m": -0.0018851783920333413,
+        "unemployment": 0.09865900231193771,
+        "approval": 0.44203421009350247,
+        "governorRelation": 14.347295980275357
+      },
+      {
+        "id": "AL",
+        "share": 0.007997510525222403,
+        "structuralShare": 0.008,
+        "growthGap12m": -0.0001970298550864065,
+        "unemployment": 0.08330115927587173,
+        "approval": 0.44516654646916215,
+        "governorRelation": 19.42747142412737
+      },
+      {
+        "id": "SE",
+        "share": 0.005999921237906937,
+        "structuralShare": 0.006,
+        "growthGap12m": 0.000010812493297168963,
+        "unemployment": 0.08804360875382206,
+        "approval": 0.441036731009549,
+        "governorRelation": 7.188158056406684
+      },
+      {
+        "id": "BA",
+        "share": 0.03900713349204448,
+        "structuralShare": 0.039,
+        "growthGap12m": 0.00003359526295774905,
+        "unemployment": 0.09771124394275109,
+        "approval": 0.4469879477462923,
+        "governorRelation": 20.81820289106963
+      },
+      {
+        "id": "MG",
+        "share": 0.0941972816404167,
+        "structuralShare": 0.094,
+        "growthGap12m": 0.0024495775447896666,
+        "unemployment": 0.04829787523935771,
+        "approval": 0.4359810968887522,
+        "governorRelation": -10.160432576556845
+      },
+      {
+        "id": "ES",
+        "share": 0.02105048842812045,
+        "structuralShare": 0.021,
+        "growthGap12m": 0.0029466915096108995,
+        "unemployment": 0.0385677067914228,
+        "approval": 0.445809780256358,
+        "governorRelation": 14.281273920448644
+      },
+      {
+        "id": "RJ",
+        "share": 0.10730132559119117,
+        "structuralShare": 0.107,
+        "growthGap12m": 0.003802351857900561,
+        "unemployment": 0.07694550411365153,
+        "approval": 0.44075904784597153,
+        "governorRelation": 0.028487296040519583
+      },
+      {
+        "id": "SP",
+        "share": 0.30344376005913687,
+        "structuralShare": 0.304,
+        "growthGap12m": -0.002509441645248855,
+        "unemployment": 0.054394632080768446,
+        "approval": 0.43007065779519515,
+        "governorRelation": -15.198211979020328
+      },
+      {
+        "id": "PR",
+        "share": 0.06499861647807208,
+        "structuralShare": 0.065,
+        "growthGap12m": -0.00033653195647782353,
+        "unemployment": 0.03913240820393316,
+        "approval": 0.43072943915979384,
+        "governorRelation": -18.903046211566362
+      },
+      {
+        "id": "SC",
+        "share": 0.04796005550493812,
+        "structuralShare": 0.048,
+        "growthGap12m": -0.0015854125873242815,
+        "unemployment": 0.029492510066741823,
+        "approval": 0.42790256987842484,
+        "governorRelation": -23.989484807998807
+      },
+      {
+        "id": "RS",
+        "share": 0.06298614007688198,
+        "structuralShare": 0.063,
+        "growthGap12m": -0.00047509397782247864,
+        "unemployment": 0.048973873211218204,
+        "approval": 0.4391517310699853,
+        "governorRelation": 4.117899080055188
+      },
+      {
+        "id": "MS",
+        "share": 0.01604012580290595,
+        "structuralShare": 0.016,
+        "growthGap12m": 0.003189563092994372,
+        "unemployment": 0.03372581388705953,
+        "approval": 0.4384198459537069,
+        "governorRelation": -5.066862111966529
+      },
+      {
+        "id": "MT",
+        "share": 0.025103287237843934,
+        "structuralShare": 0.025,
+        "growthGap12m": 0.005569269305989662,
+        "unemployment": 0.02671994934551212,
+        "approval": 0.4400153796333492,
+        "governorRelation": -5.101856526456372
+      },
+      {
+        "id": "GO",
+        "share": 0.030014637616245204,
+        "structuralShare": 0.03,
+        "growthGap12m": 0.0005308966534006368,
+        "unemployment": 0.04876632479405184,
+        "approval": 0.4398499037990836,
+        "governorRelation": 4.103270769780338
+      },
+      {
+        "id": "DF",
+        "share": 0.03192932536073088,
+        "structuralShare": 0.032,
+        "growthGap12m": -0.002033796553131723,
+        "unemployment": 0.08425612098692521,
+        "approval": 0.43682087620947546,
+        "governorRelation": 2.1047956669996566
+      }
+    ]
+  },
+  "society": {
+    "sectors": [
+      {
+        "id": "agropecuaria",
+        "output": 0.08168702748707776,
+        "share": 0.0807561661536835,
+        "growth": 0.00508623786252449
+      },
+      {
+        "id": "extrativa",
+        "output": 0.0928438270974689,
+        "share": 0.0917858288895766,
+        "growth": 0.00956360798511069
+      },
+      {
+        "id": "industria",
+        "output": 0.12145287576406709,
+        "share": 0.12006886425873728,
+        "growth": 0.0013344940723838405
+      },
+      {
+        "id": "construcao",
+        "output": 0.060466295676009425,
+        "share": 0.059777254363699635,
+        "growth": -0.00046776690345684546
+      },
+      {
+        "id": "energia",
+        "output": 0.04055647184561109,
+        "share": 0.04009431215365823,
+        "growth": 0.002085464067973053
+      },
+      {
+        "id": "servicos",
+        "output": 0.6145203164614762,
+        "share": 0.6075175741806448,
+        "growth": -0.0006179096506673254
+      }
+    ],
+    "quintiles": [
+      {
+        "id": "q1",
+        "realIncome": 0.2800602067719598,
+        "incomeShare": 0.05599999999999999,
+        "policyAdjustment": 0
+      },
+      {
+        "id": "q2",
+        "realIncome": 0.5601204135439196,
+        "incomeShare": 0.11199999999999997,
+        "policyAdjustment": 0
+      },
+      {
+        "id": "q3",
+        "realIncome": 0.8401806203158795,
+        "incomeShare": 0.16799999999999998,
+        "policyAdjustment": 0
+      },
+      {
+        "id": "q4",
+        "realIncome": 1.160249428055262,
+        "incomeShare": 0.23199999999999996,
+        "policyAdjustment": 0
+      },
+      {
+        "id": "q5",
+        "realIncome": 2.1604644522408334,
+        "incomeShare": 0.43200000000000005,
+        "policyAdjustment": 0
+      }
+    ],
+    "nationalOutput": 1.0115268143317104,
+    "realIncome": 1.000215024185571,
+    "unemployment": 0.062326236627632634,
+    "realWage": 1.0004778943133064,
+    "minimumWage": 1,
+    "povertyRate": 0.25493139743546095,
+    "explanations": [
+      {
+        "cause": "atividade_nacional",
+        "label": "Atividade nacional, termos de troca e normalização residual",
+        "delta": 0.0003158487372909221,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:reforma_previdencia_0",
+        "label": "Emendas liberadas: Reforma da previdência (parâmetros)",
+        "delta": 0.00004876419022160618,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:gastos_tributarios_revisao_2",
+        "label": "Emendas liberadas: Revisão de gastos tributários",
+        "delta": 0.00004876419022160618,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "atividade_nacional",
+        "label": "Atividade nacional, termos de troca e normalização residual",
+        "delta": 0.0007691534912103089,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:reforma_previdencia_0",
+        "label": "Emendas liberadas: Reforma da previdência (parâmetros)",
+        "delta": 0.000055178589855928044,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:gastos_tributarios_revisao_2",
+        "label": "Emendas liberadas: Revisão de gastos tributários",
+        "delta": 0.000055178589855928044,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "atividade_nacional",
+        "label": "Atividade nacional, termos de troca e normalização residual",
+        "delta": 0.000016312922366046838,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:reforma_previdencia_0",
+        "label": "Emendas liberadas: Reforma da previdência (parâmetros)",
+        "delta": 0.00007277460817521038,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:gastos_tributarios_revisao_2",
+        "label": "Emendas liberadas: Revisão de gastos tributários",
+        "delta": 0.00007277460817521038,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "atividade_nacional",
+        "label": "Atividade nacional, termos de troca e normalização residual",
+        "delta": -0.00010089088011766579,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:reforma_previdencia_0",
+        "label": "Emendas liberadas: Reforma da previdência (parâmetros)",
+        "delta": 0.00003629675582668424,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:gastos_tributarios_revisao_2",
+        "label": "Emendas liberadas: Revisão de gastos tributários",
+        "delta": 0.00003629675582668424,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "atividade_nacional",
+        "label": "Atividade nacional, termos de troca e normalização residual",
+        "delta": 0.00003583656267926588,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:reforma_previdencia_0",
+        "label": "Emendas liberadas: Reforma da previdência (parâmetros)",
+        "delta": 0.00002428324128022283,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:gastos_tributarios_revisao_2",
+        "label": "Emendas liberadas: Revisão de gastos tributários",
+        "delta": 0.00002428324128022283,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "atividade_nacional",
+        "label": "Atividade nacional, termos de troca e normalização residual",
+        "delta": -0.001117833133707588,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:reforma_previdencia_0",
+        "label": "Emendas liberadas: Reforma da previdência (parâmetros)",
+        "delta": 0.0003689401615632344,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "emendas:gastos_tributarios_revisao_2",
+        "label": "Emendas liberadas: Revisão de gastos tributários",
+        "delta": 0.0003689401615632344,
+        "metric": "sector_output"
+      },
+      {
+        "cause": "tendencia_social",
+        "label": "Renda e mercado de trabalho",
+        "delta": 0.00001493383231987444,
+        "metric": "real_income"
+      },
+      {
+        "cause": "tendencia_social",
+        "label": "Renda e mercado de trabalho",
+        "delta": 0.00002986766463974888,
+        "metric": "real_income"
+      },
+      {
+        "cause": "tendencia_social",
+        "label": "Renda e mercado de trabalho",
+        "delta": 0.00004480149695962332,
+        "metric": "real_income"
+      },
+      {
+        "cause": "tendencia_social",
+        "label": "Renda e mercado de trabalho",
+        "delta": 0.00006186873389668612,
+        "metric": "real_income"
+      },
+      {
+        "cause": "tendencia_social",
+        "label": "Renda e mercado de trabalho",
+        "delta": 0.0001152038493246188,
+        "metric": "real_income"
+      },
+      {
+        "cause": "tendencia_social",
+        "label": "Linha de pobreza estimada",
+        "delta": -0.000019962407118379044,
+        "metric": "poverty_rate"
+      },
+      {
+        "cause": "mercado_de_trabalho",
+        "label": "Mercado de trabalho",
+        "delta": 0.00030060993524415325,
+        "metric": "unemployment"
+      },
+      {
+        "cause": "salario_real",
+        "label": "Salário real médio",
+        "delta": 0.00011854976479730439,
+        "metric": "real_wage"
+      },
+      {
+        "cause": "salario_minimo",
+        "label": "Salário mínimo real",
+        "delta": 0,
+        "metric": "minimum_wage"
+      }
+    ],
+    "termsOfTrade": 0.020145963118681977
+  },
+  "publicPolicies": {
+    "directives": [],
+    "projects": [],
+    "brands": [],
+    "capitalStockMillions": 0
+  }
+}

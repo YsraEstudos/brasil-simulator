@@ -427,4 +427,4 @@ Jogar os 12 meses, tomar decisões diferentes em duas campanhas, observar conseq
 
 ## 14. Fora do escopo da versão 1.0
 
-Multiplayer em tempo real, Forças Armadas e guerra, governar estados ou municípios, IA generativa em diálogos, editor de cenários, diplomacia profunda. Ver Fase 11 em [ROADMAP.md](ROADMAP.md).
+Multiplayer em tempo real, Forças Armadas e guerra, governar estados ou municípios, IA generativa em diálogos, editor de cenários, diplomacia profunda. Ver Fase 11 em [ROADMAP_2.0.md](ROADMAP_2.0.md).

@@ -3,12 +3,20 @@ import { describe, expect, it } from 'vitest';
 import brasil from '@/data/scenarios/brasil_2027_01.json';
 import brasilV050 from '@/data/scenarios/brasil_2027_01_v050.json';
 import brasilV060 from '@/data/scenarios/brasil_2027_01_v060.json';
+import brasilV070 from '@/data/scenarios/brasil_2027_01_v070.json';
 import prototipo from '@/data/scenarios/prototipo_ficticio.json';
 import { parseScenario, type Scenario } from '@/types/scenario';
 import type { DataValue } from '@/types/data';
 
 import { POLICIES } from './policies';
-import { CAMPAIGN_MONTHS, DEFAULT_SCENARIO_ID, PROTOTYPE_MONTHS, SCENARIOS, campaignMonths } from './scenarios';
+import {
+  CAMPAIGN_MONTHS,
+  DEFAULT_SCENARIO_ID,
+  PROTOTYPE_MONTHS,
+  SCENARIOS,
+  TWO_TERM_MONTHS,
+  campaignMonths,
+} from './scenarios';
 
 function valuesOf(s: Scenario): [string, DataValue][] {
   const ind = Object.entries(s.indicators);
@@ -23,14 +31,20 @@ function parseOrThrow(raw: unknown): Scenario {
 }
 
 describe('cenários embutidos', () => {
-  it('cenários legados validam e o padrão é a revisão v0.6.0 (Fase 07)', () => {
+  it('cenários legados validam e o padrão é a revisão v0.7.0 (Fase 08)', () => {
     const a = parseScenario(prototipo);
     const b = parseScenario(brasil);
     expect(a.ok).toBe(true);
     expect(b.ok).toBe(true);
-    expect(DEFAULT_SCENARIO_ID).toBe('brasil_2027_01_v060');
+    expect(DEFAULT_SCENARIO_ID).toBe('brasil_2027_01_v070');
     expect(Object.keys(SCENARIOS)).toEqual(
-      expect.arrayContaining(['prototipo_ficticio', 'brasil_2027_01', 'brasil_2027_01_v050', 'brasil_2027_01_v060']),
+      expect.arrayContaining([
+        'prototipo_ficticio',
+        'brasil_2027_01',
+        'brasil_2027_01_v050',
+        'brasil_2027_01_v060',
+        'brasil_2027_01_v070',
+      ]),
     );
   });
 
@@ -159,16 +173,57 @@ describe('brasil_2027_01_v060 (Fase 07: elenco de personagens)', () => {
   });
 });
 
-describe('cenário padrão e duração da campanha', () => {
-  it('o padrão é brasil_2027_01_v060, registrado em SCENARIOS, e dura 48 meses', () => {
-    expect(SCENARIOS[DEFAULT_SCENARIO_ID]).toBeDefined();
-    expect(SCENARIOS[DEFAULT_SCENARIO_ID]?.version).toBe('0.6.0');
-    expect(campaignMonths(DEFAULT_SCENARIO_ID)).toBe(CAMPAIGN_MONTHS);
+describe('brasil_2027_01_v070 (Fase 08: eleições e mandatos)', () => {
+  const s = parseOrThrow(brasilV070);
+  const candidatos = s.elections?.candidatos ?? [];
+
+  it('é a versão 0.7.0 com bloco elections e campanha de dois mandatos (96 meses)', () => {
+    expect(s.id).toBe('brasil_2027_01_v070');
+    expect(s.version).toBe('0.7.0');
+    expect(s.elections).toBeDefined();
+    expect(TWO_TERM_MONTHS).toBe(96);
+    expect(campaignMonths(s.id)).toBe(TWO_TERM_MONTHS);
   });
 
-  it('v0.5.0 continua registrado e com 48 meses; o protótipo tem 12 meses', () => {
+  it('calendário: municipais no mês 21, geral no 45, janela de declaração 39–44, uma reeleição', () => {
+    const e = s.elections;
+    expect(e?.reeleicaoPermitida).toBe(true);
+    expect(e?.mesEleicaoMunicipal).toBe(21);
+    expect(e?.mesEleicaoGeral).toBe(45);
+    expect(e?.janelaDeclaracao).toEqual({ inicio: 39, fim: 44 });
+  });
+
+  it('todo bloco tem um candidato fictício, com nomes únicos', () => {
+    expect(candidatos.map((c) => c.blocId).sort()).toEqual(s.blocs.map((b) => b.id).sort());
+    const names = candidatos.map((c) => c.name);
+    expect(new Set(names).size).toBe(names.length);
+    for (const c of candidatos) expect(c.name.trim().length, c.blocId).toBeGreaterThan(0);
+  });
+
+  it('difere do v0.6.0 apenas em id, version e elections (zero drift nos demais campos)', () => {
+    const v060 = parseOrThrow(brasilV060);
+    const semVersao = (scenario: Scenario): Record<string, unknown> => {
+      const resto: Record<string, unknown> = { ...scenario };
+      delete resto.id;
+      delete resto.version;
+      delete resto.elections;
+      return resto;
+    };
+    expect(semVersao(s)).toEqual(semVersao(v060));
+  });
+});
+
+describe('cenário padrão e duração da campanha', () => {
+  it('o padrão é brasil_2027_01_v070, registrado em SCENARIOS, e dura 96 meses (dois mandatos)', () => {
+    expect(SCENARIOS[DEFAULT_SCENARIO_ID]).toBeDefined();
+    expect(SCENARIOS[DEFAULT_SCENARIO_ID]?.version).toBe('0.7.0');
+    expect(campaignMonths(DEFAULT_SCENARIO_ID)).toBe(TWO_TERM_MONTHS);
+  });
+
+  it('v0.5.0 e v0.6.0 continuam registrados e com 48 meses; o protótipo tem 12 meses', () => {
     expect(SCENARIOS.brasil_2027_01_v050).toBeDefined();
-    expect(campaignMonths('brasil_2027_01_v050')).toBe(48);
+    expect(campaignMonths('brasil_2027_01_v050')).toBe(CAMPAIGN_MONTHS);
+    expect(campaignMonths('brasil_2027_01_v060')).toBe(CAMPAIGN_MONTHS);
     expect(campaignMonths('prototipo_ficticio')).toBe(PROTOTYPE_MONTHS);
     expect(campaignMonths('brasil_2027_01')).toBe(PROTOTYPE_MONTHS);
   });

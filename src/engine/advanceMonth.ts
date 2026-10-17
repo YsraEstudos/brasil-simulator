@@ -1,5 +1,7 @@
 import { actionKey, AGENDA_ACTIONS } from './actions';
 import { validateActionTarget } from './agenda';
+import { electionsStep } from './elections/elections';
+import { isNovoBeneficio, vedacaoAtiva } from './elections/vedacao';
 import { cabinetStep } from './congress/cabinet';
 import { congressStep } from './congress/congress';
 import { economyStep } from './economy/economy';
@@ -43,6 +45,7 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
   economyStep,
   societyStep,
   opinionStep,
+  electionsStep,
   regionsStep,
   triggerEventsStep,
 ];
@@ -162,6 +165,8 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
       rejected.push({ decision, reason: 'ja_em_andamento' });
     } else if (barredMeasures.has(decision.policyId)) {
       rejected.push({ decision, reason: 'reedicao_vedada' });
+    } else if (vedacaoAtiva(state, content) && !decision.params?.vedacao_bypass && isNovoBeneficio(policy)) {
+      rejected.push({ decision, reason: 'vedacao_eleitoral' });
     } else if (!Number.isFinite(cost) || cost < 0) {
       rejected.push({ decision, reason: 'custo_invalido' });
     } else if (cost > left) {
@@ -182,6 +187,10 @@ function copyDecision(d: Decision): Decision {
 
 function applyContributions(indicators: Indicators, contributions: readonly Contribution[]): Indicators {
   const next = { ...indicators };
-  for (const c of contributions) next[c.indicator] += c.delta;
+  for (const c of contributions) {
+    // 'votingIntention' (Fase 08) é report-only: a intenção não pertence ao `Indicators`.
+    if (c.indicator === 'votingIntention') continue;
+    next[c.indicator] += c.delta;
+  }
   return next;
 }
