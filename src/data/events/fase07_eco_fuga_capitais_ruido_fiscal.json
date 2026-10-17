@@ -2,7 +2,7 @@
   "id": "fase07_eco_fuga_capitais_ruido_fiscal",
   "title": "Investidores saem por ruído fiscal",
   "description": "Gestores estrangeiros reduzem posições em títulos do país depois de declarações contraditórias sobre as contas públicas. O prêmio de risco sobe e o dólar pressiona o câmbio.",
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "trigger": {
     "monthsOfYear": [],
     "conditions": [

@@ -14,10 +14,10 @@ import { upgradeGameState } from './upgrade';
 const content = loadContent('brasil_2027_01');
 
 describe('contratos da Fase 06 (AI_INSTRUCTIONS §2.10)', () => {
-  it('campanha nova tem estado v7, sociedade e execução pública serializáveis', () => {
+  it('campanha nova tem estado v8, sociedade e execução pública serializáveis', () => {
     const state = createInitialState({ content, difficulty: 'estrategica', seed: 42 });
-    expect(state.schemaVersion).toBe(7);
-    expect(state.engineVersion).toBe('0.7.0');
+    expect(state.schemaVersion).toBe(8);
+    expect(state.engineVersion).toBe('0.8.0');
     expect(state).toHaveProperty('society');
     expect(state).toHaveProperty('publicPolicies', {
       directives: [],
@@ -35,7 +35,7 @@ describe('contratos da Fase 06 (AI_INSTRUCTIONS §2.10)', () => {
     delete raw.publicPolicies;
     const original = structuredClone(raw);
     const next = upgradeGameState(5, raw);
-    expect(next.schemaVersion).toBe(7);
+    expect(next.schemaVersion).toBe(8);
     expect(next).toHaveProperty('society');
     expect(next).toHaveProperty('publicPolicies');
     for (const key of Object.keys(raw).filter((k) => k !== 'schemaVersion' && k !== 'engineVersion')) {

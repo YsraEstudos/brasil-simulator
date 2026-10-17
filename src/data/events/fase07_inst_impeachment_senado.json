@@ -52,6 +52,6 @@
     }
   ],
   "defaultChoice": "aguardar_o_julgamento",
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "dataStatus": "FICTICIO"
 }

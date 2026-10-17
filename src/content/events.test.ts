@@ -99,12 +99,12 @@ describe('eventos (GAME_DESIGN.md §11.3)', () => {
     expect(problems).toEqual([]);
   });
 
-  // FASE_07.md: eventos novos só existem no cenário v0.6.0 e só citam personagens do elenco.
-  it('eventos da Fase 07 ficam restritos ao cenário v0.6.0 e citam o elenco', () => {
+  // FASE_07.md: eventos novos só existem no cenário v0.6.0 — e no sucessor v0.7.0, que o copia — e só citam o elenco.
+  it('eventos da Fase 07 ficam restritos aos cenários v0.6.0/v0.7.0 e citam o elenco', () => {
     const cast = new Set((SCENARIOS.brasil_2027_01_v060.characters ?? []).map((c) => c.id));
     const ids = new Set(EVENTS.map((e) => e.id));
     for (const event of EVENTS.filter((e) => e.id.startsWith('fase07_'))) {
-      expect(event.onlyScenarios, event.id).toEqual(['brasil_2027_01_v060']);
+      expect(event.onlyScenarios, event.id).toEqual(['brasil_2027_01_v060', 'brasil_2027_01_v070']);
       expect(event.dataStatus, event.id).toBe('FICTICIO');
       if (event.characterId) expect(cast.has(event.characterId), `${event.id}: ${event.characterId}`).toBe(true);
       for (const c of event.trigger.conditions) {

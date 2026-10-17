@@ -23,6 +23,10 @@ export interface DecisionPanelProps {
   onToggle: (id: string) => void;
   /** Se incluir a política respeita os pontos restantes. */
   canInclude: (policy: Policy) => boolean;
+  /** Vedação eleitoral atingindo a política (novo benefício na janela): exige confirmação de quebra. */
+  isVedada: (policy: Policy) => boolean;
+  /** Inclui/retira a política com `params.vedacao_bypass` (quebra declarada). */
+  onToggleBypass: (id: string) => void;
 }
 
 /** Agenda presidencial: políticas do cenário, com a mesa de despacho de cada uma (GAME_DESIGN.md §4.2, §4.3). */
@@ -36,6 +40,8 @@ export function DecisionPanel({
   onExpand,
   onToggle,
   canInclude,
+  isVedada,
+  onToggleBypass,
 }: DecisionPanelProps) {
   const policies = content.scenario.policies.flatMap((id) => {
     const policy = content.policies[id];
@@ -127,7 +133,9 @@ export function DecisionPanel({
                 content={content}
                 included={isSelected}
                 canInclude={canInclude(policy)}
+                vedacao={isVedada(policy)}
                 onToggle={() => onToggle(policy.id)}
+                onToggleBypass={() => onToggleBypass(policy.id)}
               />
             )}
           </View>

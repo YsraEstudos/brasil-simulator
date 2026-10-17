@@ -26,6 +26,7 @@ import {
   type Session,
 } from '../congress/congress';
 import { blocRelation, RELACAO_MAX, RELACAO_MIN } from '../congress/relations';
+import { isNovoBeneficio, vedacaoAtiva } from '../elections/vedacao';
 import type { Calibration } from '../economy/calibration';
 import { fiscalRoom } from '../economy/fiscal';
 import { populationShares, regionsOf, regionsView } from '../regions/regions';
@@ -147,7 +148,7 @@ export const proposalsStep: MonthStep = (state, ctx) => {
   expireMeasures(run);
   // Paradas têm prioridade sobre as enviadas no mês: a vaga aberta vai para quem já esperava (POLITICAL_RULES.md §6.3).
   releaseParked(run);
-  for (const decision of ctx.decisions) if (!isAgendaAction(decision.policyId)) sendPolicy(run, decision.policyId);
+  for (const decision of ctx.decisions) if (!isAgendaAction(decision.policyId)) sendPolicy(run, decision);
   applyNegotiations(run);
   runVetoSessions(run);
   runVotes(run);
@@ -637,7 +638,8 @@ function scheduleRider(run: Run, p: Proposal, start: number): void {
 }
 
 /** Decisões aceitas neste mês: envio de política. */
-function sendPolicy(run: Run, policyId: string): void {
+function sendPolicy(run: Run, decision: Decision): void {
+  const policyId = decision.policyId;
   const policy = policyOf(run.ctx.content, policyId);
   const p: Proposal = {
     id: `${policyId}_${run.t}`,
@@ -663,6 +665,7 @@ function sendPolicy(run: Run, policyId: string): void {
 
   const instrument = legislativeInstrument(policy);
   run.proposals.push(p);
+  scheduleVedacaoPenalty(run, p, policy, decision);
   if (instrument === null) {
     const start = run.t + policy.timeline.planningMonths;
     pushTransition(
@@ -680,6 +683,38 @@ function sendPolicy(run: Run, policyId: string): void {
   enterSession(run, p, policy, 0, 'enviada', 'Enviada ao Congresso.');
   // Medida provisória tem força de lei desde a edição (CF art. 62).
   if (instrument === 'medida_provisoria') startExecution(run, p, run.t, TEXTO_ORIGINAL);
+}
+
+/**
+ * Vedação eleitoral (Fase 08; Lei 9.504/1997 art. 73 §10): benefício novo enviado dentro da janela de vedação
+ * com quebra declarada (`params.vedacao_bypass`) paga pena na intenção de voto por `vedacao_abuso_meses` e
+ * arrisca multa da Justiça Eleitoral. A regra é reavaliada no envio, porque o `screenInput` aceita qualquer
+ * decisão marcada com bypass. Exatamente um `rng.chance()` por envio irregular.
+ */
+function scheduleVedacaoPenalty(run: Run, p: Proposal, policy: Policy, decision: Decision): void {
+  if (!decision.params?.vedacao_bypass || !vedacaoAtiva(run.state, run.ctx.content) || !isNovoBeneficio(policy)) return;
+  run.impulses.push({
+    sourceId: `vedacao:${p.id}`,
+    label: `Quebra da vedação eleitoral: ${policy.name}`,
+    target: 'intencao',
+    delta: -run.c.pena_intencao_vedacao,
+    startMonth: run.t,
+    endMonth: run.t + run.c.vedacao_abuso_meses - 1,
+  });
+  run.ctx.draft.notes.push(
+    `${policy.name}: benefício criado em período de vedação eleitoral; pena na intenção de voto.`,
+  );
+  if (run.ctx.rng.chance(run.c.prob_justica_vedacao)) {
+    run.impulses.push({
+      sourceId: `vedacao:${p.id}`,
+      label: 'Multa da Justiça Eleitoral',
+      target: 'aprovacao',
+      delta: -run.c.multa_aprovacao_vedacao,
+      startMonth: run.t,
+      endMonth: run.t,
+    });
+    run.ctx.draft.notes.push('A Justiça Eleitoral multou o governo pela propaganda eleitoral irregular.');
+  }
 }
 
 /** Meses de tramitação na sessão (POLITICAL_RULES.md §6.3: prazo esperado repartido entre as Casas). */

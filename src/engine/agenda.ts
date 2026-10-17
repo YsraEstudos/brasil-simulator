@@ -2,17 +2,21 @@ import {
   AMENDMENTS_ACTION_ID,
   APPOINT_ACTION_ID,
   CONCEDE_ACTION_ID,
+  DECLARE_CANDIDACY_ACTION_ID,
   DIRECTIVE_ACTION_ID,
   BRAND_ACTION_ID,
   NEGOTIATE_ACTION_ID,
   SANCTION_ACTION_ID,
   SANCTION_CHOICES,
+  SUPPORT_CANDIDATE_ACTION_ID,
   URGENCY_ACTION_ID,
   VISIT_ACTION_ID,
   type AgendaAction,
 } from './actions';
+import { monthOfTerm, termOf } from './calendar';
 import { ministriesOf, ministryOccupant } from './congress/cabinet';
 import { legislativeInstrument } from './congress/congress';
+import { declarationInTermWindow } from './elections/elections';
 import { validatePublicAction } from './publicPolicies/publicPolicies';
 import {
   PROPOSAL_IN_CONGRESS,
@@ -79,6 +83,27 @@ export function validateActionTarget(
     }
     case VISIT_ACTION_ID:
       return content.scenario.regions?.ufs.some((u) => u.id === params.uf) ? null : 'alvo_invalido';
+    case DECLARE_CANDIDACY_ACTION_ID: {
+      const elections = content.scenario.elections;
+      if (!elections || termOf(state.monthIndex) !== 0 || !elections.reeleicaoPermitida) return 'alvo_invalido';
+      const month = monthOfTerm(state.monthIndex);
+      if (month < elections.janelaDeclaracao.inicio || month > elections.janelaDeclaracao.fim) return 'alvo_invalido';
+      // Uma declaração por campanha: a já feita nesta janela bloqueia nova declaração.
+      const declared = state.politics?.declaracao;
+      return declared !== null &&
+        declared !== undefined &&
+        declarationInTermWindow(declared, state.monthIndex, elections)
+        ? 'alvo_invalido'
+        : null;
+    }
+    case SUPPORT_CANDIDATE_ACTION_ID: {
+      const elections = content.scenario.elections;
+      if (!elections || !content.scenario.blocs.some((b) => b.id === params.blocId)) return 'alvo_invalido';
+      const month = monthOfTerm(state.monthIndex);
+      if (month < elections.janelaDeclaracao.inicio || month > elections.janelaDeclaracao.fim) return 'alvo_invalido';
+      // Um apoio por campanha (o campo `apoio` é zerado quando a eleição acontece).
+      return state.politics?.apoio ? 'alvo_invalido' : null;
+    }
     default:
       return null;
   }

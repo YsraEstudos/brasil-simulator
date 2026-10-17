@@ -2,7 +2,7 @@
   "id": "fase07_eco_crise_hidrica_conta_luz",
   "title": "Reservatórios baixos encarecem a conta de luz",
   "description": "Os reservatórios das hidrelétricas chegam a níveis críticos. O operador aciona usinas térmicas caras e a bandeira tarifária sobe. A conta de luz pesa no orçamento das famílias e na inflação.",
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "chainedOnly": true,
   "trigger": {
     "monthsOfYear": [],

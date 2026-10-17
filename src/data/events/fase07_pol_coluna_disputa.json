@@ -9,7 +9,7 @@
     "cooldownMonths": 12,
     "maxOccurrences": 2
   },
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "chainedOnly": true,
   "characterId": "jornalista",
   "onFire": [{ "target": "aprovacao", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 }],

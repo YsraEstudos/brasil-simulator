@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { formatNumber } from '@/components/ui/format';
-import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
+import { campaignMonths, DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
 import { createInitialState, regionsOf } from '@/engine';
 import { EMPTY_DRAFT } from '@/store/agendaDraft';
@@ -10,6 +10,7 @@ import type { ActiveCampaign } from '@/store/gameStore';
 import { hudFromCampaign, hudFromScenario } from './hudData';
 
 const content = loadContent(DEFAULT_SCENARIO_ID);
+const months = campaignMonths(DEFAULT_SCENARIO_ID);
 
 function campaign(): ActiveCampaign {
   return {
@@ -41,7 +42,7 @@ describe('Painel sem partida (demonstração)', () => {
       'desemprego',
     ]);
     expect(stat(data, 'mes').value).toBe('Janeiro de 2027');
-    expect(stat(data, 'mes').context).toBe('Turno 1 de 48');
+    expect(stat(data, 'mes').context).toBe(`Turno 1 de ${months}`);
   });
 
   it('usa a população real do cenário (soma das UFs)', () => {
@@ -76,7 +77,7 @@ describe('Painel com a partida', () => {
     expect(data.demo).toBe(false);
     expect(data.monthLabel).toBe('Janeiro de 2027');
     expect(data.turn).toBe(1);
-    expect(data.turnTotal).toBe(48);
+    expect(data.turnTotal).toBe(months);
     expect(data.pointsLeft).toBe(active.state.resources.agendaPointsPerMonth);
     expect(data.pendingCount).toBe(0);
   });

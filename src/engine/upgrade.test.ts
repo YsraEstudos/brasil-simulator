@@ -13,6 +13,7 @@ import v3Save from '@/tests/saves/state_v3_fase03.json';
 import v4Save from '@/tests/saves/state_v4_fase04.json';
 import v5Save from '@/tests/saves/state_v5_fase05.json';
 import v6Save from '@/tests/saves/state_v6_fase06.json';
+import v7Save from '@/tests/saves/state_v7_fase07.json';
 
 // AI_INSTRUCTIONS.md §3 e §5: saves antigos são atualizados, não recusados; teste com save real da versão
 // anterior. O fixture foi gravado pelo motor 0.2.0 (Fase 02, commit 30b0749): campanha populista fiscal,
@@ -22,13 +23,13 @@ const content = loadContent(DEFAULT_SCENARIO_ID);
 
 describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
   // Fixture v6 gravado pelo motor 0.6.0 (Fase 06): cenário brasil_2027_01_v050, sete meses jogados, com pendências
-  // e eventos já disparados. FASE_07.md: save v6 vira v7 sem alterar os campos antigos.
-  it('save real v6 vira v7 com os campos antigos idênticos e os novos vazios', () => {
+  // e eventos já disparados. FASE_07/FASE_08: save v6 vira v8 sem alterar os campos antigos.
+  it('save real v6 vira v8 com os campos antigos idênticos e os novos vazios', () => {
     const raw = structuredClone(v6Save) as unknown;
     const state = upgradeGameState(6, raw);
     const legacy = structuredClone(v6Save);
     expect(legacy.schemaVersion).toBe(6);
-    expect(state.schemaVersion).toBe(7);
+    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
     expect(state.engineVersion).toBe(ENGINE_VERSION);
     expect(state.impulses).toEqual(legacy.impulses);
     expect(state.proposals).toEqual(legacy.proposals);
@@ -43,6 +44,39 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
     expect(state.events.scheduled).toEqual([]);
     expect(state.events.characters).toEqual({});
     expect(state.events.news).toEqual([]);
+    // Fase 08: a migração é content-blind; `politics` só aparece em cenários com eleições, no 1º mês jogado.
+    expect(state.politics).toBeUndefined();
+  });
+
+  // Fixture v7 gravado pelo motor 0.7.0 (Fase 07): cenário brasil_2027_01_v060, sete meses jogados, com eventos,
+  // marcas e notícias. FASE_08.md: save v7 vira v8 sem alterar os campos antigos e sem criar `politics`.
+  it('save real v7 vira v8 com os campos antigos idênticos e sem estado eleitoral', () => {
+    const raw = structuredClone(v7Save) as unknown;
+    const state = upgradeGameState(7, raw);
+    const legacy = structuredClone(v7Save);
+    expect(legacy.schemaVersion).toBe(7);
+    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.engineVersion).toBe(ENGINE_VERSION);
+    expect(state.indicators).toEqual(legacy.indicators);
+    expect(state.economy).toEqual(legacy.economy);
+    expect(state.society).toEqual(legacy.society);
+    expect(state.publicPolicies).toEqual(legacy.publicPolicies);
+    expect(state.events).toEqual(legacy.events);
+    expect(state.politics).toBeUndefined();
+  });
+
+  it('save real v7 atualizado continua jogável por 12 meses sem violar invariantes', () => {
+    let state: GameState = upgradeGameState(7, structuredClone(v7Save) as unknown);
+    const legacy = loadContent(state.scenarioId);
+    const errors: string[] = [];
+    for (let m = 0; m < 12; m++) {
+      const result = advanceMonth(state, { decisions: [] }, legacy);
+      errors.push(...checkInvariants(state, result.state, result.report, legacy));
+      state = result.state;
+    }
+    expect(errors).toEqual([]);
+    expect(state.monthIndex).toBe(19);
+    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
   });
 
   it('save real v6 atualizado continua jogável por 12 meses sem violar invariantes', () => {

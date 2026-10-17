@@ -208,6 +208,35 @@ export const characterSchema = z
   .strict();
 export type Character = z.infer<typeof characterSchema>;
 
+/** Candidato fictício a presidente por bloco (Fase 08); nome e status sempre fictícios (GAME_DESIGN.md §13). */
+export const electionCandidateSchema = z
+  .object({ blocId: contentIdSchema, name: z.string().min(1), dataStatus: dataStatusSchema })
+  .strict();
+export type ElectionCandidate = z.infer<typeof electionCandidateSchema>;
+
+/**
+ * Eleições do cenário (Fase 08): calendário e regra de reeleição. Meses 0–47 contam do início do mandato
+ * (posse jan/2027 = 0). Ausente = cenário sem eleições: o motor nunca roda o passo eleitoral, aplica vedação
+ * ou encerra por derrota/fim de mandato.
+ */
+export const scenarioElectionsSchema = z
+  .object({
+    /** Reeleição permitida (CF art. 14 §5º, uma reeleição). */
+    reeleicaoPermitida: z.boolean(),
+    /** Mês do mandato das eleições municipais (21 = out/2028 e out/2032). */
+    mesEleicaoMunicipal: z.number().int().min(1).max(47),
+    /** Mês do mandato da eleição geral (45 = out/2030 e out/2034). */
+    mesEleicaoGeral: z.number().int().min(1).max(47),
+    /** Janela em que `declarar_reeleicao` é aceito. */
+    janelaDeclaracao: z
+      .object({ inicio: z.number().int().min(0).max(47), fim: z.number().int().min(0).max(47) })
+      .strict(),
+    /** Candidatos fictícios por bloco (nomes usados nas notícias); blocos sem entrada aparecem pelo nome do bloco. */
+    candidatos: z.array(electionCandidateSchema).optional(),
+  })
+  .strict();
+export type ScenarioElections = z.infer<typeof scenarioElectionsSchema>;
+
 export const scenarioSchema = z
   .object({
     /** Ex.: `brasil_2027_01` */
@@ -230,6 +259,8 @@ export const scenarioSchema = z
     policies: z.array(contentIdSchema).min(1),
     /** Elenco de personagens fictícios (Fase 07); ausente nos cenários anteriores. */
     characters: z.array(characterSchema).optional(),
+    /** Eleições e calendário eleitoral (Fase 08); ausente nos cenários anteriores. */
+    elections: scenarioElectionsSchema.optional(),
   })
   .strict()
   .superRefine((s, ctx) => {
@@ -340,6 +371,50 @@ export const scenarioSchema = z
     const a = s.indicators.approval.value;
     if (!(a >= 0 && a <= 1))
       ctx.addIssue({ code: 'custom', path: ['indicators', 'approval'], message: 'aprovação em fração [0, 1]' });
+    if (s.elections) {
+      const e = s.elections;
+      if (e.mesEleicaoMunicipal >= e.mesEleicaoGeral) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['elections', 'mesEleicaoMunicipal'],
+          message: `eleição municipal (mês ${e.mesEleicaoMunicipal}) precisa vir antes da geral (mês ${e.mesEleicaoGeral})`,
+        });
+      }
+      if (e.janelaDeclaracao.inicio > e.janelaDeclaracao.fim) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['elections', 'janelaDeclaracao'],
+          message: 'janela invertida (inicio > fim)',
+        });
+      }
+      if (e.janelaDeclaracao.fim >= e.mesEleicaoGeral) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['elections', 'janelaDeclaracao', 'fim'],
+          message: `janela precisa fechar antes da eleição geral (mês ${e.mesEleicaoGeral})`,
+        });
+      }
+      if (e.candidatos) {
+        const blocIds = new Set(s.blocs.map((b) => b.id));
+        const seen = new Set<string>();
+        for (const c of e.candidatos) {
+          if (!blocIds.has(c.blocId)) {
+            ctx.addIssue({
+              code: 'custom',
+              path: ['elections', 'candidatos'],
+              message: `bloco inexistente: ${c.blocId}`,
+            });
+          } else if (seen.has(c.blocId)) {
+            ctx.addIssue({
+              code: 'custom',
+              path: ['elections', 'candidatos'],
+              message: `candidato repetido para o bloco: ${c.blocId}`,
+            });
+          }
+          seen.add(c.blocId);
+        }
+      }
+    }
   });
 export type Scenario = z.infer<typeof scenarioSchema>;
 

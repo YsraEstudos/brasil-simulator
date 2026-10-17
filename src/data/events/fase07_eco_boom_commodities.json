@@ -2,7 +2,7 @@
   "id": "fase07_eco_boom_commodities",
   "title": "Boom de commodities traz dólares",
   "description": "Os preços internacionais de minério, petróleo e grãos sobem com força. Entram dólares, o saldo externo melhora e a arrecadação sobre exportações cresce. O setor exportador pede que o ganho vire investimento, e não só consumo.",
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "characterId": "empresario_agro",
   "trigger": {
     "monthsOfYear": [],

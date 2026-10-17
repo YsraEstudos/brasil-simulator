@@ -5,15 +5,24 @@ import { Spacing, type ThemeColor } from '@/constants/theme';
 import { explainIndicator, pp, type CauseContribution, type IndicatorKey, type MonthReport } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
 
-import { INDICATOR_META } from './labels';
+import { INDICATOR_META, VOTING_INTENTION_META } from './labels';
 
 /** Quantas causas aparecem antes do agrupamento "outros". */
 const TOP_CAUSES = 6;
 
-/** "Por que mudou?" de um indicador (GAME_DESIGN.md §12): causas do último mês encerrado, com sinal em p.p. */
-export function WhyChanged({ indicator, report }: { indicator: IndicatorKey; report: MonthReport | undefined }) {
+/**
+ * "Por que mudou?" de um indicador (GAME_DESIGN.md §12): causas do último mês encerrado, com sinal em p.p.
+ * Aceita também o pseudo-indicador `votingIntention` (Fase 08), que não é indicador de economia.
+ */
+export function WhyChanged({
+  indicator,
+  report,
+}: {
+  indicator: IndicatorKey | 'votingIntention';
+  report: MonthReport | undefined;
+}) {
   const { colors } = useTheme();
-  const meta = INDICATOR_META[indicator];
+  const meta = indicator === 'votingIntention' ? VOTING_INTENTION_META : INDICATOR_META[indicator];
   const title = `Por que mudou? — ${meta.label}`;
 
   if (!report) {

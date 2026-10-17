@@ -13,7 +13,7 @@
     "maxOccurrences": 2,
     "requiresFlags": ["pol_obras_nordeste"]
   },
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "onFireFlags": ["pol_frente_sudeste"],
   "characterId": "governador_sudeste",
   "onFire": [

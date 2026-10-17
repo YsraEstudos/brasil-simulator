@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { loadContent } from '@/content';
 import { advanceMonth } from '@/engine/advanceMonth';
+import { eventsForScenario } from '@/engine/events/events';
 import { campaignOutcome } from '@/engine/events/outcome';
 import { impeachmentPressure } from '@/engine/events/pressure';
 import { checkInvariants } from '@/engine/invariants';
@@ -193,6 +194,15 @@ describe('Fase 07: isolamento do cenário v0.5.0 (AI_INSTRUCTIONS.md §8)', () =
         expect(run.violations, `${s.id} s${seed}`).toEqual([]);
       }
     }
+  });
+});
+
+describe('Fase 08: herança de eventos do cenário padrão v0.7.0 (achado da revisão do PR #9)', () => {
+  it('o v0.7.0 recebe exatamente o conjunto de eventos do v0.6.0, inclusive os fase07_*', () => {
+    const contentV070: GameContent = loadContent('brasil_2027_01_v070');
+    const ids = (scenarioId: string) => eventsForScenario(contentV070.events, scenarioId).map((e) => e.id);
+    expect(ids('brasil_2027_01_v070')).toEqual(ids('brasil_2027_01_v060'));
+    expect(ids('brasil_2027_01_v070').filter((id) => id.startsWith('fase07_')).length).toBeGreaterThanOrEqual(37);
   });
 });
 

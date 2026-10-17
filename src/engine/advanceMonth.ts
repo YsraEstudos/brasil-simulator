@@ -1,5 +1,7 @@
 import { actionKey, AGENDA_ACTIONS } from './actions';
 import { validateActionTarget } from './agenda';
+import { electionsStep, governorTurnoverStep } from './elections/elections';
+import { isNovoBeneficio, vedacaoAtiva } from './elections/vedacao';
 import { cabinetStep } from './congress/cabinet';
 import { congressStep } from './congress/congress';
 import { economyStep } from './economy/economy';
@@ -31,8 +33,12 @@ import {
 /**
  * Etapas do mês, na ordem do pipeline (ECONOMIC_MODEL.md §4): respostas a eventos, nomeações de ministros,
  * propostas e Congresso (negociação, votações, sanção, execução), relações com os blocos, economia, opinião
- * pública, distribuição às UFs (ECONOMIC_MODEL.md §5.15) e, por fim, sorteio dos eventos que chegam à caixa de
- * entrada do mês seguinte.
+ * pública, eleições (FASE_08.md), distribuição às UFs (ECONOMIC_MODEL.md §5.15), posse dos governadores
+ * eleitos e, por fim, sorteio dos eventos que chegam à caixa de entrada do mês seguinte.
+ *
+ * Contrato de ordem eleitoral (revisão do PR #9): `electionsStep` roda ANTES de `regionsStep` (a contribuição
+ * de aprovação do pleito entra antes da distribuição às UFs) e `governorTurnoverStep` roda DEPOIS, para o
+ * governador recém-eleito não ser puxado pela evolução regional do próprio mês.
  */
 export const DEFAULT_STEPS: readonly MonthStep[] = [
   resolveEventsStep,
@@ -43,7 +49,9 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
   economyStep,
   societyStep,
   opinionStep,
+  electionsStep,
   regionsStep,
+  governorTurnoverStep,
   triggerEventsStep,
 ];
 
@@ -162,6 +170,8 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
       rejected.push({ decision, reason: 'ja_em_andamento' });
     } else if (barredMeasures.has(decision.policyId)) {
       rejected.push({ decision, reason: 'reedicao_vedada' });
+    } else if (vedacaoAtiva(state, content) && !decision.params?.vedacao_bypass && isNovoBeneficio(policy)) {
+      rejected.push({ decision, reason: 'vedacao_eleitoral' });
     } else if (!Number.isFinite(cost) || cost < 0) {
       rejected.push({ decision, reason: 'custo_invalido' });
     } else if (cost > left) {
@@ -182,6 +192,10 @@ function copyDecision(d: Decision): Decision {
 
 function applyContributions(indicators: Indicators, contributions: readonly Contribution[]): Indicators {
   const next = { ...indicators };
-  for (const c of contributions) next[c.indicator] += c.delta;
+  for (const c of contributions) {
+    // 'votingIntention' (Fase 08) é report-only: a intenção não pertence ao `Indicators`.
+    if (c.indicator === 'votingIntention') continue;
+    next[c.indicator] += c.delta;
+  }
   return next;
 }

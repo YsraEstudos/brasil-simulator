@@ -1,3 +1,4 @@
+import { MEMORY_MONTHS } from './elections/elections';
 import { populationShares, regionsOf } from './regions/regions';
 import { checkSociety } from './society/society';
 import { checkPublicPolicies } from './publicPolicies/publicPolicies';
@@ -143,6 +144,25 @@ export function checkInvariants(
     const explained = report.contributions.filter((c) => c.indicator === key).reduce((s, c) => s + c.delta, 0);
     if (Math.abs(delta - explained) > EPSILON) {
       errors.push(`${key}: variação ${delta} ≠ soma das contribuições ${explained}`);
+    }
+  }
+
+  // Fase 08: intenção de voto é report-only (pseudo-indicador `'votingIntention'`), conferida pelo mesmo §7.3
+  // quando há estado eleitoral nos dois lados; a memória do eleitor guarda no máximo MEMORY_MONTHS meses.
+  if (next.politics) {
+    const intention = next.politics.votingIntention;
+    if (!(intention >= 0 && intention <= 1)) errors.push(`intenção de voto fora de [0, 1]: ${intention}`);
+    if (next.politics.memoria.length > MEMORY_MONTHS) {
+      errors.push(`memória do eleitor com ${next.politics.memoria.length} meses (máximo ${MEMORY_MONTHS})`);
+    }
+    if (prev.politics) {
+      const delta = intention - prev.politics.votingIntention;
+      const explained = report.contributions
+        .filter((c) => c.indicator === 'votingIntention')
+        .reduce((s, c) => s + c.delta, 0);
+      if (Math.abs(delta - explained) > EPSILON) {
+        errors.push(`votingIntention: variação ${delta} ≠ soma das contribuições ${explained}`);
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Button, Text } from '@/components/ui';
+import { Alert, Button, Text } from '@/components/ui';
 import { Radius, Spacing, type ThemeColor } from '@/constants/theme';
 import { adviseDecision, type GameContent, type GameState, type Opinion } from '@/engine';
 import { legislativeInstrument } from '@/engine/congress/congress';
@@ -18,7 +18,10 @@ export interface DispatchCardProps {
   included: boolean;
   /** Cabe nos pontos de agenda restantes (incluir só é permitido quando cabe). */
   canInclude: boolean;
+  /** Vedação eleitoral: incluir exige a confirmação de quebra declarada (`vedacao_bypass`). */
+  vedacao: boolean;
   onToggle: () => void;
+  onToggleBypass: () => void;
 }
 
 const TONE: Record<Opinion['tone'], { color: ThemeColor; word: string }> = {
@@ -28,7 +31,16 @@ const TONE: Record<Opinion['tone'], { color: ThemeColor; word: string }> = {
 };
 
 /** Mesa de despacho (GAME_DESIGN.md §4.4): três pareceres curtos antes de incluir a decisão na agenda. */
-export function DispatchCard({ policy, state, content, included, canInclude, onToggle }: DispatchCardProps) {
+export function DispatchCard({
+  policy,
+  state,
+  content,
+  included,
+  canInclude,
+  vedacao,
+  onToggle,
+  onToggleBypass,
+}: DispatchCardProps) {
   const { colors } = useTheme();
   const advice = useMemo(() => adviseDecision(state, policy.id, content), [state, policy.id, content]);
   const instrument = legislativeInstrument(policy);
@@ -56,12 +68,19 @@ export function DispatchCard({ policy, state, content, included, canInclude, onT
           </Text>
         </View>
       ))}
+      {vedacao && (
+        <Alert
+          tone="warning"
+          title="Vedação eleitoral"
+          message="Nos meses antes do pleito, criar ou ampliar benefícios é vedado (Lei 9.504/1997). Incluir na agenda exige quebra declarada: a Justiça Eleitoral pode multar e a intenção de voto sente."
+        />
+      )}
       <Button
-        label={included ? 'Retirar da agenda' : 'Incluir na agenda'}
+        label={included ? 'Retirar da agenda' : vedacao ? 'Incluir com quebra declarada' : 'Incluir na agenda'}
         variant={included ? 'secondary' : 'primary'}
         disabled={blocked}
         accessibilityHint={blocked ? 'Pontos de agenda insuficientes neste mês' : undefined}
-        onPress={onToggle}
+        onPress={vedacao ? onToggleBypass : onToggle}
         block
       />
       {blocked && (

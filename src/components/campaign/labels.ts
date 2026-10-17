@@ -55,6 +55,13 @@ export const INDICATOR_ORDER: readonly IndicatorKey[] = [
   'primaryBalance12m',
 ];
 
+/** Intenção de voto (Fase 08): não é indicador de economia, mas tem valor, sentido e "Por que mudou?" próprios. */
+export const VOTING_INTENTION_META: { label: string; goodWhen: 'up' | 'down'; decimals: number } = {
+  label: 'Intenção de voto',
+  goodWhen: 'up',
+  decimals: 1,
+};
+
 /** 0 → "0 pontos", 1 → "1 ponto", 2 → "2 pontos". */
 export function costText(points: number): string {
   return `${points} ${points === 1 ? 'ponto' : 'pontos'}`;
@@ -113,6 +120,7 @@ export const REJECTION_REASON_LABEL: Record<DecisionRejection, string> = {
   acao_repetida: 'ação já feita neste mês',
   ja_em_andamento: 'já está em andamento',
   reedicao_vedada: 'medida provisória rejeitada ou caducada não pode ser reeditada no mesmo ano',
+  vedacao_eleitoral: 'novo benefício vedado nos meses antes da eleição (inclua com quebra declarada)',
   evento_nao_pendente: 'o evento não está mais pendente',
   escolha_invalida: 'escolha inválida',
 };

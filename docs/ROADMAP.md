@@ -1,6 +1,6 @@
 # Brasil Simulator — Roadmap
 
-Versão 0.2 do documento • 13/10/2026 • v0.2: adições do plano v1.1 (§2.1) e decisão D7
+Versão 0.3 do documento • 16/10/2026 • v0.2: adições do plano v1.1 (§2.1) e decisão D7 • v0.3: Fases 09–11 movidas para [ROADMAP_2.0.md](ROADMAP_2.0.md)
 Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 
 ---
@@ -12,7 +12,8 @@ Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 | **0.1 — Protótipo** | 12 turnos, 8 políticas, 10 eventos, 5 indicadores, salvamento | 00–02 | Validar a diversão central |
 | **0.5 — Alpha** | Economia completa, Congresso, 27 UFs, políticas públicas, campanha de 4 anos | 03–07 | Jogo completo para testes |
 | **1.0 — Lançamento** | Eleições, mandatos, notícias, tutorial, equilíbrio, estabilidade | 08, 10 | Publicação Android |
-| **2.0 — Expansão** | Realismo Extremo, diplomacia, novos cenários | 09, 11 | Profundidade adicional |
+
+As Fases 09–11 (a Fase 10 conclui a 1.0; as Fases 09 e 11 são a 2.0) estão no [ROADMAP_2.0.md](ROADMAP_2.0.md).
 
 **Regra de produção:** a Fase 09 só começa com a 0.5 funcional, testada e jogável.
 
@@ -31,9 +32,8 @@ Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 | 06 | Sociedade e políticas públicas | 3–5 sem | ≥ 30 políticas com custos, efeitos e atrasos documentados | 🟡 Implementada em 15/10/2026 (42 políticas, sociedade, diretrizes, projetos e marcas); falta a revisão do autor da calibração social e da execução |
 | 07 | Eventos, notícias, personagens | 2–4 sem | Campanha de 4 anos com eventos variados, causas identificáveis e efeitos persistentes | 🟡 Implementada em 16/10/2026 (37 eventos, cadeias, marcas, notícias e personagens; ver §8.2); falta a revisão do autor de calibração e conteúdo |
 | 08 | Eleições e mandatos | 2–4 sem | Mandato completo + eleição + novo ciclo ou encerramento | ⬜ |
-| 09 | Realismo Extremo | 4–8 sem | Consistência e desempenho em campanhas de décadas; efeitos rastreáveis | ⬜ |
-| 10 | Testes e publicação | 4–6 sem | Versão estável aprovada na Play Store | ⬜ |
-| 11 | Expansões | contínuo | — | ⬜ |
+
+Continuação (Fases 09–11): [ROADMAP_2.0.md](ROADMAP_2.0.md).
 
 ### 2.1 Adições do plano v1.1 (13/10/2026)
 
@@ -314,8 +314,8 @@ plenário e parlamentares individuais (Fase 09); i18n; imprensa com rede.
 | # | Decisão | Opções | Recomendação | Bloqueia |
 | --- | --- | --- | --- | --- |
 | D4 | Regra de reeleição no cenário | atual (uma reeleição) / sem reeleição | Atual, como parâmetro | Fase 08 |
-| D5 | Nome comercial definitivo | "Brasil Simulator" ou outro | Verificar disponibilidade de marca e na loja antes da Fase 10 | Fase 10 |
-| D6 | Monetização | demo grátis + compra única | Conforme o plano mestre; revisar regras do Google Play no lançamento | Fase 10 |
+
+As decisões D5 (nome comercial) e D6 (monetização) estão no [ROADMAP_2.0.md](ROADMAP_2.0.md) §4.
 
 ---
 

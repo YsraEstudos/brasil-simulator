@@ -2,7 +2,7 @@
   "id": "fase07_eco_pacote_infraestrutura_privada",
   "title": "Pacote privado de infraestrutura",
   "description": "Grupos de investimento anunciam um pacote de rodovias, portos, saneamento e energia, animados com a confiança no país. Pedem regras estáveis e licitações rápidas para começar as obras.",
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "chainedOnly": true,
   "trigger": {
     "monthsOfYear": [],

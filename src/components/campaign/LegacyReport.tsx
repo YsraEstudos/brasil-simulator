@@ -15,7 +15,7 @@ import {
 import type { PublicPolicyState } from '@/engine/publicPolicies/types';
 import type { SocietyState } from '@/engine/society/types';
 
-import { INDICATOR_META, INDICATOR_ORDER, PROPOSAL_STATUS_LABEL } from './labels';
+import { INDICATOR_META, INDICATOR_ORDER, PROPOSAL_STATUS_LABEL, monthLabel } from './labels';
 
 /**
  * Relatório de legado (GAME_DESIGN.md §7.1): país recebido vs. entregue.
@@ -76,17 +76,45 @@ export function LegacyReport({ state, content }: LegacyReportProps) {
   const brands = publicState.brands;
   const projectsByProposal = new Map(publicState.projects.map((project) => [project.proposalId, project]));
   const society: SocietyState = state.society;
+  const outcome = campaignOutcome(state);
+  const general = state.politics?.eleicao_geral;
 
   return (
     <View style={styles.root}>
-      {campaignOutcome(state) === 'impeachment' && (
+      {outcome === 'impeachment' && (
         <Alert
           tone="negative"
           title="Mandato encerrado por impeachment"
           message="Ficção: o Senado condenou o governo e o mandato terminou antes do prazo. O relatório abaixo mostra o país até esse mês."
         />
       )}
+      {outcome === 'derrota_eleitoral' && (
+        <Alert
+          tone="negative"
+          title="Campanha encerrada pela derrota eleitoral"
+          message="Ficção: a situação perdeu a eleição geral e o mandato acabou no pleito. O relatório abaixo mostra o país até esse mês."
+        />
+      )}
+      {outcome === 'fim_de_mandato' && (
+        <Alert
+          tone="info"
+          title="Fim do mandato"
+          message="Ficção: o mandato terminou sem candidatura à reeleição e o sucessor tomou posse. O relatório abaixo mostra o país entregue."
+        />
+      )}
       <Text variant="title">Relatório de legado</Text>
+
+      {general && (
+        <Card
+          title="Eleição geral"
+          subtitle={`${monthLabel(general.monthIndex)} · ${
+            general.candidatura ? 'candidatura própria' : 'sucessor apoiado'
+          }.`}>
+          <Text variant="body">
+            {general.venceu ? 'Vitória' : 'Derrota'} da situação{general.turno2 ? ' no 2º turno' : ' no 1º turno'}.
+          </Text>
+        </Card>
+      )}
 
       <Card title="País recebido e país entregue" subtitle="Valor inicial (jan/2027) e final do mandato.">
         {INDICATOR_ORDER.map((key) => {

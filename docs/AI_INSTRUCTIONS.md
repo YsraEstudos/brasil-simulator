@@ -12,8 +12,8 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
    - economia → [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md)
    - Congresso, leis, orçamento → [POLITICAL_RULES.md](POLITICAL_RULES.md)
    - dados de cenário → [DATA_SOURCES.md](DATA_SOURCES.md)
-   - prioridades → [ROADMAP.md](ROADMAP.md)
-2. Confirmar em que fase o projeto está ([ROADMAP.md](ROADMAP.md) §2). Não implementar funcionalidades de fases futuras sem pedido explícito.
+   - prioridades → [ROADMAP.md](ROADMAP.md) (Fases 00–08) e [ROADMAP_2.0.md](ROADMAP_2.0.md) (Fases 09–11)
+2. Confirmar em que fase o projeto está ([ROADMAP.md](ROADMAP.md) §2 e [ROADMAP_2.0.md](ROADMAP_2.0.md) §2). Não implementar funcionalidades de fases futuras sem pedido explícito.
 
 ---
 

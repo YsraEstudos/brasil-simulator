@@ -30,6 +30,9 @@ export const CAUSE_LABELS: Readonly<Record<string, string>> = {
   perda_arrecadacao: 'Perda de arrecadação',
   compressao_discricionarias: 'Compressão das discricionárias',
   paralisacao: 'Paralisação de serviços públicos',
+  tendencia_intencao: 'Tendência da intenção de voto',
+  memoria_eleitor: 'Memória do eleitor',
+  municipais: 'Eleições municipais',
 };
 
 /** Uma causa agregada para o "Por que mudou?" de um indicador. */
@@ -41,9 +44,10 @@ export interface CauseContribution {
 
 /**
  * Decompõe a variação de um indicador no mês por causa (GAME_DESIGN.md §12). A soma dos `delta` devolvidos é
- * igual à soma das contribuições do indicador. Ordenado por |delta|, do maior para o menor.
+ * igual à soma das contribuições do indicador. Ordenado por |delta|, do maior para o menor. O pseudo-indicador
+ * `'votingIntention'` (Fase 08, report-only) também pode ser explicado.
  */
-export function explainIndicator(report: MonthReport, key: IndicatorKey): CauseContribution[] {
+export function explainIndicator(report: MonthReport, key: IndicatorKey | 'votingIntention'): CauseContribution[] {
   const byCause = new Map<string, CauseContribution>();
   for (const c of report.contributions) {
     if (c.indicator !== key) continue;
