@@ -183,8 +183,11 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     const { db, launchApp } = await device();
     const app = await launchApp();
     await db.exec('DROP TABLE snapshots');
-    await app.getState().newCampaign({ name: 'X', difficulty: 'casual' });
-    expect(app.getState().error).toMatch(/snapshots/);
+    // NOVO JOGO devolve a falha no resultado (a tela mostra); o `error` global fica para as operações sem resultado.
+    const result = await app.getState().newCampaign({ name: 'X', difficulty: 'casual' });
+    expect(result.ok).toBe(false);
+    expect(result.ok ? '' : result.error).toMatch(/snapshots/);
+    expect(app.getState().error).toBeUndefined();
     expect(app.getState().busy).toBe(false);
   });
 });

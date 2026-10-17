@@ -8,7 +8,7 @@ import { AppThemeProvider } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-export const unstable_settings = { initialRouteName: 'index' };
+export const unstable_settings = { anchor: 'index' };
 
 /**
  * Raiz de navegação: o menu principal (`index`) abre o app em tela cheia e o jogo vive no grupo `(tabs)`,
@@ -31,6 +31,11 @@ export default function RootLayout() {
           <Stack.Screen name="index" />
           {/* Entrar no jogo é uma transição de abertura de jogo: esmaece em vez de deslizar. */}
           <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+          {/* Fluxos de campanha fora das abas: sobem suavemente sobre o menu e voltam a ele. */}
+          <Stack.Screen name="novo-jogo" options={{ animation: 'fade_from_bottom' }} />
+          <Stack.Screen name="carregar-jogo" options={{ animation: 'fade_from_bottom' }} />
+          {/* Ajustes do jogador, abertos pelo menu principal. */}
+          <Stack.Screen name="configuracoes" options={{ animation: 'fade_from_bottom' }} />
         </Stack>
       </AppThemeProvider>
     </GestureHandlerRootView>

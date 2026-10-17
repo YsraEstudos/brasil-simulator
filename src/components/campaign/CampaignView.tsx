@@ -112,9 +112,13 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
     if (gameStore.getState().active?.state.monthIndex !== before) setExpandedPolicy(null);
   };
 
-  /** Salva e fecha a partida e volta à tela de abertura (a pilha de abas não tem cabeçalho com "voltar"). */
+  /**
+   * Volta à tela de abertura (a pilha de abas não tem cabeçalho com "voltar"). A partida em andamento continua aberta
+   * em memória, com o rascunho do mês: CONTINUAR retoma exatamente daqui. Uma partida encerrada (só aberta para ver o
+   * resultado) é fechada, para CONTINUAR buscar a última partida salva em vez de reabrir o resultado.
+   */
   const leaveToMenu = async () => {
-    await gameStore.getState().leaveCampaign();
+    if (finished) await gameStore.getState().leaveCampaign();
     router.navigate('/');
   };
 

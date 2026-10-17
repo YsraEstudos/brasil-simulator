@@ -87,3 +87,8 @@ export function draftInput(draft: AgendaDraft, content: GameContent): MonthInput
     eventChoices: Object.entries(draft.eventChoices).map(([eventId, choiceId]) => ({ eventId, choiceId })),
   };
 }
+
+/** O rascunho tem decisões ou respostas a eventos ainda não confirmadas (seriam perdidas ao trocar de campanha). */
+export function hasPendingChoices(draft: AgendaDraft): boolean {
+  return draft.decisions.length > 0 || Object.keys(draft.eventChoices).length > 0;
+}

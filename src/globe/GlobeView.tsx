@@ -1,6 +1,6 @@
 import { Canvas } from './r3f';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -64,7 +64,7 @@ export function GlobeView({ initial, fills, selectedId, onSelect, onReady, chrom
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controller]);
   const [stats, setStats] = useState<SceneStats | null>(null);
-  const container = useRef<View>(null);
+  const container = useRef<ViewInstance>(null);
 
   const gesture = useMemo(() => {
     const pan = Gesture.Pan()
