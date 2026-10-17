@@ -66,6 +66,14 @@ describe('nome da campanha', () => {
   it('espaços em volta de quebras coladas não se repetem', () => {
     expect(normalizeCampaignName('Governo \n de \r\n união')).toBe('Governo de união');
     expect(normalizeCampaignName('A  \t  B')).toBe('A B');
+    expect(normalizeCampaignName('A  B')).toBe('A  B');
+  });
+
+  it('texto enorme sem quebra é tratado em tempo linear', () => {
+    const raw = `A${' '.repeat(50_000)}B`;
+    const start = performance.now();
+    expect(normalizeCampaignName(raw)).toBe(raw);
+    expect(performance.now() - start).toBeLessThan(200);
   });
 
   it('remove caracteres de controle (nulo, C1) do nome gravado', () => {

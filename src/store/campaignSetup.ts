@@ -35,39 +35,38 @@ export const SEED_ERRORS = {
   range: 'A semente deve ficar entre 0 e 4.294.967.295.',
 } as const;
 
-/**
- * Quebras de linha (inclusive os separadores Unicode U+2028/U+2029) e tabulações, junto com os espaços ao redor:
- * "Governo \n de" vira "Governo de", sem espaços repetidos.
- */
-const LINE_BREAKS = new RegExp('[ \\u00a0]*[\\r\\n\\t\\v\\f\\u2028\\u2029]+[ \\u00a0]*', 'g');
+/** Quebras de linha (inclusive os separadores Unicode U+2028/U+2029) e tabulações, em sequência. */
+const LINE_BREAKS = /[\r\n\t\v\f\u2028\u2029]+/;
+
+/** Junta as linhas com um espaço, sem os espaços ao redor de cada quebra: "Governo \n de" vira "Governo de". */
+function joinLines(s: string): string {
+  const lines = s.split(LINE_BREAKS);
+  if (lines.length === 1) return s;
+  return lines
+    .map((line, i) => (i === 0 ? line : line.trimStart()))
+    .map((line, i, all) => (i === all.length - 1 ? line : line.trimEnd()))
+    .join(' ');
+}
 
 /** Caracteres de controle C0/C1 que não são quebra de linha nem tabulação (ex.: o nulo U+0000): nunca vão ao banco. */
-const CONTROL_CHARS = new RegExp('[\\u0000-\\u0008\\u000e-\\u001f\\u007f-\\u009f]', 'g');
+const CONTROL_CHARS = /[\u0000-\u0008\u000e-\u001f\u007f-\u009f]/g;
 
 /**
  * Espaços e caracteres sem desenho (espaço de largura zero, marcas de direção, espaço Braille em branco, preenchimento
  * Hangul…). Um nome feito só deles apareceria vazio na lista de saves, então conta como vazio.
  */
 const INVISIBLE = new RegExp(
-  '[\\s\\u00ad\\u034f\\u115f\\u1160\\u17b4\\u17b5\\u180e\\u200b-\\u200f\\u2060-\\u2064\\u2800\\u3164\\ufeff\\uffa0]',
+  '\\u034f|[\\s\\u00ad\\u115f\\u1160\\u17b4\\u17b5\\u180e\\u200b-\\u200f\\u2060-\\u2064\\u2800\\u3164\\ufeff\\uffa0]',
   'g',
 );
 
 /** Remove metades soltas de pares substitutos (um corte no meio de um emoji), que não formam caractere válido. */
 function dropLoneSurrogates(s: string): string {
   let out = '';
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i);
-    if (c >= 0xd800 && c <= 0xdbff) {
-      const next = s.charCodeAt(i + 1);
-      if (next >= 0xdc00 && next <= 0xdfff) {
-        out += s[i] + s[i + 1];
-        i++;
-      }
-      continue;
-    }
-    if (c >= 0xdc00 && c <= 0xdfff) continue;
-    out += s[i];
+  // A iteração por código Unicode entrega um par válido inteiro (acima de U+FFFF) e cada metade solta sozinha.
+  for (const ch of s) {
+    const c = ch.codePointAt(0) ?? 0;
+    if (c < 0xd800 || c > 0xdfff) out += ch;
   }
   return out;
 }
@@ -79,7 +78,7 @@ function dropLoneSurrogates(s: string): string {
  */
 export function normalizeCampaignName(raw: unknown): string {
   if (typeof raw !== 'string') return '';
-  let s = dropLoneSurrogates(raw.replace(LINE_BREAKS, ' ').replace(CONTROL_CHARS, ''));
+  let s = dropLoneSurrogates(joinLines(raw).replace(CONTROL_CHARS, ''));
   try {
     s = s.normalize('NFC');
   } catch {

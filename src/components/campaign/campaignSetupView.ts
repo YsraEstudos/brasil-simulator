@@ -95,15 +95,25 @@ export function difficultyView(id: Difficulty): DifficultyView {
   return DIFFICULTY_VIEWS[id];
 }
 
+/** Parêntese no fim do nome do cenário: onde começa e o que diz (sem outro ")" dentro). */
+function trailingNote(name: string): { start: number; note: string } | null {
+  const s = name.trimEnd();
+  if (!s.endsWith(')')) return null;
+  const start = s.lastIndexOf('(');
+  if (start < 0) return null;
+  const note = s.slice(start + 1, -1);
+  return note.includes(')') ? null : { start, note };
+}
+
 /** "Brasil, janeiro de 2027 (dados provisórios)" → "Brasil, janeiro de 2027"; o status dos dados vira selo. */
 export function scenarioTitle(scenario: Scenario): string {
-  return scenario.name.replace(/\s*\([^)]*\)\s*$/, '').trim() || scenario.name;
+  const found = trailingNote(scenario.name);
+  return (found ? scenario.name.slice(0, found.start) : scenario.name).trim() || scenario.name;
 }
 
 /** Parênteses do nome do cenário ("dados provisórios", "dados fictícios"), se houver. */
 export function scenarioDataNote(scenario: Scenario): string | null {
-  const m = /\(([^)]+)\)\s*$/.exec(scenario.name);
-  return m ? m[1] : null;
+  return trailingNote(scenario.name)?.note || null;
 }
 
 const MONTHS = [
