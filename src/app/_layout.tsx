@@ -8,7 +8,7 @@ import { AppThemeProvider } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-export const unstable_settings = { initialRouteName: 'index' };
+export const unstable_settings = { anchor: 'index' };
 
 /**
  * Raiz de navegação: o menu principal (`index`) abre o app em tela cheia e o jogo vive no grupo `(tabs)`,
