@@ -112,11 +112,11 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
     if (gameStore.getState().active?.state.monthIndex !== before) setExpandedPolicy(null);
   };
 
-  /** Salva e fecha a partida e volta à tela de abertura (a pilha de abas não tem cabeçalho com "voltar"). */
-  const leaveToMenu = async () => {
-    await gameStore.getState().leaveCampaign();
-    router.navigate('/');
-  };
+  /**
+   * Volta à tela de abertura (a pilha de abas não tem cabeçalho com "voltar"). A partida continua aberta em memória,
+   * com o rascunho do mês: CONTINUAR retoma exatamente daqui. Os meses encerrados já estão gravados.
+   */
+  const leaveToMenu = () => router.navigate('/');
 
   return (
     <View style={styles.root}>

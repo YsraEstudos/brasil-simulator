@@ -36,6 +36,8 @@ export interface CampaignSummary {
   scenarioId: string;
   scenarioVersion: string;
   difficulty: Difficulty;
+  /** Semente da simulação usada na criação (para reproduzir a partida). */
+  seed: number;
   status: 'ativa' | 'encerrada';
   currentMonth: number;
   createdAt: string;
@@ -201,6 +203,7 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     scenario_id: string;
     scenario_version: string;
     difficulty: Difficulty;
+    seed: number;
     status: 'ativa' | 'encerrada';
     current_month: number;
     created_at: string;
@@ -212,6 +215,7 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     scenarioId: r.scenario_id,
     scenarioVersion: r.scenario_version,
     difficulty: r.difficulty,
+    seed: r.seed,
     status: r.status,
     currentMonth: r.current_month,
     createdAt: r.created_at,

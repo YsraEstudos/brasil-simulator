@@ -115,11 +115,13 @@ export function MainMenuScreen() {
   const labelSize = Math.round(btnH * 0.35 * Math.min(textScale, 1.3));
   const iconSize = Math.round(btnH * 0.45);
 
-  const showSoon = useCallback((label: string) => {
-    setNote(`${label} — em breve`);
+  /** Aviso rápido no rodapé ("em breve", "nenhuma partida salva"). */
+  const showNote = useCallback((text: string) => {
+    setNote(text);
     if (noteTimer.current) clearTimeout(noteTimer.current);
-    noteTimer.current = setTimeout(() => setNote(null), 1600);
+    noteTimer.current = setTimeout(() => setNote(null), 2000);
   }, []);
+  const showSoon = useCallback((label: string) => showNote(`${label} — em breve`), [showNote]);
 
   useEffect(
     () => () => {
@@ -128,34 +130,39 @@ export function MainMenuScreen() {
     [],
   );
 
-  /** NOVO JOGO / CARREGAR JOGO: abre a tela de partidas (nova partida e partidas salvas). */
-  const openCampaignMenu = useCallback(async () => {
-    if (busy) return;
-    // Fecha a partida em exibição (sem apagar nada) para a tela de partidas aparecer no lugar do jogo.
-    if (status === 'pronto' && active) await gameStore.getState().leaveCampaign();
-    router.push('/presidencia');
-  }, [active, busy, status]);
-
   /**
    * CONTINUAR: retoma a última partida jogada (a mais recentemente atualizada). Com uma partida já aberta
    * em memória, só entra — recarregar do banco descartaria a agenda do mês em montagem.
    */
   const continueLast = useCallback(async () => {
-    if (busy) return;
-    if (status === 'pronto' && !active) {
+    if (busy || status === 'iniciando') return;
+    if (!active) {
       const last = campaigns.reduce<(typeof campaigns)[number] | null>(
         (best, c) => (!best || c.updatedAt > best.updatedAt ? c : best),
         null,
       );
-      if (last) await gameStore.getState().continueCampaign(last.id);
+      if (!last) {
+        showNote('Nenhuma partida salva — comece um NOVO JOGO');
+        return;
+      }
+      // Só entra na Presidência se a partida carregou de fato (a falha fica registrada na store).
+      if (!(await gameStore.getState().continueCampaign(last.id))) {
+        showNote('Não foi possível carregar a última partida');
+        return;
+      }
     }
     router.push('/presidencia');
-  }, [active, busy, campaigns, status]);
+  }, [active, busy, campaigns, showNote, status]);
 
   const onPressItem = useCallback(
     (id: MenuItem['id']) => {
-      if (id === 'novo' || id === 'carregar') {
-        void openCampaignMenu();
+      // NOVO JOGO e CARREGAR JOGO têm telas próprias: abri-las não fecha a partida em andamento nem o rascunho.
+      if (id === 'novo') {
+        router.push('/novo-jogo');
+        return;
+      }
+      if (id === 'carregar') {
+        router.push('/carregar-jogo');
         return;
       }
       if (id === 'continuar') {
@@ -165,7 +172,7 @@ export function MainMenuScreen() {
       const label = SOON[id];
       if (label) showSoon(label);
     },
-    [continueLast, openCampaignMenu, showSoon],
+    [continueLast, showSoon],
   );
 
   const panel = (
