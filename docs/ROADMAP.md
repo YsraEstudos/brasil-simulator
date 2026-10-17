@@ -1,6 +1,6 @@
 # Brasil Simulator — Roadmap
 
-Versão 0.3 do documento • 16/10/2026 • v0.2: adições do plano v1.1 (§2.1) e decisão D7 • v0.3: Fases 09–11 movidas para [ROADMAP_2.0.md](ROADMAP_2.0.md)
+Versão 0.4 do documento • 17/10/2026 • v0.2: adições do plano v1.1 (§2.1) e decisão D7 • v0.3: Fases 09–11 movidas para [ROADMAP_2.0.md](ROADMAP_2.0.md) • v0.4: status da Fase 08 e branches das Fases 07–08
 Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 
 ---
@@ -31,7 +31,7 @@ As Fases 09–11 (a Fase 10 conclui a 1.0; as Fases 09 e 11 são a 2.0) estão n
 | 05 | Mapa e federação | 3–4 sem | Decisões federais com efeitos regionais diferentes e explicáveis | 🟡 Implementada em 14/10/2026 (itens 1–10 do §8); falta a revisão do autor dos dados das UFs e da força dos efeitos regionais |
 | 06 | Sociedade e políticas públicas | 3–5 sem | ≥ 30 políticas com custos, efeitos e atrasos documentados | 🟡 Implementada em 15/10/2026 (42 políticas, sociedade, diretrizes, projetos e marcas); falta a revisão do autor da calibração social e da execução |
 | 07 | Eventos, notícias, personagens | 2–4 sem | Campanha de 4 anos com eventos variados, causas identificáveis e efeitos persistentes | 🟡 Implementada em 16/10/2026 (37 eventos, cadeias, marcas, notícias e personagens; ver §8.2); falta a revisão do autor de calibração e conteúdo |
-| 08 | Eleições e mandatos | 2–4 sem | Mandato completo + eleição + novo ciclo ou encerramento | ⬜ |
+| 08 | Eleições e mandatos | 2–4 sem | Mandato completo + eleição + novo ciclo ou encerramento | 🟡 Implementada em 17/10/2026 (estado v8, motor 0.8.0, cenário v0.7.0 de 96 meses; ver [FASE_08.md](FASE_08.md)); falta a simulação e os documentos finais (T8) |
 
 Continuação (Fases 09–11): [ROADMAP_2.0.md](ROADMAP_2.0.md).
 
@@ -226,7 +226,7 @@ corrigidas. Não houve teste físico Android/iPhone nem publicação.
 
 ## 8.2 Fase 07 — eventos, notícias e personagens
 
-Branch `codex/fase-06-sociedade`. Plano e decisões: [FASE_07.md](FASE_07.md).
+Branch `feat/fase-07-eventos-noticias` (PR #8, na `main` por squash). Plano e decisões: [FASE_07.md](FASE_07.md).
 Estado v7, motor 0.7.0, cenário `brasil_2027_01_v060` v0.6.0 (48 meses).
 Cenários e saves anteriores não recebem nenhum evento novo.
 
