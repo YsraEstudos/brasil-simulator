@@ -13,7 +13,7 @@
     "maxOccurrences": 3,
     "forbidsFlags": ["pol_pacto_institucional"]
   },
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "characterId": "lider_oposicao",
   "onFire": [{ "target": "relacao_congresso", "delta": -3, "lagMonths": 0, "durationMonths": 1 }],
   "choices": [

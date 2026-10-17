@@ -2,7 +2,7 @@
   "id": "fase07_eco_guerra_fiscal_estados",
   "title": "Estados disputam fábricas com incentivos",
   "description": "No ano eleitoral dos governadores, estados passam a oferecer isenções de ICMS e terrenos para atrair fábricas. A disputa desvia investimento entre regiões e pressiona as contas dos estados e da União.",
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "characterId": "governador_nordeste",
   "trigger": {
     "monthsOfYear": [],

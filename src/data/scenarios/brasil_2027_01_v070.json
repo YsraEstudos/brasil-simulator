@@ -1089,22 +1089,27 @@
     "candidatos": [
       {
         "blocId": "esquerda",
+        "dataStatus": "FICTICIO",
         "name": "Sônia Bittencourt"
       },
       {
         "blocId": "centro_esquerda",
+        "dataStatus": "FICTICIO",
         "name": "Caetano Ribeiro"
       },
       {
         "blocId": "centro",
+        "dataStatus": "FICTICIO",
         "name": "Alice Torquato"
       },
       {
         "blocId": "centro_direita",
+        "dataStatus": "FICTICIO",
         "name": "Édson Vilela"
       },
       {
         "blocId": "direita",
+        "dataStatus": "FICTICIO",
         "name": "Wagner Castilho"
       }
     ]

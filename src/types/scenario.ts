@@ -208,8 +208,10 @@ export const characterSchema = z
   .strict();
 export type Character = z.infer<typeof characterSchema>;
 
-/** Candidato fictício a presidente por bloco (Fase 08); nome sempre fictício (GAME_DESIGN.md §13). */
-export const electionCandidateSchema = z.object({ blocId: contentIdSchema, name: z.string().min(1) }).strict();
+/** Candidato fictício a presidente por bloco (Fase 08); nome e status sempre fictícios (GAME_DESIGN.md §13). */
+export const electionCandidateSchema = z
+  .object({ blocId: contentIdSchema, name: z.string().min(1), dataStatus: dataStatusSchema })
+  .strict();
 export type ElectionCandidate = z.infer<typeof electionCandidateSchema>;
 
 /**

@@ -2,7 +2,7 @@
   "id": "fase07_eco_greve_entregadores",
   "title": "Entregadores param as plataformas",
   "description": "Entregadores de aplicativos e de plataformas de delivery cruzam os braços em várias capitais, pedindo pagamento mínimo por entrega e seguro contra acidentes. Os pedidos caem e o comércio reclama.",
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "characterId": "lider_sindical",
   "chainedOnly": true,
   "trigger": {

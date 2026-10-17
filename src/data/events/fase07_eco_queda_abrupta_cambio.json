@@ -2,7 +2,7 @@
   "id": "fase07_eco_queda_abrupta_cambio",
   "title": "Dólar cai de forma abrupta",
   "description": "Um fluxo forte de capital estrangeiro derruba o dólar em poucos dias. O real se valoriza, os importados ficam mais baratos e o setor exportador reclama da perda de competitividade.",
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "trigger": {
     "monthsOfYear": [],
     "conditions": [

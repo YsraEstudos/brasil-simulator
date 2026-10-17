@@ -9,7 +9,7 @@
     "cooldownMonths": 24,
     "maxOccurrences": 2
   },
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "chainedOnly": true,
   "characterId": "ministro_stf",
   "onFire": [{ "target": "relacao_congresso", "delta": -4, "lagMonths": 0, "durationMonths": 1 }],

@@ -193,11 +193,14 @@ describe('brasil_2027_01_v070 (Fase 08: eleições e mandatos)', () => {
     expect(e?.janelaDeclaracao).toEqual({ inicio: 39, fim: 44 });
   });
 
-  it('todo bloco tem um candidato fictício, com nomes únicos', () => {
+  it('todo bloco tem um candidato fictício, com nomes únicos e dataStatus FICTICIO', () => {
     expect(candidatos.map((c) => c.blocId).sort()).toEqual(s.blocs.map((b) => b.id).sort());
     const names = candidatos.map((c) => c.name);
     expect(new Set(names).size).toBe(names.length);
-    for (const c of candidatos) expect(c.name.trim().length, c.blocId).toBeGreaterThan(0);
+    for (const c of candidatos) {
+      expect(c.name.trim().length, c.blocId).toBeGreaterThan(0);
+      expect(c.dataStatus, c.blocId).toBe('FICTICIO');
+    }
   });
 
   it('difere do v0.6.0 apenas em id, version e elections (zero drift nos demais campos)', () => {

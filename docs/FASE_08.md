@@ -30,7 +30,7 @@ Escopo definido em 16/10/2026. Critério do ROADMAP §2: **mandato completo com 
 ## Contratos (já decididos em `src/types/scenario.ts` e `src/engine/types.ts`)
 
 Cenário:
-- `scenario.elections?: { reeleicaoPermitida: boolean; janelaDeclaracao: { inicio: number; fim: number }; mesEleicaoMunicipal: number; mesEleicaoGeral: number; candidatos?: { blocId: string; name: string }[] }` (opcional; JSONs antigos continuam válidos). O schema exige a eleição municipal antes da geral e no máximo um candidato por bloco (D6).
+- `scenario.elections?: { reeleicaoPermitida: boolean; janelaDeclaracao: { inicio: number; fim: number }; mesEleicaoMunicipal: number; mesEleicaoGeral: number; candidatos?: { blocId: string; name: string; dataStatus: DataStatus }[] }` (opcional; JSONs antigos continuam válidos). O schema exige a eleição municipal antes da geral e no máximo um candidato por bloco (D6).
 
 Estado (`politics?: PoliticsState`):
 - `votingIntention: number` (0–1), `memoria: number[]` (clima mensal, antigo→novo), `declaracao: number | null` (monthIndex), `apoio: string | null` (bloco apoiado), `eleicao_geral?: { monthIndex; candidatura; venceu; turno2 }`, `eleicao_municipal?: { monthIndex }`.
@@ -79,3 +79,4 @@ Eleições ano a mês (2º turno decidido no mesmo passo), nomes legais de parti
 - Plano e contratos fechados (16/10/2026). T1–T8 em execução pelo coordenador (sem subagentes).
 - T1–T5 e as correções da auditoria de execução aplicadas (17/10/2026): migração v7→v8 com teste da fixture (conversão + 12 meses jogáveis), validações e chave das ações eleitorais, penalidades da vedação no envio, invariantes da intenção/memória, desfechos e notícias de eleição; `npm run check` verde (657 testes, 39 arquivos).
 - T7 (17/10/2026, achados da revisão do PR #9): card "Eleições" com a intenção de voto e "Por que mudou?" (pseudo-indicador), confirmação de quebra declarada da vedação na mesa de despacho (`vedacao_bypass`), `apoiar_candidato` com escolha de bloco, `declarar_reeleicao` movida do `AgendaActions` para o card (com contexto da janela) e desfechos `derrota_eleitoral`/`fim_de_mandato` no relatório de legado; `npm run check` verde.
+- Correções da 2ª rodada do PR #9 (17/10/2026): os 40 eventos com escopo por `onlyScenarios` que listavam o v0.6.0 passaram a listar também o v0.7.0 (o cenário padrão herda todo o elenco de eventos, com teste de paridade em `phase07.test.ts`), e `electionCandidateSchema` exige `dataStatus` (candidatos do v0.7.0 marcados como FICTICIO).

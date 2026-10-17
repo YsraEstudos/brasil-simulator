@@ -12,7 +12,7 @@
     "cooldownMonths": 12,
     "maxOccurrences": 2
   },
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "characterId": "governador_nordeste",
   "onFire": [
     {

@@ -2,7 +2,7 @@
   "id": "fase07_eco_recuperacao_emprego_industrial",
   "title": "Indústria volta a contratar",
   "description": "Pedidos industriais sobem e fábricas voltam a contratar. O desemprego começa a cair, mas o setor cobra crédito, energia barata e proteção contra importados para manter o ritmo.",
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "trigger": {
     "monthsOfYear": [],
     "conditions": [

@@ -2,7 +2,7 @@
   "id": "fase07_eco_pressao_meta_fiscal",
   "title": "Mercado cobra meta fiscal mais dura",
   "description": "Com a dívida bruta em alta, analistas e investidores passam a exigir uma meta de resultado primário mais rígida. O Ministério da Fazenda precisa dizer se aperta o gasto ou mantém o cronograma.",
-  "onlyScenarios": ["brasil_2027_01_v060"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
   "characterId": "min_fazenda",
   "trigger": {
     "monthsOfYear": [],
