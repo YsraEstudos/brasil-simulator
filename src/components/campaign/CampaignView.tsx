@@ -5,12 +5,21 @@ import { StyleSheet, View } from 'react-native';
 import { campaignMonths, loadContent } from '@/content';
 import { Button, Indicator, formatNumber, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { SANCTION_ACTION_ID, standingOf, type Decision, type IndicatorKey, type SanctionChoice } from '@/engine';
+import {
+  SANCTION_ACTION_ID,
+  isNovoBeneficio,
+  standingOf,
+  vedacaoAtiva,
+  type Decision,
+  type IndicatorKey,
+  type SanctionChoice,
+} from '@/engine';
 import type { Policy } from '@/types/policy';
-import { decisionCost, draftPoints, fits, gameStore, useGame, type ActiveCampaign } from '@/store';
+import { decisionCost, draftPoints, fits, gameStore, hasDecision, useGame, type ActiveCampaign } from '@/store';
 
 import { AgendaActions } from './AgendaActions';
 import { DecisionPanel } from './DecisionPanel';
+import { ElectionsCard } from './ElectionsCard';
 import type { CharacterBrief } from './characterView';
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER, monthLabel } from './labels';
 import { EventInbox, type PendingItem, type SanctionItem } from './EventInbox';
@@ -63,8 +72,11 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
     }
   }
 
-  // Políticas e ações marcadas sem alvo; as com alvo (negociação, ministérios) aparecem na aba Congresso.
-  const selected = draft.decisions.filter((d) => d.params === undefined).map((d) => d.policyId);
+  // Políticas e ações marcadas sem alvo; as com alvo (negociação, ministérios) aparecem na aba Congresso. Decisões
+  // com apenas a quebra declarada da vedação contam como simples (a mesa de despacho as marca e desmarca).
+  const selected = draft.decisions
+    .filter((d) => d.params === undefined || Object.keys(d.params).every((key) => key === 'vedacao_bypass'))
+    .map((d) => d.policyId);
   const simple = (id: string): Decision => {
     const decision: Decision = { policyId: id, agendaCost: 0 };
     return { ...decision, agendaCost: decisionCost(decision, content) };
@@ -83,6 +95,13 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
 
   const toggleSimple = (id: string) => {
     const decision = simple(id);
+    if (selected.includes(id) || fits(draft, decision, content, pointsMax)) toggleDecision(decision);
+  };
+
+  // Vedação eleitoral (Fase 08): incluir novo benefício na janela exige a quebra declarada (`vedacao_bypass`).
+  const isVedada = (policy: Policy): boolean => vedacaoAtiva(state, content) && isNovoBeneficio(policy);
+  const toggleBypass = (id: string) => {
+    const decision: Decision = { ...simple(id), params: { vedacao_bypass: true } };
     if (selected.includes(id) || fits(draft, decision, content, pointsMax)) toggleDecision(decision);
   };
 
@@ -132,6 +151,17 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
       </View>
       {openIndicator && <WhyChanged indicator={openIndicator} report={lastReport} />}
 
+      <ElectionsCard
+        state={state}
+        content={content}
+        report={lastReport}
+        draft={draft}
+        onToggle={(decision) => {
+          if (hasDecision(draft, decision) || fits(draft, decision, content, pointsMax)) toggleDecision(decision);
+        }}
+        fitsDecision={(decision) => fits(draft, decision, content, pointsMax)}
+      />
+
       {lastReport && <MonthSummary report={lastReport} content={content} />}
 
       {finished ? (
@@ -166,6 +196,8 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
             onExpand={setExpandedPolicy}
             onToggle={toggleSimple}
             canInclude={canInclude}
+            isVedada={isVedada}
+            onToggleBypass={toggleBypass}
           />
 
           <PublicPoliciesPanel state={state} content={content} pointsMax={pointsMax} />

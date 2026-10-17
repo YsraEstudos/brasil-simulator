@@ -55,6 +55,13 @@ export const INDICATOR_ORDER: readonly IndicatorKey[] = [
   'primaryBalance12m',
 ];
 
+/** Intenção de voto (Fase 08): não é indicador de economia, mas tem valor, sentido e "Por que mudou?" próprios. */
+export const VOTING_INTENTION_META: { label: string; goodWhen: 'up' | 'down'; decimals: number } = {
+  label: 'Intenção de voto',
+  goodWhen: 'up',
+  decimals: 1,
+};
+
 /** 0 → "0 pontos", 1 → "1 ponto", 2 → "2 pontos". */
 export function costText(points: number): string {
   return `${points} ${points === 1 ? 'ponto' : 'pontos'}`;

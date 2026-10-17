@@ -1,5 +1,14 @@
 export { advanceMonth, DEFAULT_STEPS } from './advanceMonth';
-export { monthKey, START_YEAR, TERM_MONTHS, termOf, toCalendar, toMonthIndex, type CalendarMonth } from './calendar';
+export {
+  monthKey,
+  monthOfTerm,
+  START_YEAR,
+  TERM_MONTHS,
+  termOf,
+  toCalendar,
+  toMonthIndex,
+  type CalendarMonth,
+} from './calendar';
 export {
   calibrationFromScenario,
   DEFAULT_CALIBRATION,
@@ -29,6 +38,8 @@ export {
   type SanctionChoice,
 } from './actions';
 export { validateActionTarget } from './agenda';
+export { declarationInTermWindow, electionsStep, MEMORY_MONTHS, moodOf, weightedMemory } from './elections/elections';
+export { inVedacaoWindow, isNovoBeneficio, vedacaoAtiva } from './elections/vedacao';
 export {
   cabinetScandalRisk,
   cabinetSupport,

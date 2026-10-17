@@ -147,7 +147,7 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
       'mandato): a intenção de voto sobe no mês da declaração.',
     agendaCost: 0,
     targetParams: [],
-    listed: true,
+    listed: false,
   },
   [SUPPORT_CANDIDATE_ACTION_ID]: {
     id: SUPPORT_CANDIDATE_ACTION_ID,
