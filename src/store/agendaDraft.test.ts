@@ -10,6 +10,7 @@ import {
   findDecision,
   fits,
   hasDecision,
+  hasPendingChoices,
   toggleDecision,
   toggleEventChoice,
 } from './agendaDraft';
@@ -66,5 +67,13 @@ describe('rascunho da agenda do mês (GAME_DESIGN.md §4.3)', () => {
     });
     d = toggleEventChoice(d, TEST_EVENT.id, 'subsidiar');
     expect(d.eventChoices).toEqual({});
+  });
+});
+
+describe('rascunho pendente (proteção ao trocar de campanha)', () => {
+  it('vazio não tem pendência; decisão ou resposta a evento tem', () => {
+    expect(hasPendingChoices(EMPTY_DRAFT)).toBe(false);
+    expect(hasPendingChoices(toggleDecision(EMPTY_DRAFT, policy('a')))).toBe(true);
+    expect(hasPendingChoices(toggleEventChoice(EMPTY_DRAFT, TEST_EVENT.id, 'subsidiar'))).toBe(true);
   });
 });

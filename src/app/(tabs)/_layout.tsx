@@ -4,7 +4,7 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 
 import { useTheme } from '@/hooks/use-theme';
 
-export const unstable_settings = { initialRouteName: 'presidencia' };
+export const unstable_settings = { anchor: 'presidencia' };
 
 const ICONS: Record<string, SymbolViewProps['name']> = {
   presidencia: { ios: 'building.columns', android: 'account_balance', web: 'account_balance' },
