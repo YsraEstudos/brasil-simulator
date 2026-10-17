@@ -84,7 +84,15 @@ describe('nome da campanha', () => {
 
   it('nome só com caracteres invisíveis conta como vazio', () => {
     const c = String.fromCharCode;
-    for (const invisible of [c(0x200b), c(0x2800), `${c(0x200b)} ${c(0xfeff)}`, c(0x3164), c(0x2060)]) {
+    for (const invisible of [
+      c(0x200b),
+      c(0x2800),
+      `${c(0x200b)} ${c(0xfeff)}`,
+      c(0x3164),
+      c(0x2060),
+      c(0x034f),
+      `${c(0x17b4)}${c(0x17b5)}`,
+    ]) {
       expect(normalizeCampaignName(invisible)).toBe('');
       expect(validateCampaignName(invisible)).toEqual({ ok: false, error: NAME_ERRORS.empty });
     }

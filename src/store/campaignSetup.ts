@@ -56,7 +56,8 @@ const CONTROL_CHARS = /[\u0000-\u0008\u000e-\u001f\u007f-\u009f]/g;
  * Hangul…). Um nome feito só deles apareceria vazio na lista de saves, então conta como vazio.
  */
 const INVISIBLE = new RegExp(
-  '\\u034f|[\\s\\u00ad\\u115f\\u1160\\u17b4\\u17b5\\u180e\\u200b-\\u200f\\u2060-\\u2064\\u2800\\u3164\\ufeff\\uffa0]',
+  // Marcas combinantes (U+034F, U+17B4, U+17B5) ficam fora da classe: dentro dela se juntariam ao vizinho.
+  '\\u034f|\\u17b4|\\u17b5|[\\s\\u00ad\\u115f\\u1160\\u180e\\u200b-\\u200f\\u2060-\\u2064\\u2800\\u3164\\ufeff\\uffa0]',
   'g',
 );
 
