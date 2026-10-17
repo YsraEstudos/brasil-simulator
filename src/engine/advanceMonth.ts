@@ -1,6 +1,6 @@
 import { actionKey, AGENDA_ACTIONS } from './actions';
 import { validateActionTarget } from './agenda';
-import { electionsStep } from './elections/elections';
+import { electionsStep, governorTurnoverStep } from './elections/elections';
 import { isNovoBeneficio, vedacaoAtiva } from './elections/vedacao';
 import { cabinetStep } from './congress/cabinet';
 import { congressStep } from './congress/congress';
@@ -33,8 +33,12 @@ import {
 /**
  * Etapas do mês, na ordem do pipeline (ECONOMIC_MODEL.md §4): respostas a eventos, nomeações de ministros,
  * propostas e Congresso (negociação, votações, sanção, execução), relações com os blocos, economia, opinião
- * pública, distribuição às UFs (ECONOMIC_MODEL.md §5.15) e, por fim, sorteio dos eventos que chegam à caixa de
- * entrada do mês seguinte.
+ * pública, eleições (FASE_08.md), distribuição às UFs (ECONOMIC_MODEL.md §5.15), posse dos governadores
+ * eleitos e, por fim, sorteio dos eventos que chegam à caixa de entrada do mês seguinte.
+ *
+ * Contrato de ordem eleitoral (revisão do PR #9): `electionsStep` roda ANTES de `regionsStep` (a contribuição
+ * de aprovação do pleito entra antes da distribuição às UFs) e `governorTurnoverStep` roda DEPOIS, para o
+ * governador recém-eleito não ser puxado pela evolução regional do próprio mês.
  */
 export const DEFAULT_STEPS: readonly MonthStep[] = [
   resolveEventsStep,
@@ -47,6 +51,7 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
   opinionStep,
   electionsStep,
   regionsStep,
+  governorTurnoverStep,
   triggerEventsStep,
 ];
 

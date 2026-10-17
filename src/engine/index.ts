@@ -38,7 +38,14 @@ export {
   type SanctionChoice,
 } from './actions';
 export { validateActionTarget } from './agenda';
-export { declarationInTermWindow, electionsStep, MEMORY_MONTHS, moodOf, weightedMemory } from './elections/elections';
+export {
+  declarationInTermWindow,
+  electionsStep,
+  governorTurnoverStep,
+  MEMORY_MONTHS,
+  moodOf,
+  weightedMemory,
+} from './elections/elections';
 export { inVedacaoWindow, isNovoBeneficio, vedacaoAtiva } from './elections/vedacao';
 export {
   cabinetScandalRisk,

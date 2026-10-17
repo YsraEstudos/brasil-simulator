@@ -14,6 +14,7 @@ import {
   DECLARE_CANDIDACY_ACTION_ID,
   declarationInTermWindow,
   electionsStep,
+  governorTurnoverStep,
   MEMORY_MONTHS,
   moodOf,
   SUPPORT_CANDIDATE_ACTION_ID,
@@ -43,7 +44,7 @@ function politics(state: GameState) {
   return state.politics;
 }
 
-/** Roda a etapa eleitoral direto, com as decisões dadas (pula o `screenInput`). */
+/** Roda as etapas eleitorais direto, com as decisões dadas (pula o `screenInput`; sem as demais etapas). */
 function runStep(state: GameState, decisions: Decision[] = [], withElections = true) {
   const draft: ReportDraft = {
     proposalChanges: [],
@@ -60,14 +61,19 @@ function runStep(state: GameState, decisions: Decision[] = [], withElections = t
     eventChoices: [],
     draft,
   };
-  return electionsStep(state, ctx);
+  const electoral = electionsStep(state, ctx);
+  const posse = governorTurnoverStep(electoral.state, ctx);
+  return { state: posse.state, contributions: electoral.contributions };
 }
 
-/** Roda `months` meses pela etapa eleitoral (e só por ela). */
+/** Roda `months` meses pelas etapas eleitorais (e só por elas). */
 function play(state: GameState, months: number, withElections = true) {
   let current = state;
   for (let i = 0; i < months; i++)
-    current = advanceMonth(current, { decisions: [] }, withElections ? content : base, [electionsStep]).state;
+    current = advanceMonth(current, { decisions: [] }, withElections ? content : base, [
+      electionsStep,
+      governorTurnoverStep,
+    ]).state;
   return current;
 }
 
@@ -498,5 +504,18 @@ describe('pipeline completo com eleições (FASE_08.md, critérios 2 e 4)', () =
       state = r.state;
     }
     expect(municipalMonth).toBe(true);
+  });
+
+  it('mês da eleição geral: o governador recém-eleito persiste em governador_nova_relacao', () => {
+    // Com a etapa eleitoral antes da regional, o arrasto de `evolveRelations` (regionsStep) puxaria a relação
+    // nova ~10% ainda no mesmo mês; o teste antigo não pegava porque roda só `electionsStep` (revisão do PR #9).
+    let state = newState(5);
+    while (state.monthIndex < ELECTIONS.mesEleicaoGeral) {
+      state = advanceMonth(state, { decisions: [] }, content, DEFAULT_STEPS).state;
+    }
+    const after = advanceMonth(state, { decisions: [] }, content, DEFAULT_STEPS).state;
+    expect(politics(after).eleicao_geral).toBeDefined();
+    const turned = after.regions.ufs.filter((uf) => uf.governorRelation === c.governador_nova_relacao);
+    expect(turned.length).toBeGreaterThan(0);
   });
 });

@@ -17,10 +17,13 @@ import type {
 } from '../types';
 
 /**
- * Eleições (POLITICAL_RULES.md §11.2–11.3; FASE_08.md). Roda depois da opinião pública e antes das regiões: a
- * intenção de voto acompanha a aprovação e o clima do mês, o clima é a memória do eleitor (até 12 meses) e nos
- * meses de pleito saem os resultados (municipais e geral). Sem o bloco `elections` do cenário a etapa é um
- * no-op que não consome sorteio algum: campanhas e saves antigos continuam determinísticos.
+ * Eleições (POLITICAL_RULES.md §11.2–11.3; FASE_08.md). `electionsStep` roda depois da opinião pública e antes
+ * das regiões: a intenção de voto acompanha a aprovação e o clima do mês, o clima é a memória do eleitor (até
+ * 12 meses), os meses de pleito saem no resultado (municipais e geral) e a contribuição de aprovação precisa
+ * entrar antes da distribuição às UFs. A posse dos governadores eleitos sai em `governorTurnoverStep`, DEPOIS
+ * das regiões — a evolução regional do próprio mês não pode puxar a relação recém-eleita (revisão do PR #9).
+ * Sem o bloco `elections` do cenário as etapas são no-ops que não consomem sorteio algum: campanhas e saves
+ * antigos continuam determinísticos.
  */
 
 /** Meses guardados na memória do eleitor (`PoliticsState.memoria` guarda até 12 entradas). */
@@ -117,8 +120,9 @@ function declarationImpulse(monthIndex: number, c: Calibration): ScheduledImpuls
  * Eleição geral do mês (FASE_08.md): candidata quem declarou na janela do mandato, se a reeleição é permitida e
  * o mandato é o primeiro; sem candidatura, o sucessor apoiado herda `fator_sucessao` × intenção do governo.
  * Vitória no 1º turno se a votação (+ ruído) passa de 0,5; senão um 2º turno no mesmo passo contra a oposição,
- * com recuperação proporcional à relação média com o Congresso. Depois, a eleição troca donos de governos
- * estaduais (UF por UF) e renova o Congresso (deslocamento sorteado das relações por bloco).
+ * com recuperação proporcional à relação média com o Congresso. Depois, renova o Congresso (deslocamento
+ * sorteado das relações por bloco); a troca de governos estaduais sai em `governorTurnoverStep`, depois das
+ * regiões (contrato de ordem em `DEFAULT_STEPS`, revisão do PR #9).
  */
 function generalElectionMonth(
   state: GameState,
@@ -152,18 +156,6 @@ function generalElectionMonth(
     venceu = vote2 > opponent;
   }
 
-  // Governadores: o novo eleito parte de `governador_nova_relacao`; os demais mantêm a relação.
-  let regions = state.regions;
-  if (regionsOf(ctx.content).length > 0) {
-    regions = {
-      ufs: currentUfs(state, ctx.content).map((uf) =>
-        ctx.rng.chance(governorTurnoverChance(uf.governorRelation, c))
-          ? { ...uf, governorRelation: c.governador_nova_relacao }
-          : { ...uf },
-      ),
-    };
-  }
-
   // Renovação do Congresso: relações deslocadas por bloco (as cadeiras por bloco continuam as do cenário).
   let blocs = allRelations(state, ctx.content);
   for (const bloc of ctx.content.scenario.blocs) {
@@ -172,7 +164,6 @@ function generalElectionMonth(
 
   return {
     ...state,
-    regions,
     congress: { ...state.congress, blocs },
     // A campanha terminou: o apoio à sucessão é consumido pela eleição (um novo apoio por campanha).
     politics: { ...politics, apoio: null, eleicao_geral: { monthIndex: t, candidatura, venceu, turno2 } },
@@ -256,8 +247,34 @@ export const electionsStep: MonthStep = (state, ctx) => {
 
   next = { ...next, politics, impulses };
 
-  // 4. Eleição geral: candidatura, 1º/2º turno no mesmo passo, governadores e renovação do Congresso.
+  // 4. Eleição geral: candidatura, 1º/2º turno no mesmo passo e renovação do Congresso.
   if (monthOfTerm(t) === elections.mesEleicaoGeral) next = generalElectionMonth(next, elections, ctx, memory);
 
   return { state: next, contributions };
+};
+
+/**
+ * Posse dos governadores eleitos (FASE_08.md): no mês da eleição geral, cada UF sorteia a troca de dono
+ * (chance que cai com a relação) e o novo governador parte de `governador_nova_relacao`; os demais mantêm a
+ * relação. Roda DEPOIS de `regionsStep` no `DEFAULT_STEPS` para que a evolução regional do próprio mês não
+ * puxe a relação recém-eleita (revisão do PR #9).
+ */
+export const governorTurnoverStep: MonthStep = (state, ctx) => {
+  const elections = ctx.content.scenario.elections;
+  if (!elections || monthOfTerm(state.monthIndex) !== elections.mesEleicaoGeral) return { state, contributions: [] };
+  if (regionsOf(ctx.content).length === 0) return { state, contributions: [] };
+  const c = ctx.content.calibration;
+  return {
+    state: {
+      ...state,
+      regions: {
+        ufs: currentUfs(state, ctx.content).map((uf) =>
+          ctx.rng.chance(governorTurnoverChance(uf.governorRelation, c))
+            ? { ...uf, governorRelation: c.governador_nova_relacao }
+            : { ...uf },
+        ),
+      },
+    },
+    contributions: [],
+  };
 };
