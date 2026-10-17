@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,13 +6,7 @@ import { Button, Card, Text } from '@/components/ui';
 import { MaxContentWidth, Spacing, TEXT_SCALES } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { enterAt, SetupHeader } from '../campaign/SetupBits';
-
-/** Volta ao menu principal (ou à tela anterior, se ela existir na pilha). */
-function backToMenu() {
-  if (router.canGoBack()) router.back();
-  else router.replace('/');
-}
+import { enterAt, goBack, SetupHeader } from '../campaign/SetupBits';
 
 /**
  * CONFIGURAÇÕES (rota `/configuracoes`): ajustes do jogador fora das abas, abertos pelo botão CONFIGURAÇÕES do
@@ -31,10 +24,11 @@ export function SettingsScreen() {
           {
             paddingTop: Spacing.three + insets.top,
             paddingBottom: Spacing.six + insets.bottom,
-            paddingHorizontal: Spacing.three + (insets.left + insets.right) / 2,
+            paddingLeft: Spacing.three + insets.left,
+            paddingRight: Spacing.three + insets.right,
           },
         ]}>
-        <SetupHeader title="CONFIGURAÇÕES" subtitle="Ajustes do jogo neste aparelho" onBack={backToMenu} />
+        <SetupHeader title="CONFIGURAÇÕES" subtitle="Ajustes do jogo neste aparelho" onBack={goBack} />
 
         <Animated.View entering={enterAt(0)}>
           <Card title="Tamanho do texto" subtitle="Vale para todas as telas do jogo">

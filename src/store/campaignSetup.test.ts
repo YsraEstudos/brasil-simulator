@@ -63,6 +63,29 @@ describe('nome da campanha', () => {
     expect(normalizeCampaignName('\tNome\t')).toBe('Nome');
   });
 
+  it('espaços em volta de quebras coladas não se repetem', () => {
+    expect(normalizeCampaignName('Governo \n de \r\n união')).toBe('Governo de união');
+    expect(normalizeCampaignName('A  \t  B')).toBe('A B');
+  });
+
+  it('remove caracteres de controle (nulo, C1) do nome gravado', () => {
+    const c = String.fromCharCode;
+    expect(normalizeCampaignName(`Gov${c(0)}erno${c(0x1b)}`)).toBe('Governo');
+    expect(normalizeCampaignName(`A${c(0x85)}B${c(0x7f)}`)).toBe('AB');
+  });
+
+  it('nome só com caracteres invisíveis conta como vazio', () => {
+    const c = String.fromCharCode;
+    for (const invisible of [c(0x200b), c(0x2800), `${c(0x200b)} ${c(0xfeff)}`, c(0x3164), c(0x2060)]) {
+      expect(normalizeCampaignName(invisible)).toBe('');
+      expect(validateCampaignName(invisible)).toEqual({ ok: false, error: NAME_ERRORS.empty });
+    }
+    // Emoji composto com ZWJ continua inteiro: o teste de invisível vale para o nome todo, não remove nada.
+    const family = '👨‍👩‍👧';
+    expect(normalizeCampaignName(family)).toBe(family);
+    expect(normalizeCampaignName(`${c(0x200b)}Nome`)).toBe(`${c(0x200b)}Nome`);
+  });
+
   it('remove espaços nas pontas e mantem os do meio', () => {
     expect(normalizeCampaignName('  Governo Teste  ')).toBe('Governo Teste');
   });

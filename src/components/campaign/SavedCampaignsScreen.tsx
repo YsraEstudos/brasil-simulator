@@ -8,17 +8,12 @@ import { Alert, Text } from '@/components/ui';
 import { MaxContentWidth, MIN_TOUCH, Radius, Spacing } from '@/constants/theme';
 import type { CampaignSummary } from '@/database/campaignRepository';
 import { useTheme } from '@/hooks/use-theme';
-import { gameStore, hasPendingChoices, useGame } from '@/store';
+import { gameStore, hasPendingChoices, isKnownScenario, useGame } from '@/store';
 import { campaignMonths, SCENARIOS } from '@/store/scenarios';
 
 import { durationLabel, scenarioTitle } from './campaignSetupView';
 import { DIFFICULTY, shortMonthLabel } from './labels';
-import { Badge, ConfirmSheet, enterAt, LAYOUT, PressScale, PrimaryAction, SetupHeader } from './SetupBits';
-
-function backToMenu() {
-  if (router.canGoBack()) router.back();
-  else router.replace('/');
-}
+import { Badge, ConfirmSheet, enterAt, goBack, LAYOUT, PressScale, PrimaryAction, SetupHeader } from './SetupBits';
 
 type Pending = { kind: 'carregar'; campaign: CampaignSummary } | { kind: 'apagar'; campaign: CampaignSummary };
 
@@ -88,10 +83,11 @@ export function SavedCampaignsScreen() {
           {
             paddingTop: Spacing.three + insets.top,
             paddingBottom: Spacing.six + insets.bottom,
-            paddingHorizontal: Spacing.three + (insets.left + insets.right) / 2,
+            paddingLeft: Spacing.three + insets.left,
+            paddingRight: Spacing.three + insets.right,
           },
         ]}>
-        <SetupHeader title="CARREGAR JOGO" subtitle="Retome uma das suas campanhas" onBack={backToMenu} />
+        <SetupHeader title="CARREGAR JOGO" subtitle="Retome uma das suas campanhas" onBack={goBack} />
 
         {opError && status === 'pronto' && (
           <Animated.View entering={FadeInDown.springify().damping(16)} layout={LAYOUT}>
@@ -183,7 +179,7 @@ function SavedItem({
 }) {
   const { colors } = useTheme();
   const done = c.status === 'encerrada';
-  const scenario = Object.prototype.hasOwnProperty.call(SCENARIOS, c.scenarioId) ? SCENARIOS[c.scenarioId] : null;
+  const scenario = isKnownScenario(c.scenarioId) ? SCENARIOS[c.scenarioId] : null;
   const months = campaignMonths(c.scenarioId);
   const scenarioText = scenario
     ? `${scenarioTitle(scenario)} · v${c.scenarioVersion}`

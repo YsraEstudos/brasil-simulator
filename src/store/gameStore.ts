@@ -186,38 +186,41 @@ export function createGameStore(deps: GameStoreDeps) {
         const { name, difficulty, scenarioId } = checked.input;
         set({ busy: true, error: undefined });
 
-        let created: ActiveCampaign;
+        // Um único `finally` devolve `busy` a falso: nenhuma exceção, prevista ou não, trava a store.
         try {
-          const scenario = SCENARIOS[scenarioId];
-          const seed = checked.input.seed ?? Math.floor(deps.random() * 2 ** 31);
-          // O id usa sorteios próprios: não depende da semente, que o jogador pode repetir em outra campanha.
-          const id = `c_${Math.floor(deps.random() * 2 ** 31).toString(36)}_${Math.floor(deps.random() * 2 ** 31).toString(36)}`;
-          const state = createInitialState({ content: loadContent(scenario.id), difficulty, seed });
-          await createCampaign(d, { id, name, scenarioVersion: scenario.version, state });
-          created = { id, name, state, finished: false };
-        } catch (e) {
-          // Nada foi gravado (a transação desfaz tudo): a campanha anterior e o rascunho continuam como estavam. O erro
-          // vai no resultado, para a tela de NOVO JOGO; o `error` global ficaria velho na Presidência e em CARREGAR JOGO.
-          const error = e instanceof Error ? e.message : String(e);
-          set({ busy: false });
-          return { ok: false, reason: 'falha', error };
-        }
+          let created: ActiveCampaign;
+          try {
+            const scenario = SCENARIOS[scenarioId];
+            const seed = checked.input.seed ?? Math.floor(deps.random() * 2 ** 31);
+            // O id usa sorteios próprios: não depende da semente, que o jogador pode repetir em outra campanha.
+            const id = `c_${Math.floor(deps.random() * 2 ** 31).toString(36)}_${Math.floor(deps.random() * 2 ** 31).toString(36)}`;
+            const state = createInitialState({ content: loadContent(scenario.id), difficulty, seed });
+            await createCampaign(d, { id, name, scenarioVersion: scenario.version, state });
+            created = { id, name, state, finished: false };
+          } catch (e) {
+            // Nada foi gravado (a transação desfaz tudo): a campanha anterior e o rascunho continuam como estavam. O
+            // erro vai no resultado, para a tela de NOVO JOGO; o `error` global ficaria velho na Presidência e em
+            // CARREGAR JOGO.
+            return { ok: false, reason: 'falha', error: e instanceof Error ? e.message : String(e) };
+          }
 
-        // Commit confirmado: a campanha existe, e nada daqui em diante pode transformá-la em fracasso.
-        set({ active: created, draft: EMPTY_DRAFT, setupPrefs: { difficulty, scenarioId } });
-        try {
-          await refreshList(d);
-        } catch {
-          // A lista se atualiza na próxima operação; a campanha já está gravada e ativa.
+          // Commit confirmado: a campanha existe, e nada daqui em diante pode transformá-la em fracasso.
+          set({ active: created, draft: EMPTY_DRAFT, setupPrefs: { difficulty, scenarioId } });
+          try {
+            await refreshList(d);
+          } catch {
+            // A lista se atualiza na próxima operação; a campanha já está gravada e ativa.
+          }
+          try {
+            await setSetting(d, LAST_DIFFICULTY_KEY, difficulty);
+            await setSetting(d, LAST_SCENARIO_KEY, scenarioId);
+          } catch {
+            // Preferência é secundária: na memória ela já vale para a próxima abertura de NOVO JOGO.
+          }
+          return { ok: true, campaignId: created.id };
+        } finally {
+          set({ busy: false });
         }
-        try {
-          await setSetting(d, LAST_DIFFICULTY_KEY, difficulty);
-          await setSetting(d, LAST_SCENARIO_KEY, scenarioId);
-        } catch {
-          // Preferência é secundária: na memória ela já vale para a próxima abertura de NOVO JOGO.
-        }
-        set({ busy: false });
-        return { ok: true, campaignId: created.id };
       },
 
       async continueCampaign(id) {

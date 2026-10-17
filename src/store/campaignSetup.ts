@@ -8,7 +8,7 @@ import type { Scenario } from '@/types/scenario';
  * para que o que o jogador vê no resumo seja exatamente o que vai para o banco.
  */
 
-/** Tamanho máximo do nome, em unidades UTF-16. O campo não corta a digitação: o excesso vira erro de validação. */
+/** Tamanho máximo do nome, em unidades UTF-16 (o mesmo que o `maxLength` do campo de texto). */
 export const CAMPAIGN_NAME_MAX = 60;
 
 /** Maior semente aceita: o motor converte a semente para inteiro sem sinal de 32 bits (`seedRng`: `seed >>> 0`). */
@@ -35,8 +35,23 @@ export const SEED_ERRORS = {
   range: 'A semente deve ficar entre 0 e 4.294.967.295.',
 } as const;
 
-/** Quebras de linha (inclusive os separadores Unicode U+2028/U+2029) e tabulações. */
-const LINE_BREAKS = new RegExp('[\\r\\n\\t\\v\\f\\u2028\\u2029]+', 'g');
+/**
+ * Quebras de linha (inclusive os separadores Unicode U+2028/U+2029) e tabulações, junto com os espaços ao redor:
+ * "Governo \n de" vira "Governo de", sem espaços repetidos.
+ */
+const LINE_BREAKS = new RegExp('[ \\u00a0]*[\\r\\n\\t\\v\\f\\u2028\\u2029]+[ \\u00a0]*', 'g');
+
+/** Caracteres de controle C0/C1 que não são quebra de linha nem tabulação (ex.: o nulo U+0000): nunca vão ao banco. */
+const CONTROL_CHARS = new RegExp('[\\u0000-\\u0008\\u000e-\\u001f\\u007f-\\u009f]', 'g');
+
+/**
+ * Espaços e caracteres sem desenho (espaço de largura zero, marcas de direção, espaço Braille em branco, preenchimento
+ * Hangul…). Um nome feito só deles apareceria vazio na lista de saves, então conta como vazio.
+ */
+const INVISIBLE = new RegExp(
+  '[\\s\\u00ad\\u034f\\u115f\\u1160\\u17b4\\u17b5\\u180e\\u200b-\\u200f\\u2060-\\u2064\\u2800\\u3164\\ufeff\\uffa0]',
+  'g',
+);
 
 /** Remove metades soltas de pares substitutos (um corte no meio de um emoji), que não formam caractere válido. */
 function dropLoneSurrogates(s: string): string {
@@ -58,18 +73,20 @@ function dropLoneSurrogates(s: string): string {
 }
 
 /**
- * Nome como será gravado: quebras de linha e tabulações coladas viram um espaço, metades soltas de emoji somem,
- * composição Unicode canônica (NFC) e sem espaços nas pontas. Valor que não é texto vira vazio.
+ * Nome como será gravado: quebras de linha e tabulações coladas viram um espaço, caracteres de controle e metades
+ * soltas de emoji somem, composição Unicode canônica (NFC) e sem espaços nas pontas. Valor que não é texto, ou feito
+ * só de caracteres invisíveis, vira vazio.
  */
 export function normalizeCampaignName(raw: unknown): string {
   if (typeof raw !== 'string') return '';
-  let s = dropLoneSurrogates(raw.replace(LINE_BREAKS, ' '));
+  let s = dropLoneSurrogates(raw.replace(LINE_BREAKS, ' ').replace(CONTROL_CHARS, ''));
   try {
     s = s.normalize('NFC');
   } catch {
     // Sem tabelas Unicode no motor JS: segue sem normalizar a composição.
   }
-  return s.trim();
+  s = s.trim();
+  return s.replace(INVISIBLE, '').length === 0 ? '' : s;
 }
 
 /** Valida o nome já normalizado: obrigatório e com até `CAMPAIGN_NAME_MAX` unidades. Nunca trunca. */

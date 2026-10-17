@@ -133,4 +133,16 @@ describe('resumo da campanha', () => {
     expect(s.version).toBe('—');
     expect(s.duration).toBe('—');
   });
+
+  it('chaves herdadas de Object ("toString", "constructor") não viram cenário', () => {
+    for (const scenarioId of ['toString', 'constructor', '__proto__']) {
+      const s = setupSummary({ ...form, scenarioId });
+      expect(s.version).toBe('—');
+      expect(s.scenario).toBe('—');
+    }
+  });
+
+  it('a mesma dificuldade devolve sempre o mesmo objeto (montado uma vez)', () => {
+    expect(difficultyView('casual')).toBe(difficultyView('casual'));
+  });
 });

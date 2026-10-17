@@ -1,5 +1,6 @@
 import { ADVICE_PARAMS, AGENDA_POINTS, DEFAULT_CALIBRATION, type Difficulty } from '@/engine';
 import {
+  isKnownScenario,
   parseSeedInput,
   normalizeCampaignName,
   type CampaignSetupForm,
@@ -35,12 +36,12 @@ export interface DifficultyView {
   effects: string[];
 }
 
-export function difficultyView(id: Difficulty): DifficultyView {
+function buildDifficultyView(id: Difficulty): DifficultyView {
   const points = AGENDA_POINTS[id];
   const noise = noiseFactor(id);
   const common = [`${points} pontos de agenda por mês`];
-  const effects: Record<Difficulty, string[]> = {
-    casual: [
+  const effects: Record<Difficulty, () => string[]> = {
+    casual: () => [
       ...common,
       `Congresso mais receptivo: +${Math.round(DEFAULT_CALIBRATION.bonus_casual * 100)} pontos no apoio de cada bloco`,
       `Oscilações aleatórias da economia menores (${factor(noise)})`,
@@ -49,7 +50,7 @@ export function difficultyView(id: Difficulty): DifficultyView {
       'Programas por convênio valem em todos os estados, sem depender de adesão',
       'Ministérios preveem as votações sem margem de erro',
     ],
-    estrategica: [
+    estrategica: () => [
       ...common,
       'Congresso calibrado, sem bônus de apoio',
       'Oscilações aleatórias da economia no nível de referência',
@@ -58,7 +59,7 @@ export function difficultyView(id: Difficulty): DifficultyView {
       'Programas por convênio dependem da adesão de cada governador',
       `Previsões de votação com margem de ±${pct(ADVICE_PARAMS.marginEstrategica)} dos votos`,
     ],
-    realismo: [
+    realismo: () => [
       ...common,
       'Congresso calibrado, sem bônus de apoio',
       `Oscilações aleatórias da economia maiores (${factor(noise)})`,
@@ -73,7 +74,7 @@ export function difficultyView(id: Difficulty): DifficultyView {
     name: DIFFICULTY[id].name,
     tagline: TAGLINES[id],
     agendaPoints: points,
-    effects: effects[id],
+    effects: effects[id](),
   };
 }
 
@@ -82,6 +83,17 @@ const TAGLINES: Record<Difficulty, string> = {
   estrategica: 'O modo padrão: regras completas e ministérios com margem de erro.',
   realismo: 'Mais incerteza na economia e pareceres menos confiáveis.',
 };
+
+/** Montadas uma vez: tudo vem de constantes do motor, que não mudam com o app aberto. */
+const DIFFICULTY_VIEWS: Readonly<Record<Difficulty, DifficultyView>> = {
+  casual: buildDifficultyView('casual'),
+  estrategica: buildDifficultyView('estrategica'),
+  realismo: buildDifficultyView('realismo'),
+};
+
+export function difficultyView(id: Difficulty): DifficultyView {
+  return DIFFICULTY_VIEWS[id];
+}
 
 /** "Brasil, janeiro de 2027 (dados provisórios)" → "Brasil, janeiro de 2027"; o status dos dados vira selo. */
 export function scenarioTitle(scenario: Scenario): string {
@@ -94,25 +106,26 @@ export function scenarioDataNote(scenario: Scenario): string | null {
   return m ? m[1] : null;
 }
 
+const MONTHS = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+] as const;
+
 /** "2027-01" → "janeiro de 2027". */
 export function startLabel(period: string): string {
-  const MONTHS = [
-    'janeiro',
-    'fevereiro',
-    'março',
-    'abril',
-    'maio',
-    'junho',
-    'julho',
-    'agosto',
-    'setembro',
-    'outubro',
-    'novembro',
-    'dezembro',
-  ];
   const m = /^(\d{4})-(\d{2})$/.exec(period);
   if (!m) return period;
-  const month = MONTHS[Number(m[2]) - 1];
+  const month: string | undefined = MONTHS[Number(m[2]) - 1];
   return month ? `${month} de ${m[1]}` : period;
 }
 
@@ -154,7 +167,8 @@ export interface SetupSummary {
 
 /** Resumo exibido antes de TOMAR POSSE: o nome já normalizado (o mesmo que será gravado). */
 export function setupSummary(form: CampaignSetupForm): SetupSummary {
-  const scenario = SCENARIOS[form.scenarioId];
+  // Busca pela chave própria: "toString" ou "constructor" não são cenários.
+  const scenario = isKnownScenario(form.scenarioId) ? SCENARIOS[form.scenarioId] : undefined;
   const seed = parseSeedInput(form.seedText);
   const name = normalizeCampaignName(form.name);
   return {

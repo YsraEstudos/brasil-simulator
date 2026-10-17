@@ -43,6 +43,7 @@ import {
   Collapsible,
   ConfirmSheet,
   enterAt,
+  goBack,
   LAYOUT,
   OptionCard,
   PrimaryAction,
@@ -51,12 +52,6 @@ import {
 } from './SetupBits';
 
 const SCENARIOS = scenarioOptions();
-
-/** Volta ao menu principal (ou à tela anterior, se ela existir na pilha). */
-function backToMenu() {
-  if (router.canGoBack()) router.back();
-  else router.replace('/');
-}
 
 /**
  * NOVO JOGO (rota `/novo-jogo`): nome, dificuldade, cenário, semente opcional e resumo, numa única rolagem. O
@@ -70,7 +65,12 @@ export function NewCampaignScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {status === 'pronto' ? (
-        <NewCampaignForm insetTop={insets.top} insetBottom={insets.bottom} insetX={insets.left + insets.right} />
+        <NewCampaignForm
+          insetTop={insets.top}
+          insetBottom={insets.bottom}
+          insetLeft={insets.left}
+          insetRight={insets.right}
+        />
       ) : (
         <View style={styles.center}>
           {status === 'erro' ? (
@@ -80,7 +80,7 @@ export function NewCampaignScreen() {
                 title="Não foi possível abrir o banco de partidas"
                 message={gameStore.getState().error ?? 'Feche e abra o aplicativo de novo.'}
               />
-              <PrimaryAction label="VOLTAR AO MENU" onPress={backToMenu} />
+              <PrimaryAction label="VOLTAR AO MENU" onPress={goBack} />
             </View>
           ) : (
             <ActivityIndicator color={colors.accent} size="large" accessibilityLabel="Carregando" />
@@ -95,7 +95,17 @@ function initialForm(prefs: SetupPrefs): CampaignSetupForm {
   return { name: '', difficulty: prefs.difficulty, scenarioId: prefs.scenarioId, seedText: '' };
 }
 
-function NewCampaignForm({ insetTop, insetBottom, insetX }: { insetTop: number; insetBottom: number; insetX: number }) {
+function NewCampaignForm({
+  insetTop,
+  insetBottom,
+  insetLeft,
+  insetRight,
+}: {
+  insetTop: number;
+  insetBottom: number;
+  insetLeft: number;
+  insetRight: number;
+}) {
   const { colors, textScale } = useTheme();
   const busy = useGame((s) => s.busy);
   // Preferências lidas uma única vez no início do app: o formulário nasce com elas e não é sobrescrito depois.
@@ -211,13 +221,15 @@ function NewCampaignForm({ insetTop, insetBottom, insetX }: { insetTop: number; 
             {
               paddingTop: Spacing.three + insetTop,
               paddingBottom: Spacing.six + insetBottom,
-              paddingHorizontal: Spacing.three + insetX / 2,
+              // Em paisagem o recorte da câmera fica de um lado só: cada lado recebe o próprio inset.
+              paddingLeft: Spacing.three + insetLeft,
+              paddingRight: Spacing.three + insetRight,
             },
           ]}>
           <SetupHeader
             title="NOVO JOGO"
             subtitle="Prepare sua candidatura à Presidência"
-            onBack={backToMenu}
+            onBack={goBack}
             backDisabled={locked}
           />
 
@@ -232,6 +244,9 @@ function NewCampaignForm({ insetTop, insetBottom, insetX }: { insetTop: number; 
                 onBlur={() => setNameTouched(true)}
                 placeholder="Ex.: Governo de união nacional"
                 placeholderTextColor={colors.textMuted}
+                // Limite nativo (RF04): o campo não passa de 60 unidades; a store ainda recusa nome longo vindo de
+                // outro caminho e a normalização remove metade solta de emoji se o corte cair no meio de um.
+                maxLength={CAMPAIGN_NAME_MAX}
                 multiline={false}
                 returnKeyType="done"
                 autoCapitalize="sentences"
@@ -254,11 +269,8 @@ function NewCampaignForm({ insetTop, insetBottom, insetX }: { insetTop: number; 
                 ) : (
                   <View style={styles.flex} />
                 )}
-                <Text
-                  variant="caption"
-                  color={(summary.name?.length ?? 0) > CAMPAIGN_NAME_MAX ? 'negative' : 'textMuted'}
-                  tabular>
-                  {`${summary.name?.length ?? 0}/${CAMPAIGN_NAME_MAX}`}
+                <Text variant="caption" color="textMuted" tabular>
+                  {`${form.name.length}/${CAMPAIGN_NAME_MAX}`}
                 </Text>
               </View>
             </Card>

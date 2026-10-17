@@ -1,6 +1,7 @@
+import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, type ComponentProps, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -31,10 +32,17 @@ export const LAYOUT = LinearTransition.springify().damping(20).stiffness(180);
 
 /** Entrada escalonada das seções: cada uma sobe e aparece um pouco depois da anterior. */
 export function enterAt(index: number) {
+  // Teto no escalonamento: numa lista longa de saves, o décimo item não espera mais de meio segundo para surgir.
   return FadeInDown.duration(420)
-    .delay(60 + index * 70)
+    .delay(60 + Math.min(index, 6) * 70)
     .springify()
     .damping(18);
+}
+
+/** Volta à tela anterior (menu ou Presidência); aberta direto por link, vai ao menu principal. */
+export function goBack() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
 }
 
 /** Cabeçalho das telas fora das abas: voltar, título dourado e subtítulo. */
@@ -347,6 +355,14 @@ export function ConfirmSheet({
   onCancel: () => void;
 }) {
   const { colors } = useTheme();
+  // Android: o "voltar" do sistema fecha só o diálogo (o último ouvinte registrado é o primeiro a responder).
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onCancel();
+      return true;
+    });
+    return () => sub.remove();
+  }, [onCancel]);
   return (
     <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(160)} style={styles.backdrop}>
       <Pressable
