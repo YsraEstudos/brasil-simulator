@@ -36,6 +36,8 @@ export function SavedCampaignsScreen() {
   const activeId = useGame((s) => s.active?.id ?? null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  // Só erros das ações desta tela: o `error` global pode ser antigo (ex.: um mês que falhou ao encerrar).
+  const [opError, setOpError] = useState<string | null>(null);
   const mounted = useRef(true);
   useEffect(() => {
     // Reativa ao remontar (StrictMode e fast refresh desmontam e remontam os efeitos).
@@ -53,10 +55,12 @@ export function SavedCampaignsScreen() {
       return;
     }
     setLoadingId(c.id);
+    setOpError(null);
     const ok = await gameStore.getState().continueCampaign(c.id);
     if (!mounted.current) return;
     setLoadingId(null);
     if (ok) router.replace('/presidencia');
+    else setOpError(gameStore.getState().error ?? 'Tente de novo em instantes.');
   };
 
   const requestLoad = (c: CampaignSummary) => {
@@ -71,7 +75,9 @@ export function SavedCampaignsScreen() {
 
   const remove = async (c: CampaignSummary) => {
     setPending(null);
-    await gameStore.getState().deleteCampaign(c.id);
+    setOpError(null);
+    const ok = await gameStore.getState().deleteCampaign(c.id);
+    if (!ok && mounted.current) setOpError(gameStore.getState().error ?? 'Tente de novo em instantes.');
   };
 
   return (
@@ -87,9 +93,9 @@ export function SavedCampaignsScreen() {
         ]}>
         <SetupHeader title="CARREGAR JOGO" subtitle="Retome uma das suas campanhas" onBack={backToMenu} />
 
-        {error && status === 'pronto' && (
+        {opError && status === 'pronto' && (
           <Animated.View entering={FadeInDown.springify().damping(16)} layout={LAYOUT}>
-            <Alert tone="negative" title="Algo deu errado ao carregar ou apagar" message={error} />
+            <Alert tone="negative" title="Algo deu errado ao carregar ou apagar" message={opError} />
           </Animated.View>
         )}
 

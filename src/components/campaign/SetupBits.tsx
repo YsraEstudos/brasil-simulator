@@ -55,7 +55,7 @@ export function SetupHeader({
       <PressScale
         onPress={onBack}
         disabled={backDisabled}
-        accessibilityLabel="Voltar ao menu principal"
+        accessibilityLabel="Voltar"
         style={[styles.back, { borderColor: colors.border, backgroundColor: colors.surface }]}>
         <SymbolView
           name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}

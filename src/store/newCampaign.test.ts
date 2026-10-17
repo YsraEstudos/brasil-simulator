@@ -334,3 +334,47 @@ describe('novo jogo: preferências corrompidas e exclusão', () => {
     expect(app.getState().campaigns).toEqual([]);
   });
 });
+
+describe('NOVO JOGO durante a abertura do banco e erros da tela', () => {
+  it('recusa criar enquanto o init ainda lê preferências (o banco já existe, mas não está pronto)', async () => {
+    const db = openNodeDatabase();
+    await migrate(db);
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    // Segura a primeira leitura de preferência: o init fica parado depois de abrir o banco.
+    const slow: SqlDatabase = {
+      ...db,
+      close: async () => {},
+      first: async <T>(sql: string, params?: readonly SqlValue[]) => {
+        await gate;
+        return db.first<T>(sql, params);
+      },
+    };
+    const app = createGameStore({ openDb: async () => slow, random: fakeRandom() });
+    const starting = app.getState().init();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(app.getState().status).toBe('iniciando');
+
+    const r = await app.getState().newCampaign({ name: 'Cedo demais', difficulty: 'casual' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('falha');
+    expect(await campaignRows(db)).toHaveLength(0);
+
+    release();
+    await starting;
+    expect(app.getState().status).toBe('pronto');
+    expect(app.getState().setupPrefs).toEqual(DEFAULT_SETUP_PREFS);
+  });
+
+  it('falha de gravação volta no resultado e não deixa erro global velho para outras telas', async () => {
+    const { db, launchApp } = await device();
+    const app = await launchApp();
+    await db.exec('DROP TABLE snapshots');
+    const r = await app.getState().newCampaign({ name: 'Sem tabela', difficulty: 'estrategica' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/snapshots/);
+    expect(app.getState().error).toBeUndefined();
+  });
+});

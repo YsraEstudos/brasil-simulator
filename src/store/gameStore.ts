@@ -177,7 +177,11 @@ export function createGameStore(deps: GameStoreDeps) {
           const error = Object.values(checked.errors)[0] ?? 'Dados inválidos.';
           return { ok: false, reason: 'invalido', error, errors: checked.errors };
         }
-        if (!db) return { ok: false, reason: 'falha', error: 'O banco de dados ainda não está pronto.' };
+        // `db` já existe enquanto `init` ainda lê preferências e a lista: só cria depois do `pronto`, senão o fim do
+        // `init` sobrescreveria a lista e as preferências recém-gravadas.
+        if (!db || get().status !== 'pronto') {
+          return { ok: false, reason: 'falha', error: 'O banco de dados ainda não está pronto.' };
+        }
         const d = db;
         const { name, difficulty, scenarioId } = checked.input;
         set({ busy: true, error: undefined });
@@ -192,9 +196,10 @@ export function createGameStore(deps: GameStoreDeps) {
           await createCampaign(d, { id, name, scenarioVersion: scenario.version, state });
           created = { id, name, state, finished: false };
         } catch (e) {
-          // Nada foi gravado (a transação desfaz tudo): a campanha anterior e o rascunho continuam como estavam.
+          // Nada foi gravado (a transação desfaz tudo): a campanha anterior e o rascunho continuam como estavam. O erro
+          // vai no resultado, para a tela de NOVO JOGO; o `error` global ficaria velho na Presidência e em CARREGAR JOGO.
           const error = e instanceof Error ? e.message : String(e);
-          set({ busy: false, error });
+          set({ busy: false });
           return { ok: false, reason: 'falha', error };
         }
 

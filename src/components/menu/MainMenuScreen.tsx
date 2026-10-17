@@ -135,6 +135,11 @@ export function MainMenuScreen() {
    */
   const continueLast = useCallback(async () => {
     if (busy || status === 'iniciando') return;
+    if (status === 'erro') {
+      // Lista vazia aqui não quer dizer "sem partidas": o banco nem abriu.
+      showNote('Não foi possível abrir o banco de partidas');
+      return;
+    }
     if (!active) {
       const last = campaigns.reduce<(typeof campaigns)[number] | null>(
         (best, c) => (!best || c.updatedAt > best.updatedAt ? c : best),
