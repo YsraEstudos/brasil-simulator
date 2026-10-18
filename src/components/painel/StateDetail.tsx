@@ -1,0 +1,216 @@
+import { Pressable, View } from 'react-native';
+
+import { formatNumber, formatPercent, Text } from '@/components/ui';
+import { Radius } from '@/constants/theme';
+import {
+  REGION_NAMES,
+  VISIT_ACTION_ID,
+  type Decision,
+  type GameContent,
+  type GameState,
+  type UfExplanation,
+} from '@/engine';
+import { draftPoints, fits, gameStore, hasDecision, useGame } from '@/store';
+
+import { LinkRow } from './HudBits';
+import { Hud } from './hudTheme';
+import {
+  bin,
+  explanationFor,
+  formatPiece,
+  formatValue,
+  indicatorSpec,
+  legendLabels,
+  type MapIndicator,
+  type UfRow,
+} from './regionalMetrics';
+
+/**
+ * Estado no mapa (GAME_DESIGN.md §4.5): o cartão com os números da UF e do Brasil, o governador, "Por que esta UF
+ * está diferente da média?" e a visita presidencial, mais a lista das UFs ordenada pelo indicador — as funções da
+ * antiga aba Brasil, agora dentro das folhas da mesa do Painel.
+ */
+
+/** Rótulo da relação com o governador, na mesma escala das faixas do mapa (−100…100). */
+function relationLabel(relation: number): string {
+  const spec = indicatorSpec('governador');
+  return legendLabels(spec)[bin(spec, relation)];
+}
+
+function whyTitle(indicator: MapIndicator): string {
+  if (indicator === 'desemprego') return 'Por que o desemprego difere da média nacional';
+  if (indicator === 'aprovacao' || indicator === 'governador') return 'Por que a aprovação difere da média nacional';
+  return 'Por que a economia está acima ou abaixo da tendência';
+}
+
+export function UfDetail({
+  row,
+  indicator,
+  state,
+  content,
+  explanation,
+  onFly,
+}: {
+  row: UfRow;
+  indicator: MapIndicator;
+  state: GameState;
+  content: GameContent;
+  /** Explicação das causas do mês para a UF (relatório do mês); sem ela, a folha avisa que ela vem depois. */
+  explanation: UfExplanation | undefined;
+  /** Leva a câmera do globo até a UF; quem chama fecha a folha para o mapa aparecer. */
+  onFly: () => void;
+}) {
+  const draft = useGame((s) => s.draft);
+  const { uf } = row;
+  const scenarioUf = content.scenario.regions?.ufs.find((u) => u.id === uf.id);
+  const bloc = content.scenario.blocs.find((b) => b.id === scenarioUf?.governor.bloc);
+  const national = state.indicators;
+  const pieces = explanationFor(indicator, explanation);
+  const visit: Decision = { policyId: VISIT_ACTION_ID, agendaCost: 1, params: { uf: uf.id } };
+  const included = hasDecision(draft, visit);
+  const pointsMax = state.resources.agendaPointsPerMonth;
+  const blocked = !included && !fits(draft, visit, content, pointsMax);
+  const pointsLeft = pointsMax - draftPoints(draft, content);
+  const startShare = scenarioUf?.gdpShare ?? uf.share;
+
+  const metrics: readonly [string, string, string][] = [
+    [
+      'Crescimento em 12 meses',
+      formatPercent(national.gdpGrowth12m + uf.growthGap12m),
+      `Brasil ${formatPercent(national.gdpGrowth12m)}`,
+    ],
+    ['Desemprego', formatPercent(uf.unemployment), `Brasil ${formatPercent(national.unemployment)}`],
+    ['Aprovação do governo', formatPercent(uf.approval, 0), `Brasil ${formatPercent(national.approval, 0)}`],
+    ['PIB per capita (Brasil = 1)', formatNumber(uf.share / row.populationShare, 2), 'Brasil = 1,00'],
+    ['Participação no PIB', formatPercent(uf.share, 2), `${formatPercent(startShare, 2)} na posse`],
+  ];
+
+  return (
+    <>
+      <Text style={styles.sub}>
+        {`Região ${REGION_NAMES[row.region] ?? row.region} · governador do bloco ${bloc?.name ?? '—'}, relação `}
+        {`${relationLabel(uf.governorRelation)} (${formatValue('governador', uf.governorRelation)})`}
+      </Text>
+
+      {metrics.map(([label, value, reference]) => (
+        <View key={label} style={styles.metricRow}>
+          <Text style={styles.metricLabel} numberOfLines={1}>
+            {label}
+          </Text>
+          <Text tabular style={styles.metricValue}>
+            {value}
+          </Text>
+          <Text tabular style={styles.metricReference} numberOfLines={1}>
+            {reference}
+          </Text>
+        </View>
+      ))}
+
+      <Text style={styles.section}>{whyTitle(indicator)}</Text>
+      {pieces.length === 0 ? (
+        <Text style={styles.note}>A explicação aparece depois do primeiro mês encerrado.</Text>
+      ) : (
+        pieces.map((piece) => (
+          <View key={piece.cause} style={styles.metricRow}>
+            <Text style={styles.metricLabel}>{piece.label}</Text>
+            <Text tabular style={[styles.metricValue, { color: piece.delta >= 0 ? Hud.positive : Hud.negative }]}>
+              {formatPiece(indicator, piece.delta)}
+            </Text>
+          </View>
+        ))
+      )}
+
+      <Pressable
+        onPress={() => gameStore.getState().toggleDecision(visit)}
+        disabled={blocked}
+        accessibilityRole="button"
+        accessibilityState={{ selected: included, disabled: blocked }}
+        accessibilityLabel={included ? 'Retirar a visita da agenda' : 'Visitar o estado'}
+        style={({ pressed }) => [
+          styles.visit,
+          included && styles.visitIncluded,
+          blocked && styles.visitDisabled,
+          pressed && styles.visitPressed,
+        ]}>
+        <Text tabular style={styles.visitText}>
+          {included ? 'Retirar a visita da agenda' : `Visitar o estado · 1 ponto (restam ${pointsLeft})`}
+        </Text>
+      </Pressable>
+      <LinkRow label="Ir até o estado" onPress={onFly} />
+    </>
+  );
+}
+
+/** Lista das UFs ordenada pelo indicador (melhor primeiro): o mapa em forma de tabela. */
+export function UfList({
+  rows,
+  indicator,
+  onChoose,
+}: {
+  rows: readonly UfRow[];
+  indicator: MapIndicator;
+  /** Escolhe uma UF (quem chama voa até ela e abre o cartão). */
+  onChoose: (sigla: string) => void;
+}) {
+  const spec = indicatorSpec(indicator);
+  const sorted = [...rows].sort((a, b) => (spec.goodWhen === 'up' ? b.value - a.value : a.value - b.value));
+  return (
+    <>
+      <Text style={styles.section}>{`Estados · ${spec.label}`}</Text>
+      <Text style={styles.note}>{spec.legend}</Text>
+      {sorted.map((r) => (
+        <Pressable
+          key={r.uf.id}
+          onPress={() => onChoose(r.uf.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`${r.name}: ${formatValue(indicator, r.value)}`}
+          style={({ pressed }) => [styles.stateRow, pressed && styles.stateRowPressed]}>
+          <View style={[styles.swatch, { backgroundColor: r.color }]} />
+          <Text style={styles.stateName} numberOfLines={1}>
+            {r.name} <Text style={styles.stateSigla}>{r.uf.id}</Text>
+          </Text>
+          <Text tabular style={styles.stateValue}>
+            {formatValue(indicator, r.value)}
+          </Text>
+        </Pressable>
+      ))}
+    </>
+  );
+}
+
+const styles = {
+  sub: { color: Hud.textDim, fontSize: 11, lineHeight: 15 },
+  metricRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingVertical: 1 },
+  metricLabel: { flex: 1, color: Hud.textDim, fontSize: 11 },
+  metricValue: { color: Hud.text, fontSize: 12, fontWeight: '700' },
+  metricReference: { minWidth: 92, textAlign: 'right', color: Hud.textMuted, fontSize: 10 },
+  section: {
+    color: Hud.title,
+    fontSize: 10.5,
+    fontWeight: '800',
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    paddingTop: 4,
+  },
+  note: { color: Hud.textMuted, fontSize: 10.5, fontStyle: 'italic' },
+  visit: {
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: Hud.title,
+    borderRadius: Radius.sm,
+    backgroundColor: '#3a2f14cc',
+  },
+  visitIncluded: { borderColor: Hud.border, backgroundColor: Hud.tile },
+  visitDisabled: { opacity: 0.45 },
+  visitPressed: { opacity: 0.75 },
+  visitText: { color: Hud.titleBright, fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  stateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 38, paddingVertical: 2 },
+  stateRowPressed: { opacity: 0.6 },
+  swatch: { width: 12, height: 12, borderRadius: 3 },
+  stateName: { flex: 1, color: Hud.text, fontSize: 12 },
+  stateSigla: { color: Hud.textMuted },
+  stateValue: { color: Hud.textDim, fontSize: 11.5, fontWeight: '700' },
+} as const;

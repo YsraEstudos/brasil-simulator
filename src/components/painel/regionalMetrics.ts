@@ -11,8 +11,8 @@ import {
 } from '@/engine';
 
 /**
- * Indicadores do mapa da aba Brasil (GAME_DESIGN.md §4.5; ECONOMIC_MODEL.md §5.15). Funções puras: valor por
- * UF, faixa de cor, texto e a explicação "Por que esta UF está diferente da média?".
+ * Indicadores do mapa de calor da mesa do Painel (GAME_DESIGN.md §4.5; ECONOMIC_MODEL.md §5.15). Funções puras:
+ * valor por UF, faixa de cor, texto e a explicação "Por que esta UF está diferente da média?".
  */
 
 export type MapIndicator = 'crescimento' | 'desemprego' | 'aprovacao' | 'renda' | 'governador';

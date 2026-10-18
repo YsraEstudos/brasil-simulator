@@ -16,7 +16,7 @@ import {
   SEQUENTIAL,
 } from './regionalMetrics';
 
-// Aba Brasil (GAME_DESIGN.md §4.5): valores, faixas de cor e explicação por UF.
+// Mapa da federação do Painel (GAME_DESIGN.md §4.5): valores, faixas de cor e explicação por UF.
 
 const content = loadContent(DEFAULT_SCENARIO_ID);
 const state = createInitialState({ content, difficulty: 'estrategica', seed: 1 });

@@ -1,7 +1,7 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Pressable, type StyleProp, View, type ViewStyle } from 'react-native';
 
-import { binColor, legendLabels, type MapIndicatorSpec } from '@/components/brasil/regionalMetrics';
+import { binColor, legendLabels, type MapIndicatorSpec } from './regionalMetrics';
 import { Text } from '@/components/ui';
 import { Radius } from '@/constants/theme';
 
@@ -356,7 +356,7 @@ export function MapLayerRow({
   );
 }
 
-/** Legenda compacta da camada ativa: o que cada faixa de cor quer dizer (mesmos rótulos da aba Brasil). */
+/** Legenda compacta da camada ativa: o que cada faixa de cor quer dizer (mesmos rótulos do mapa da UF). */
 export function MapLayerLegend({ spec }: { spec: MapIndicatorSpec }) {
   return (
     <View style={styles.layerLegend}>

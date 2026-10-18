@@ -1,16 +1,16 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BackHandler, Image, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
 
-import { indicatorSpec, MAP_INDICATORS, type MapIndicator } from '@/components/brasil/regionalMetrics';
 import { shortMonthLabel } from '@/components/campaign/labels';
 import { Text } from '@/components/ui';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
-import { GlobeView } from '@/globe/GlobeView';
+import { initialRegions } from '@/engine';
+import { GlobeView, type GlobeApi } from '@/globe/GlobeView';
 import { gameStore, useGame } from '@/store';
 
 import { GdpChart } from './GdpChart';
@@ -33,13 +33,16 @@ import { hudFromCampaign, hudFromScenario, type HudStatId } from './hudData';
 import { Hud } from './hudTheme';
 import { InfoSheet } from './InfoSheet';
 import { MiniHemicycle } from './MiniHemicycle';
+import { indicatorSpec, MAP_INDICATORS, mapRows, type MapIndicator } from './regionalMetrics';
+import { UfDetail, UfList } from './StateDetail';
 
 const logo = require('../../../assets/images/logo-brasil.png');
 
 /** Números da faixa de baixo (retrato); no topo ficam os quatro principais. */
 const BOTTOM_STATS: readonly HudStatId[] = ['capital', 'inflacao', 'desemprego'];
 
-type SheetId = 'alertas' | 'congresso' | 'meta' | 'ministerios' | 'indicadores' | 'pib' | 'regioes' | 'camadas';
+type SheetId =
+  'alertas' | 'congresso' | 'meta' | 'ministerios' | 'indicadores' | 'pib' | 'regioes' | 'estado' | 'camadas';
 
 interface MesaButton {
   id: SheetId;
@@ -58,15 +61,18 @@ const SHEET_TITLES: Record<SheetId, string> = {
   indicadores: 'Indicadores Nacionais',
   pib: 'Evolução do PIB',
   regioes: 'Visão Regional',
+  estado: 'Estado',
   camadas: 'Camadas do Mapa',
 };
 
 const BACK_ICON: SymbolViewProps['name'] = { ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' };
+const CENTER_ICON: SymbolViewProps['name'] = { ios: 'globe.americas', android: 'public', web: 'public' };
 
 /**
  * Painel (GAME_DESIGN.md §4.2): a mesa do jogo em tela cheia — o globo ocupa a tela toda e a interface vem por
  * cima, como HUD: números translúcidos no topo, botões redondos nas laterais e os complementos embaixo. Cada
- * botão abre o detalhe numa folha animada; nada rola e nada rouba espaço do globo. A barra de abas some nesta
+ * botão abre o detalhe numa folha animada; nada rola e nada rouba espaço do globo. O toque num estado do globo
+ * abre o cartão da UF (§4.5: números, porquê da diferença e visita presidencial). A barra de abas some nesta
  * aba (js-tabs) e o botão de voltar retorna para a Presidência, onde ela reaparece.
  */
 export function PainelScreen() {
@@ -77,6 +83,8 @@ export function PainelScreen() {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
+  const [selectedUf, setSelectedUf] = useState<string | null>(null);
+  const globe = useRef<GlobeApi | null>(null);
 
   const scenarioId = active?.state.scenarioId ?? DEFAULT_SCENARIO_ID;
   const content = useMemo(() => loadContent(scenarioId), [scenarioId]);
@@ -107,6 +115,23 @@ export function PainelScreen() {
     [active, content, draft, history, layer],
   );
 
+  // Cartão e lista do estado: o indicador é o da camada ativa (ou a aprovação, como na antiga aba Brasil).
+  const listIndicator: MapIndicator = layer ?? 'aprovacao';
+  const ufRows = useMemo(
+    () => (active ? mapRows(listIndicator, active.state, content) : []),
+    [active, content, listIndicator],
+  );
+  const selectedRow = selectedUf ? (ufRows.find((r) => r.uf.id === selectedUf) ?? null) : null;
+  // No mês da posse ainda não há relatório: a explicação inicial vem da própria distribuição.
+  const explanations = useMemo(
+    () =>
+      active
+        ? (active.lastReport?.regional ??
+          (active.state.monthIndex === 0 ? initialRegions(active.state, content).explanations : null))
+        : null,
+    [active, content],
+  );
+
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     setSize((s) => (s.width === width && s.height === height ? s : { width, height }));
@@ -114,10 +139,33 @@ export function PainelScreen() {
   const compact = size.width > size.height;
   const buttonSize = compact ? 40 : 48;
 
+  /** Fecha o detalhe e limpa a seleção do mapa (o ✕, o toque fora e o voltar do Android passam por aqui). */
+  const closeSheet = () => {
+    setSheet(null);
+    setSelectedUf(null);
+  };
+
   /** Sai da mesa para outra aba: o detalhe fecha antes de navegar (ao voltar, a mesa está limpa). */
   const go = (route: '/presidencia' | '/congresso') => {
-    setSheet(null);
+    closeSheet();
     router.navigate(route);
+  };
+
+  /** Toque no globo: abre o cartão do estado; sem partida em andamento o mapa é só imagem. */
+  const selectState = (sigla: string | null) => {
+    if (!active || sigla === null) {
+      setSelectedUf(null);
+      return;
+    }
+    setSelectedUf(sigla);
+    setSheet('estado');
+  };
+
+  /** Escolha na lista: leva a câmera até a UF e abre o cartão dela. */
+  const chooseState = (sigla: string) => {
+    globe.current?.flyToUf(sigla);
+    setSelectedUf(sigla);
+    setSheet('estado');
   };
 
   // Android: com um painel aberto, o "voltar" do sistema fecha só o painel em vez de trocar de aba.
@@ -125,6 +173,7 @@ export function PainelScreen() {
     if (sheet === null) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       setSheet(null);
+      setSelectedUf(null);
       return true;
     });
     return () => sub.remove();
@@ -259,7 +308,28 @@ export function PainelScreen() {
             <Text style={{ color: Hud.textMuted, fontSize: 10, fontStyle: 'italic' }}>
               Participação de cada região no produto nacional.
             </Text>
+            {active ? (
+              <UfList rows={ufRows} indicator={listIndicator} onChoose={chooseState} />
+            ) : (
+              <EmptyNote text="Inicie uma campanha para ver os estados no mapa de calor." />
+            )}
           </>
+        );
+      case 'estado':
+        return active && selectedRow ? (
+          <UfDetail
+            row={selectedRow}
+            indicator={listIndicator}
+            state={active.state}
+            content={content}
+            explanation={explanations?.find((x) => x.id === selectedRow.uf.id)}
+            onFly={() => {
+              globe.current?.flyToUf(selectedRow.uf.id);
+              setSheet(null);
+            }}
+          />
+        ) : (
+          <EmptyNote text="Toque num estado do mapa para ver os números e o porquê da diferença." />
         );
       case 'camadas':
         return (
@@ -295,8 +365,15 @@ export function PainelScreen() {
       <StatusBar style="light" />
       {size.width > 0 && (
         <>
-          {/* O mapa é a tela: tudo o mais são camadas por cima. */}
-          <GlobeView chrome={false} fills={hud.fills} />
+          {/* O mapa é a tela: tudo o mais são camadas por cima. O toque num estado abre o cartão dele. */}
+          <GlobeView
+            fills={hud.fills}
+            selectedId={selectedUf}
+            onSelect={selectState}
+            onReady={(api) => {
+              globe.current = api;
+            }}
+          />
 
           <View
             pointerEvents="box-none"
@@ -322,6 +399,12 @@ export function PainelScreen() {
                 </View>
               )}
               <View style={{ flex: compact ? 0 : 1 }} />
+              <RoundButton
+                icon={CENTER_ICON}
+                label="Centralizar no Brasil"
+                size={compact ? 36 : 40}
+                onPress={() => globe.current?.reset()}
+              />
               <BellButton count={hud.pendingCount} onPress={() => setSheet('alertas')} />
             </View>
             {!compact && (
@@ -367,7 +450,11 @@ export function PainelScreen() {
           )}
 
           {sheet && (
-            <InfoSheet title={SHEET_TITLES[sheet]} onClose={() => setSheet(null)}>
+            <InfoSheet
+              title={
+                sheet === 'estado' && selectedRow ? `${selectedRow.name} · ${selectedRow.uf.id}` : SHEET_TITLES[sheet]
+              }
+              onClose={closeSheet}>
               {sheetBody()}
             </InfoSheet>
           )}

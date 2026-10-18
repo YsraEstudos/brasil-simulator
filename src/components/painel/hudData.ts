@@ -1,6 +1,6 @@
 import { governmentSupport, groupCounts } from '@/components/congress/hemicycle';
 import { monthLabel } from '@/components/campaign/labels';
-import { mapFills, mapRows, type MapIndicator } from '@/components/brasil/regionalMetrics';
+import { mapFills, mapRows, type MapIndicator } from './regionalMetrics';
 import {
   deltaSentiment,
   formatMoneyMillions,
@@ -189,7 +189,7 @@ const DEMO_SERIES: readonly HudSeriesPoint[] = [
 
 const GOOD_WHEN = { approval: 'up', inflation: 'down', unemployment: 'down', gdp: 'up' } as const;
 
-/** Relação bloco–governo → rótulo (POLITICAL_RULES.md §6.1: −100…100), como na aba Brasil. */
+/** Relação bloco–governo → rótulo (POLITICAL_RULES.md §6.1: −100…100), como no cartão do estado. */
 const RELATION_LABELS: readonly [number, string][] = [
   [40, 'Aliado'],
   [10, 'Próximo'],

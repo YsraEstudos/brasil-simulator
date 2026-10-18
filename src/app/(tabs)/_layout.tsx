@@ -11,7 +11,6 @@ const ICONS: Record<string, SymbolViewProps['name']> = {
   painel: { ios: 'square.grid.2x2', android: 'dashboard', web: 'dashboard' },
   economia: { ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' },
   congresso: { ios: 'person.3', android: 'groups', web: 'groups' },
-  brasil: { ios: 'globe.americas', android: 'public', web: 'public' },
   noticias: { ios: 'newspaper', android: 'newspaper', web: 'newspaper' },
 };
 
@@ -20,7 +19,6 @@ const TITLES: Record<string, string> = {
   painel: 'Painel',
   economia: 'Economia',
   congresso: 'Congresso',
-  brasil: 'Brasil',
   noticias: 'Notícias',
 };
 
@@ -47,7 +45,7 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={({ route }) => ({
           title: TITLES[route.name],
-          headerShown: route.name !== 'brasil' && route.name !== 'painel' && route.name !== 'design',
+          headerShown: route.name !== 'painel' && route.name !== 'design',
           tabBarIcon: ({ color, size }) => <SymbolView name={ICONS[route.name]} tintColor={color} size={size} />,
         })}>
         <Tabs.Screen name="presidencia" />
@@ -55,7 +53,6 @@ export default function TabsLayout() {
         <Tabs.Screen name="painel" options={{ tabBarStyle: { display: 'none' } }} />
         <Tabs.Screen name="economia" />
         <Tabs.Screen name="congresso" />
-        <Tabs.Screen name="brasil" />
         <Tabs.Screen name="noticias" />
         {/* Vitrine do sistema de design: acessível por /design, fora da barra de abas. */}
         <Tabs.Screen name="design" options={{ href: null }} />

@@ -4,7 +4,7 @@ import { lonLatToVec3, pointInRing } from './geo';
 import { UFS } from './ufs';
 
 /**
- * Preenchimento das UFs para o mapa de calor (aba Brasil): um polígono por anel, triangulado em lon/lat e
+ * Preenchimento das UFs para o mapa de calor da mesa (Painel): um polígono por anel, triangulado em lon/lat e
  * projetado logo acima da esfera. Anel de outra UF inteiramente dentro do anel (enclave) vira buraco, para as
  * cores não se somarem; vizinhas que só dividem fronteira não. Nos contornos atuais nenhuma UF é enclave: o DF
  * encosta em GO, mas não cai dentro dele. A geometria é criada uma vez e reutilizada; só a cor do material muda.
