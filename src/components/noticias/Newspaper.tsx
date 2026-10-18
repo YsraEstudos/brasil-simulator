@@ -81,6 +81,14 @@ export function Newspaper({
   const styles = useScaledStyles(baseStyles);
   const [filter, setFilter] = useState<NewsFilter>('todas');
   const [index, setIndex] = useState(0);
+  // As abas ficam montadas: se um mês foi encerrado em outra aba, a edição nova entra na posição 0 e o jornal
+  // volta para ela (senão a posição guardada passaria a mostrar outra edição, ou nenhuma, se a mais antiga saiu).
+  const latestMonth = editions[0]?.monthIndex;
+  const [seenLatest, setSeenLatest] = useState(latestMonth);
+  if (latestMonth !== seenLatest) {
+    setSeenLatest(latestMonth);
+    setIndex(0);
+  }
   const flip = useSharedValue(0);
   const fade = useSharedValue(1);
   // Durante a virada a página vira uma textura de GPU (Android): a animação não redesenha o texto a cada quadro.
