@@ -15,6 +15,8 @@ import {
 import type { ActiveMark, PressureBand } from '@/components/tabs/institutionsView';
 import { formatNumber } from '@/components/ui';
 import { Fonts, MIN_TOUCH } from '@/constants/theme';
+import { useScaledStyles } from '@/hooks/use-scaled-styles';
+import { useTheme } from '@/hooks/use-theme';
 import type { NewsItem } from '@/engine';
 
 import {
@@ -76,6 +78,7 @@ export function Newspaper({
   marks,
   pending,
 }: NewspaperProps) {
+  const styles = useScaledStyles(baseStyles);
   const [filter, setFilter] = useState<NewsFilter>('todas');
   const [index, setIndex] = useState(0);
   const flip = useSharedValue(0);
@@ -228,6 +231,7 @@ function Masthead({
   canOlder: boolean;
   onTurn: (dir: -1 | 1) => void;
 }) {
+  const styles = useScaledStyles(baseStyles);
   return (
     <View>
       <View style={styles.topLine}>
@@ -268,6 +272,7 @@ function TurnButton({
   enabled: boolean;
   onPress: () => void;
 }) {
+  const styles = useScaledStyles(baseStyles);
   return (
     <Pressable
       onPress={onPress}
@@ -284,6 +289,7 @@ function TurnButton({
 
 /** Cadernos do jornal: o filtro por tipo de notícia. */
 function Sections({ value, onChange }: { value: NewsFilter; onChange: (f: NewsFilter) => void }) {
+  const styles = useScaledStyles(baseStyles);
   return (
     <ScrollView
       horizontal
@@ -310,6 +316,7 @@ function Sections({ value, onChange }: { value: NewsFilter; onChange: (f: NewsFi
 }
 
 function Kicker({ item }: { item: NewsItem }) {
+  const styles = useScaledStyles(baseStyles);
   return (
     <Text style={[styles.kicker, { color: TONE_COLOR[item.tone] }]}>
       {`${NEWS_TONE_MARK[item.tone]} ${NEWS_KIND_LABEL[item.kind].toUpperCase()} · ${NEWS_TONE_LABEL[item.tone]}`}
@@ -318,7 +325,9 @@ function Kicker({ item }: { item: NewsItem }) {
 }
 
 function Lead({ item, width, characterName }: { item: NewsItem; width: number; characterName: string | undefined }) {
-  const size = leadFontSize(width);
+  const styles = useScaledStyles(baseStyles);
+  const { textScale } = useTheme();
+  const size = leadFontSize(width) * textScale;
   return (
     <View style={styles.lead}>
       <Kicker item={item} />
@@ -341,6 +350,7 @@ function Story({
   width: `${number}%`;
   divider: boolean;
 }) {
+  const styles = useScaledStyles(baseStyles);
   return (
     <View style={[styles.story, { width }, divider && styles.storyDivider]}>
       <Kicker item={item} />
@@ -352,6 +362,7 @@ function Story({
 }
 
 function Box({ title, children }: { title: string; children: ReactNode }) {
+  const styles = useScaledStyles(baseStyles);
   return (
     <View style={styles.box}>
       <Text style={styles.boxTitle}>{title.toUpperCase()}</Text>
@@ -362,7 +373,7 @@ function Box({ title, children }: { title: string; children: ReactNode }) {
 
 const serif = Fonts?.serif;
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   sheet: {
     flex: 1,
     backgroundColor: Paper.paper,

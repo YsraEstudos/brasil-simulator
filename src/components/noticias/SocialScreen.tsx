@@ -4,6 +4,7 @@ import Animated, { interpolate, useAnimatedStyle, type SharedValue } from 'react
 
 import { Hud } from '@/components/painel/hudTheme';
 import { MIN_TOUCH } from '@/constants/theme';
+import { useScaledStyles } from '@/hooks/use-scaled-styles';
 import type { NewsKind } from '@/engine';
 
 import { compactCount, moodOf, trendsOf, type PostStance, type SocialPost } from './socialFeed';
@@ -32,6 +33,7 @@ export function SocialScreen({
   /** Quanto a tela já "acendeu" (0–1): as primeiras publicações sobem em cascata junto. */
   progress: SharedValue<number>;
 }) {
+  const styles = useScaledStyles(baseStyles);
   const [kind, setKind] = useState<NewsKind | null>(null);
   const trends = useMemo(() => trendsOf(posts), [posts]);
   const mood = useMemo(() => moodOf(posts), [posts]);
@@ -90,6 +92,7 @@ export function SocialScreen({
 }
 
 function MoodBar({ mood }: { mood: Record<PostStance, number> }) {
+  const styles = useScaledStyles(baseStyles);
   const stances: PostStance[] = ['apoio', 'neutra', 'critica'];
   const empty = mood.apoio + mood.critica + mood.neutra === 0;
   return (
@@ -115,6 +118,7 @@ function MoodBar({ mood }: { mood: Record<PostStance, number> }) {
 }
 
 function TrendChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const styles = useScaledStyles(baseStyles);
   return (
     <Pressable
       onPress={onPress}
@@ -135,6 +139,7 @@ const Post = memo(function Post({
   index: number;
   progress: SharedValue<number>;
 }) {
+  const styles = useScaledStyles(baseStyles);
   const { author } = post;
   const body = (
     <View style={styles.post}>
@@ -182,7 +187,7 @@ function Rise({ index, progress, children }: { index: number; progress: SharedVa
   return <Animated.View style={style}>{children}</Animated.View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0b1410' },
   header: {
     flexDirection: 'row',

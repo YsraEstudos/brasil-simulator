@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import type { NewsItem } from '@/engine';
 
 import { deskLayout, easeInOutCubic, laptopScreenFrame, pcPose, poseAt } from './deskCamera';
-import { newspaperRect, socialScreenRect } from './deskOverlay';
+import { newspaperRect, rectStyle, socialScreenRect } from './deskOverlay';
+import { keyboardTexture, newspaperTexture, radialTexture, screenTexture, woodTexture } from './deskTextures';
 import { buildEditions, editionPage, leadFontSize, mastheadFontSize, newspaperColumns } from './newspaperView';
+import { scaleTypography } from './scaledTypography';
 import {
   buildSocialFeed,
   characterStance,
@@ -154,5 +156,52 @@ describe('redes sociais fictícias', () => {
 
   it('sem notícias, sem publicações', () => {
     expect(buildSocialFeed([], characters, 0.5, 0)).toEqual([]);
+  });
+});
+
+describe('texturas geradas em código', () => {
+  const pixel = (tex: ReturnType<typeof woodTexture>, x: number, y: number) => {
+    const { data, width } = tex.image as { data: Uint8Array; width: number };
+    const i = (y * width + x) * 4;
+    return [data[i], data[i + 1], data[i + 2], data[i + 3]];
+  };
+
+  it('todas são potência de 2, opacas onde devem e prontas para a GPU', () => {
+    for (const tex of [woodTexture(), newspaperTexture(), screenTexture(), keyboardTexture()]) {
+      const { width, height } = tex.image as { width: number; height: number };
+      expect(Math.log2(width) % 1).toBe(0);
+      expect(Math.log2(height) % 1).toBe(0);
+      expect(pixel(tex, width >> 1, height >> 1)[3]).toBe(255);
+      expect(tex.version).toBeGreaterThan(0);
+    }
+  });
+
+  it('mancha radial: cheia no centro, transparente na borda, com a cor pedida', () => {
+    const tex = radialTexture([10, 20, 30]);
+    expect(pixel(tex, 32, 32)[3]).toBeGreaterThan(240);
+    expect(pixel(tex, 0, 0)[3]).toBe(0);
+    expect(pixel(tex, 32, 32).slice(0, 3)).toEqual([10, 20, 30]);
+  });
+
+  it('madeira tem veios (não é cor chapada) e é determinística', () => {
+    const a = woodTexture();
+    const rows = new Set(Array.from({ length: 32 }, (_, y) => pixel(a, 5, y)[0]));
+    expect(rows.size).toBeGreaterThan(4);
+    expect(pixel(woodTexture(), 7, 9)).toEqual(pixel(a, 7, 9));
+  });
+});
+
+describe('escala de texto do jogador', () => {
+  it('multiplica tamanho e entrelinha, preserva o resto e não mexe na escala 1', () => {
+    const base = { a: { fontSize: 10, lineHeight: 20, color: 'red' }, b: { padding: 4 } };
+    expect(scaleTypography(base, 1)).toBe(base);
+    const big = scaleTypography(base, 1.3);
+    expect(big.a).toEqual({ fontSize: 13, lineHeight: 26, color: 'red' });
+    expect(big.b).toEqual({ padding: 4 });
+    expect(base.a.fontSize).toBe(10);
+  });
+
+  it('retângulo vira estilo absoluto', () => {
+    expect(rectStyle({ x: 1, y: 2, width: 3, height: 4 })).toEqual({ left: 1, top: 2, width: 3, height: 4 });
   });
 });

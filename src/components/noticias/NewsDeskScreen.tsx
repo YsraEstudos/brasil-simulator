@@ -22,6 +22,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 
 import { Hud } from '@/components/painel/hudTheme';
 import { activeInstitutionalMarks, pressureBand } from '@/components/tabs/institutionsView';
@@ -59,7 +60,7 @@ export function NewsDeskScreen() {
     );
   }
   // key: trocar de partida recomeça a mesa (jornal na edição mais recente, câmera na entrada).
-  return <NewsDesk key={active.id} campaign={active} />;
+  return <NewsDesk key={active.id} campaign={active} error={error} />;
 }
 
 /**
@@ -67,7 +68,7 @@ export function NewsDeskScreen() {
  * câmera até a tela, onde as redes sociais aparecem; voltar faz o caminho inverso. Os textos ficam na
  * interface nativa (nítidos e acessíveis); o 3D é o cenário e o movimento de câmera.
  */
-function NewsDesk({ campaign }: { campaign: ActiveCampaign }) {
+function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string | null | undefined }) {
   const { state, lastReport } = campaign;
   const insets = useSafeAreaInsets();
   const content = useMemo(() => loadContent(state.scenarioId), [state.scenarioId]);
@@ -167,15 +168,18 @@ function NewsDesk({ campaign }: { campaign: ActiveCampaign }) {
     [paper, social],
   );
 
-  // Botão voltar do Android: do notebook volta para a mesa.
-  useEffect(() => {
-    if (mode !== 'pc') return;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      backToDesk();
-      return true;
-    });
-    return () => sub.remove();
-  }, [mode, backToDesk]);
+  // Botão voltar do Android: do notebook volta para a mesa. Só com a aba em foco — as abas ficam montadas, e
+  // um ouvinte global esquecido aqui roubaria o voltar de outra tela.
+  useFocusEffect(
+    useCallback(() => {
+      if (mode !== 'pc') return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        backToDesk();
+        return true;
+      });
+      return () => sub.remove();
+    }, [mode, backToDesk]),
+  );
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -268,6 +272,15 @@ function NewsDesk({ campaign }: { campaign: ActiveCampaign }) {
           <Animated.View style={[StyleSheet.absoluteFill, styles.flash, flashStyle]} pointerEvents="none" />
         </Animated.View>
       )}
+
+      {/* Falha de salvar/carregar com a partida aberta: o aviso fica por cima da mesa até a store limpar o erro. */}
+      {error && (
+        <View
+          pointerEvents="box-none"
+          style={[styles.errorBanner, { top: insets.top + 8, left: insets.left + 12, right: insets.right + 12 }]}>
+          <Alert tone="negative" title="Algo deu errado ao salvar ou carregar" message={error} />
+        </View>
+      )}
     </View>
   );
 }
@@ -281,6 +294,7 @@ const PULSES = 4;
 
 const styles = StyleSheet.create({
   hidden: { display: 'none' },
+  errorBanner: { position: 'absolute' },
   root: { flex: 1, backgroundColor: '#0b0806', overflow: 'hidden' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, backgroundColor: Hud.board },
   hotspot: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
