@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   BackHandler,
@@ -41,8 +41,11 @@ import { buildEditions } from './newspaperView';
 import { buildSocialFeed } from './socialFeed';
 import { SocialScreen } from './SocialScreen';
 
-/** Onde está o olhar: na mesa, a caminho do notebook, no notebook ou voltando. */
-type Mode = 'mesa' | 'indo' | 'pc' | 'voltando';
+/**
+ * Onde está o olhar: na mesa, a caminho do notebook, no notebook, apagando a tela das redes (`saindo`) ou com a
+ * câmera voltando para a mesa.
+ */
+type Mode = 'mesa' | 'indo' | 'pc' | 'saindo' | 'voltando';
 
 /** Aba Notícias (GAME_DESIGN.md §12–§13): carregamento, partida ausente ou a mesa de notícias. */
 export function NewsDeskScreen() {
@@ -110,7 +113,7 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
 
   const layout = useMemo(() => (size ? deskLayout(size.width, size.height) : null), [size]);
   const poses = useMemo(() => (layout ? { desk: layout.desk, pc: layout.pc } : null), [layout]);
-  const goal: DeskGoal = mode === 'indo' || mode === 'pc' ? 'pc' : 'mesa';
+  const goal: DeskGoal = mode === 'indo' || mode === 'pc' || mode === 'saindo' ? 'pc' : 'mesa';
   // O jornal só fica "vivo" (camadas normais, rolagem barata) parado na mesa; em movimento vira textura de GPU.
   const [paperResting, setPaperResting] = useState(false);
   const paperMoving = mode !== 'mesa' || !paperResting;
@@ -149,17 +152,40 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
     setMode('indo');
   };
 
+  // Temporizadores da troca de modo, limpos ao desmontar.
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const fadeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(
+    () => () => {
+      clearTimeout(leaveTimer.current);
+      clearTimeout(fadeTimer.current);
+    },
+    [],
+  );
+  // A tela das redes vira textura de GPU só enquanto acende ou apaga.
+  const [socialFading, setSocialFading] = useState(false);
+
   const backToDesk = useCallback(() => {
+    // Ainda a caminho do notebook: a câmera dá meia-volta de onde estiver (as redes nem acenderam).
+    if (mode === 'indo') {
+      setMode('voltando');
+      return;
+    }
+    // Só sai do notebook uma vez: toques repetidos durante `saindo` não reiniciam nada.
     if (mode !== 'pc') return;
+    setMode('saindo');
     social.set(withTiming(0, { duration: 220, easing: Easing.in(Easing.quad) }));
-    setTimeout(() => setMode('voltando'), 160);
+    leaveTimer.current = setTimeout(() => setMode('voltando'), 160);
   }, [mode, social]);
 
   const onArrive = useCallback(
     (at: DeskGoal) => {
       if (at === 'pc') {
         setMode((m) => (m === 'indo' ? 'pc' : m));
-        social.set(withTiming(1, { duration: 620, easing: Easing.out(Easing.cubic) }));
+        setSocialFading(true);
+        clearTimeout(fadeTimer.current);
+        fadeTimer.current = setTimeout(() => setSocialFading(false), SOCIAL_FADE_MS + 40);
+        social.set(withTiming(1, { duration: SOCIAL_FADE_MS, easing: Easing.out(Easing.cubic) }));
       } else {
         setMode((m) => (m === 'voltando' ? 'mesa' : m));
         paper.set(withSpring(1, { damping: 16, stiffness: 110 }));
@@ -168,11 +194,11 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
     [paper, social],
   );
 
-  // Botão voltar do Android: do notebook volta para a mesa. Só com a aba em foco — as abas ficam montadas, e
-  // um ouvinte global esquecido aqui roubaria o voltar de outra tela.
+  // Botão voltar do Android: do notebook (ou do caminho até ele) volta para a mesa. Só com a aba em foco — as
+  // abas ficam montadas, e um ouvinte global esquecido aqui roubaria o voltar de outra tela.
   useFocusEffect(
     useCallback(() => {
-      if (mode !== 'pc') return;
+      if (mode !== 'indo' && mode !== 'pc' && mode !== 'saindo') return;
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
         backToDesk();
         return true;
@@ -242,7 +268,8 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
       {paperRect && (
         <Animated.View
           style={[styles.paper, rectStyle(paperRect), paperStyle]}
-          renderToHardwareTextureAndroid={paperMoving}
+          // No notebook o jornal está invisível: sem camada de GPU guardada à toa.
+          renderToHardwareTextureAndroid={paperMoving && mode !== 'pc'}
           pointerEvents={mode === 'mesa' ? 'auto' : 'none'}>
           <Newspaper
             width={paperRect.width}
@@ -264,9 +291,9 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
             styles.social,
             rectStyle(socialRect),
             socialStyle,
-            mode !== 'pc' && mode !== 'voltando' && styles.hidden,
+            mode !== 'pc' && mode !== 'saindo' && mode !== 'voltando' && styles.hidden,
           ]}
-          renderToHardwareTextureAndroid={mode !== 'pc'}
+          renderToHardwareTextureAndroid={socialFading || mode === 'saindo'}
           pointerEvents={mode === 'pc' ? 'auto' : 'none'}>
           <SocialScreen posts={posts} onBack={backToDesk} progress={social} />
           <Animated.View style={[StyleSheet.absoluteFill, styles.flash, flashStyle]} pointerEvents="none" />
@@ -289,6 +316,8 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
 const SOCIAL_PREMOUNT_MS = 1800;
 /** Tempo para o jornal assentar na mesa (entrada e volta do notebook). */
 const PAPER_SETTLE_MS = 1500;
+/** Duração da tela das redes acendendo. */
+const SOCIAL_FADE_MS = 620;
 /** Quantas vezes o anel do notebook pulsa a cada chegada na mesa. */
 const PULSES = 4;
 

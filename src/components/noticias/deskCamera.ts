@@ -107,8 +107,19 @@ function laptopHull(): Vector3[] {
   return pts;
 }
 
+/** Vetor do three.js como tupla, sem conversão de tipo forçada. */
+const toVec3 = (v: Vector3): Vec3 => [v.x, v.y, v.z];
+
+/**
+ * Câmera e vetor de rascunho reaproveitados pelas buscas (centenas de projeções a cada mudança de tamanho da
+ * janela) em vez de criar objetos novos a cada passo. Seguro porque as funções deste módulo são síncronas.
+ */
+const scratchCamera = new PerspectiveCamera(DESK_FOV, 1, 0.1, 200);
+const scratchPoint = new Vector3();
+
 function makeCamera(pose: CameraPose, aspect: number): PerspectiveCamera {
-  const cam = new PerspectiveCamera(DESK_FOV, aspect, 0.1, 200);
+  const cam = scratchCamera;
+  cam.aspect = aspect;
   cam.position.set(...pose.position);
   cam.up.set(...pose.up);
   cam.lookAt(...pose.target);
@@ -141,7 +152,7 @@ function ndcBounds(points: readonly Vector3[], cam: PerspectiveCamera) {
   let minY = Infinity;
   let maxY = -Infinity;
   for (const p of points) {
-    const v = p.clone().project(cam);
+    const v = scratchPoint.copy(p).project(cam);
     maxX = Math.max(maxX, Math.abs(v.x));
     minY = Math.min(minY, v.y);
     maxY = Math.max(maxY, v.y);
@@ -166,8 +177,8 @@ export function deskPose(aspect: number): CameraPose {
   const poseFor = (d: number, shift: number): CameraPose => {
     const target = center.clone().add(new Vector3(0, 0, shift));
     return {
-      position: target.clone().addScaledVector(dir, d).toArray() as unknown as Vec3,
-      target: target.toArray() as unknown as Vec3,
+      position: toVec3(target.clone().addScaledVector(dir, d)),
+      target: toVec3(target),
       up: [0, 1, 0],
     };
   };
@@ -205,9 +216,9 @@ export function pcPose(aspect: number): CameraPose {
   const byWidth = width / 2 / (tan * aspect);
   const distance = aspect >= 1 ? Math.max(byHeight, byWidth) / 0.86 : byHeight * 0.98;
   return {
-    position: center.clone().addScaledVector(normal, distance).toArray() as unknown as Vec3,
-    target: center.toArray() as unknown as Vec3,
-    up: up.toArray() as unknown as Vec3,
+    position: toVec3(center.clone().addScaledVector(normal, distance)),
+    target: toVec3(center),
+    up: toVec3(up),
   };
 }
 
@@ -249,7 +260,7 @@ function projectRect(points: readonly Vector3[], pose: CameraPose, width: number
   let maxX = -Infinity;
   let maxY = -Infinity;
   for (const p of points) {
-    const v = p.clone().project(cam);
+    const v = scratchPoint.copy(p).project(cam);
     const x = ((v.x + 1) / 2) * width;
     const y = ((1 - v.y) / 2) * height;
     minX = Math.min(minX, x);

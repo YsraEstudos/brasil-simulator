@@ -36,8 +36,12 @@ export function SocialScreen({
   const styles = useScaledStyles(baseStyles);
   const [kind, setKind] = useState<NewsKind | null>(null);
   const trends = useMemo(() => trendsOf(posts), [posts]);
-  const mood = useMemo(() => moodOf(posts), [posts]);
-  const visible = useMemo(() => (kind ? posts.filter((p) => p.kind === kind) : posts), [posts, kind]);
+  // A tela fica montada entre visitas: um assunto que saiu das notícias recentes deixa de filtrar (senão a
+  // lista ficaria vazia, com a mensagem de "ninguém comentando").
+  const activeKind = kind && trends.some((t) => t.kind === kind) ? kind : null;
+  const visible = useMemo(() => (activeKind ? posts.filter((p) => p.kind === activeKind) : posts), [posts, activeKind]);
+  // O humor acompanha o filtro: é o clima do assunto que está na tela.
+  const mood = useMemo(() => moodOf(visible), [visible]);
 
   return (
     <View style={styles.root}>
@@ -62,13 +66,13 @@ export function SocialScreen({
       <MoodBar mood={mood} />
 
       <View style={styles.trends}>
-        <TrendChip label="Tudo" selected={kind === null} onPress={() => setKind(null)} />
+        <TrendChip label="Tudo" selected={activeKind === null} onPress={() => setKind(null)} />
         {trends.map((t) => (
           <TrendChip
             key={t.kind}
             label={`${t.tag} · ${t.posts}`}
-            selected={kind === t.kind}
-            onPress={() => setKind(kind === t.kind ? null : t.kind)}
+            selected={activeKind === t.kind}
+            onPress={() => setKind(activeKind === t.kind ? null : t.kind)}
           />
         ))}
       </View>
@@ -80,7 +84,6 @@ export function SocialScreen({
         contentContainerStyle={styles.list}
         initialNumToRender={6}
         windowSize={5}
-        removeClippedSubviews
         ListEmptyComponent={
           <Text style={styles.empty}>
             Ninguém comentando ainda. As reações chegam com as primeiras manchetes do governo.

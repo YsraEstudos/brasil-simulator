@@ -222,17 +222,23 @@ function characterAuthor(c: SocialCharacter): SocialAuthor {
   };
 }
 
-function fill(template: string, item: NewsItem): string {
+/**
+ * Preenche o modelo numa passagem só e com função: um `$&` na manchete não vira padrão do `replace`, e um
+ * `{c}` dentro da manchete não é substituído de novo.
+ */
+export function fill(template: string, item: Pick<NewsItem, 'headline' | 'cause' | 'kind'>): string {
   const cause = item.cause.replace(/^Causa:\s*/i, '').replace(/\.$/, '');
-  return template.replace('{h}', item.headline).replace('{c}', cause).replace('{tag}', KIND_TAG[item.kind]).trim();
+  const values: Record<string, string> = { '{h}': item.headline, '{c}': cause, '{tag}': KIND_TAG[item.kind] };
+  return template.replace(/\{h\}|\{c\}|\{tag\}/g, (token) => values[token]).trim();
 }
 
 /** Lado de um cidadão: puxado pelo tom da notícia e pela aprovação do governo (0–1). */
 export function citizenStance(tone: NewsItem['tone'], approval: number, roll: number): PostStance {
-  const support = { positiva: 0.62, negativa: 0.18, neutra: 0.36 }[tone] + (approval - 0.5) * 0.5;
-  const against = { positiva: 0.16, negativa: 0.62, neutra: 0.3 }[tone] - (approval - 0.5) * 0.5;
+  // Faixas nunca negativas: com aprovação extrema, uma faixa zera sem encolher a outra.
+  const support = Math.max(0, { positiva: 0.62, negativa: 0.18, neutra: 0.36 }[tone] + (approval - 0.5) * 0.5);
+  const against = Math.max(0, { positiva: 0.16, negativa: 0.62, neutra: 0.3 }[tone] - (approval - 0.5) * 0.5);
   if (roll < support) return 'apoio';
-  if (roll < support + Math.max(0, against)) return 'critica';
+  if (roll < support + against) return 'critica';
   return 'neutra';
 }
 
@@ -262,8 +268,9 @@ function counts(stance: PostStance, verified: boolean, r: () => number) {
 }
 
 /**
- * Publicações para a linha do tempo, da notícia mais nova para a mais antiga. `news` vem como em
- * `EventsState.news` (mais antiga primeiro). Cada notícia rende: o personagem citado (se houver), às vezes a
+ * Publicações para a linha do tempo: mês mais recente primeiro e, dentro do mês, na ordem de prioridade do
+ * motor (a manchete principal antes). `news` vem como em `EventsState.news`: meses do mais antigo para o mais
+ * novo, cada mês já em ordem de prioridade. Cada notícia rende: o personagem citado (se houver), às vezes a
  * colunista, e um ou dois cidadãos.
  */
 export function buildSocialFeed(
@@ -274,7 +281,8 @@ export function buildSocialFeed(
 ): SocialPost[] {
   const posts: SocialPost[] = [];
   const journalist = characters.find((c) => c.id === 'jornalista');
-  const recent = [...news].reverse().slice(0, NEWS_WINDOW);
+  // Ordenação estável: só os meses se invertem; a prioridade dentro do mês fica como o motor gravou.
+  const recent = news.slice(-NEWS_WINDOW).sort((a, b) => b.monthIndex - a.monthIndex);
 
   for (const item of recent) {
     const r = rng(hashString(item.id));

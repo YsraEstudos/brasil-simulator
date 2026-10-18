@@ -3,13 +3,14 @@ import { describe, expect, it } from 'vitest';
 import type { NewsItem } from '@/engine';
 
 import { deskLayout, easeInOutCubic, laptopScreenFrame, pcPose, poseAt } from './deskCamera';
-import { newspaperRect, rectStyle, socialScreenRect } from './deskOverlay';
+import { newspaperRect, PAPER_MAX_WIDTH, rectStyle, socialScreenRect } from './deskOverlay';
 import { keyboardTexture, newspaperTexture, radialTexture, screenTexture, woodTexture } from './deskTextures';
 import { buildEditions, editionPage, leadFontSize, mastheadFontSize, newspaperColumns } from './newspaperView';
 import { scaleTypography } from './scaledTypography';
 import {
   buildSocialFeed,
   characterStance,
+  fill,
   citizenStance,
   compactCount,
   hashString,
@@ -61,6 +62,8 @@ describe('edições do jornal', () => {
 
   it('colunas e manchete crescem com a largura, dentro de limites', () => {
     expect([newspaperColumns(360), newspaperColumns(700), newspaperColumns(1000)]).toEqual([1, 2, 3]);
+    // O jornal da mesa nunca passa de PAPER_MAX_WIDTH: as 3 colunas precisam caber até lá.
+    expect(newspaperColumns(PAPER_MAX_WIDTH)).toBe(3);
     expect(leadFontSize(200)).toBe(22);
     expect(leadFontSize(2000)).toBe(40);
     expect(mastheadFontSize(330, false)).toBeLessThan(25);
@@ -90,11 +93,16 @@ describe('câmera da mesa', () => {
     expect(pose.target[1]).toBeCloseTo(center.y);
   });
 
-  for (const [label, w, h] of [
-    ['celular em pé', 390, 780],
-    ['celular deitado', 800, 360],
-    ['tablet em pé', 800, 1180],
-    ['tablet deitado', 1280, 760],
+  // [rótulo, largura, altura, fração mínima da altura para as redes]
+  for (const [label, w, h, socialMin] of [
+    ['celular em pé', 390, 780, 0.6],
+    ['celular deitado', 800, 360, 0.6],
+    ['tablet em pé', 800, 1180, 0.6],
+    ['tablet deitado', 1280, 760, 0.6],
+    // Quase quadradas (dobráveis, tela dividida): o jornal vai para baixo do notebook em vez de cobri-lo.
+    ['quadrada', 1000, 1000, 0.45],
+    ['quase quadrada deitada', 1000, 920, 0.45],
+    ['quase quadrada em pé', 920, 1000, 0.6],
   ] as const) {
     it(`${label}: notebook visível, jornal sem cobri-lo e redes dentro da tela`, () => {
       const layout = deskLayout(w, h);
@@ -106,9 +114,16 @@ describe('câmera da mesa', () => {
       expect(overlaps(paper, layout.laptop)).toBe(false);
       const social = socialScreenRect({ width: w, height: h }, layout, NO_INSETS);
       expect(inside(social, w, h)).toBe(true);
-      expect(social.height).toBeGreaterThan(h * 0.6);
+      expect(social.height).toBeGreaterThan(h * socialMin);
     });
   }
+
+  it('centraliza o jornal dentro da área segura quando ela é assimétrica', () => {
+    const [w, h] = [390, 780];
+    const insets = { top: 30, bottom: 20, left: 0, right: 40 };
+    const paper = newspaperRect({ width: w, height: h }, deskLayout(w, h), insets);
+    expect(paper.x - insets.left).toBeCloseTo(w - insets.right - (paper.x + paper.width));
+  });
 });
 
 describe('redes sociais fictícias', () => {
@@ -127,9 +142,10 @@ describe('redes sociais fictícias', () => {
     expect(hashString('abc')).toBe(hashString('abc'));
   });
 
-  it('notícia mais nova primeiro; personagem citado publica com selo e pelo próprio prestígio', () => {
+  it('mês mais novo primeiro, na prioridade do motor; personagem citado publica com selo e pelo prestígio', () => {
     const posts = buildSocialFeed(feed, characters, 0.5, 1);
-    expect(posts[0].newsId).toBe('1_1');
+    // GAME_DESIGN.md §11.3.1: dentro do mês o motor grava em ordem de prioridade; a primeira gravada vem antes.
+    expect([...new Set(posts.map((p) => p.newsId))]).toEqual(['1_0', '1_1', '0_0']);
     const cited = posts.find((p) => p.newsId === '0_0' && p.author.name === 'Cleusa Marante');
     expect(cited?.author.verified).toBe(true);
     expect(cited?.stance).toBe('critica');
@@ -140,6 +156,9 @@ describe('redes sociais fictícias', () => {
     expect(citizenStance('positiva', 0.5, 0.1)).toBe('apoio');
     expect(citizenStance('negativa', 0.5, 0.5)).toBe('critica');
     expect(citizenStance('negativa', 0.9, 0.3)).toBe('apoio');
+    // Aprovação zero: o apoio zera, mas não encolhe a faixa de crítica (0,62 + 0,25 = 0,87).
+    expect(citizenStance('negativa', 0, 0.85)).toBe('critica');
+    expect(citizenStance('positiva', 1, 0.95)).toBe('neutra');
     expect([characterStance(30), characterStance(-30), characterStance(0)]).toEqual(['apoio', 'critica', 'neutra']);
   });
 
@@ -203,5 +222,12 @@ describe('escala de texto do jogador', () => {
 
   it('retângulo vira estilo absoluto', () => {
     expect(rectStyle({ x: 1, y: 2, width: 3, height: 4 })).toEqual({ left: 1, top: 2, width: 3, height: 4 });
+  });
+});
+
+describe('modelos de texto das redes', () => {
+  it('preenche numa passagem só, sem padrões do replace nem substituição dupla', () => {
+    const item = { headline: 'Dólar a R$ 6 e $& e {c}', cause: 'Causa: o câmbio subiu.', kind: 'economia' as const };
+    expect(fill('“{h}” — {c} {tag}', item)).toBe('“Dólar a R$ 6 e $& e {c}” — o câmbio subiu #Economia');
   });
 });

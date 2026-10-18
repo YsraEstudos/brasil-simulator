@@ -47,7 +47,8 @@ export function editionPage(edition: Edition | undefined, filter: NewsFilter): E
 /** Quantas colunas cabem na largura do jornal (em pixels). */
 export function newspaperColumns(width: number): 1 | 2 | 3 {
   if (width < 520) return 1;
-  if (width < 900) return 2;
+  // Bem abaixo da largura máxima do jornal na mesa (820, deskOverlay.ts): um tablet deitado comum chega às 3.
+  if (width < 720) return 2;
   return 3;
 }
 

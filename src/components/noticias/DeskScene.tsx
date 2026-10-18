@@ -49,7 +49,9 @@ export function DeskScene({ poses, goal, editions, onArrive }: DeskSceneProps) {
   return (
     <>
       <color attach="background" args={['#0b0806']} />
-      <fog attach="fog" args={['#0b0806', 22, 46]} />
+      {/* A câmera da mesa fica a até ~29 unidades (celular muito alto): a neblina começa depois, só nas bordas
+          do fundo e na descida de entrada. */}
+      <fog attach="fog" args={['#0b0806', 32, 58]} />
       <hemisphereLight args={['#c9d6ff', '#3a2414', 0.9]} />
       <directionalLight position={[-6, 12, 4]} intensity={1.7} color="#ffe6c4" />
       <directionalLight position={[8, 6, 10]} intensity={0.35} color="#9fb6ff" />

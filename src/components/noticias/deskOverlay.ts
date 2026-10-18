@@ -9,25 +9,32 @@ export const rectStyle = (r: ScreenRect) => ({ left: r.x, top: r.y, width: r.wid
 /** Margem entre o jornal e as bordas (e o notebook). */
 const GAP = 12;
 /** Largura máxima do jornal: num tablet deitado ele não cobre a mesa inteira. */
-const PAPER_MAX_WIDTH = 820;
+export const PAPER_MAX_WIDTH = 820;
+/** Largura mínima para o jornal ficar ao lado do notebook; abaixo disso ele vai para baixo do notebook. */
+const SIDE_MIN_WIDTH = 320;
+/** Fração máxima da largura da tela que o jornal ocupa ao lado do notebook. */
+const SIDE_MAX_FRACTION = 0.7;
 
 /**
- * Onde o jornal fica: em paisagem, à esquerda do notebook; em retrato, abaixo dele. Respeita a área segura
- * (entalhe, gaveta de gestos) e nunca cobre o notebook, que é o caminho para as redes.
+ * Onde o jornal fica: ao lado (à esquerda) do notebook quando a tela é larga o bastante; senão, abaixo dele.
+ * Nunca cobre o notebook, que é o caminho para as redes, e respeita a área segura (entalhe, gaveta de gestos),
+ * centralizando dentro dela.
  */
 export function newspaperRect(size: { width: number; height: number }, layout: DeskLayout, insets: Insets): ScreenRect {
   const { width: w, height: h } = size;
   const left = insets.left + GAP;
+  const right = w - insets.right - GAP;
   const top = insets.top + GAP;
   const bottom = h - Math.max(GAP, insets.bottom);
   if (w >= h) {
-    const right = Math.max(w * 0.55, Math.min(layout.laptop.x - GAP, w * 0.7));
-    const width = Math.min(PAPER_MAX_WIDTH, right - left);
-    return { x: left, y: top, width, height: bottom - top };
+    const sideRight = Math.min(layout.laptop.x - GAP, w * SIDE_MAX_FRACTION);
+    const width = Math.min(PAPER_MAX_WIDTH, sideRight - left);
+    if (width >= SIDE_MIN_WIDTH) return { x: left, y: top, width, height: bottom - top };
   }
-  const y = Math.min(h * 0.45, Math.max(top, layout.laptop.y + layout.laptop.height + GAP));
-  const width = Math.min(PAPER_MAX_WIDTH, w - left - insets.right - GAP);
-  return { x: (w - width) / 2, y, width, height: bottom - y };
+  // Abaixo do notebook (retrato e telas quase quadradas).
+  const y = Math.max(top, layout.laptop.y + layout.laptop.height + GAP);
+  const width = Math.min(PAPER_MAX_WIDTH, right - left);
+  return { x: left + (right - left - width) / 2, y, width, height: bottom - y };
 }
 
 /** Onde as redes aparecem: sobre a tela do notebook; em retrato, a câmera entra na tela e ela ocupa tudo. */
