@@ -192,19 +192,23 @@ export function GlobeScene({ controller, selectedUf, fills, onStats }: Props) {
   useEffect(() => {
     let alive = true;
     let tex: THREE.Texture | null = null;
-    loadTexture(require('../../assets/globe/world.jpg')).then((t) => {
-      if (!alive) {
-        t.dispose();
-        return;
-      }
-      tex = t;
-      t.colorSpace = THREE.NoColorSpace;
-      t.anisotropy = Math.min(4, gl.capabilities.getMaxAnisotropy());
-      t.needsUpdate = true;
-      globeMaterial.uniforms.uWorld.value = t;
-      setWorld(t);
-      invalidate();
-    });
+    loadTexture(require('../../assets/globe/world.jpg'))
+      .then((t) => {
+        if (!alive) {
+          t.dispose();
+          return;
+        }
+        tex = t;
+        t.colorSpace = THREE.NoColorSpace;
+        t.anisotropy = Math.min(4, gl.capabilities.getMaxAnisotropy());
+        t.needsUpdate = true;
+        globeMaterial.uniforms.uWorld.value = t;
+        setWorld(t);
+        invalidate();
+      })
+      .catch((e) => {
+        if (__DEV__) console.warn('textura do globo falhou', e);
+      });
     return () => {
       alive = false;
       tex?.dispose();
