@@ -45,7 +45,7 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={({ route }) => ({
           title: TITLES[route.name],
-          headerShown: route.name !== 'painel' && route.name !== 'design',
+          headerShown: route.name !== 'painel' && route.name !== 'design' && route.name !== 'noticias',
           tabBarIcon: ({ color, size }) => <SymbolView name={ICONS[route.name]} tintColor={color} size={size} />,
         })}>
         <Tabs.Screen name="presidencia" />

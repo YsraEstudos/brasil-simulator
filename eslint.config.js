@@ -10,7 +10,7 @@ module.exports = defineConfig([
   },
   {
     // Cena three.js: propriedades JSX do R3F e mutação imperativa de objetos 3D em useFrame são o padrão.
-    files: ['src/globe/**/*.tsx'],
+    files: ['src/globe/**/*.tsx', 'src/components/noticias/DeskScene.tsx'],
     rules: {
       'react/no-unknown-property': 'off',
       'react-hooks/immutability': 'off',

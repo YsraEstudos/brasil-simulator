@@ -1,6 +1,5 @@
-import { NewsPanel } from '@/components/tabs/NewsPanel';
-import { TabScreen } from '@/components/tabs/TabScreen';
+import { NewsDeskScreen } from '@/components/noticias/NewsDeskScreen';
 
 export default function NoticiasScreen() {
-  return <TabScreen render={(campaign) => <NewsPanel campaign={campaign} />} />;
+  return <NewsDeskScreen />;
 }
