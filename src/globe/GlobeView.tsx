@@ -1,12 +1,10 @@
 import { Canvas } from './r3f';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View, type ViewInstance } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Platform, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CAMERA } from './config';
-import type { CameraState } from './camera';
-import { clampCamera } from './camera';
 import { GlobeController } from './controller';
 import { GlobeScene, type SceneStats } from './GlobeScene';
 import { findUf, ufBySigla, type Uf } from './ufs';
@@ -15,40 +13,32 @@ const BRASIL_VIEW = { lon: -52, lat: -14, altitude: 0.75 };
 /** Altitude da câmera ao ir até uma UF. */
 const UF_ALTITUDE = 0.08;
 
-export interface GlobeViewProps {
-  initial?: CameraState;
-  /** Cor de cada UF no mapa de calor (sigla → hex). */
-  fills?: Readonly<Record<string, string>> | null;
-  /**
-   * UF selecionada (sigla). Com `onSelect`, a seleção é controlada por quem usa o globo e o cartão padrão some;
-   * sem ele, o globo mostra o próprio cartão da UF tocada.
-   */
-  selectedId?: string | null;
-  onSelect?: (sigla: string | null) => void;
-  /** Recebe a função que leva a câmera até uma UF (lista da aba Brasil). */
-  onReady?: (api: { flyToUf: (sigla: string) => void }) => void;
-  /** Cabeçalho interno (título "Brasil" + botão Centralizar). `false` deixa o globo limpo para a mesa do Painel. */
-  chrome?: boolean;
-  /** Camadas da interface por cima do globo (legenda, cartão, lista). */
-  children?: ReactNode;
+/** Comandos de câmera que a mesa recebe para o globo (lista de estados e botão Centralizar). */
+export interface GlobeApi {
+  flyToUf: (sigla: string) => void;
+  reset: () => void;
 }
 
-export function GlobeView({ initial, fills, selectedId, onSelect, onReady, chrome = true, children }: GlobeViewProps) {
-  const controller = useMemo(() => {
-    const c = new GlobeController();
-    if (initial) c.state = clampCamera(initial);
-    return c;
-    // a câmera inicial só vale na montagem
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+export interface GlobeViewProps {
+  /** Cor de cada UF no mapa de calor (sigla → hex). */
+  fills?: Readonly<Record<string, string>> | null;
+  /** UF selecionada (sigla): a seleção é controlada por quem usa o globo (a mesa do Painel). */
+  selectedId: string | null;
+  /** Toque no globo: a UF tocada (ou `null` no oceano), para quem usa o globo decidir o que fazer. */
+  onSelect: (sigla: string | null) => void;
+  onReady?: (api: GlobeApi) => void;
+}
+
+/** O globo da federação: câmera, toques e o mapa de calor; quem usa controla a seleção (`selectedId`/`onSelect`). */
+export function GlobeView({ fills, selectedId, onSelect, onReady }: GlobeViewProps) {
+  const controller = useMemo(() => new GlobeController(), []);
   const insets = useSafeAreaInsets();
   // Último toque no globo (o contador distingue dois toques seguidos na mesma UF).
   const [tap, setTap] = useState<{ uf: Uf | null; n: number }>({ uf: null, n: 0 });
-  const controlled = onSelect !== undefined;
-  const selected = controlled ? (selectedId ? (ufBySigla(selectedId) ?? null) : null) : tap.uf;
+  const selected = selectedId ? (ufBySigla(selectedId) ?? null) : null;
 
   useEffect(() => {
-    if (controlled && tap.n > 0) onSelect?.(tap.uf?.sigla ?? null);
+    if (tap.n > 0) onSelect(tap.uf?.sigla ?? null);
     // só reage ao toque, não a uma nova função `onSelect`
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tap]);
@@ -59,6 +49,7 @@ export function GlobeView({ initial, fills, selectedId, onSelect, onReady, chrom
         const uf = ufBySigla(sigla);
         if (uf) controller.flyTo({ lon: uf.centroid[0], lat: uf.centroid[1], altitude: UF_ALTITUDE });
       },
+      reset: () => controller.flyTo(BRASIL_VIEW),
     });
     // só na montagem: o controlador não muda
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -131,44 +122,6 @@ export function GlobeView({ initial, fills, selectedId, onSelect, onReady, chrom
         </View>
       </GestureDetector>
 
-      {chrome && (
-        <View
-          pointerEvents="box-none"
-          style={[
-            styles.top,
-            { paddingTop: insets.top + 8, paddingLeft: 16 + insets.left, paddingRight: 16 + insets.right },
-          ]}>
-          <Text style={styles.title}>Brasil</Text>
-          <Pressable
-            style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-            onPress={() => controller.flyTo(BRASIL_VIEW)}
-            accessibilityRole="button"
-            accessibilityLabel="Centralizar no Brasil">
-            <Text style={styles.buttonText}>Centralizar</Text>
-          </Pressable>
-        </View>
-      )}
-
-      {children}
-
-      {!controlled && selected && (
-        <View style={[styles.card, { left: 16 + insets.left, right: 16 + insets.right }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>
-              {selected.nome} <Text style={styles.cardSigla}>{selected.sigla}</Text>
-            </Text>
-            <Text style={styles.cardSub}>Região {selected.regiao}</Text>
-          </View>
-          <Pressable
-            style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-            onPress={() =>
-              controller.flyTo({ lon: selected.centroid[0], lat: selected.centroid[1], altitude: UF_ALTITUDE })
-            }>
-            <Text style={styles.buttonText}>Ir</Text>
-          </Pressable>
-        </View>
-      )}
-
       {stats && (
         <Text style={[styles.stats, { top: insets.top + 52, left: 16 + insets.left }]} pointerEvents="none">
           tiles {stats.tiles} · cache {stats.cached} · nível {stats.maxLevel}
@@ -181,40 +134,5 @@ export function GlobeView({ initial, fills, selectedId, onSelect, onReady, chrom
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#05070f' },
   canvas: { flex: 1 },
-  top: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  title: { color: '#f4f1e8', fontSize: 22, fontWeight: '700', letterSpacing: 0.5 },
-  button: {
-    backgroundColor: 'rgba(20, 28, 48, 0.85)',
-    borderColor: 'rgba(255, 226, 122, 0.5)',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  pressed: { opacity: 0.7 },
-  buttonText: { color: '#ffe27a', fontWeight: '600' },
-  card: {
-    position: 'absolute',
-    bottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: 'rgba(12, 18, 32, 0.92)',
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-  },
-  cardTitle: { color: '#f4f1e8', fontSize: 18, fontWeight: '700' },
-  cardSigla: { color: '#ffe27a', fontSize: 14, fontWeight: '600' },
-  cardSub: { color: '#a9b1c3', marginTop: 2 },
   stats: { position: 'absolute', color: '#7f8aa3', fontSize: 11 },
 });

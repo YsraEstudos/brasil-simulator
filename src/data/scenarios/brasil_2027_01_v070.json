@@ -388,7 +388,7 @@
       "gdpShare": {
         "unit": "fração do PIB",
         "status": "PROVISORIO",
-        "note": "Ordem de grandeza das Contas Regionais do IBGE (início da década de 2020), arredondada a 0,1 p.p.; soma 1. Substituir pela série importada."
+        "note": "PIB per capita por UF (Contas Regionais do IBGE) ponderado pela população do cenário, normalizado; soma 1."
       },
       "sectors": {
         "unit": "fração do valor adicionado da UF",
@@ -417,7 +417,7 @@
         "name": "Rondônia",
         "region": "norte",
         "population": 1581,
-        "gdpShare": 0.006,
+        "gdpShare": 0.006986,
         "sectors": {
           "agropecuaria": 0.2,
           "extrativa": 0.01,
@@ -436,7 +436,7 @@
         "name": "Acre",
         "region": "norte",
         "population": 830,
-        "gdpShare": 0.002,
+        "gdpShare": 0.002403,
         "sectors": {
           "agropecuaria": 0.12,
           "extrativa": 0,
@@ -455,7 +455,7 @@
         "name": "Amazonas",
         "region": "norte",
         "population": 3941,
-        "gdpShare": 0.014,
+        "gdpShare": 0.014783,
         "sectors": {
           "agropecuaria": 0.06,
           "extrativa": 0.03,
@@ -474,7 +474,7 @@
         "name": "Roraima",
         "region": "norte",
         "population": 636,
-        "gdpShare": 0.002,
+        "gdpShare": 0.002293,
         "sectors": {
           "agropecuaria": 0.08,
           "extrativa": 0,
@@ -493,7 +493,7 @@
         "name": "Pará",
         "region": "norte",
         "population": 8121,
-        "gdpShare": 0.026,
+        "gdpShare": 0.023264,
         "sectors": {
           "agropecuaria": 0.12,
           "extrativa": 0.3,
@@ -512,7 +512,7 @@
         "name": "Amapá",
         "region": "norte",
         "population": 733,
-        "gdpShare": 0.002,
+        "gdpShare": 0.002558,
         "sectors": {
           "agropecuaria": 0.04,
           "extrativa": 0.03,
@@ -531,7 +531,7 @@
         "name": "Tocantins",
         "region": "norte",
         "population": 1511,
-        "gdpShare": 0.005,
+        "gdpShare": 0.005876,
         "sectors": {
           "agropecuaria": 0.18,
           "extrativa": 0.01,
@@ -550,7 +550,7 @@
         "name": "Maranhão",
         "region": "nordeste",
         "population": 6775,
-        "gdpShare": 0.014,
+        "gdpShare": 0.013633,
         "sectors": {
           "agropecuaria": 0.14,
           "extrativa": 0.02,
@@ -569,7 +569,7 @@
         "name": "Piauí",
         "region": "nordeste",
         "population": 3271,
-        "gdpShare": 0.007,
+        "gdpShare": 0.007394,
         "sectors": {
           "agropecuaria": 0.1,
           "extrativa": 0,
@@ -588,7 +588,7 @@
         "name": "Ceará",
         "region": "nordeste",
         "population": 8794,
-        "gdpShare": 0.022,
+        "gdpShare": 0.02122,
         "sectors": {
           "agropecuaria": 0.05,
           "extrativa": 0,
@@ -607,7 +607,7 @@
         "name": "Rio Grande do Norte",
         "region": "nordeste",
         "population": 3302,
-        "gdpShare": 0.009,
+        "gdpShare": 0.009295,
         "sectors": {
           "agropecuaria": 0.04,
           "extrativa": 0.04,
@@ -626,7 +626,7 @@
         "name": "Paraíba",
         "region": "nordeste",
         "population": 3974,
-        "gdpShare": 0.009,
+        "gdpShare": 0.008859,
         "sectors": {
           "agropecuaria": 0.04,
           "extrativa": 0,
@@ -645,7 +645,7 @@
         "name": "Pernambuco",
         "region": "nordeste",
         "population": 9058,
-        "gdpShare": 0.024,
+        "gdpShare": 0.024714,
         "sectors": {
           "agropecuaria": 0.04,
           "extrativa": 0,
@@ -664,7 +664,7 @@
         "name": "Alagoas",
         "region": "nordeste",
         "population": 3127,
-        "gdpShare": 0.008,
+        "gdpShare": 0.008194,
         "sectors": {
           "agropecuaria": 0.08,
           "extrativa": 0.01,
@@ -683,7 +683,7 @@
         "name": "Sergipe",
         "region": "nordeste",
         "population": 2210,
-        "gdpShare": 0.006,
+        "gdpShare": 0.005558,
         "sectors": {
           "agropecuaria": 0.05,
           "extrativa": 0.04,
@@ -702,7 +702,7 @@
         "name": "Bahia",
         "region": "nordeste",
         "population": 14141,
-        "gdpShare": 0.039,
+        "gdpShare": 0.039383,
         "sectors": {
           "agropecuaria": 0.09,
           "extrativa": 0.02,
@@ -721,7 +721,7 @@
         "name": "Minas Gerais",
         "region": "sudeste",
         "population": 20539,
-        "gdpShare": 0.094,
+        "gdpShare": 0.088817,
         "sectors": {
           "agropecuaria": 0.08,
           "extrativa": 0.09,
@@ -740,7 +740,7 @@
         "name": "Espírito Santo",
         "region": "sudeste",
         "population": 3834,
-        "gdpShare": 0.021,
+        "gdpShare": 0.019176,
         "sectors": {
           "agropecuaria": 0.05,
           "extrativa": 0.12,
@@ -759,7 +759,7 @@
         "name": "Rio de Janeiro",
         "region": "sudeste",
         "population": 16055,
-        "gdpShare": 0.107,
+        "gdpShare": 0.107179,
         "sectors": {
           "agropecuaria": 0.01,
           "extrativa": 0.16,
@@ -778,7 +778,7 @@
         "name": "São Paulo",
         "region": "sudeste",
         "population": 44412,
-        "gdpShare": 0.304,
+        "gdpShare": 0.314801,
         "sectors": {
           "agropecuaria": 0.02,
           "extrativa": 0,
@@ -797,7 +797,7 @@
         "name": "Paraná",
         "region": "sul",
         "population": 11444,
-        "gdpShare": 0.065,
+        "gdpShare": 0.061308,
         "sectors": {
           "agropecuaria": 0.11,
           "extrativa": 0,
@@ -816,7 +816,7 @@
         "name": "Santa Catarina",
         "region": "sul",
         "population": 7610,
-        "gdpShare": 0.048,
+        "gdpShare": 0.046913,
         "sectors": {
           "agropecuaria": 0.07,
           "extrativa": 0,
@@ -835,7 +835,7 @@
         "name": "Rio Grande do Sul",
         "region": "sul",
         "population": 10883,
-        "gdpShare": 0.063,
+        "gdpShare": 0.059409,
         "sectors": {
           "agropecuaria": 0.1,
           "extrativa": 0,
@@ -854,7 +854,7 @@
         "name": "Mato Grosso do Sul",
         "region": "centro_oeste",
         "population": 2757,
-        "gdpShare": 0.016,
+        "gdpShare": 0.016851,
         "sectors": {
           "agropecuaria": 0.22,
           "extrativa": 0.01,
@@ -873,7 +873,7 @@
         "name": "Mato Grosso",
         "region": "centro_oeste",
         "population": 3659,
-        "gdpShare": 0.025,
+        "gdpShare": 0.024951,
         "sectors": {
           "agropecuaria": 0.3,
           "extrativa": 0.01,
@@ -892,7 +892,7 @@
         "name": "Goiás",
         "region": "centro_oeste",
         "population": 7056,
-        "gdpShare": 0.03,
+        "gdpShare": 0.030771,
         "sectors": {
           "agropecuaria": 0.12,
           "extrativa": 0.01,
@@ -911,7 +911,7 @@
         "name": "Distrito Federal",
         "region": "centro_oeste",
         "population": 2817,
-        "gdpShare": 0.032,
+        "gdpShare": 0.033411,
         "sectors": {
           "agropecuaria": 0,
           "extrativa": 0,

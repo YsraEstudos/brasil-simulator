@@ -4,10 +4,12 @@ import { lonLatToVec3, pointInRing } from './geo';
 import { UFS } from './ufs';
 
 /**
- * Preenchimento das UFs para o mapa de calor (aba Brasil): um polígono por anel, triangulado em lon/lat e
+ * Preenchimento das UFs para o mapa de calor da mesa (Painel): um polígono por anel, triangulado em lon/lat e
  * projetado logo acima da esfera. Anel de outra UF inteiramente dentro do anel (enclave) vira buraco, para as
  * cores não se somarem; vizinhas que só dividem fronteira não. Nos contornos atuais nenhuma UF é enclave: o DF
  * encosta em GO, mas não cai dentro dele. A geometria é criada uma vez e reutilizada; só a cor do material muda.
+ * O teste de enclave pré-filtra por bounding box (condição necessária): sem ele cada par de anéis era varrido
+ * ponto a ponto (~338 mil testes).
  */
 
 /** Raio da camada: acima do globo base e abaixo do contorno da UF selecionada (1,0015). */
@@ -23,6 +25,43 @@ export function isHole(inner: readonly (readonly number[])[], outer: readonly (r
   return inside / inner.length >= HOLE_MIN_INSIDE;
 }
 
+type RingBox = { minLon: number; maxLon: number; minLat: number; maxLat: number };
+
+function ringBox(ring: readonly (readonly number[])[]): RingBox {
+  let minLon = Infinity;
+  let maxLon = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  for (const [lon, lat] of ring) {
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+  return { minLon, maxLon, minLat, maxLat };
+}
+
+/**
+ * isHole com prefilter exato de bounding box: `inner ⊆ outer` implica `bbox(inner) ⊆ bbox(outer)`, então
+ * descartar por caixa não muda o resultado — só evita varrer os vértices de vizinhas que dividem fronteira.
+ */
+function isHoleBoxed(
+  inner: readonly (readonly number[])[],
+  innerBox: RingBox,
+  outer: readonly (readonly number[])[],
+  outerBox: RingBox,
+): boolean {
+  if (inner.length === 0) return false;
+  if (
+    innerBox.minLon < outerBox.minLon ||
+    innerBox.maxLon > outerBox.maxLon ||
+    innerBox.minLat < outerBox.minLat ||
+    innerBox.maxLat > outerBox.maxLat
+  )
+    return false;
+  return isHole(inner, outer);
+}
+
 let cache: Map<string, THREE.BufferGeometry> | null = null;
 
 function ringToVectors(ring: readonly (readonly number[])[]): THREE.Vector2[] {
@@ -34,15 +73,16 @@ function ringToVectors(ring: readonly (readonly number[])[]): THREE.Vector2[] {
 
 function build(): Map<string, THREE.BufferGeometry> {
   const out = new Map<string, THREE.BufferGeometry>();
-  const allRings = UFS.flatMap((uf) => uf.polygons.map((ring) => ({ sigla: uf.sigla, ring })));
+  const allRings = UFS.flatMap((uf) => uf.polygons.map((ring) => ({ sigla: uf.sigla, ring, box: ringBox(ring) })));
   for (const uf of UFS) {
     const positions: number[] = [];
     const index: number[] = [];
     for (const ring of uf.polygons) {
       const contour = ringToVectors(ring);
       if (contour.length < 3) continue;
+      const outerBox = ringBox(ring);
       const holes = allRings
-        .filter((r) => r.sigla !== uf.sigla && isHole(r.ring, ring))
+        .filter((r) => r.sigla !== uf.sigla && isHoleBoxed(r.ring, r.box, ring, outerBox))
         .map((r) => ringToVectors(r.ring));
       const faces = THREE.ShapeUtils.triangulateShape(contour, holes);
       const base = positions.length / 3;

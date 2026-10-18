@@ -49,6 +49,11 @@ export interface ActiveCampaign {
   id: string;
   name: string;
   state: GameState;
+  /**
+   * Estado da posse (mês 0): a base do "na posse" no mapa. Vem do próprio save, porque o cenário embutido pode
+   * ter sido recalibrado depois da criação da campanha; ausente quando a retenção de snapshots apagou o mês 0.
+   */
+  baseline?: GameState;
   /** Indicadores do mês anterior (para mostrar a variação). */
   previous?: Indicators;
   lastReport?: MonthReport;
@@ -196,7 +201,7 @@ export function createGameStore(deps: GameStoreDeps) {
             const id = `c_${Math.floor(deps.random() * 2 ** 31).toString(36)}_${Math.floor(deps.random() * 2 ** 31).toString(36)}`;
             const state = createInitialState({ content: loadContent(scenario.id), difficulty, seed });
             await createCampaign(d, { id, name, scenarioVersion: scenario.version, state });
-            created = { id, name, state, finished: false };
+            created = { id, name, state, baseline: state, finished: false };
           } catch (e) {
             // Nada foi gravado (a transação desfaz tudo): a campanha anterior e o rascunho continuam como estavam. O
             // erro vai no resultado, para a tela de NOVO JOGO; o `error` global ficaria velho na Presidência e em
@@ -233,6 +238,8 @@ export function createGameStore(deps: GameStoreDeps) {
             state.monthIndex > 0 ? (await loadStateAt(d, id, state.monthIndex - 1))?.indicators : undefined;
           const lastReport =
             state.monthIndex > 0 ? ((await loadReport(d, id, state.monthIndex - 1)) ?? undefined) : undefined;
+          // A posse vem do snapshot do mês 0 do save, e não do cenário embutido (que pode ter sido recalibrado).
+          const baseline = state.monthIndex > 0 ? ((await loadStateAt(d, id, 0)) ?? undefined) : state;
           // Saves anteriores à gravação atômica podem ter o último mês com status "ativa": corrige ao carregar.
           const finished = summary?.status === 'encerrada' || isFinished(state);
           if (finished && summary?.status !== 'encerrada') {
@@ -244,6 +251,7 @@ export function createGameStore(deps: GameStoreDeps) {
               id,
               name: summary?.name ?? id,
               state,
+              baseline,
               previous,
               lastReport,
               finished,
