@@ -221,9 +221,7 @@ describe('brasil_2027_01_v070 (Fase 08: eleições e mandatos)', () => {
 
   it('a participação no PIB recalibrada segue o PIB per capita do IBGE, do DF ao MA', () => {
     const ufs = s.regions?.ufs ?? [];
-    const porRenda = [...ufs]
-      .sort((a, b) => b.gdpShare / b.population - a.gdpShare / a.population)
-      .map((u) => u.id);
+    const porRenda = [...ufs].sort((a, b) => b.gdpShare / b.population - a.gdpShare / a.population).map((u) => u.id);
     expect(porRenda).toEqual([
       'DF',
       'SP',
