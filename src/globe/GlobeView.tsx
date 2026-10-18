@@ -29,6 +29,7 @@ export interface GlobeViewProps {
   onReady?: (api: GlobeApi) => void;
 }
 
+/** O globo da federação: câmera, toques e o mapa de calor; quem usa controla a seleção (`selectedId`/`onSelect`). */
 export function GlobeView({ fills, selectedId, onSelect, onReady }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   const insets = useSafeAreaInsets();

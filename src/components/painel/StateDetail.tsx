@@ -37,12 +37,14 @@ function relationLabel(relation: number): string {
   return legendLabels(spec)[bin(spec, relation)];
 }
 
+/** Título da seção de causas, conforme o indicador do mapa. */
 function whyTitle(indicator: MapIndicator): string {
   if (indicator === 'desemprego') return 'Por que o desemprego difere da média nacional';
   if (indicator === 'aprovacao' || indicator === 'governador') return 'Por que a aprovação difere da média nacional';
   return 'Por que a economia está acima ou abaixo da tendência';
 }
 
+/** Cartão da UF na folha "estado": números contra o Brasil, o governador, as causas do mês e a visita. */
 export function UfDetail({
   row,
   indicator,
@@ -61,6 +63,7 @@ export function UfDetail({
   onFly: () => void;
 }) {
   const draft = useGame((s) => s.draft);
+  const baseline = useGame((s) => s.active?.baseline);
   const { uf } = row;
   const scenarioUf = content.scenario.regions?.ufs.find((u) => u.id === uf.id);
   const bloc = content.scenario.blocs.find((b) => b.id === scenarioUf?.governor.bloc);
@@ -71,7 +74,8 @@ export function UfDetail({
   const pointsMax = state.resources.agendaPointsPerMonth;
   const blocked = !included && !fits(draft, visit, content, pointsMax);
   const pointsLeft = pointsMax - draftPoints(draft, content);
-  const startShare = scenarioUf?.gdpShare ?? uf.share;
+  // A posse vem do próprio save (mês 0); sem o snapshot, valem os valores do cenário embutido.
+  const startShare = baseline?.regions.ufs.find((u) => u.id === uf.id)?.share ?? scenarioUf?.gdpShare ?? uf.share;
 
   const metrics: readonly [string, string, string][] = [
     [
