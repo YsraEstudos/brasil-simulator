@@ -82,6 +82,7 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     await app.getState().newCampaign({ name: '  Governo Teste  ', difficulty: 'casual' });
     const id = app.getState().active!.id;
     expect(app.getState().active!.name).toBe('Governo Teste');
+    const baseline = app.getState().active!.baseline;
     for (const policyId of ['contingenciamento', 'iof_credito_reducao', 'irpf_tabela']) {
       await app.getState().endMonth({ decisions: [{ policyId, agendaCost: 1 }] });
     }
@@ -101,6 +102,8 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     expect(resumed.previous).toEqual(beforePrevious); // mês anterior carregado do snapshot
     expect(resumed.state.decisionLog).toHaveLength(3);
     expect(resumed.lastReport).toEqual(lastReport); // relatório do mês anterior vem do banco
+    expect(resumed.baseline).toEqual(baseline); // a posse vem do snapshot do mês 0 do save, não do cenário embutido
+    expect(resumed.baseline?.monthIndex).toBe(0);
   });
 
   it('encerrar o mês sem entrada usa o rascunho da agenda e o limpa; nova campanha começa sem rascunho', async () => {

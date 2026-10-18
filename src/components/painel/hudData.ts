@@ -1,6 +1,6 @@
 import { governmentSupport, groupCounts } from '@/components/congress/hemicycle';
 import { monthLabel } from '@/components/campaign/labels';
-import { mapFills, mapRows } from '@/components/brasil/regionalMetrics';
+import { mapFills, mapRows, type MapIndicator } from './regionalMetrics';
 import {
   deltaSentiment,
   formatMoneyMillions,
@@ -139,7 +139,7 @@ export interface HudData {
   regions: readonly HudRegion[];
   goal: HudGoal;
   series: readonly HudSeriesPoint[];
-  /** Cores por UF do mapa de calor do globo (aprovação); `null` sem partida. */
+  /** Cores por UF do mapa de calor do globo (a camada escolhida no Painel); `null` sem partida ou sem camada. */
   fills: Readonly<Record<string, string>> | null;
 }
 
@@ -189,7 +189,7 @@ const DEMO_SERIES: readonly HudSeriesPoint[] = [
 
 const GOOD_WHEN = { approval: 'up', inflation: 'down', unemployment: 'down', gdp: 'up' } as const;
 
-/** Relação bloco–governo → rótulo (POLITICAL_RULES.md §6.1: −100…100), como na aba Brasil. */
+/** Relação bloco–governo → rótulo (POLITICAL_RULES.md §6.1: −100…100), como no cartão do estado. */
 const RELATION_LABELS: readonly [number, string][] = [
   [40, 'Aliado'],
   [10, 'Próximo'],
@@ -426,12 +426,16 @@ function buildSeries(history: readonly IndicatorPoint[] | null): HudSeriesPoint[
   return history.map((point) => ({ monthIndex: point.monthIndex, value: point.indicators.gdpGrowth12m }));
 }
 
-/** Tela do Painel com a partida em andamento (GAME_DESIGN.md §4.2–§4.5). */
+/**
+ * Tela do Painel com a partida em andamento (GAME_DESIGN.md §4.2–§4.5). `mapIndicator` escolhe a camada do
+ * mapa de calor do globo; `null` (padrão) deixa só a imagem de satélite.
+ */
 export function hudFromCampaign(
   campaign: ActiveCampaign,
   content: GameContent,
   draft: AgendaDraft,
   history: readonly IndicatorPoint[] | null,
+  mapIndicator: MapIndicator | null = null,
 ): HudData {
   const state = campaign.state;
   const ufs = regionsOf(content);
@@ -460,7 +464,7 @@ export function hudFromCampaign(
     regions: buildRegions(content, ufStates.length > 0 ? ufStates.map((uf) => uf.share) : null),
     goal: buildGoal(state.indicators, content.calibration),
     series: buildSeries(history),
-    fills: content.scenario.regions ? mapFills(mapRows('aprovacao', state, content)) : null,
+    fills: mapIndicator && content.scenario.regions ? mapFills(mapRows(mapIndicator, state, content)) : null,
   };
 }
 

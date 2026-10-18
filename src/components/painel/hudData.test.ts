@@ -97,8 +97,12 @@ describe('Painel com a partida', () => {
     expect(stat(data, 'pib').sentiment).toBe('neutral');
   });
 
-  it('pinta o globo com as 27 UFs pela aprovação', () => {
-    const data = hudFromCampaign(campaign(), content, EMPTY_DRAFT, null);
+  it('sem camada escolhida o globo fica só com o satélite', () => {
+    expect(hudFromCampaign(campaign(), content, EMPTY_DRAFT, null).fills).toBeNull();
+  });
+
+  it('pinta o globo com as 27 UFs na camada escolhida', () => {
+    const data = hudFromCampaign(campaign(), content, EMPTY_DRAFT, null, 'aprovacao');
     expect(Object.keys(data.fills ?? {})).toHaveLength(27);
   });
 
