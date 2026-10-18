@@ -71,7 +71,8 @@ export class TileStore {
 
   private pump() {
     while (this.loading.size < MAX_CONCURRENT_LOADS && this.queue.length > 0) {
-      this.load(this.queue.shift()!);
+      // load() trata os próprios erros e nunca rejeita.
+      void this.load(this.queue.shift()!);
     }
   }
 
