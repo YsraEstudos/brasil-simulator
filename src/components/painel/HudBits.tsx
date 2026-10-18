@@ -1,6 +1,7 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Pressable, type StyleProp, View, type ViewStyle } from 'react-native';
 
+import { binColor, legendLabels, type MapIndicatorSpec } from '@/components/brasil/regionalMetrics';
 import { Text } from '@/components/ui';
 import { Radius } from '@/constants/theme';
 
@@ -152,6 +153,7 @@ export function RoundButton({
   label,
   size = 48,
   badge,
+  active,
   onPress,
 }: {
   icon: SymbolViewProps['name'];
@@ -159,6 +161,8 @@ export function RoundButton({
   size?: number;
   /** Contador no canto (ex.: eventos aguardando). */
   badge?: number;
+  /** Botão ligado (ex.: camada do mapa ativa): moldura dourada e ícone aceso. */
+  active?: boolean;
   onPress: () => void;
 }) {
   return (
@@ -167,12 +171,14 @@ export function RoundButton({
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={active ? { selected: true } : undefined}
       style={({ pressed }) => [
         styles.roundButton,
         { width: size, height: size, borderRadius: size / 2 },
+        active && styles.roundButtonActive,
         pressed && styles.roundButtonPressed,
       ]}>
-      <HudIcon name={icon} size={Math.round(size * 0.42)} color={Hud.title} />
+      <HudIcon name={icon} size={Math.round(size * 0.42)} color={active ? Hud.titleBright : Hud.title} />
       {badge != null && badge > 0 && (
         <View style={styles.roundBadge}>
           <Text style={styles.roundBadgeText}>{badge > 9 ? '9+' : badge}</Text>
@@ -301,6 +307,69 @@ export function RegionRow({ region }: { region: HudRegion }) {
   );
 }
 
+/** Linha da camada do mapa (Camadas do Mapa): nome, o que mostra, prévia das cores e marca da camada ativa. */
+export function MapLayerRow({
+  label,
+  hint,
+  spec,
+  active,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  hint: string;
+  /** Indicador da camada; sem ele (Satélite) não há prévia de cores. */
+  spec?: MapIndicatorSpec;
+  active: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active, disabled }}
+      style={({ pressed }) => [
+        styles.layerRow,
+        active && styles.layerRowActive,
+        disabled && styles.layerRowDisabled,
+        pressed && styles.layerRowPressed,
+      ]}>
+      <View style={styles.layerBody}>
+        <Text style={styles.layerLabel}>{label}</Text>
+        <Text style={styles.layerHint} numberOfLines={2}>
+          {hint}
+        </Text>
+      </View>
+      {spec && (
+        <View style={styles.layerStrip}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <View key={i} style={[styles.layerStripCell, { backgroundColor: binColor(spec, i) }]} />
+          ))}
+        </View>
+      )}
+      {active && (
+        <HudIcon name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} color={Hud.titleBright} />
+      )}
+    </Pressable>
+  );
+}
+
+/** Legenda compacta da camada ativa: o que cada faixa de cor quer dizer (mesmos rótulos da aba Brasil). */
+export function MapLayerLegend({ spec }: { spec: MapIndicatorSpec }) {
+  return (
+    <View style={styles.layerLegend}>
+      {legendLabels(spec).map((label, i) => (
+        <View key={label} style={styles.layerLegendItem}>
+          <View style={[styles.layerSwatch, { backgroundColor: binColor(spec, i) }]} />
+          <Text style={styles.layerLegendLabel}>{label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function GoalCheckRow({ check }: { check: HudGoalCheck }) {
   const color = check.met ? Hud.positive : Hud.negative;
   return (
@@ -371,6 +440,7 @@ const styles = {
     backgroundColor: Hud.glass,
   },
   roundButtonPressed: { transform: [{ scale: 0.93 }], backgroundColor: Hud.tile },
+  roundButtonActive: { borderColor: Hud.title, backgroundColor: '#3a2f14cc' },
   roundBadge: {
     position: 'absolute',
     top: -4,
@@ -454,6 +524,30 @@ const styles = {
   regionBar: { flex: 1 },
   regionValue: { color: Hud.text, fontSize: 11, fontWeight: '700', width: 46, textAlign: 'right' },
   goalRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  layerRow: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: Hud.tileBorder,
+    borderRadius: Radius.sm,
+    backgroundColor: Hud.tile,
+  },
+  layerRowActive: { borderColor: Hud.title },
+  layerRowDisabled: { opacity: 0.45 },
+  layerRowPressed: { opacity: 0.75 },
+  layerBody: { flex: 1, gap: 1 },
+  layerLabel: { color: Hud.text, fontSize: 12, fontWeight: '700' },
+  layerHint: { color: Hud.textMuted, fontSize: 9.5, lineHeight: 12 },
+  layerStrip: { flexDirection: 'row', borderRadius: 3, overflow: 'hidden' },
+  layerStripCell: { width: 13, height: 13 },
+  layerLegend: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 4, paddingHorizontal: 2 },
+  layerLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  layerSwatch: { width: 10, height: 10, borderRadius: 3 },
+  layerLegendLabel: { color: Hud.textDim, fontSize: 9.5 },
   goalMark: { fontSize: 11, fontWeight: '800' },
   goalLabel: { flex: 1, color: Hud.textDim, fontSize: 11 },
   goalValue: { fontSize: 11, fontWeight: '700' },

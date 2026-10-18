@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Image, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { BackHandler, Image, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
 
+import { indicatorSpec, MAP_INDICATORS, type MapIndicator } from '@/components/brasil/regionalMetrics';
 import { shortMonthLabel } from '@/components/campaign/labels';
 import { Text } from '@/components/ui';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
@@ -20,6 +21,8 @@ import {
   EmptyNote,
   GoalCheckRow,
   LinkRow,
+  MapLayerLegend,
+  MapLayerRow,
   MinistryRow,
   RegionRow,
   RoundButton,
@@ -36,13 +39,15 @@ const logo = require('../../../assets/images/logo-brasil.png');
 /** Números da faixa de baixo (retrato); no topo ficam os quatro principais. */
 const BOTTOM_STATS: readonly HudStatId[] = ['capital', 'inflacao', 'desemprego'];
 
-type SheetId = 'alertas' | 'congresso' | 'meta' | 'ministerios' | 'indicadores' | 'pib' | 'regioes';
+type SheetId = 'alertas' | 'congresso' | 'meta' | 'ministerios' | 'indicadores' | 'pib' | 'regioes' | 'camadas';
 
 interface MesaButton {
   id: SheetId;
   icon: SymbolViewProps['name'];
   label: string;
   badge?: number;
+  /** Botão ligado (ex.: camada do mapa ativa). */
+  active?: boolean;
 }
 
 const SHEET_TITLES: Record<SheetId, string> = {
@@ -53,6 +58,7 @@ const SHEET_TITLES: Record<SheetId, string> = {
   indicadores: 'Indicadores Nacionais',
   pib: 'Evolução do PIB',
   regioes: 'Visão Regional',
+  camadas: 'Camadas do Mapa',
 };
 
 const BACK_ICON: SymbolViewProps['name'] = { ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' };
@@ -70,6 +76,7 @@ export function PainelScreen() {
   const [series, setSeries] = useState<{ id: string; points: readonly IndicatorPoint[] } | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [sheet, setSheet] = useState<SheetId | null>(null);
+  const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
 
   const scenarioId = active?.state.scenarioId ?? DEFAULT_SCENARIO_ID;
   const content = useMemo(() => loadContent(scenarioId), [scenarioId]);
@@ -93,9 +100,11 @@ export function PainelScreen() {
   }, [activeId, monthIndex]);
   const history = activeId !== undefined && series?.id === activeId ? series.points : null;
 
+  // Sem partida não há dado por UF: a camada escolhida só vale com campanha em andamento.
+  const layer = active ? mapLayer : null;
   const hud = useMemo(
-    () => (active ? hudFromCampaign(active, content, draft, history) : hudFromScenario(content)),
-    [active, content, draft, history],
+    () => (active ? hudFromCampaign(active, content, draft, history, layer) : hudFromScenario(content)),
+    [active, content, draft, history, layer],
   );
 
   const onLayout = (e: LayoutChangeEvent) => {
@@ -110,6 +119,16 @@ export function PainelScreen() {
     setSheet(null);
     router.navigate(route);
   };
+
+  // Android: com um painel aberto, o "voltar" do sistema fecha só o painel em vez de trocar de aba.
+  useEffect(() => {
+    if (sheet === null) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setSheet(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [sheet]);
 
   const statCell = (id: HudStatId, props?: { value?: string; line?: string }) => {
     const stat = hud.stats.find((s) => s.id === id);
@@ -137,6 +156,12 @@ export function PainelScreen() {
     },
     { id: 'congresso', icon: { ios: 'person.3.fill', android: 'groups', web: 'groups' }, label: 'Congresso Nacional' },
     { id: 'meta', icon: { ios: 'flag.fill', android: 'flag', web: 'flag' }, label: 'Meta Atual' },
+    {
+      id: 'camadas',
+      icon: { ios: 'square.3.layers.3d', android: 'layers', web: 'layers' },
+      label: 'Camadas do mapa',
+      active: layer !== null,
+    },
   ];
   const rightButtons: MesaButton[] = [
     {
@@ -165,6 +190,7 @@ export function PainelScreen() {
           label={button.label}
           size={buttonSize}
           badge={button.badge}
+          active={button.active}
           onPress={() => setSheet(button.id)}
         />
       ))}
@@ -233,6 +259,30 @@ export function PainelScreen() {
             <Text style={{ color: Hud.textMuted, fontSize: 10, fontStyle: 'italic' }}>
               Participação de cada região no produto nacional.
             </Text>
+          </>
+        );
+      case 'camadas':
+        return (
+          <>
+            <MapLayerRow
+              label="Satélite"
+              hint="Sem mapa de calor"
+              active={layer === null}
+              onPress={() => setMapLayer(null)}
+            />
+            {MAP_INDICATORS.map((spec) => (
+              <MapLayerRow
+                key={spec.id}
+                label={spec.label}
+                hint={spec.legend}
+                spec={spec}
+                active={layer === spec.id}
+                disabled={hud.demo}
+                onPress={() => setMapLayer(spec.id)}
+              />
+            ))}
+            {layer !== null && !hud.demo && <MapLayerLegend spec={indicatorSpec(layer)} />}
+            {hud.demo && <EmptyNote text="Inicie uma campanha para ativar os mapas por estado." />}
           </>
         );
       default:

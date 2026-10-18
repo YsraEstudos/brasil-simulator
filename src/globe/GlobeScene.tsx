@@ -101,6 +101,9 @@ function Atmosphere() {
 /** Opacidade do mapa de calor: o relevo continua visível por baixo. */
 const FILL_OPACITY = 0.8;
 
+/** Sem mapa de calor: objeto estável para manter o UfFills montado e o quadro atualizado ao desligar as cores. */
+const NO_FILLS: Readonly<Record<string, string>> = {};
+
 /** Mapa de calor: uma malha por UF, colorida pela sigla; UFs sem cor ficam ocultas. */
 function UfFills({ fills, invalidate }: { fills: Readonly<Record<string, string>>; invalidate: () => void }) {
   'use no memo'; // materiais three.js mutados fora do React
@@ -364,7 +367,7 @@ export function GlobeScene({ controller, selectedUf, fills, onStats }: Props) {
         </mesh>
       )}
       <group ref={group} />
-      {fills && <UfFills fills={fills} invalidate={invalidate} />}
+      <UfFills fills={fills ?? NO_FILLS} invalidate={invalidate} />
       {highlight && <primitive object={highlight} />}
       <Atmosphere />
     </>
