@@ -203,16 +203,57 @@ describe('brasil_2027_01_v070 (Fase 08: eleições e mandatos)', () => {
     }
   });
 
-  it('difere do v0.6.0 apenas em id, version e elections (zero drift nos demais campos)', () => {
+  it('difere do v0.6.0 apenas em id, version, elections e participação no PIB das UFs (zero drift nos demais campos)', () => {
     const v060 = parseOrThrow(brasilV060);
     const semVersao = (scenario: Scenario): Record<string, unknown> => {
       const resto: Record<string, unknown> = { ...scenario };
       delete resto.id;
       delete resto.version;
       delete resto.elections;
+      delete resto.regions;
       return resto;
     };
     expect(semVersao(s)).toEqual(semVersao(v060));
+    const semShare = (scenario: Scenario) => scenario.regions?.ufs.map((u) => ({ ...u, gdpShare: 0 }));
+    expect(semShare(s)).toEqual(semShare(v060));
+    expect(s.regions?.ufs.map((u) => u.gdpShare)).not.toEqual(v060.regions?.ufs.map((u) => u.gdpShare));
+  });
+
+  it('a participação no PIB recalibrada segue o PIB per capita do IBGE, do DF ao MA', () => {
+    const ufs = s.regions?.ufs ?? [];
+    const porRenda = [...ufs]
+      .sort((a, b) => b.gdpShare / b.population - a.gdpShare / a.population)
+      .map((u) => u.id);
+    expect(porRenda).toEqual([
+      'DF',
+      'SP',
+      'MT',
+      'RJ',
+      'SC',
+      'MS',
+      'RS',
+      'PR',
+      'ES',
+      'RO',
+      'GO',
+      'MG',
+      'TO',
+      'AM',
+      'RR',
+      'AP',
+      'AC',
+      'PA',
+      'RN',
+      'BA',
+      'PE',
+      'AL',
+      'SE',
+      'CE',
+      'PI',
+      'PB',
+      'MA',
+    ]);
+    expect(ufs.reduce((n, u) => n + u.gdpShare, 0)).toBeCloseTo(1, 12);
   });
 });
 
