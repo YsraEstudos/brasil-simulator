@@ -1,0 +1,39 @@
+<div class="ft" id="ft-raiz">
+  <div class="ft-barra">
+    <button class="ft-btn primario" type="button" data-acao="salvar-arquivo" title="Grava em docs/explicacoes/dados/features.js (Ctrl+S)">Salvar no arquivo</button>
+    <button class="ft-btn" type="button" data-acao="nova-categoria" title="Cria uma pasta dentro da pasta aberta">+ Nova pasta</button>
+    <label class="ft-check"><input type="checkbox" data-campo="mostrar-concluidas" checked> Mostrar concluídas</label>
+    <button class="ft-btn" type="button" data-acao="exportar">Exportar cópia</button>
+    <button class="ft-btn" type="button" data-acao="importar">Importar cópia</button>
+    <input type="file" accept="application/json,.json" hidden data-importar>
+    <span class="ft-status" data-status aria-live="polite"></span>
+  </div>
+  <div class="ft-busca" role="search">
+    <input type="search" data-busca-feat placeholder="Pesquisar em nomes, descrições, anotações e itens…" aria-label="Pesquisar nas features e anotações">
+    <span class="ft-busca-info" data-busca-info aria-live="polite"></span>
+  </div>
+  <div class="ft-aviso" data-aviso hidden>
+    <span>Há anotações salvas só neste navegador que ainda não estão no arquivo. Quer usá-las?</span>
+    <div class="ft-aviso-acoes">
+      <button class="ft-btn primario" type="button" data-acao="usar-local">Usar estas</button>
+      <button class="ft-btn" type="button" data-acao="ignorar-local">Ignorar</button>
+    </div>
+  </div>
+  <p class="ft-ajuda">Navegue pelas pastas como no explorador de arquivos: clique numa pasta da árvore à esquerda, ou dê <b>dois cliques</b> num ícone de pasta para abri-la. Use <b>←</b>, <b>→</b> e <b>↑</b> para voltar, avançar e subir. Arraste uma feature pela alça <b>⠿</b> para uma pasta (na árvore, no caminho ou num ícone) ou reordene dentro da pasta aberta. Arraste uma pasta para dentro de outra, ou para <b>Features</b>. Cada feature tem um post-it: clique nele para escrever. Tudo é guardado no arquivo <b>docs/explicacoes/dados/features.js</b> quando você clica em <b>Salvar no arquivo</b> (ou Ctrl+S).</p>
+  <div class="ft-explorador">
+    <aside class="ft-arvore" aria-label="Árvore de pastas" data-arvore></aside>
+    <section class="ft-conteudo" aria-label="Conteúdo da pasta aberta">
+      <div class="ft-nav">
+        <button class="ft-btn ft-icone" type="button" data-acao="voltar" title="Voltar" aria-label="Voltar">←</button>
+        <button class="ft-btn ft-icone" type="button" data-acao="avancar" title="Avançar" aria-label="Avançar">→</button>
+        <button class="ft-btn ft-icone" type="button" data-acao="subir" title="Subir um nível" aria-label="Subir um nível">↑</button>
+        <nav class="ft-caminho" aria-label="Caminho da pasta" data-caminho></nav>
+      </div>
+      <header class="ft-cabecalho" data-cabecalho></header>
+      <div class="ft-corpo-pasta" data-categorias></div>
+    </section>
+  </div>
+  <div class="ft-camada" data-camada hidden></div>
+</div>
+<script src="../explicacoes/dados/features.js"></script>
+<script src="assets/features.js" defer></script>
