@@ -12,6 +12,10 @@ import { createInitialState } from '@/engine/state';
 import type { GameContent, GameState, NewsItem } from '@/engine/types';
 import { upgradeGameState } from '@/engine/upgrade';
 
+// Campanhas-robô longas levam 0,6–1,6 s com a máquina livre, mas passam de 5 s (timeout padrão do Vitest) quando
+// a máquina está carregada (ex.: servidor Expo em paralelo). 30 s dá folga sem esconder uma lentidão real.
+const LONG_CAMPAIGN_TIMEOUT_MS = 30_000;
+
 // FASE_07.md, tarefa T8: validação por simulação da Fase 07. Testes rápidos (poucos segundos); campanhas longas e
 // varreduras maiores ficam em scripts/sim/events.sim.ts (`npm run sim:events`).
 // Testes de regra citam a seção do documento. Quando o motor diverge do documento, o caso vira `it.fails` com a
@@ -88,22 +92,30 @@ const strategy = (id: string): Strategy => {
 };
 
 describe('Fase 07: invariantes e determinismo nas campanhas-robô (FASE_07.md, critérios 2 e 4; AI_INSTRUCTIONS.md §5)', () => {
-  it('todas as estratégias × 3 sementes, 48 meses, v0.6.0: nenhuma violação de invariante', () => {
-    for (const run of sweep()) {
-      expect(run.violations, `${run.strategyId} semente ${run.seed}`).toEqual([]);
-    }
-  });
+  it(
+    'todas as estratégias × 3 sementes, 48 meses, v0.6.0: nenhuma violação de invariante',
+    () => {
+      for (const run of sweep()) {
+        expect(run.violations, `${run.strategyId} semente ${run.seed}`).toEqual([]);
+      }
+    },
+    LONG_CAMPAIGN_TIMEOUT_MS,
+  );
 
-  it('mesma semente gera o mesmo estado final, inclusive marcas, notícias e personagens', () => {
-    for (const s of STRATEGIES) {
-      const first = campaign(s, 2, MONTHS, content).state;
-      const second = campaign(s, 2, MONTHS, content).state;
-      expect(second, s.id).toEqual(first);
-      expect(second.events.flags, s.id).toEqual(first.events.flags);
-      expect(second.events.news, s.id).toEqual(first.events.news);
-      expect(second.events.characters, s.id).toEqual(first.events.characters);
-    }
-  });
+  it(
+    'mesma semente gera o mesmo estado final, inclusive marcas, notícias e personagens',
+    () => {
+      for (const s of STRATEGIES) {
+        const first = campaign(s, 2, MONTHS, content).state;
+        const second = campaign(s, 2, MONTHS, content).state;
+        expect(second, s.id).toEqual(first);
+        expect(second.events.flags, s.id).toEqual(first.events.flags);
+        expect(second.events.news, s.id).toEqual(first.events.news);
+        expect(second.events.characters, s.id).toEqual(first.events.characters);
+      }
+    },
+    LONG_CAMPAIGN_TIMEOUT_MS,
+  );
 });
 
 describe('Fase 07: cobertura de eventos (FASE_07.md, critério 2)', () => {
@@ -121,18 +133,22 @@ describe('Fase 07: cobertura de eventos (FASE_07.md, critério 2)', () => {
     expect(types.size).toBeGreaterThanOrEqual(5);
   });
 
-  it('pelo menos 3 eventos encadeados (chainedOnly) chegam à caixa de entrada em uma campanha de 240 meses', () => {
-    // Campanha de 240 meses (ECONOMIC_MODEL.md §9): o encadeamento depende de cadeias que levam meses para
-    // se formar. Para numa condenação, como a campanha real.
-    const chained = new Set(content.events.filter((e) => e.chainedOnly).map((e) => e.id));
-    const found = STRATEGIES.some((s) =>
-      SEEDS.slice(0, 2).some((seed) => {
-        const run = campaign(s, seed, CHAIN_MONTHS, content);
-        return new Set(run.fired.filter((id) => chained.has(id))).size >= 3;
-      }),
-    );
-    expect(found).toBe(true);
-  });
+  it(
+    'pelo menos 3 eventos encadeados (chainedOnly) chegam à caixa de entrada em uma campanha de 240 meses',
+    () => {
+      // Campanha de 240 meses (ECONOMIC_MODEL.md §9): o encadeamento depende de cadeias que levam meses para
+      // se formar. Para numa condenação, como a campanha real.
+      const chained = new Set(content.events.filter((e) => e.chainedOnly).map((e) => e.id));
+      const found = STRATEGIES.some((s) =>
+        SEEDS.slice(0, 2).some((seed) => {
+          const run = campaign(s, seed, CHAIN_MONTHS, content);
+          return new Set(run.fired.filter((id) => chained.has(id))).size >= 3;
+        }),
+      );
+      expect(found).toBe(true);
+    },
+    LONG_CAMPAIGN_TIMEOUT_MS,
+  );
 });
 
 describe('Fase 07: notícias (FASE_07.md, critério 3; GAME_DESIGN.md §11.3)', () => {
@@ -182,19 +198,23 @@ describe('Fase 07: persistência de marcas (FASE_07.md, estado v7; AI_INSTRUCTIO
 });
 
 describe('Fase 07: isolamento do cenário v0.5.0 (AI_INSTRUCTIONS.md §8)', () => {
-  it('no cenário brasil_2027_01_v050, nenhum evento fase07_* dispara em 48 meses', () => {
-    for (const s of STRATEGIES) {
-      for (const seed of SEEDS) {
-        const run = campaign(s, seed, MONTHS, contentV050);
-        expect(run.fired.length, `${s.id} s${seed} dispara algum evento`).toBeGreaterThan(0);
-        expect(
-          run.fired.filter((id) => id.startsWith('fase07_')),
-          `${s.id} s${seed}`,
-        ).toEqual([]);
-        expect(run.violations, `${s.id} s${seed}`).toEqual([]);
+  it(
+    'no cenário brasil_2027_01_v050, nenhum evento fase07_* dispara em 48 meses',
+    () => {
+      for (const s of STRATEGIES) {
+        for (const seed of SEEDS) {
+          const run = campaign(s, seed, MONTHS, contentV050);
+          expect(run.fired.length, `${s.id} s${seed} dispara algum evento`).toBeGreaterThan(0);
+          expect(
+            run.fired.filter((id) => id.startsWith('fase07_')),
+            `${s.id} s${seed}`,
+          ).toEqual([]);
+          expect(run.violations, `${s.id} s${seed}`).toEqual([]);
+        }
       }
-    }
-  });
+    },
+    LONG_CAMPAIGN_TIMEOUT_MS,
+  );
 });
 
 describe('Fase 08: herança de eventos do cenário padrão v0.7.0 (achado da revisão do PR #9)', () => {
