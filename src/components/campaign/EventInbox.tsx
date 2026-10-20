@@ -52,7 +52,10 @@ const SANCTION_OPTIONS: Record<SanctionChoice, { label: string; description: str
   },
 };
 
-/** Caixa de entrada: projetos para sancionar e eventos que pedem resposta neste mês (GAME_DESIGN.md §4.2). */
+/**
+ * Caixa de entrada: projetos para sancionar e eventos que pedem resposta neste mês (GAME_DESIGN.md §4.2). Vive na
+ * folha "Alertas e eventos" do Painel, que já dá o título.
+ */
 export function EventInbox({
   items,
   chosen,
@@ -65,7 +68,6 @@ export function EventInbox({
 }: EventInboxProps) {
   return (
     <View style={styles.root}>
-      <Text variant="title">Caixa de entrada</Text>
       {items.length === 0 && sanctions.length === 0 && (
         <Text variant="body" color="textSecondary">
           Nada pede resposta neste mês.
@@ -74,7 +76,8 @@ export function EventInbox({
       {sanctions.map(({ proposal, name }) => {
         const options: SanctionChoice[] =
           proposal.rider > 0 ? ['sancionar', 'vetar_acrescimos', 'vetar_total'] : ['sancionar', 'vetar_total'];
-        const selected = sanctionChosen[proposal.id] ?? 'sancionar';
+        // Só a escolha marcada aparece selecionada; sem ela vale a sanção tácita, que o selo "padrão" indica.
+        const selected = sanctionChosen[proposal.id];
         return (
           <Card key={proposal.id} title={`Sanção: ${name}`} subtitle="Sem resposta neste mês, vale a sanção tácita.">
             <Text variant="body">

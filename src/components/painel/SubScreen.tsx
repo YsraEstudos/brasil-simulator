@@ -10,7 +10,7 @@ import { Alert, formatNumber, Text } from '@/components/ui';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { loadContent } from '@/content';
 import { useTheme } from '@/hooks/use-theme';
-import { ForceDarkTheme } from '@/theme/ThemeProvider';
+import { ForceHudTheme } from '@/theme/ThemeProvider';
 import { draftCost, useGame, type ActiveCampaign } from '@/store';
 
 import { RoundButton } from './HudBits';
@@ -19,10 +19,12 @@ import { Hud } from './hudTheme';
 /** Tamanho do botão redondo de voltar (alvo de toque folgado; o `RoundButton` ainda soma `hitSlop`). */
 const BACK_SIZE = 40;
 
-/** Volta ao Painel; se a subtela foi aberta direto por link (sem pilha), troca por ele. */
+/**
+ * Volta ao Painel, não à tela anterior: fecha todas as subtelas empilhadas por cima dele (ex.: Gabinete → Legado).
+ * Aberta direto por link, sem o Painel na pilha, a subtela é trocada por ele.
+ */
 export function goBackToPainel(): void {
-  if (router.canGoBack()) router.back();
-  else router.replace('/painel');
+  router.dismissTo('/painel');
 }
 
 /** Botão redondo "Voltar ao Painel" no visual do HUD (usado na barra das subtelas e flutuante nas de tela cheia). */
@@ -41,14 +43,14 @@ export function BackToPainelButton({ size = BACK_SIZE }: { size?: number }) {
  * Moldura das subtelas do Painel (Gabinete, Congresso, Economia): barra escura do HUD com o botão de voltar, o
  * título e, com partida aberta, a faixa de mês, ações de agenda e capital político. O corpo mantém o esqueleto das
  * antigas abas: carregamento, aviso de erro, mensagem sem partida e rolagem que volta ao topo ao trocar de partida.
- * Sempre escura como o Painel: o corpo roda sob `ForceDarkTheme` e a barra de status é clara.
+ * Sempre escura como o Painel: o corpo roda sob `ForceHudTheme` e a barra de status é clara.
  */
 export function SubScreen({ title, render }: { title: string; render: (campaign: ActiveCampaign) => ReactNode }) {
   return (
-    <ForceDarkTheme>
+    <ForceHudTheme>
       <StatusBar style="light" />
       <SubScreenBody title={title} render={render} />
-    </ForceDarkTheme>
+    </ForceHudTheme>
   );
 }
 
@@ -131,14 +133,15 @@ function TopBar({ title, campaign }: { title: string; campaign?: ActiveCampaign 
 
 /** Faixa compacta: mês, ações de agenda que ainda cabem no mês (descontado o rascunho) e capital político. */
 function StatusStrip({ campaign }: { campaign: ActiveCampaign }) {
-  const { state } = campaign;
+  const { state, finished } = campaign;
   const draft = useGame((s) => s.draft);
   const content = useMemo(() => loadContent(state.scenarioId), [state.scenarioId]);
   const actionsLeft = state.resources.agendaActionsPerMonth - draftCost(draft, content);
   return (
     <View style={styles.strip}>
       <Text tabular style={styles.stripText}>
-        {shortMonthLabel(state.monthIndex)}
+        {/* Encerrada, `monthIndex` já é o mês seguinte ao último jogado. */}
+        {shortMonthLabel(finished ? Math.max(0, state.monthIndex - 1) : state.monthIndex)}
       </Text>
       <Text style={styles.stripDot}>·</Text>
       <Text tabular style={[styles.stripText, actionsLeft <= 0 && styles.stripWarn]}>

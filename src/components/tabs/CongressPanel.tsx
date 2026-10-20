@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { INSTRUMENT_LABEL, PROPOSAL_STATUS_LABEL, costText, shortMonthLabel } from '@/components/campaign/labels';
+import { ProposalList, ProposalTrail } from '@/components/campaign/ProposalList';
 import { CongressHemicycle } from '@/components/congress/CongressHemicycle';
 import { Button, Card, formatNumber, formatPercent, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
@@ -42,8 +43,8 @@ const HOUSE_LABEL: Record<House, string> = { camara: 'Câmara', senado: 'Senado'
 const IN_CONGRESS = new Set(['em_tramitacao', 'parada', 'apreciacao_veto']);
 
 /**
- * Aba Congresso (POLITICAL_RULES.md §6): hemiciclo da Câmara com a base do governo, Mesas e pauta das Casas,
- * propostas por etapa com votos previstos e negociação, blocos e ministérios. Negociar e nomear entram na
+ * Subtela Congresso (POLITICAL_RULES.md §6): hemiciclo da Câmara com a base do governo, Mesas e pauta das Casas,
+ * propostas por etapa com votos previstos e negociação (e as já encerradas, com histórico), blocos e ministérios. Negociar e nomear entram na
  * agenda do mês (mesmas ações do Gabinete).
  */
 export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
@@ -67,7 +68,9 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
   };
 
   // Veto aos acréscimos de uma lei já em execução também aguarda sessão do Congresso.
-  const proposals = state.proposals.filter((p) => IN_CONGRESS.has(p.status) || pendingVeto(p));
+  const inCongress = (p: Proposal) => IN_CONGRESS.has(p.status) || pendingVeto(p);
+  const proposals = state.proposals.filter(inCongress);
+  const closed = state.proposals.filter((p) => !inCongress(p));
 
   return (
     <>
@@ -104,6 +107,8 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
           proposals.map((p) => <ProposalItem key={p.id} proposal={p} state={state} content={content} agenda={agenda} />)
         )}
       </Card>
+
+      {closed.length > 0 ? <ProposalList proposals={closed} content={content} /> : null}
 
       {blocs.map((bloc) => (
         <BlocCard key={bloc.id} bloc={bloc} state={state} content={content} />
@@ -180,6 +185,7 @@ function ProposalItem({
   agenda: AgendaHelpers;
 }) {
   const [negotiating, setNegotiating] = useState(false);
+  const [showTrail, setShowTrail] = useState(false);
   const policy = content.policies[proposal.policyId];
   const name = policy?.name ?? proposal.policyId;
   const instrument = policy ? legislativeInstrument(policy) : null;
@@ -235,6 +241,13 @@ function ProposalItem({
           {facts.join(' · ')}
         </Text>
       ) : null}
+      {showTrail ? <ProposalTrail proposal={proposal} /> : null}
+      <Button
+        label={showTrail ? 'Ocultar histórico' : 'Ver histórico'}
+        variant="ghost"
+        onPress={() => setShowTrail((v) => !v)}
+        block
+      />
       {negotiable ? (
         <View style={styles.actions}>
           {actions.map((a) => (

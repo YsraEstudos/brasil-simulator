@@ -92,9 +92,12 @@ export interface GameStoreState {
   history(): Promise<IndicatorPoint[]>;
   /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
   endMonth(input?: MonthInput): Promise<boolean>;
+  /** Marca/desmarca no rascunho; ignorado enquanto o mês é gravado (`busy`) ou com a campanha encerrada. */
   toggleDecision(decision: Decision): void;
   toggleEventChoice(eventId: string, choiceId: string): void;
   clearDraft(): void;
+  /** Apaga o aviso de erro (o jogador fechou o aviso). */
+  clearError(): void;
   leaveCampaign(): Promise<boolean>;
   deleteCampaign(id: string): Promise<boolean>;
   setTextScale(scale: TextScale): Promise<boolean>;
@@ -124,6 +127,8 @@ export function createGameStore(deps: GameStoreDeps) {
      * Executa uma operação marcando `busy`; erros vão para `error` em vez de derrubar o app. Devolve `true` só se a
      * operação rodou até o fim (`false` se outra estava em andamento ou se falhou).
      */
+    const draftLocked = () => get().busy || get().active?.finished === true;
+
     const run = async (op: (db: SqlDatabase) => Promise<void>): Promise<boolean> => {
       if (get().busy) return false;
       set({ busy: true, error: undefined });
@@ -293,9 +298,18 @@ export function createGameStore(deps: GameStoreDeps) {
           await refreshList(d);
         }),
 
-      toggleDecision: (decision) => set((s) => ({ draft: toggleDecision(s.draft, decision) })),
-      toggleEventChoice: (eventId, choiceId) => set((s) => ({ draft: toggleEventChoice(s.draft, eventId, choiceId) })),
+      // O rascunho fica parado durante o fechamento do mês: o motor já leu a agenda e a gravação zera o rascunho no
+      // fim, então uma escolha feita nesse meio se perderia. Campanha encerrada não tem próximo mês para decidir.
+      toggleDecision: (decision) => {
+        if (draftLocked()) return;
+        set((s) => ({ draft: toggleDecision(s.draft, decision) }));
+      },
+      toggleEventChoice: (eventId, choiceId) => {
+        if (draftLocked()) return;
+        set((s) => ({ draft: toggleEventChoice(s.draft, eventId, choiceId) }));
+      },
       clearDraft: () => set({ draft: EMPTY_DRAFT }),
+      clearError: () => set({ error: undefined }),
 
       leaveCampaign: () =>
         run(async (d) => {

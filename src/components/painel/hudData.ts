@@ -26,13 +26,11 @@ import {
   type SocietyState,
 } from '@/engine';
 import type { IndicatorPoint } from '@/database/campaignRepository';
-import { draftCost } from '@/store/agendaDraft';
-import type { AgendaDraft } from '@/store/agendaDraft';
 import type { ActiveCampaign } from '@/store/gameStore';
 
 /**
  * Dados do Painel (HUD estilo mesa de jogo): funções puras que transformam a partida em tudo o que a tela
- * mostra — barras do topo, ministérios, alertas, Congresso, indicadores setoriais, regiões, meta e a série do
+ * mostra — barras do topo, ministérios, Congresso, indicadores setoriais, regiões, meta e a série do
  * PIB. Sem partida em andamento, `hudFromScenario` monta a mesma tela com os dados do cenário e a marca
  * `demo: true` (a tela exibe o selo de demonstração; nada aqui inventa números que pareçam da partida).
  */
@@ -66,14 +64,6 @@ export interface HudMinistry {
   tone: HudTone;
   /** Relação com o bloco que ocupa a pasta (−100…100); `null` para quadro técnico. */
   relation: number | null;
-}
-
-export interface HudAlert {
-  id: string;
-  title: string;
-  body: string;
-  tag: string | null;
-  tone: HudTone;
 }
 
 export interface HudSector {
@@ -124,16 +114,18 @@ export interface HudSeriesPoint {
 export interface HudData {
   /** `true` sem partida em andamento: a tela mostra o selo de demonstração. */
   demo: boolean;
+  /** Mês a jogar; com a campanha encerrada, o último mês jogado. */
   monthLabel: string;
+  /** Número do mês de `monthLabel` na campanha (1 = posse). */
   turn: number;
   turnTotal: number;
-  /** Ações de agenda ainda livres neste mês. */
-  actionsLeft: number;
-  /** Eventos aguardando resposta (selo do sino). */
-  pendingCount: number;
+  /**
+   * Ações de agenda do mês. O que sobra (descontado o rascunho) e o selo dos alertas ficam fora daqui: dependem do
+   * rascunho, e editar a agenda não deve recalcular o HUD inteiro (nem recolorir o mapa do globo).
+   */
+  actionsMax: number;
   stats: readonly HudStat[];
   ministries: readonly HudMinistry[];
-  alerts: readonly HudAlert[];
   congress: HudCongress;
   sectors: readonly HudSector[];
   regions: readonly HudRegion[];
@@ -345,25 +337,6 @@ function buildMinistries(state: GameState | null, content: GameContent): HudMini
   });
 }
 
-function buildAlerts(state: GameState, content: GameContent): HudAlert[] {
-  const eventsById = new Map(content.events.map((e) => [e.id, e]));
-  return state.events.pending.flatMap((pending) => {
-    const event = eventsById.get(pending.eventId);
-    if (!event) return [];
-    // Urgência pela resposta mais caras entre as escolhas (GAME_DESIGN.md §4.3: evento crítico custa até 2).
-    const maxCost = Math.max(...event.choices.map((c) => c.agendaCost));
-    return [
-      {
-        id: pending.eventId,
-        title: event.title,
-        body: event.description,
-        tag: maxCost >= 2 ? 'URGENTE' : maxCost === 1 ? 'ATENÇÃO' : null,
-        tone: (maxCost >= 2 ? 'negative' : maxCost === 1 ? 'warning' : 'neutral') as HudTone,
-      },
-    ];
-  });
-}
-
 function buildCongress(content: GameContent, state: GameState | null): HudCongress {
   const blocs = content.scenario.blocs;
   const counts = groupCounts(blocs);
@@ -433,20 +406,20 @@ function buildSeries(history: readonly IndicatorPoint[] | null): HudSeriesPoint[
 export function hudFromCampaign(
   campaign: ActiveCampaign,
   content: GameContent,
-  draft: AgendaDraft,
   history: readonly IndicatorPoint[] | null,
   mapIndicator: MapIndicator | null = null,
 ): HudData {
   const state = campaign.state;
   const ufs = regionsOf(content);
   const ufStates = regionsView(state, content);
+  // `monthIndex` é o próximo mês a jogar; encerrada, a campanha mostra o último mês jogado (não "49/48").
+  const shownMonth = campaign.finished ? Math.max(0, state.monthIndex - 1) : state.monthIndex;
   return {
     demo: false,
-    monthLabel: monthLabel(state.monthIndex),
-    turn: state.monthIndex + 1,
+    monthLabel: monthLabel(shownMonth),
+    turn: shownMonth + 1,
     turnTotal: campaignMonths(state.scenarioId),
-    actionsLeft: state.resources.agendaActionsPerMonth - draftCost(draft, content),
-    pendingCount: state.events.pending.length,
+    actionsMax: state.resources.agendaActionsPerMonth,
     stats: buildStats({
       indicators: state.indicators,
       previous: campaign.previous,
@@ -454,11 +427,10 @@ export function hudFromCampaign(
       nominalGdp: currentNominalGdpMillions(state, content),
       populationThousands: ufs.reduce((n, uf) => n + uf.population, 0),
       ufCount: ufs.length,
-      monthIndex: state.monthIndex,
+      monthIndex: shownMonth,
       turnTotal: campaignMonths(state.scenarioId),
     }),
     ministries: buildMinistries(state, content),
-    alerts: buildAlerts(state, content),
     congress: buildCongress(content, state),
     sectors: buildSectors(state.society),
     regions: buildRegions(content, ufStates.length > 0 ? ufStates.map((uf) => uf.share) : null),
@@ -478,8 +450,7 @@ export function hudFromScenario(content: GameContent): HudData {
     monthLabel: monthLabel(0),
     turn: 1,
     turnTotal,
-    actionsLeft: 3,
-    pendingCount: 0,
+    actionsMax: 3,
     stats: buildStats({
       indicators,
       politicalCapital: 62,
@@ -490,7 +461,6 @@ export function hudFromScenario(content: GameContent): HudData {
       turnTotal,
     }),
     ministries: buildMinistries(null, content),
-    alerts: [],
     congress: buildCongress(content, null),
     sectors: buildSectors(null),
     regions: buildRegions(content, null),

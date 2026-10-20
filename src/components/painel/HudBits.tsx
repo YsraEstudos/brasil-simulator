@@ -5,7 +5,7 @@ import { binColor, legendLabels, type MapIndicatorSpec } from './regionalMetrics
 import { Text } from '@/components/ui';
 import { Radius } from '@/constants/theme';
 
-import type { HudAlert, HudGoalCheck, HudMinistry, HudRegion, HudSector, HudStat, HudTone } from './hudData';
+import type { HudGoalCheck, HudMinistry, HudRegion, HudSector, HudStat, HudTone } from './hudData';
 import { Hud, toneColor } from './hudTheme';
 
 /** Peças da mesa do Painel (GAME_DESIGN.md §4.2): painel com moldura dourada, barras, selos e linhas de dado. */
@@ -170,7 +170,7 @@ export function RoundButton({
       onPress={onPress}
       hitSlop={8}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={badge != null && badge > 0 ? `${label}, ${badge} sem resposta` : label}
       accessibilityState={active ? { selected: true } : undefined}
       style={({ pressed }) => [
         styles.roundButton,
@@ -179,12 +179,18 @@ export function RoundButton({
         pressed && styles.roundButtonPressed,
       ]}>
       <HudIcon name={icon} size={Math.round(size * 0.42)} color={active ? Hud.titleBright : Hud.title} />
-      {badge != null && badge > 0 && (
-        <View style={styles.roundBadge}>
-          <Text style={styles.roundBadgeText}>{badge > 9 ? '9+' : badge}</Text>
-        </View>
-      )}
+      <CountBadge count={badge} />
     </Pressable>
+  );
+}
+
+/** Selo vermelho no canto de um botão: o contador de pendências ("9+" a partir de dez); sem pendência não aparece. */
+function CountBadge({ count, inset }: { count?: number; inset?: number }) {
+  if (count == null || count <= 0) return null;
+  return (
+    <View style={[styles.roundBadge, inset != null && { right: inset }]}>
+      <Text style={styles.roundBadgeText}>{count > 9 ? '9+' : count}</Text>
+    </View>
   );
 }
 
@@ -196,12 +202,15 @@ export function DockButton({
   icon,
   label,
   compact,
+  badge,
   onPress,
 }: {
   icon: SymbolViewProps['name'];
   /** Rótulo curto: aparece em retrato e é sempre o rótulo de acessibilidade. */
   label: string;
   compact?: boolean;
+  /** Contador no canto: algo pendente na subtela (votação marcada, manchetes novas). */
+  badge?: number;
   onPress: () => void;
 }) {
   return (
@@ -209,7 +218,7 @@ export function DockButton({
       onPress={onPress}
       hitSlop={compact ? 4 : 2}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={badge != null && badge > 0 ? `${label}, ${badge} pendente${badge === 1 ? '' : 's'}` : label}
       style={({ pressed }) => [
         styles.dockButton,
         compact ? styles.dockButtonCompact : styles.dockButtonFull,
@@ -221,6 +230,7 @@ export function DockButton({
           {label}
         </Text>
       )}
+      <CountBadge count={badge} inset={compact ? -4 : 8} />
     </Pressable>
   );
 }
@@ -295,7 +305,7 @@ export function BellButton({ count, onPress }: { count: number; onPress: () => v
       style={styles.bellWrap}
       hitSlop={6}
       accessibilityRole="button"
-      accessibilityLabel="Eventos aguardando resposta">
+      accessibilityLabel={count > 0 ? `Alertas e eventos, ${count} sem resposta` : 'Alertas e eventos'}>
       <HudIcon
         name={{ ios: 'bell.fill', android: 'notifications', web: 'notifications' }}
         size={20}
@@ -329,28 +339,6 @@ export function MinistryRow({ ministry }: { ministry: HudMinistry }) {
       </View>
       <TrendGlyph tone={ministry.tone} />
     </View>
-  );
-}
-
-/** Cartão de evento aguardando resposta. */
-export function AlertCard({ alert, onPress }: { alert: HudAlert; onPress: () => void }) {
-  const color = toneColor(alert.tone);
-  return (
-    <Pressable onPress={onPress} style={[styles.alertCard, { borderLeftColor: color }]} accessibilityRole="button">
-      <View style={styles.alertHead}>
-        <Text style={styles.alertTitle} numberOfLines={1}>
-          {alert.title}
-        </Text>
-        {alert.tag && (
-          <View style={[styles.alertTag, { borderColor: color }]}>
-            <Text style={[styles.alertTagText, { color }]}>{alert.tag}</Text>
-          </View>
-        )}
-      </View>
-      <Text style={styles.alertBody} numberOfLines={3}>
-        {alert.body}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -657,20 +645,6 @@ const styles = {
   rowBody: { flex: 1, gap: 3 },
   rowTitle: { color: Hud.text, fontSize: 12, fontWeight: '600' },
   rowSub: { fontSize: 10.5 },
-  alertCard: {
-    borderLeftWidth: 3,
-    borderWidth: 1,
-    borderColor: Hud.tileBorder,
-    borderRadius: Radius.sm,
-    backgroundColor: Hud.tile,
-    padding: 8,
-    gap: 4,
-  },
-  alertHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  alertTitle: { flex: 1, color: Hud.text, fontSize: 12, fontWeight: '700' },
-  alertTag: { borderWidth: 1, borderRadius: 3, paddingHorizontal: 4, paddingVertical: 1 },
-  alertTagText: { fontSize: 8.5, fontWeight: '800', letterSpacing: 0.6 },
-  alertBody: { color: Hud.textDim, fontSize: 11, lineHeight: 15 },
   link: { color: Hud.titleBright, fontSize: 11.5, fontWeight: '600', paddingVertical: 2 },
   tile: {
     flex: 1,
