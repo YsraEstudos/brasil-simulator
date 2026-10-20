@@ -173,9 +173,13 @@ export function PainelScreen() {
     router.push(route);
   };
 
-  /** Volta ao menu principal; a partida continua em memória (o CONTINUAR a retoma). */
-  const leaveToMenu = () => {
+  /**
+   * Volta ao menu principal; a partida em andamento continua em memória, com o rascunho (o CONTINUAR a retoma). Uma
+   * partida encerrada (só aberta para ver o resultado) é fechada, para o CONTINUAR buscar a última partida salva.
+   */
+  const leaveToMenu = async () => {
     closeSheet();
+    if (active?.finished) await gameStore.getState().leaveCampaign();
     router.navigate('/');
   };
 
@@ -416,7 +420,7 @@ export function PainelScreen() {
               { paddingTop: insets.top + 6, paddingLeft: 8 + insets.left, paddingRight: 8 + insets.right },
             ]}>
             <View pointerEvents="box-none" style={styles.topRow}>
-              <RoundButton icon={BACK_ICON} label="Voltar ao menu" size={compact ? 36 : 40} onPress={leaveToMenu} />
+              <RoundButton icon={BACK_ICON} label="Voltar ao menu" size={compact ? 36 : 40} onPress={() => void leaveToMenu()} />
               <Image
                 source={logo}
                 style={{ height: compact ? 26 : 30, width: (compact ? 26 : 30) * 2 }}
