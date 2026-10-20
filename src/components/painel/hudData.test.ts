@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { formatNumber } from '@/components/ui/format';
 import { campaignMonths, DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
-import { createInitialState, regionsOf } from '@/engine';
+import { createInitialState, regionsOf, type Proposal } from '@/engine';
 import { EMPTY_DRAFT } from '@/store/agendaDraft';
 import type { ActiveCampaign } from '@/store/gameStore';
 
@@ -62,11 +62,10 @@ describe('Painel sem partida (demonstração)', () => {
     expect(data.regions.some((r) => r.level === 1)).toBe(true);
   });
 
-  it('lista os ministérios do cenário sem ocupante partidário e sem alertas', () => {
+  it('lista os ministérios do cenário sem ocupante partidário', () => {
     const ministries = content.scenario.institutions?.ministries ?? [];
     expect(data.ministries).toHaveLength(ministries.length);
     expect(data.ministries.every((m) => m.occupant === 'Quadro técnico' && m.tone === 'neutral')).toBe(true);
-    expect(data.alerts).toEqual([]);
   });
 });
 
@@ -80,6 +79,18 @@ describe('Painel com a partida', () => {
     expect(data.turnTotal).toBe(months);
     expect(data.actionsLeft).toBe(active.state.resources.agendaActionsPerMonth);
     expect(data.pendingCount).toBe(0);
+  });
+
+  it('o selo dos alertas soma eventos aguardando e sanções do mês, e zera com a campanha encerrada', () => {
+    const active = campaign();
+    const [policyId] = Object.keys(content.policies);
+    const state = {
+      ...active.state,
+      events: { ...active.state.events, pending: [{ eventId: 'alta_petroleo', monthIndex: 0 }] },
+      proposals: [{ id: 'p', policyId, status: 'aguardando_sancao', voteMonth: 0 } as Proposal],
+    };
+    expect(hudFromCampaign({ ...active, state }, content, EMPTY_DRAFT, null).pendingCount).toBe(2);
+    expect(hudFromCampaign({ ...active, state, finished: true }, content, EMPTY_DRAFT, null).pendingCount).toBe(0);
   });
 
   it('mostra a variação em relação ao mês anterior quando existe', () => {

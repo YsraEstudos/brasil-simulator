@@ -1,4 +1,5 @@
 import { governmentSupport, groupCounts } from '@/components/congress/hemicycle';
+import { inboxCount } from '@/components/campaign/inboxModel';
 import { monthLabel } from '@/components/campaign/labels';
 import { mapFills, mapRows, type MapIndicator } from './regionalMetrics';
 import {
@@ -32,7 +33,7 @@ import type { ActiveCampaign } from '@/store/gameStore';
 
 /**
  * Dados do Painel (HUD estilo mesa de jogo): funções puras que transformam a partida em tudo o que a tela
- * mostra — barras do topo, ministérios, alertas, Congresso, indicadores setoriais, regiões, meta e a série do
+ * mostra — barras do topo, ministérios, Congresso, indicadores setoriais, regiões, meta e a série do
  * PIB. Sem partida em andamento, `hudFromScenario` monta a mesma tela com os dados do cenário e a marca
  * `demo: true` (a tela exibe o selo de demonstração; nada aqui inventa números que pareçam da partida).
  */
@@ -66,14 +67,6 @@ export interface HudMinistry {
   tone: HudTone;
   /** Relação com o bloco que ocupa a pasta (−100…100); `null` para quadro técnico. */
   relation: number | null;
-}
-
-export interface HudAlert {
-  id: string;
-  title: string;
-  body: string;
-  tag: string | null;
-  tone: HudTone;
 }
 
 export interface HudSector {
@@ -129,11 +122,10 @@ export interface HudData {
   turnTotal: number;
   /** Ações de agenda ainda livres neste mês. */
   actionsLeft: number;
-  /** Eventos aguardando resposta (selo do sino). */
+  /** Eventos aguardando resposta mais sanções por decidir (selo do sino e do botão de alertas). */
   pendingCount: number;
   stats: readonly HudStat[];
   ministries: readonly HudMinistry[];
-  alerts: readonly HudAlert[];
   congress: HudCongress;
   sectors: readonly HudSector[];
   regions: readonly HudRegion[];
@@ -345,25 +337,6 @@ function buildMinistries(state: GameState | null, content: GameContent): HudMini
   });
 }
 
-function buildAlerts(state: GameState, content: GameContent): HudAlert[] {
-  const eventsById = new Map(content.events.map((e) => [e.id, e]));
-  return state.events.pending.flatMap((pending) => {
-    const event = eventsById.get(pending.eventId);
-    if (!event) return [];
-    // Urgência pela resposta mais caras entre as escolhas (GAME_DESIGN.md §4.3: evento crítico custa até 2).
-    const maxCost = Math.max(...event.choices.map((c) => c.agendaCost));
-    return [
-      {
-        id: pending.eventId,
-        title: event.title,
-        body: event.description,
-        tag: maxCost >= 2 ? 'URGENTE' : maxCost === 1 ? 'ATENÇÃO' : null,
-        tone: (maxCost >= 2 ? 'negative' : maxCost === 1 ? 'warning' : 'neutral') as HudTone,
-      },
-    ];
-  });
-}
-
 function buildCongress(content: GameContent, state: GameState | null): HudCongress {
   const blocs = content.scenario.blocs;
   const counts = groupCounts(blocs);
@@ -446,7 +419,7 @@ export function hudFromCampaign(
     turn: state.monthIndex + 1,
     turnTotal: campaignMonths(state.scenarioId),
     actionsLeft: state.resources.agendaActionsPerMonth - draftCost(draft, content),
-    pendingCount: state.events.pending.length,
+    pendingCount: campaign.finished ? 0 : inboxCount(state),
     stats: buildStats({
       indicators: state.indicators,
       previous: campaign.previous,
@@ -458,7 +431,6 @@ export function hudFromCampaign(
       turnTotal: campaignMonths(state.scenarioId),
     }),
     ministries: buildMinistries(state, content),
-    alerts: buildAlerts(state, content),
     congress: buildCongress(content, state),
     sectors: buildSectors(state.society),
     regions: buildRegions(content, ufStates.length > 0 ? ufStates.map((uf) => uf.share) : null),
@@ -490,7 +462,6 @@ export function hudFromScenario(content: GameContent): HudData {
       turnTotal,
     }),
     ministries: buildMinistries(null, content),
-    alerts: [],
     congress: buildCongress(content, null),
     sectors: buildSectors(null),
     regions: buildRegions(content, null),

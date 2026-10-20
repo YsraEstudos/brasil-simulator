@@ -1,7 +1,7 @@
-import { CampaignView } from '@/components/campaign/CampaignView';
+import { GabineteView } from '@/components/campaign/GabineteView';
 import { SubScreen } from '@/components/painel/SubScreen';
 
-/** Gabinete (provisório): as decisões do mês (a antiga Presidência sem o resumo do mês), subtela do Painel. */
+/** Gabinete: a agenda presidencial do mês (decisões, políticas públicas e ações de agenda), subtela do Painel. */
 export default function GabineteScreen() {
-  return <SubScreen title="Gabinete" render={(campaign) => <CampaignView campaign={campaign} />} />;
+  return <SubScreen title="Gabinete" render={(campaign) => <GabineteView campaign={campaign} />} />;
 }

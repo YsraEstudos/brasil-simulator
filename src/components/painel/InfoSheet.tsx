@@ -2,7 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
-import { ForceDarkTheme } from '@/theme/ThemeProvider';
+import { ForceHudTheme } from '@/theme/ThemeProvider';
 
 import { HudPanel } from './HudBits';
 import { Hud } from './hudTheme';
@@ -10,8 +10,8 @@ import { Hud } from './hudTheme';
 /**
  * Detalhe de um painel da mesa (GAME_DESIGN.md §4.2): a folha sobe por cima do globo com fundo escurecido e
  * moldura dourada — a mesa não rola; cada botão abre exatamente a informação que precisa. Fecha no ✕, no toque
- * fora, e ao navegar para outra aba. O conteúdo é sempre escuro (`ForceDarkTheme`), para aceitar componentes do
- * sistema de design (`Indicator`, `MonthSummary`…) sem destoar do HUD.
+ * fora, e ao navegar para outra tela. O conteúdo usa sempre a paleta do HUD (`ForceHudTheme`), para aceitar
+ * componentes do sistema de design (`Indicator`, `MonthSummary`…) sem destoar do HUD.
  */
 export function InfoSheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const { height } = useWindowDimensions();
@@ -59,7 +59,7 @@ export function InfoSheet({ title, onClose, children }: { title: string; onClose
               style={styles.scroll}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}>
-              <ForceDarkTheme>{children}</ForceDarkTheme>
+              <ForceHudTheme>{children}</ForceHudTheme>
             </ScrollView>
           </HudPanel>
         </Animated.View>

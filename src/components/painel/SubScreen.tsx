@@ -10,7 +10,7 @@ import { Alert, formatNumber, Text } from '@/components/ui';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { loadContent } from '@/content';
 import { useTheme } from '@/hooks/use-theme';
-import { ForceDarkTheme } from '@/theme/ThemeProvider';
+import { ForceHudTheme } from '@/theme/ThemeProvider';
 import { draftCost, useGame, type ActiveCampaign } from '@/store';
 
 import { RoundButton } from './HudBits';
@@ -41,14 +41,14 @@ export function BackToPainelButton({ size = BACK_SIZE }: { size?: number }) {
  * Moldura das subtelas do Painel (Gabinete, Congresso, Economia): barra escura do HUD com o botão de voltar, o
  * título e, com partida aberta, a faixa de mês, ações de agenda e capital político. O corpo mantém o esqueleto das
  * antigas abas: carregamento, aviso de erro, mensagem sem partida e rolagem que volta ao topo ao trocar de partida.
- * Sempre escura como o Painel: o corpo roda sob `ForceDarkTheme` e a barra de status é clara.
+ * Sempre escura como o Painel: o corpo roda sob `ForceHudTheme` e a barra de status é clara.
  */
 export function SubScreen({ title, render }: { title: string; render: (campaign: ActiveCampaign) => ReactNode }) {
   return (
-    <ForceDarkTheme>
+    <ForceHudTheme>
       <StatusBar style="light" />
       <SubScreenBody title={title} render={render} />
-    </ForceDarkTheme>
+    </ForceHudTheme>
   );
 }
 

@@ -52,7 +52,10 @@ const SANCTION_OPTIONS: Record<SanctionChoice, { label: string; description: str
   },
 };
 
-/** Caixa de entrada: projetos para sancionar e eventos que pedem resposta neste mês (GAME_DESIGN.md §4.2). */
+/**
+ * Caixa de entrada: projetos para sancionar e eventos que pedem resposta neste mês (GAME_DESIGN.md §4.2). Vive na
+ * folha "Alertas e eventos" do Painel, que já dá o título.
+ */
 export function EventInbox({
   items,
   chosen,
@@ -65,7 +68,6 @@ export function EventInbox({
 }: EventInboxProps) {
   return (
     <View style={styles.root}>
-      <Text variant="title">Caixa de entrada</Text>
       {items.length === 0 && sanctions.length === 0 && (
         <Text variant="body" color="textSecondary">
           Nada pede resposta neste mês.
