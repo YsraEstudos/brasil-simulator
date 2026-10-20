@@ -816,11 +816,11 @@ export const paginas = [
     status: 'completo',
     nota: 'Conferido com scripts/data/ e as saídas do build_globe.py em 20/10/2026.',
     resumo: 'Um pipeline em Python baixa dados públicos e transforma o resultado nos arquivos que o globo carrega. Roda na máquina de desenvolvimento, nunca no aparelho.',
-    codigo: ['scripts/data/fetch_globe_data.py', 'scripts/data/build_globe.py', 'data-raw/', 'src/globe/data/', 'assets/globe/'],
+    codigo: ['scripts/data/fetch_globe_data.py', 'scripts/data/build_globe.py', 'src/globe/data/', 'assets/globe/'],
     pontos: [
       'fetch_globe_data.py baixa as fontes: Natural Earth (rios, lagos e mapa raster), IBGE (biomas, UFs e metadados) e tiles de elevação Terrarium.',
       'build_globe.py gera as texturas do globo (tiles em JPG para a cor e PNG de 16 bits para a altitude), o mapa geral e o índice das UFs. Usa Pillow para imagens, numpy para cálculo, scipy para processar a máscara do mar e pyshp para ler shapefiles.',
-      'npm run build:globe roda o build. Os brutos ficam em data-raw/. Os resultados ficam em src/globe/data/ (índice e UFs) e em assets/globe/ (imagens, cerca de 9,3 MB).',
+      'npm run build:globe roda o build. Os brutos ficam em data-raw/ (fora do git, baixados pelo fetch). Os resultados ficam em src/globe/data/ (índice e UFs) e em assets/globe/ (imagens, cerca de 9,3 MB).',
       'O app não importa esse código. Só o resultado vai junto no app.',
       'Limitação: não há arquivo de dependências Python no repositório (requirements.txt ou pyproject.toml). As versões não estão fixadas, o que a regra de dependências do AI_INSTRUCTIONS.md §8 pede.',
     ],
