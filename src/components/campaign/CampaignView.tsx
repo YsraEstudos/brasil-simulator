@@ -1,9 +1,8 @@
-import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { campaignMonths, loadContent } from '@/content';
-import { Button, Indicator, formatNumber, Text } from '@/components/ui';
+import { loadContent } from '@/content';
+import { Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import {
   SANCTION_ACTION_ID,
@@ -11,7 +10,6 @@ import {
   standingOf,
   vedacaoAtiva,
   type Decision,
-  type IndicatorKey,
   type SanctionChoice,
 } from '@/engine';
 import type { Policy } from '@/types/policy';
@@ -21,18 +19,19 @@ import { AgendaActions } from './AgendaActions';
 import { DecisionPanel } from './DecisionPanel';
 import { ElectionsCard } from './ElectionsCard';
 import type { CharacterBrief } from './characterView';
-import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER, monthLabel } from './labels';
+import { DIFFICULTY } from './labels';
 import { EventInbox, type PendingItem, type SanctionItem } from './EventInbox';
 import { LegacyReport } from './LegacyReport';
-import { MonthSummary } from './MonthSummary';
 import { ProposalList } from './ProposalList';
 import { PublicPoliciesPanel } from './PublicPoliciesPanel';
-import { WhyChanged } from './WhyChanged';
 
-/** Partida aberta: mês, indicadores, caixa de entrada, agenda, propostas e encerrar o mês (GAME_DESIGN.md §4.2). */
+/**
+ * Gabinete (GAME_DESIGN.md §4.2): as decisões do mês — caixa de entrada com sanções, mesa de despacho, políticas
+ * públicas, agenda e propostas. O mês em si se joga no Painel: indicadores, relatório do mês, "Encerrar o mês" e menu
+ * ficam lá. Com a campanha encerrada, mostra só o relatório de legado.
+ */
 export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
-  const busy = useGame((s) => s.busy);
-  const { state, previous, lastReport, finished } = campaign;
+  const { state, lastReport, finished } = campaign;
   const content = useMemo(() => loadContent(state.scenarioId), [state.scenarioId]);
   const eventsById = useMemo(() => new Map(content.events.map((e) => [e.id, e])), [content]);
   const characters = useMemo<CharacterBrief[]>(
@@ -47,12 +46,10 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
   );
 
   const draft = useGame((s) => s.draft);
-  const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
   const [expandedPolicy, setExpandedPolicy] = useState<string | null>(null);
   const [openProposal, setOpenProposal] = useState<string | null>(null);
 
   const actionsMax = state.resources.agendaActionsPerMonth;
-  const totalMonths = campaignMonths(state.scenarioId);
   const actionsUsed = draftCost(draft, content);
   const { toggleDecision, toggleEventChoice } = gameStore.getState();
 
@@ -105,55 +102,11 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
     if (selected.includes(id) || fits(draft, decision, content, actionsMax)) toggleDecision(decision);
   };
 
-  const endMonth = async () => {
-    const before = state.monthIndex;
-    await gameStore.getState().endMonth();
-    // A store limpa o rascunho só se o mês avançou; aqui fecha a mesa de despacho que estava aberta.
-    if (gameStore.getState().active?.state.monthIndex !== before) setExpandedPolicy(null);
-  };
-
-  /**
-   * Volta à tela de abertura (a pilha do jogo não tem cabeçalho com "voltar" até o menu). A partida em andamento continua aberta
-   * em memória, com o rascunho do mês: CONTINUAR retoma exatamente daqui. Uma partida encerrada (só aberta para ver o
-   * resultado) é fechada, para CONTINUAR buscar a última partida salva em vez de reabrir o resultado.
-   */
-  const leaveToMenu = async () => {
-    if (finished) await gameStore.getState().leaveCampaign();
-    router.navigate('/');
-  };
-
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Text variant="caption" color="textSecondary">
-          {campaign.name} · {DIFFICULTY[state.difficulty].name}
-        </Text>
-        <Text variant="display">{finished ? 'Fim da campanha' : monthLabel(state.monthIndex)}</Text>
-        <Text color="textSecondary">
-          {finished
-            ? `Campanha encerrada em ${monthLabel(state.monthIndex - 1)}.`
-            : `Mês ${state.monthIndex + 1} de ${totalMonths} · ${actionsMax} ações por mês · capital político ${formatNumber(state.resources.politicalCapital)}`}
-        </Text>
-      </View>
-
-      <View style={styles.grid}>
-        {INDICATOR_ORDER.map((key) => {
-          const meta = INDICATOR_META[key];
-          return (
-            <Indicator
-              key={key}
-              label={meta.label}
-              value={state.indicators[key]}
-              previous={previous?.[key]}
-              goodWhen={meta.goodWhen}
-              decimals={meta.decimals}
-              context={meta.context}
-              onPress={() => setOpenIndicator((cur) => (cur === key ? null : key))}
-            />
-          );
-        })}
-      </View>
-      {openIndicator && <WhyChanged indicator={openIndicator} report={lastReport} />}
+      <Text variant="caption" color="textSecondary">
+        {campaign.name} · {DIFFICULTY[state.difficulty].name}
+      </Text>
 
       <ElectionsCard
         state={state}
@@ -166,15 +119,8 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
         fitsDecision={(decision) => fits(draft, decision, content, actionsMax)}
       />
 
-      {lastReport && <MonthSummary report={lastReport} content={content} />}
-
       {finished ? (
-        <>
-          <LegacyReport state={state} content={content} />
-          <View style={styles.actions}>
-            <Button label="Voltar ao menu" variant="secondary" block disabled={busy} onPress={leaveToMenu} />
-          </View>
-        </>
+        <LegacyReport state={state} content={content} />
       ) : (
         <>
           <EventInbox
@@ -220,11 +166,6 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
             openId={openProposal}
             onToggle={(id) => setOpenProposal((cur) => (cur === id ? null : id))}
           />
-
-          <View style={styles.actions}>
-            <Button label="Encerrar o mês" block loading={busy} onPress={endMonth} />
-            <Button label="Voltar ao menu" variant="secondary" block disabled={busy} onPress={leaveToMenu} />
-          </View>
         </>
       )}
     </View>
@@ -233,7 +174,4 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
 
 const styles = StyleSheet.create({
   root: { gap: Spacing.four },
-  header: { gap: Spacing.one },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  actions: { gap: Spacing.two },
 });

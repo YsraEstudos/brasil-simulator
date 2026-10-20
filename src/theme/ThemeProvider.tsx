@@ -25,6 +25,19 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
+/**
+ * Força o esquema escuro para os filhos, mantendo a escala de texto do jogador: o Painel, suas folhas e as subtelas
+ * são sempre escuros (moldura do HUD) e recebem componentes do sistema de design, que leem as cores por `useTheme()`.
+ */
+export function ForceDarkTheme({ children }: { children: ReactNode }) {
+  const { textScale, setTextScale: setScale } = useTheme();
+  const value = useMemo<Theme>(
+    () => ({ scheme: 'dark', colors: Colors.dark, textScale, setTextScale: setScale }),
+    [textScale, setScale],
+  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
 export function useTheme(): Theme {
   const theme = useContext(ThemeContext);
   if (!theme) throw new Error('useTheme precisa estar dentro de <AppThemeProvider>');

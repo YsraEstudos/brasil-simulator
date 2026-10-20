@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useMemo, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +10,7 @@ import { Alert, formatNumber, Text } from '@/components/ui';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { loadContent } from '@/content';
 import { useTheme } from '@/hooks/use-theme';
+import { ForceDarkTheme } from '@/theme/ThemeProvider';
 import { draftCost, useGame, type ActiveCampaign } from '@/store';
 
 import { RoundButton } from './HudBits';
@@ -39,8 +41,18 @@ export function BackToPainelButton({ size = BACK_SIZE }: { size?: number }) {
  * Moldura das subtelas do Painel (Gabinete, Congresso, Economia): barra escura do HUD com o botão de voltar, o
  * título e, com partida aberta, a faixa de mês, ações de agenda e capital político. O corpo mantém o esqueleto das
  * antigas abas: carregamento, aviso de erro, mensagem sem partida e rolagem que volta ao topo ao trocar de partida.
+ * Sempre escura como o Painel: o corpo roda sob `ForceDarkTheme` e a barra de status é clara.
  */
 export function SubScreen({ title, render }: { title: string; render: (campaign: ActiveCampaign) => ReactNode }) {
+  return (
+    <ForceDarkTheme>
+      <StatusBar style="light" />
+      <SubScreenBody title={title} render={render} />
+    </ForceDarkTheme>
+  );
+}
+
+function SubScreenBody({ title, render }: { title: string; render: (campaign: ActiveCampaign) => ReactNode }) {
   const { colors } = useTheme();
   const status = useGame((s) => s.status);
   const error = useGame((s) => s.error);
@@ -53,7 +65,7 @@ export function SubScreen({ title, render }: { title: string; render: (campaign:
 
   if (status === 'iniciando') {
     return (
-      <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <View style={[styles.root, { backgroundColor: Hud.board }]}>
         {bar}
         <View style={styles.center}>
           <ActivityIndicator color={colors.accent} size="large" />
@@ -65,7 +77,7 @@ export function SubScreen({ title, render }: { title: string; render: (campaign:
   const alert = error ? <Alert tone="negative" title="Algo deu errado ao salvar ou carregar" message={error} /> : null;
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <View style={[styles.root, { backgroundColor: Hud.board }]}>
       {bar}
       {active ? (
         // key: trocar de partida recria a rolagem, voltando ao topo
