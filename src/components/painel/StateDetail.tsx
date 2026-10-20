@@ -1,4 +1,5 @@
 import { Pressable, View } from 'react-native';
+import Svg, { Circle, Polyline } from 'react-native-svg';
 
 import { formatNumber, formatPercent, Text } from '@/components/ui';
 import { Radius } from '@/constants/theme';
@@ -9,8 +10,9 @@ import {
   type GameContent,
   type GameState,
   type UfExplanation,
+  regionsView,
 } from '@/engine';
-import { draftCost, fits, gameStore, hasDecision, useGame } from '@/store';
+import { draftCost, fits, gameStore, hasDecision, useGame, type RegionalPoint } from '@/store';
 
 import { LinkRow } from './HudBits';
 import { Hud } from './hudTheme';
@@ -24,6 +26,14 @@ import {
   type MapIndicator,
   type UfRow,
 } from './regionalMetrics';
+import {
+  buildUfSeriesView,
+  seriesMetricFor,
+  sparklinePoints,
+  type ComparisonTone,
+  type ComparisonView,
+  type UfSeriesView,
+} from './regionalSeriesView';
 
 /**
  * Estado no mapa (GAME_DESIGN.md §4.5): o cartão com os números da UF e do Brasil, o governador, "Por que esta UF
@@ -44,6 +54,78 @@ function whyTitle(indicator: MapIndicator): string {
   return 'Por que a economia está acima ou abaixo da tendência';
 }
 
+/** Tamanho e traço da mini-série dos 12 meses (barata: uma polilinha e um ponto). */
+const SPARK_WIDTH = 220;
+const SPARK_HEIGHT = 44;
+const SPARK_PAD = 4;
+const SPARK_STROKE = 2;
+const SPARK_DOT = 3;
+
+const TONE_COLOR: Record<ComparisonTone, string> = {
+  positive: Hud.positive,
+  negative: Hud.negative,
+  neutral: Hud.textDim,
+};
+
+function Comparison({ view }: { view: ComparisonView }) {
+  return (
+    <View style={styles.metricRow}>
+      <Text style={styles.metricLabel} numberOfLines={1}>
+        {view.label}
+      </Text>
+      <Text tabular style={[styles.metricValue, { color: TONE_COLOR[view.tone] }]}>
+        {view.text}
+      </Text>
+    </View>
+  );
+}
+
+/** Variação, mini-série de 12 meses e posição da UF no indicador do mapa (dados de `regionalSeriesView`). */
+function SeriesBlock({ view }: { view: UfSeriesView }) {
+  const color = TONE_COLOR[view.seriesTone];
+  const points = view.hasSeries ? sparklinePoints(view.series, SPARK_WIDTH, SPARK_HEIGHT, SPARK_PAD) : [];
+  const last = points[points.length - 1];
+  return (
+    <>
+      <Text style={styles.section}>{`Evolução · ${view.metric.label}`}</Text>
+      <View style={styles.metricRow}>
+        <Text style={styles.metricLabel}>Hoje</Text>
+        <Text tabular style={styles.metricValue}>
+          {view.valueText}
+        </Text>
+        {view.rankText ? (
+          <Text tabular style={styles.metricReference} numberOfLines={1}>
+            {view.rankText}
+          </Text>
+        ) : null}
+      </View>
+      <Comparison view={view.sinceLastMonth} />
+      <Comparison view={view.sinceStart} />
+      {view.hasSeries ? (
+        <View
+          accessible
+          accessibilityLabel={`${view.seriesCaption}: de ${view.seriesStartText} para ${view.valueText}`}
+          style={styles.spark}>
+          <Svg width={SPARK_WIDTH} height={SPARK_HEIGHT}>
+            <Polyline
+              points={points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
+              fill="none"
+              stroke={color}
+              strokeWidth={SPARK_STROKE}
+            />
+            {last ? <Circle cx={last.x} cy={last.y} r={SPARK_DOT} fill={color} /> : null}
+          </Svg>
+          <Text tabular style={styles.note}>
+            {`${view.seriesCaption}: ${view.seriesStartText} → ${view.valueText}`}
+          </Text>
+        </View>
+      ) : (
+        <Text style={styles.note}>{view.seriesCaption}</Text>
+      )}
+    </>
+  );
+}
+
 /** Cartão da UF na folha "estado": números contra o Brasil, o governador, as causas do mês e a visita. */
 export function UfDetail({
   row,
@@ -51,6 +133,7 @@ export function UfDetail({
   state,
   content,
   explanation,
+  regionalHistory,
   onFly,
 }: {
   row: UfRow;
@@ -59,6 +142,8 @@ export function UfDetail({
   content: GameContent;
   /** Explicação das causas do mês para a UF (relatório do mês); sem ela, a folha avisa que ela vem depois. */
   explanation: UfExplanation | undefined;
+  /** Série por UF do banco (pode estar vazia ou com lacunas: o cartão avisa "Sem dados anteriores"). */
+  regionalHistory: readonly RegionalPoint[];
   /** Leva a câmera do globo até a UF; quem chama fecha a folha para o mapa aparecer. */
   onFly: () => void;
 }) {
@@ -76,6 +161,14 @@ export function UfDetail({
   const actionsLeft = actionsMax - draftCost(draft, content);
   // A posse vem do próprio save (mês 0); sem o snapshot, valem os valores do cenário embutido.
   const startShare = baseline?.regions.ufs.find((u) => u.id === uf.id)?.share ?? scenarioUf?.gdpShare ?? uf.share;
+
+  const seriesView = buildUfSeriesView({
+    metric: seriesMetricFor(indicator),
+    ufId: uf.id,
+    monthIndex: state.monthIndex,
+    currentUfs: regionsView(state, content),
+    history: regionalHistory,
+  });
 
   const metrics: readonly [string, string, string][] = [
     [
@@ -109,6 +202,8 @@ export function UfDetail({
           </Text>
         </View>
       ))}
+
+      {seriesView ? <SeriesBlock view={seriesView} /> : null}
 
       <Text style={styles.section}>{whyTitle(indicator)}</Text>
       {pieces.length === 0 ? (
@@ -196,6 +291,7 @@ const styles = {
     textTransform: 'uppercase',
     paddingTop: 4,
   },
+  spark: { gap: 2, paddingVertical: 2 },
   note: { color: Hud.textMuted, fontSize: 10.5, fontStyle: 'italic' },
   visit: {
     minHeight: 42,

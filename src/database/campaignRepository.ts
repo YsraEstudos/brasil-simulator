@@ -31,6 +31,25 @@ export interface IndicatorPoint {
   riskPremium: number | null;
 }
 
+/**
+ * Campos de cada UF na série regional, NA ORDEM em que são gravados em `regional_indicator_history` (a migração 5
+ * usa a mesma ordem; campos novos só entram no fim). Escolhi um array por UF e uma linha por mês, em vez de uma
+ * linha por UF: são 27 UFs × 5 números, ~1 KB por mês (≈ 250 KB numa campanha de 240 meses), e um mês inteiro
+ * entra e sai numa só gravação, o que mantém a transação do `recordMonth` curta.
+ */
+export const REGIONAL_FIELDS = ['approval', 'unemployment', 'growthGap12m', 'share', 'governorRelation'] as const;
+
+export type RegionalField = (typeof REGIONAL_FIELDS)[number];
+
+/** Valores de uma UF num mês da série regional. */
+export type RegionalUfValues = Record<RegionalField, number>;
+
+/** Um mês da série regional: as UFs por sigla. */
+export interface RegionalPoint {
+  monthIndex: number;
+  ufs: Record<string, RegionalUfValues>;
+}
+
 export interface CampaignSummary {
   id: string;
   name: string;
@@ -172,6 +191,25 @@ export async function loadIndicatorHistory(db: SqlDatabase, campaignId: string):
   });
 }
 
+/**
+ * Série regional da campanha, mês a mês, a começar pela posse (mês 0). Pode ter lacunas: um save anterior à
+ * série só tem os meses cujos snapshots ainda existiam quando ela foi criada (migração 5); nada é reconstruído.
+ */
+export async function loadRegionalHistory(db: SqlDatabase, campaignId: string): Promise<RegionalPoint[]> {
+  const rows = await db.all<{ month_index: number; point_json: string }>(
+    'SELECT month_index, point_json FROM regional_indicator_history WHERE campaign_id = ? ORDER BY month_index',
+    [campaignId],
+  );
+  return rows.map((r) => {
+    const raw = JSON.parse(r.point_json) as Record<string, readonly number[]>;
+    const ufs: Record<string, RegionalUfValues> = {};
+    for (const [id, values] of Object.entries(raw)) {
+      ufs[id] = Object.fromEntries(REGIONAL_FIELDS.map((f, i) => [f, values[i]])) as RegionalUfValues;
+    }
+    return { monthIndex: r.month_index, ufs };
+  });
+}
+
 /** Motivo de recusa como gravado antes da v9. */
 const LEGACY_REJECTION_REASONS: Record<string, DecisionRejection> = {
   sem_pontos_de_agenda: 'sem_acoes_de_agenda',
@@ -256,7 +294,7 @@ export async function deleteCampaign(db: SqlDatabase, campaignId: string): Promi
   await db.run('DELETE FROM campaigns WHERE id = ?', [campaignId]);
 }
 
-/** Grava o estado completo do mês e o ponto da série de longo prazo (na transação de quem chama). */
+/** Grava o estado completo do mês e os pontos das séries de longo prazo, nacional e regional (na transação de quem chama). */
 async function insertSnapshot(db: SqlDatabase, campaignId: string, state: GameState) {
   await db.run(
     'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
@@ -276,6 +314,16 @@ async function insertSnapshot(db: SqlDatabase, campaignId: string, state: GameSt
     state.monthIndex,
     JSON.stringify(point),
   ]);
+  // Estado sem UFs processadas (save antigo ainda no mês da atualização) não gera linha: lacuna honesta.
+  if (state.regions.ufs.length > 0) {
+    const regional: Record<string, number[]> = {};
+    for (const uf of state.regions.ufs) regional[uf.id] = REGIONAL_FIELDS.map((f) => uf[f]);
+    await db.run('INSERT INTO regional_indicator_history (campaign_id, month_index, point_json) VALUES (?, ?, ?)', [
+      campaignId,
+      state.monthIndex,
+      JSON.stringify(regional),
+    ]);
+  }
 }
 
 /** Converte um estado salvo para a estrutura atual (passos v1 → v2… em `src/engine/upgrade.ts`). */

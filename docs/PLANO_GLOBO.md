@@ -274,6 +274,7 @@ Troca de governador aparece no mês da posse, separada do resultado presidencial
 | 14 | Leitura, acessibilidade e consolidação | Macrorregião, busca, comparação, 5 melhores/piores; campanhas de 48/96/240 meses estáveis; metas de release no moto g20. |
 
 Status: PR 0 e PR 1 implementados em 20/10/2026 (aguardando revisão e medição no moto g20).
+PR 3 (série regional: migração 5 `regional_indicator_history`, cartão do estado com variação, 12 meses e ranking) implementado em 20/10/2026.
 
 Versões do estado: o PR 4 sobe `STATE_SCHEMA_VERSION` (perfil do governo) e o PR 7 sobe de novo (clima); cada
 um com a sua função de atualização e teste com save da versão anterior.

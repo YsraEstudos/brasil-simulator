@@ -8,11 +8,13 @@ import {
   listCampaigns,
   loadIndicatorHistory,
   loadLatestState,
+  loadRegionalHistory,
   loadReport,
   loadStateAt,
   recordMonth,
   type CampaignSummary,
   type IndicatorPoint,
+  type RegionalPoint,
 } from '@/database/campaignRepository';
 import { getSetting, setSetting } from '@/database/settingsRepository';
 import type { SqlDatabase } from '@/database/types';
@@ -93,6 +95,8 @@ export interface GameStoreState {
   continueCampaign(id: string): Promise<boolean>;
   /** Indicadores dos últimos meses gravados (série do Painel); vazio sem partida ou leitura falha. */
   history(): Promise<IndicatorPoint[]>;
+  /** Série por UF da partida (posse e cada mês gravado); vazia sem partida ou leitura falha. Pode ter lacunas. */
+  regionalHistory(): Promise<RegionalPoint[]>;
   /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
   endMonth(input?: MonthInput): Promise<boolean>;
   /** Marca/desmarca no rascunho; ignorado enquanto o mês é gravado (`busy`) ou com a campanha encerrada. */
@@ -283,6 +287,17 @@ export function createGameStore(deps: GameStoreDeps) {
         // Leitura para um gráfico: não marca `busy` (não pode bloquear o fechamento do mês) nem inventa erro na tela.
         try {
           return await loadIndicatorHistory(db, active.id);
+        } catch {
+          return [];
+        }
+      },
+
+      async regionalHistory() {
+        const active = get().active;
+        if (!active || !db) return [];
+        // Como `history`: leitura para o cartão do estado, sem `busy` e sem erro na tela.
+        try {
+          return await loadRegionalHistory(db, active.id);
         } catch {
           return [];
         }
