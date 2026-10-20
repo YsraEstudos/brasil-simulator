@@ -1,5 +1,6 @@
 import {
   SANCTION_ACTION_ID,
+  SANCTION_CHOICES,
   standingOf,
   type Decision,
   type GameContent,
@@ -39,18 +40,29 @@ export function sanctionItems(state: Readonly<GameState>, content: GameContent):
   }));
 }
 
-/** Quantos itens a caixa de entrada tem: eventos aguardando resposta mais sanções por decidir (selo dos alertas). */
-export function inboxCount(state: Readonly<GameState>): number {
-  return state.events.pending.length + awaitingSanction(state).length;
+/**
+ * Selo dos alertas: itens da caixa de entrada ainda sem resposta no rascunho — eventos sem escolha e sanções sem
+ * decisão marcada (sem resposta valem o padrão e a sanção tácita). Conta só o que a folha mostra: pendência de evento
+ * que sumiu do conteúdo não vira selo.
+ */
+export function inboxCount(state: Readonly<GameState>, content: GameContent, draft: AgendaDraft): number {
+  const sanctioned = sanctionChoices(draft);
+  const events = pendingItems(state, content).filter(({ event }) => draft.eventChoices[event.id] === undefined);
+  const sanctions = awaitingSanction(state).filter((p) => sanctioned[p.id] === undefined);
+  return events.length + sanctions.length;
 }
 
-/** Decisão de sanção/veto já marcada no rascunho, por proposta. */
+const isSanctionChoice = (value: unknown): value is SanctionChoice =>
+  SANCTION_CHOICES.some((choice) => choice === value);
+
+/** Decisão de sanção/veto já marcada no rascunho, por proposta (entradas sem proposta ou opção válidas ficam fora). */
 export function sanctionChoices(draft: AgendaDraft): Partial<Record<string, SanctionChoice>> {
-  const chosen: Partial<Record<string, SanctionChoice>> = {};
+  const chosen: Partial<Record<string, SanctionChoice>> = Object.create(null);
   for (const d of draft.decisions) {
+    const proposalId = d.params?.proposalId;
     const choice = d.params?.choice;
-    if (d.policyId === SANCTION_ACTION_ID && typeof choice === 'string') {
-      chosen[String(d.params?.proposalId)] = choice as SanctionChoice;
+    if (d.policyId === SANCTION_ACTION_ID && typeof proposalId === 'string' && proposalId && isSanctionChoice(choice)) {
+      chosen[proposalId] = choice;
     }
   }
   return chosen;

@@ -12,19 +12,21 @@ import {
   canChooseEvent,
   canToggleDecision,
   characterBriefs,
+  inboxCount,
   pendingItems,
   sanctionChoices,
   sanctionItems,
 } from '@/components/campaign/inboxModel';
 import { MonthSummary } from '@/components/campaign/MonthSummary';
 import { WhyChanged } from '@/components/campaign/WhyChanged';
-import { Indicator, Text } from '@/components/ui';
+import { Alert, Indicator, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
 import { indicatorsFromScenario, initialRegions, SANCTION_ACTION_ID, type Decision, type IndicatorKey } from '@/engine';
 import { GlobeView, type GlobeApi } from '@/globe/GlobeView';
 import { draftCost, gameStore, useGame } from '@/store';
+import { ForceHudTheme } from '@/theme/ThemeProvider';
 
 import { GdpChart } from './GdpChart';
 import {
@@ -107,7 +109,9 @@ const SETTINGS_ICON: SymbolViewProps['name'] = { ios: 'gearshape.fill', android:
 const TOP_INSET = { portrait: 118 + 56, compact: 56 } as const;
 /** Retrato: a doca tem duas linhas — o Encerrar o mês (52) em cima e os quatro botões de subtela (54) embaixo. */
 const DOCK_HEIGHT_PORTRAIT = 54 + 6 + 52;
-/** Faixa do `DemoBadge` acima da doca em retrato (selo + espaçamento). */
+/** Paisagem: a doca (botões de 40) e o Encerrar compacto, com a folga até a base; os trilhos param acima dela. */
+const DOCK_HEIGHT_COMPACT = 6 + 40 + 8;
+/** Faixa do `DemoBadge` acima da doca (selo + espaçamento). */
 const DEMO_BADGE_BAND = 28;
 /**
  * Paisagem: largura mínima para a doca (4 × 48 + 3 × 6) ficar centrada sem encostar no Encerrar o mês compacto do
@@ -149,6 +153,7 @@ export function PainelScreen() {
   const active = useGame((s) => s.active);
   const draft = useGame((s) => s.draft);
   const busy = useGame((s) => s.busy);
+  const error = useGame((s) => s.error);
   const insets = useSafeAreaInsets();
   const [series, setSeries] = useState<{ id: string; points: readonly IndicatorPoint[] } | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -186,10 +191,13 @@ export function PainelScreen() {
 
   // Sem partida não há dado por UF: a camada escolhida só vale com campanha em andamento.
   const layer = active ? mapLayer : null;
+  // Sem o rascunho: marcar uma decisão não recalcula o HUD nem recolore o mapa. O que depende do rascunho (ações
+  // livres, selo dos alertas) é contado à parte, logo abaixo.
   const hud = useMemo(
-    () => (active ? hudFromCampaign(active, content, draft, history, layer) : hudFromScenario(content)),
-    [active, content, draft, history, layer],
+    () => (active ? hudFromCampaign(active, content, history, layer) : hudFromScenario(content)),
+    [active, content, history, layer],
   );
+  const actionsLeft = hud.actionsMax - (active ? draftCost(draft, content) : 0);
 
   // Cartão e lista do estado: o indicador é o da camada ativa (ou a aprovação, como na antiga aba Brasil).
   const listIndicator: MapIndicator = layer ?? 'aprovacao';
@@ -222,6 +230,8 @@ export function PainelScreen() {
   );
   const sanctionChosen = useMemo(() => sanctionChoices(draft), [draft]);
   const characters = useMemo(() => (active ? characterBriefs(active.state, content) : []), [active, content]);
+  // Selo do sino e do botão de alertas: o que ainda não tem resposta marcada no rascunho.
+  const pendingCount = playing ? inboxCount(active.state, content, draft) : 0;
 
   // Eleições só entram no trilho na janela eleitoral; os selos da doca vêm do estado (funções puras em `mesaNav`).
   const showElections = playing && electionsRelevant(content.scenario.elections, active.state.monthIndex);
@@ -272,7 +282,8 @@ export function PainelScreen() {
    */
   const endMonth = async () => {
     const before = gameStore.getState().active?.state.monthIndex;
-    await gameStore.getState().endMonth();
+    // Falha ao gravar: o mês não avança, o rascunho fica e o aviso de erro aparece na mesa (`error` da store).
+    if (!(await gameStore.getState().endMonth())) return;
     const after = gameStore.getState().active;
     const outcome = endMonthOutcome(before, after?.state.monthIndex, after?.finished ?? false);
     if (outcome === 'relatorio') setSheet('relatorio');
@@ -305,8 +316,7 @@ export function PainelScreen() {
   useEffect(() => {
     if (sheet === null) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      setSheet(null);
-      setSelectedUf(null);
+      closeSheet();
       return true;
     });
     return () => sub.remove();
@@ -321,7 +331,7 @@ export function PainelScreen() {
     <>
       {statCell('mes', {
         value: shortMonthLabel(hud.turn - 1),
-        line: `${hud.turn}/${hud.turnTotal} · ${hud.actionsLeft === 1 ? '1 ação' : `${hud.actionsLeft} ações`}`,
+        line: `${hud.turn}/${hud.turnTotal} · ${actionsLeft === 1 ? '1 ação' : `${actionsLeft} ações`}`,
       })}
       {statCell('aprovacao')}
       {statCell('pib')}
@@ -338,7 +348,7 @@ export function PainelScreen() {
           icon={RAIL_ICONS[entry.id]}
           label={entry.label}
           size={buttonSize}
-          badge={entry.id === 'alertas' ? hud.pendingCount : undefined}
+          badge={entry.id === 'alertas' ? pendingCount : undefined}
           active={entry.id === 'camadas' && layer !== null}
           onPress={() => setSheet(entry.id)}
         />
@@ -582,7 +592,7 @@ export function PainelScreen() {
                 size={compact ? 36 : 40}
                 onPress={() => globe.current?.reset()}
               />
-              <BellButton count={hud.pendingCount} onPress={() => setSheet('alertas')} />
+              <BellButton count={pendingCount} onPress={() => setSheet('alertas')} />
             </View>
             {!compact && (
               <>
@@ -603,11 +613,13 @@ export function PainelScreen() {
               styles.rails,
               {
                 paddingTop: (compact ? TOP_INSET.compact : TOP_INSET.portrait) + insets.top,
-                // Retrato: doca + folga (+ selo de demonstração acima dela). Paisagem: a doca é central e estreita,
-                // os trilhos ficam nas laterais e só precisam da folga.
-                paddingBottom: compact
-                  ? 10 + insets.bottom
-                  : 8 + DOCK_HEIGHT_PORTRAIT + 10 + (hud.demo ? DEMO_BADGE_BAND : 0) + insets.bottom,
+                // Os trilhos param acima da doca (+ selo de demonstração acima dela). Em paisagem a doca é baixa, mas
+                // estreita ela vai para a esquerda e o Encerrar fica no canto direito: sem a reserva, um trilho de
+                // quatro botões encostaria neles em telas baixas.
+                paddingBottom:
+                  (compact ? DOCK_HEIGHT_COMPACT : 8 + DOCK_HEIGHT_PORTRAIT + 10) +
+                  (hud.demo ? DEMO_BADGE_BAND : 0) +
+                  insets.bottom,
                 paddingLeft: 8 + insets.left,
                 paddingRight: 8 + insets.right,
               },
@@ -665,8 +677,29 @@ export function PainelScreen() {
           {compact && hud.demo && (
             <View
               pointerEvents="none"
-              style={{ position: 'absolute', left: 10 + insets.left, bottom: 10 + insets.bottom }}>
+              style={{ position: 'absolute', left: 10 + insets.left, bottom: DOCK_HEIGHT_COMPACT + insets.bottom }}>
               <DemoBadge />
+            </View>
+          )}
+
+          {error && !sheet && (
+            <View
+              style={[
+                styles.error,
+                {
+                  top: (compact ? TOP_INSET.compact : TOP_INSET.portrait) + insets.top,
+                  left: 64 + insets.left,
+                  right: 64 + insets.right,
+                },
+              ]}>
+              <ForceHudTheme>
+                <Alert
+                  tone="negative"
+                  title="Algo deu errado ao salvar"
+                  message={`${error} O mês não avançou e a agenda marcada continua: tente encerrar de novo.`}
+                  action={{ label: 'Fechar o aviso', onPress: () => gameStore.getState().clearError() }}
+                />
+              </ForceHudTheme>
             </View>
           )}
 
@@ -699,5 +732,6 @@ const styles = StyleSheet.create({
   endRow: { alignSelf: 'stretch', alignItems: 'flex-end' },
   dock: { alignSelf: 'stretch', flexDirection: 'row', gap: 6 },
   dockCompact: { flexDirection: 'row', gap: 6 },
+  error: { position: 'absolute' },
   indicatorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
 });

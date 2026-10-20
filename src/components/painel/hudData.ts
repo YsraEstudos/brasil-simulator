@@ -1,5 +1,4 @@
 import { governmentSupport, groupCounts } from '@/components/congress/hemicycle';
-import { inboxCount } from '@/components/campaign/inboxModel';
 import { monthLabel } from '@/components/campaign/labels';
 import { mapFills, mapRows, type MapIndicator } from './regionalMetrics';
 import {
@@ -27,8 +26,6 @@ import {
   type SocietyState,
 } from '@/engine';
 import type { IndicatorPoint } from '@/database/campaignRepository';
-import { draftCost } from '@/store/agendaDraft';
-import type { AgendaDraft } from '@/store/agendaDraft';
 import type { ActiveCampaign } from '@/store/gameStore';
 
 /**
@@ -117,13 +114,16 @@ export interface HudSeriesPoint {
 export interface HudData {
   /** `true` sem partida em andamento: a tela mostra o selo de demonstração. */
   demo: boolean;
+  /** Mês a jogar; com a campanha encerrada, o último mês jogado. */
   monthLabel: string;
+  /** Número do mês de `monthLabel` na campanha (1 = posse). */
   turn: number;
   turnTotal: number;
-  /** Ações de agenda ainda livres neste mês. */
-  actionsLeft: number;
-  /** Eventos aguardando resposta mais sanções por decidir (selo do sino e do botão de alertas). */
-  pendingCount: number;
+  /**
+   * Ações de agenda do mês. O que sobra (descontado o rascunho) e o selo dos alertas ficam fora daqui: dependem do
+   * rascunho, e editar a agenda não deve recalcular o HUD inteiro (nem recolorir o mapa do globo).
+   */
+  actionsMax: number;
   stats: readonly HudStat[];
   ministries: readonly HudMinistry[];
   congress: HudCongress;
@@ -406,20 +406,20 @@ function buildSeries(history: readonly IndicatorPoint[] | null): HudSeriesPoint[
 export function hudFromCampaign(
   campaign: ActiveCampaign,
   content: GameContent,
-  draft: AgendaDraft,
   history: readonly IndicatorPoint[] | null,
   mapIndicator: MapIndicator | null = null,
 ): HudData {
   const state = campaign.state;
   const ufs = regionsOf(content);
   const ufStates = regionsView(state, content);
+  // `monthIndex` é o próximo mês a jogar; encerrada, a campanha mostra o último mês jogado (não "49/48").
+  const shownMonth = campaign.finished ? Math.max(0, state.monthIndex - 1) : state.monthIndex;
   return {
     demo: false,
-    monthLabel: monthLabel(state.monthIndex),
-    turn: state.monthIndex + 1,
+    monthLabel: monthLabel(shownMonth),
+    turn: shownMonth + 1,
     turnTotal: campaignMonths(state.scenarioId),
-    actionsLeft: state.resources.agendaActionsPerMonth - draftCost(draft, content),
-    pendingCount: campaign.finished ? 0 : inboxCount(state),
+    actionsMax: state.resources.agendaActionsPerMonth,
     stats: buildStats({
       indicators: state.indicators,
       previous: campaign.previous,
@@ -427,7 +427,7 @@ export function hudFromCampaign(
       nominalGdp: currentNominalGdpMillions(state, content),
       populationThousands: ufs.reduce((n, uf) => n + uf.population, 0),
       ufCount: ufs.length,
-      monthIndex: state.monthIndex,
+      monthIndex: shownMonth,
       turnTotal: campaignMonths(state.scenarioId),
     }),
     ministries: buildMinistries(state, content),
@@ -450,8 +450,7 @@ export function hudFromScenario(content: GameContent): HudData {
     monthLabel: monthLabel(0),
     turn: 1,
     turnTotal,
-    actionsLeft: 3,
-    pendingCount: 0,
+    actionsMax: 3,
     stats: buildStats({
       indicators,
       politicalCapital: 62,

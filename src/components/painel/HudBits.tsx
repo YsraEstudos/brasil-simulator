@@ -170,7 +170,7 @@ export function RoundButton({
       onPress={onPress}
       hitSlop={8}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={badge != null && badge > 0 ? `${label}, ${badge} sem resposta` : label}
       accessibilityState={active ? { selected: true } : undefined}
       style={({ pressed }) => [
         styles.roundButton,
@@ -305,7 +305,7 @@ export function BellButton({ count, onPress }: { count: number; onPress: () => v
       style={styles.bellWrap}
       hitSlop={6}
       accessibilityRole="button"
-      accessibilityLabel="Eventos aguardando resposta">
+      accessibilityLabel={count > 0 ? `Alertas e eventos, ${count} sem resposta` : 'Alertas e eventos'}>
       <HudIcon
         name={{ ios: 'bell.fill', android: 'notifications', web: 'notifications' }}
         size={20}

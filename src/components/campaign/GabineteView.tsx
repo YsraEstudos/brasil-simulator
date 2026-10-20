@@ -62,7 +62,7 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
         <Text variant="body" color="textSecondary">
           O relatório de legado mostra o país que você recebeu e o que entregou.
         </Text>
-        <Button label="Ver o legado" onPress={() => router.push('/legado')} block />
+        <Button label="Ver o legado" onPress={() => router.replace('/legado')} block />
       </Card>
     );
   }

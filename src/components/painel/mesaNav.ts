@@ -1,4 +1,4 @@
-import { inVedacaoWindow, monthOfTerm, type GameState } from '@/engine';
+import { inVedacaoWindow, monthOfTerm, type GameState, type Proposal } from '@/engine';
 import type { ScenarioElections } from '@/types/scenario';
 
 /**
@@ -83,7 +83,7 @@ export function endMonthControl(input: {
 
 /** O mês avançou entre duas leituras da store? (abre o relatório sozinho; recusa de encerramento não abre nada). */
 export function monthAdvanced(before: number | undefined, after: number | undefined): boolean {
-  return before !== undefined && after !== undefined && after !== before;
+  return before !== undefined && after !== undefined && after > before;
 }
 
 /** Meses depois de cada pleito em que o resultado ainda é notícia da mesa (a folha mostra a eleição apurada). */
@@ -108,8 +108,11 @@ export function electionsRelevant(elections: ScenarioElections | undefined, mont
   );
 }
 
-/** Etapas da proposta em que o Congresso vota no mês marcado (`voteMonth`): tramitação, veto em apreciação e veto parcial. */
-const VOTING_STATUSES: ReadonlySet<string> = new Set(['em_tramitacao', 'apreciacao_veto', 'em_execucao']);
+/** Etapas da proposta em que o Congresso vota no mês marcado (`voteMonth`): tramitação e veto em apreciação. */
+const VOTING_STATUSES: ReadonlySet<string> = new Set(['em_tramitacao', 'apreciacao_veto']);
+
+/** Lei em execução com veto parcial (acréscimos) ainda por apreciar: também vai a voto (a mesma regra do Congresso). */
+const pendingPartialVeto = (p: Proposal) => p.status === 'em_execucao' && p.veto !== null && p.veto.overridden === null;
 
 /**
  * Selo do Congresso: propostas com votação marcada para este mês (ou atrasada — a mesma regra do motor, que vota
@@ -117,7 +120,10 @@ const VOTING_STATUSES: ReadonlySet<string> = new Set(['em_tramitacao', 'apreciac
  */
 export function congressBadge(state: Readonly<GameState>): number {
   return state.proposals.filter(
-    (p) => VOTING_STATUSES.has(p.status) && p.voteMonth !== null && p.voteMonth <= state.monthIndex,
+    (p) =>
+      (VOTING_STATUSES.has(p.status) || pendingPartialVeto(p)) &&
+      p.voteMonth !== null &&
+      p.voteMonth <= state.monthIndex,
   ).length;
 }
 

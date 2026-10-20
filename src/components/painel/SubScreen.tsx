@@ -19,10 +19,12 @@ import { Hud } from './hudTheme';
 /** Tamanho do botão redondo de voltar (alvo de toque folgado; o `RoundButton` ainda soma `hitSlop`). */
 const BACK_SIZE = 40;
 
-/** Volta ao Painel; se a subtela foi aberta direto por link (sem pilha), troca por ele. */
+/**
+ * Volta ao Painel, não à tela anterior: fecha todas as subtelas empilhadas por cima dele (ex.: Gabinete → Legado).
+ * Aberta direto por link, sem o Painel na pilha, a subtela é trocada por ele.
+ */
 export function goBackToPainel(): void {
-  if (router.canGoBack()) router.back();
-  else router.replace('/painel');
+  router.dismissTo('/painel');
 }
 
 /** Botão redondo "Voltar ao Painel" no visual do HUD (usado na barra das subtelas e flutuante nas de tela cheia). */
@@ -131,14 +133,15 @@ function TopBar({ title, campaign }: { title: string; campaign?: ActiveCampaign 
 
 /** Faixa compacta: mês, ações de agenda que ainda cabem no mês (descontado o rascunho) e capital político. */
 function StatusStrip({ campaign }: { campaign: ActiveCampaign }) {
-  const { state } = campaign;
+  const { state, finished } = campaign;
   const draft = useGame((s) => s.draft);
   const content = useMemo(() => loadContent(state.scenarioId), [state.scenarioId]);
   const actionsLeft = state.resources.agendaActionsPerMonth - draftCost(draft, content);
   return (
     <View style={styles.strip}>
       <Text tabular style={styles.stripText}>
-        {shortMonthLabel(state.monthIndex)}
+        {/* Encerrada, `monthIndex` já é o mês seguinte ao último jogado. */}
+        {shortMonthLabel(finished ? Math.max(0, state.monthIndex - 1) : state.monthIndex)}
       </Text>
       <Text style={styles.stripDot}>·</Text>
       <Text tabular style={[styles.stripText, actionsLeft <= 0 && styles.stripWarn]}>

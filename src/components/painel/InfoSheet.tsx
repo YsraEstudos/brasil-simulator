@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ForceHudTheme } from '@/theme/ThemeProvider';
@@ -27,7 +27,11 @@ export function InfoSheet({ title, onClose, children }: { title: string; onClose
     }).start();
   }, [anim]);
 
+  // A saída começa uma vez só: toques repetidos no ✕ ou no fundo durante a animação não a reiniciam.
+  const closing = useRef(false);
   const close = () => {
+    if (closing.current) return;
+    closing.current = true;
     Animated.timing(anim, { toValue: 0, duration: 190, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(
       ({ finished }) => {
         if (finished) onClose();
@@ -49,7 +53,10 @@ export function InfoSheet({ title, onClose, children }: { title: string; onClose
         />
       </Animated.View>
       <View pointerEvents="box-none" style={styles.holder}>
-        <Animated.View style={[styles.sheet, { maxHeight: height * 0.88, transform: [{ translateY }] }]}>
+        {/* Leitor de tela (iOS): com a folha aberta, a mesa por trás fica fora do foco. */}
+        <Animated.View
+          accessibilityViewIsModal
+          style={[styles.sheet, { maxHeight: height * 0.88, transform: [{ translateY }] }]}>
           <HudPanel
             title={title}
             accessory={<CloseButton onPress={close} />}

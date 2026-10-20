@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { formatNumber } from '@/components/ui/format';
 import { campaignMonths, DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
-import { createInitialState, regionsOf, type Proposal } from '@/engine';
-import { EMPTY_DRAFT } from '@/store/agendaDraft';
+import { createInitialState, regionsOf } from '@/engine';
 import type { ActiveCampaign } from '@/store/gameStore';
 
 import { hudFromCampaign, hudFromScenario } from './hudData';
@@ -72,48 +71,43 @@ describe('Painel sem partida (demonstração)', () => {
 describe('Painel com a partida', () => {
   it('deriva mês, turno e ações de agenda do estado', () => {
     const active = campaign();
-    const data = hudFromCampaign(active, content, EMPTY_DRAFT, null);
+    const data = hudFromCampaign(active, content, null);
     expect(data.demo).toBe(false);
     expect(data.monthLabel).toBe('Janeiro de 2027');
     expect(data.turn).toBe(1);
     expect(data.turnTotal).toBe(months);
-    expect(data.actionsLeft).toBe(active.state.resources.agendaActionsPerMonth);
-    expect(data.pendingCount).toBe(0);
+    expect(data.actionsMax).toBe(active.state.resources.agendaActionsPerMonth);
   });
 
-  it('o selo dos alertas soma eventos aguardando e sanções do mês, e zera com a campanha encerrada', () => {
+  it('campanha encerrada mostra o último mês jogado, não o seguinte', () => {
     const active = campaign();
-    const [policyId] = Object.keys(content.policies);
-    const state = {
-      ...active.state,
-      events: { ...active.state.events, pending: [{ eventId: 'alta_petroleo', monthIndex: 0 }] },
-      proposals: [{ id: 'p', policyId, status: 'aguardando_sancao', voteMonth: 0 } as Proposal],
-    };
-    expect(hudFromCampaign({ ...active, state }, content, EMPTY_DRAFT, null).pendingCount).toBe(2);
-    expect(hudFromCampaign({ ...active, state, finished: true }, content, EMPTY_DRAFT, null).pendingCount).toBe(0);
+    const state = { ...active.state, monthIndex: months };
+    const data = hudFromCampaign({ ...active, state, finished: true }, content, null);
+    expect(data.turn).toBe(months);
+    expect(stat(data, 'mes').context).toBe(`Turno ${months} de ${months}`);
   });
 
   it('mostra a variação em relação ao mês anterior quando existe', () => {
     const active = campaign();
     const previous = { ...active.state.indicators, approval: active.state.indicators.approval - 0.04 };
-    const data = hudFromCampaign({ ...active, previous }, content, EMPTY_DRAFT, null);
+    const data = hudFromCampaign({ ...active, previous }, content, null);
     expect(stat(data, 'aprovacao').delta).toBe('+4 p.p.');
     expect(stat(data, 'aprovacao').sentiment).toBe('positive');
     expect(stat(data, 'inflacao').context).toBe('meta 3,0%');
   });
 
   it('sem mês anterior não inventa variação', () => {
-    const data = hudFromCampaign(campaign(), content, EMPTY_DRAFT, null);
+    const data = hudFromCampaign(campaign(), content, null);
     expect(stat(data, 'aprovacao').delta).toBeUndefined();
     expect(stat(data, 'pib').sentiment).toBe('neutral');
   });
 
   it('sem camada escolhida o globo fica só com o satélite', () => {
-    expect(hudFromCampaign(campaign(), content, EMPTY_DRAFT, null).fills).toBeNull();
+    expect(hudFromCampaign(campaign(), content, null).fills).toBeNull();
   });
 
   it('pinta o globo com as 27 UFs na camada escolhida', () => {
-    const data = hudFromCampaign(campaign(), content, EMPTY_DRAFT, null, 'aprovacao');
+    const data = hudFromCampaign(campaign(), content, null, 'aprovacao');
     expect(Object.keys(data.fills ?? {})).toHaveLength(27);
   });
 
@@ -139,18 +133,18 @@ describe('Painel com a partida', () => {
         riskPremium: 0.02,
       },
     ];
-    const data = hudFromCampaign(active, content, EMPTY_DRAFT, history);
+    const data = hudFromCampaign(active, content, history);
     expect(data.series).toEqual([
       { monthIndex: 0, value: active.state.indicators.gdpGrowth12m },
       { monthIndex: 1, value: 0.024 },
     ]);
-    expect(hudFromCampaign(active, content, EMPTY_DRAFT, null).series).toEqual([]);
+    expect(hudFromCampaign(active, content, null).series).toEqual([]);
   });
 
   it('avalia a meta pela inflação e pelo resultado primário', () => {
     const active = campaign();
     const inflation = { ...active.state, indicators: { ...active.state.indicators, inflation12m: 0.09 } };
-    const data = hudFromCampaign({ ...active, state: inflation }, content, EMPTY_DRAFT, null);
+    const data = hudFromCampaign({ ...active, state: inflation }, content, null);
     expect(data.goal.checks.find((c) => c.label === 'Inflação em 12 meses')?.met).toBe(false);
     expect(data.goal.checks.find((c) => c.label === 'Resultado primário')?.met).toBe(false);
   });

@@ -123,6 +123,20 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     expect(app.getState().draft.decisions).toEqual([]);
   });
 
+  it('enquanto o mês é gravado o rascunho não muda (a escolha não some com a limpeza do fim)', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Ocupada', difficulty: 'estrategica' });
+    const closing = app.getState().endMonth();
+    expect(app.getState().busy).toBe(true);
+    app.getState().toggleDecision({ policyId: 'contingenciamento', agendaCost: 0 });
+    app.getState().toggleEventChoice('alta_petroleo', 'qualquer');
+    expect(app.getState().draft).toEqual({ decisions: [], eventChoices: {} });
+    expect(await closing).toBe(true);
+    app.getState().toggleDecision({ policyId: 'contingenciamento', agendaCost: 0 });
+    expect(app.getState().draft.decisions).toHaveLength(1);
+  });
+
   it('cenário novo continua após 12 meses e encerra no primeiro mandato (derrota ou fim), sem avançar mais', async () => {
     const { launchApp } = await device();
     const app = await launchApp();
@@ -142,6 +156,9 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     await app.getState().endMonth();
     expect(app.getState().active!.state.monthIndex).toBe(ended.state.monthIndex);
     expect(app.getState().campaigns[0].status).toBe('encerrada');
+    // Encerrada, a campanha não aceita decisões novas (não há mês para elas).
+    app.getState().toggleDecision({ policyId: 'contingenciamento', agendaCost: 0 });
+    expect(app.getState().draft.decisions).toEqual([]);
   });
 
   it('corrige ao carregar uma campanha com o último mês gravado mas ainda "ativa"', async () => {

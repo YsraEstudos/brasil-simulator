@@ -61,7 +61,7 @@ describe('Itens da caixa de entrada', () => {
     const state = baseState();
     expect(pendingItems(state, content)).toEqual([]);
     expect(sanctionItems(state, content)).toEqual([]);
-    expect(inboxCount(state)).toBe(0);
+    expect(inboxCount(state, content, EMPTY_DRAFT)).toBe(0);
   });
 
   it('liga cada evento pendente à sua definição e ignora evento que não existe mais no conteúdo', () => {
@@ -87,12 +87,19 @@ describe('Itens da caixa de entrada', () => {
     expect(items[0].name).toBe(content.policies[policyId].name);
   });
 
-  it('o selo soma eventos aguardando e sanções por decidir', () => {
+  it('o selo soma eventos e sanções ainda sem resposta no rascunho, e ignora evento que sumiu do conteúdo', () => {
     const state: GameState = {
-      ...withPending(baseState(), [EVENT_ID]),
-      proposals: [proposal({ voteMonth: 0 })],
+      ...withPending(baseState(), [EVENT_ID, 'evento_que_sumiu']),
+      proposals: [proposal({ id: 'p1', voteMonth: 0 })],
     };
-    expect(inboxCount(state)).toBe(2);
+    expect(inboxCount(state, content, EMPTY_DRAFT)).toBe(2);
+    const answered: AgendaDraft = { ...EMPTY_DRAFT, eventChoices: { [EVENT_ID]: 'absorver' } };
+    expect(inboxCount(state, content, answered)).toBe(1);
+    const sanctioned: AgendaDraft = {
+      ...answered,
+      decisions: [{ policyId: SANCTION_ACTION_ID, agendaCost: 0, params: { proposalId: 'p1', choice: 'sancionar' } }],
+    };
+    expect(inboxCount(state, content, sanctioned)).toBe(0);
   });
 
   it('monta os personagens do cenário com o prestígio atual', () => {
@@ -113,6 +120,23 @@ describe('Sanção no rascunho', () => {
     };
     expect(sanctionChoices(draft)).toEqual({ p1: 'vetar_total' });
     expect(sanctionChoices(EMPTY_DRAFT)).toEqual({});
+  });
+
+  it('descarta sanções sem proposta ou com opção desconhecida', () => {
+    const sanction = (params: Record<string, unknown>) => ({ policyId: SANCTION_ACTION_ID, agendaCost: 0, params });
+    const draft = {
+      ...EMPTY_DRAFT,
+      decisions: [
+        sanction({ choice: 'sancionar' }),
+        sanction({ proposalId: '', choice: 'sancionar' }),
+        sanction({ proposalId: 'p2', choice: 'promulgar' }),
+        sanction({ proposalId: '__proto__', choice: 'vetar_total' }),
+      ],
+    } as AgendaDraft;
+    const chosen = sanctionChoices(draft);
+    expect(Object.keys(chosen)).toEqual(['__proto__']);
+    expect(chosen.undefined).toBeUndefined();
+    expect(chosen.p2).toBeUndefined();
   });
 });
 

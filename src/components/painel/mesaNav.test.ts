@@ -59,6 +59,7 @@ describe('Abertura automática do relatório', () => {
   it('abre só quando o mês avançou', () => {
     expect(monthAdvanced(0, 1)).toBe(true);
     expect(monthAdvanced(4, 4)).toBe(false);
+    expect(monthAdvanced(4, 3)).toBe(false);
   });
 
   it('sem partida antes ou depois não abre', () => {
@@ -156,6 +157,20 @@ describe('Selos da doca', () => {
         proposal({ id: 'b', status: 'aguardando_sancao', voteMonth: 5 }),
         proposal({ id: 'c', status: 'concluida', voteMonth: 5 }),
         proposal({ id: 'd', status: 'parada', voteMonth: 5 }),
+      ],
+    };
+    expect(congressBadge(state)).toBe(1);
+  });
+
+  it('Congresso: lei em execução só conta com veto parcial ainda por apreciar', () => {
+    const veto = (overridden: boolean | null) => ({ kind: 'acrescimos', overridden }) as unknown as Proposal['veto'];
+    const state: GameState = {
+      ...base,
+      monthIndex: 5,
+      proposals: [
+        proposal({ id: 'a', status: 'em_execucao', voteMonth: 5, veto: null }),
+        proposal({ id: 'b', status: 'em_execucao', voteMonth: 5, veto: veto(null) }),
+        proposal({ id: 'c', status: 'em_execucao', voteMonth: 5, veto: veto(false) }),
       ],
     };
     expect(congressBadge(state)).toBe(1);

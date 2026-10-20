@@ -76,7 +76,8 @@ export function EventInbox({
       {sanctions.map(({ proposal, name }) => {
         const options: SanctionChoice[] =
           proposal.rider > 0 ? ['sancionar', 'vetar_acrescimos', 'vetar_total'] : ['sancionar', 'vetar_total'];
-        const selected = sanctionChosen[proposal.id] ?? 'sancionar';
+        // Só a escolha marcada aparece selecionada; sem ela vale a sanção tácita, que o selo "padrão" indica.
+        const selected = sanctionChosen[proposal.id];
         return (
           <Card key={proposal.id} title={`Sanção: ${name}`} subtitle="Sem resposta neste mês, vale a sanção tácita.">
             <Text variant="body">

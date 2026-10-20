@@ -32,7 +32,9 @@ export function ProposalList({ proposals, content }: { proposals: readonly Propo
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <Card title="Propostas encerradas" subtitle="Toque numa proposta para ver o histórico de cada etapa.">
+    <Card
+      title="Fora do Congresso"
+      subtitle="À espera de sanção, em vigor ou encerradas. Toque numa proposta para ver o histórico de cada etapa.">
       {[...proposals].reverse().map((p) => {
         const name = content.policies[p.policyId]?.name ?? p.policyId;
         const last = p.history[p.history.length - 1];
