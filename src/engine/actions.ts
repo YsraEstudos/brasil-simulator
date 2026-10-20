@@ -1,5 +1,5 @@
 /**
- * Ações de agenda: decisões que não viram proposta (não têm tramitação nem execução), mas custam pontos de
+ * Ações de agenda: decisões que não viram proposta (não têm tramitação nem execução), mas custam ações de
  * agenda e produzem efeito no mesmo mês (GAME_DESIGN.md §4.3). O id é usado em `Decision.policyId`; o alvo
  * (proposta, bloco, ministério) vai em `Decision.params`.
  */

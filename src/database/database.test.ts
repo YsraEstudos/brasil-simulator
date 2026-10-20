@@ -161,7 +161,7 @@ describe('campanhas', () => {
     expect(rows).toEqual([
       { policy_id: TEST_PEC.id, accepted: 1, rejection_reason: null },
       { policy_id: TEST_BILL.id, accepted: 1, rejection_reason: null },
-      { policy_id: TEST_DECREE.id, accepted: 0, rejection_reason: 'sem_pontos_de_agenda' },
+      { policy_id: TEST_DECREE.id, accepted: 0, rejection_reason: 'sem_acoes_de_agenda' },
     ]);
   });
 
@@ -221,6 +221,22 @@ describe('campanhas', () => {
       JSON.stringify(old),
     ]);
     expect((await loadReport(db, 'c1', 0))?.regional).toBeNull();
+  });
+
+  it('relatório gravado antes da v9 (motivo "sem_pontos_de_agenda") volta com o motivo atual', async () => {
+    const state = newState(6);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    const report = advanceMonth(state, { decisions: [] }, content, []).report;
+    const legacy = {
+      ...report,
+      rejected: [{ decision: { policyId: TEST_PEC.id, agendaCost: 2 }, reason: 'sem_pontos_de_agenda' }],
+    };
+    await db.run('INSERT INTO month_reports (campaign_id, month_index, report_json) VALUES (?, ?, ?)', [
+      'c1',
+      0,
+      JSON.stringify(legacy),
+    ]);
+    expect((await loadReport(db, 'c1', 0))?.rejected[0]?.reason).toBe('sem_acoes_de_agenda');
   });
 
   it('guarda snapshots completos só dos últimos 13 meses e a série de indicadores inteira (ECONOMIC_MODEL.md §11)', async () => {

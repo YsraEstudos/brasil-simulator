@@ -25,12 +25,12 @@ checkout atual, em branch própria, sem publicação nem alterações nas fases 
   fluxo antigo; apenas novas políticas marcadas usam a carteira explícita.
 - Diretriz usa política de rotina da área da pasta e orçamento anual em R$
   milhões. A ação `definir_diretriz` recebe `ministryId`, `policyId`,
-  `annualMillions`; custa 1 ponto. Orçamentos alocam discricionárias livres,
+  `annualMillions`; custa 1 ação. Orçamentos alocam discricionárias livres,
   sem criar dotação nem contornar a tramitação de políticas legislativas.
   Só atos executivos elegíveis entram na rotina. A alocação vale até dezembro;
   janeiro renova a diretriz dentro da disponibilidade corrente, explicitando
   cortes no relatório. Nunca gastar novamente uma dotação já consumida.
-- `marcar_governo` recebe `proposalId`, `name`, custa 1 ponto; máximo de três
+- `marcar_governo` recebe `proposalId`, `name`, custa 1 ação; máximo de três
   escolhas por mandato, sem liberar vaga por cancelamento. Só propostas
   próprias elegíveis em tramitação (inclusive paradas por falta de pauta),
   execução ou concluídas; nome sem vazio

@@ -287,12 +287,12 @@ function NewCampaignForm({
                       selected={form.difficulty === id}
                       disabled={locked}
                       onPress={() => update({ difficulty: id })}
-                      accessibilityLabel={`${d.name}, ${d.agendaPoints} pontos de agenda. ${d.tagline}`}>
+                      accessibilityLabel={`${d.name}, ${d.actionsPerMonth} ações de agenda por mês. ${d.tagline}`}>
                       <View style={styles.optionTitle}>
                         <Text variant="heading" style={styles.flex}>
                           {d.name}
                         </Text>
-                        <Badge label={`${d.agendaPoints} pts/mês`} />
+                        <Badge label={`${d.actionsPerMonth} ações/mês`} />
                       </View>
                       <Text variant="caption" color="textSecondary">
                         {d.tagline}
@@ -413,7 +413,7 @@ function NewCampaignForm({
               <View style={[styles.rule, { backgroundColor: colors.border }]} />
               <SummaryRow label="Nome" value={summary.name ?? 'Sem nome'} muted={summary.name === null} />
               <SummaryRow label="Dificuldade" value={summary.difficulty} />
-              <SummaryRow label="Pontos de agenda" value={`${summary.agendaPoints} por mês`} />
+              <SummaryRow label="Ações de agenda" value={`${summary.actionsPerMonth} por mês`} />
               <SummaryRow label="Cenário" value={summary.scenario} />
               <SummaryRow label="Versão" value={summary.version} />
               <SummaryRow label="Duração máxima" value={summary.duration} />

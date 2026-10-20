@@ -18,7 +18,7 @@
     {
       "id": "aceitar_o_pacto",
       "label": "Aceitar o pacto",
-      "description": "Assina o acordo com a Presidência do Senado. Recupera parte da relação com o Congresso, da aprovação e do capital político, e encerra o caso investigado. Custa um ponto de agenda.",
+      "description": "Assina o acordo com a Presidência do Senado. Recupera parte da relação com o Congresso, da aprovação e do capital político, e encerra o caso investigado. Custa uma ação de agenda.",
       "agendaCost": 1,
       "effects": [
         { "target": "aprovacao", "delta": 0.015, "lagMonths": 0, "durationMonths": 1 },

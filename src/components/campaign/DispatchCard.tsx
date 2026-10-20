@@ -16,7 +16,7 @@ export interface DispatchCardProps {
   content: GameContent;
   /** A política já está na agenda deste mês. */
   included: boolean;
-  /** Cabe nos pontos de agenda restantes (incluir só é permitido quando cabe). */
+  /** Cabe nas ações de agenda restantes (incluir só é permitido quando cabe). */
   canInclude: boolean;
   /** Vedação eleitoral: incluir exige a confirmação de quebra declarada (`vedacao_bypass`). */
   vedacao: boolean;
@@ -79,13 +79,13 @@ export function DispatchCard({
         label={included ? 'Retirar da agenda' : vedacao ? 'Incluir com quebra declarada' : 'Incluir na agenda'}
         variant={included ? 'secondary' : 'primary'}
         disabled={blocked}
-        accessibilityHint={blocked ? 'Pontos de agenda insuficientes neste mês' : undefined}
+        accessibilityHint={blocked ? 'Ações de agenda insuficientes neste mês' : undefined}
         onPress={vedacao ? onToggleBypass : onToggle}
         block
       />
       {blocked && (
         <Text variant="caption" color="warning">
-          Pontos de agenda insuficientes para incluir esta decisão neste mês.
+          Ações de agenda insuficientes para incluir esta decisão neste mês.
         </Text>
       )}
     </View>

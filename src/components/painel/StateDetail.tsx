@@ -10,7 +10,7 @@ import {
   type GameState,
   type UfExplanation,
 } from '@/engine';
-import { draftPoints, fits, gameStore, hasDecision, useGame } from '@/store';
+import { draftCost, fits, gameStore, hasDecision, useGame } from '@/store';
 
 import { LinkRow } from './HudBits';
 import { Hud } from './hudTheme';
@@ -71,9 +71,9 @@ export function UfDetail({
   const pieces = explanationFor(indicator, explanation);
   const visit: Decision = { policyId: VISIT_ACTION_ID, agendaCost: 1, params: { uf: uf.id } };
   const included = hasDecision(draft, visit);
-  const pointsMax = state.resources.agendaPointsPerMonth;
-  const blocked = !included && !fits(draft, visit, content, pointsMax);
-  const pointsLeft = pointsMax - draftPoints(draft, content);
+  const actionsMax = state.resources.agendaActionsPerMonth;
+  const blocked = !included && !fits(draft, visit, content, actionsMax);
+  const actionsLeft = actionsMax - draftCost(draft, content);
   // A posse vem do próprio save (mês 0); sem o snapshot, valem os valores do cenário embutido.
   const startShare = baseline?.regions.ufs.find((u) => u.id === uf.id)?.share ?? scenarioUf?.gdpShare ?? uf.share;
 
@@ -137,7 +137,7 @@ export function UfDetail({
           pressed && styles.visitPressed,
         ]}>
         <Text tabular style={styles.visitText}>
-          {included ? 'Retirar a visita da agenda' : `Visitar o estado · 1 ponto (restam ${pointsLeft})`}
+          {included ? 'Retirar a visita da agenda' : `Visitar o estado · 1 ação (restam ${actionsLeft})`}
         </Text>
       </Pressable>
       <LinkRow label="Ir até o estado" onPress={onFly} />

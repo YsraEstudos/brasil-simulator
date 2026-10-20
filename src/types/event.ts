@@ -138,7 +138,7 @@ export const eventChoiceSchema = z
     id: contentIdSchema,
     label: z.string().min(1),
     description: z.string().min(1),
-    /** Pontos de agenda (GAME_DESIGN.md §4.3: responder evento crítico custa 0 a 2). */
+    /** Ações de agenda (GAME_DESIGN.md §4.3: responder evento crítico custa 0 a 2). */
     agendaCost: z.number().int().min(0).max(2),
     effects: z.array(eventEffectSchema),
     /**
@@ -198,7 +198,7 @@ export const gameEventSchema = z
     /** Efeitos automáticos no mês em que o evento dispara, antes da escolha (ex.: o choque em si). */
     onFire: z.array(eventEffectSchema),
     choices: z.array(eventChoiceSchema).min(2).max(4),
-    /** Escolha aplicada se o jogador não responder até o fim do mês seguinte. Deve custar 0 pontos. */
+    /** Escolha aplicada se o jogador não responder até o fim do mês seguinte. Deve custar 0 ações. */
     defaultChoice: contentIdSchema,
     dataStatus: dataStatusSchema,
   })
@@ -218,7 +218,7 @@ export const gameEventSchema = z
     if (!def) {
       ctx.addIssue({ code: 'custom', path: ['defaultChoice'], message: 'escolha padrão não existe' });
     } else if (def.agendaCost !== 0) {
-      ctx.addIssue({ code: 'custom', path: ['defaultChoice'], message: 'escolha padrão deve custar 0 pontos' });
+      ctx.addIssue({ code: 'custom', path: ['defaultChoice'], message: 'escolha padrão deve custar 0 ações' });
     }
   });
 export type GameEvent = z.infer<typeof gameEventSchema>;

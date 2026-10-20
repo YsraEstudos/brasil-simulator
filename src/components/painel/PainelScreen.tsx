@@ -188,7 +188,7 @@ export function PainelScreen() {
     <>
       {statCell('mes', {
         value: shortMonthLabel(hud.turn - 1),
-        line: `${hud.turn}/${hud.turnTotal} · ${hud.pointsLeft} pts`,
+        line: `${hud.turn}/${hud.turnTotal} · ${hud.actionsLeft === 1 ? '1 ação' : `${hud.actionsLeft} ações`}`,
       })}
       {statCell('aprovacao')}
       {statCell('pib')}
@@ -273,7 +273,7 @@ export function PainelScreen() {
           <>
             <MiniHemicycle blocs={content.scenario.blocs} congress={hud.congress} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <Text style={{ color: Hud.textMuted, fontSize: 10.5 }}>{`Pontos de agenda: ${hud.pointsLeft}`}</Text>
+              <Text style={{ color: Hud.textMuted, fontSize: 10.5 }}>{`Ações de agenda: ${hud.actionsLeft}`}</Text>
               <LinkRow label="Negociar apoios" onPress={() => go('/congresso')} />
             </View>
           </>

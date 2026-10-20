@@ -18,7 +18,7 @@
     {
       "id": "mobilizar_a_base_no_senado",
       "label": "Mobilizar a base no Senado",
-      "description": "Custa dois pontos de agenda e exige apoio já construído na Casa. Consegue votos para barrar a condenação e o processo é arquivado.",
+      "description": "Custa duas ações de agenda e exige apoio já construído na Casa. Consegue votos para barrar a condenação e o processo é arquivado.",
       "agendaCost": 2,
       "effects": [
         { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },

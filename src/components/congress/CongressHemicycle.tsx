@@ -32,9 +32,9 @@ const MIN_DOT_RADIUS = 2.2;
 export interface CongressHemicycleProps {
   state: GameState;
   content: GameContent;
-  /** Pontos de agenda usados e disponíveis no mês, no resumo sob o gráfico. */
-  pointsUsed: number;
-  pointsMax: number;
+  /** Ações de agenda usadas e disponíveis no mês, no resumo sob o gráfico. */
+  actionsUsed: number;
+  actionsMax: number;
 }
 
 /**
@@ -42,7 +42,7 @@ export interface CongressHemicycleProps {
  * governo (proporção vivida do arco = índice de apoio). Absorve o antigo cartão "Base aproximada", que vira a
  * legenda sob o gráfico. GAME_DESIGN.md aba Congresso; POLITICAL_RULES.md §6.
  */
-export function CongressHemicycle({ state, content, pointsUsed, pointsMax }: CongressHemicycleProps) {
+export function CongressHemicycle({ state, content, actionsUsed, actionsMax }: CongressHemicycleProps) {
   const { colors } = useTheme();
   const [width, setWidth] = useState(0);
   const blocs = content.scenario.blocs;
@@ -89,7 +89,7 @@ export function CongressHemicycle({ state, content, pointsUsed, pointsMax }: Con
           {`Base aliada (relação acima de ${ALLY_RELATION}): ${formatNumber(allies.chamber)} deputados, ${formatNumber(allies.senate)} senadores · PEC exige ${PEC_CHAMBER}/${PEC_SENATE}.`}
         </Text>
         <Text variant="caption" color="textSecondary" tabular>
-          {`Pontos de agenda do mês: ${pointsUsed} de ${pointsMax}. Negociações e nomeações marcadas aqui entram na agenda e valem ao encerrar o mês na Presidência.`}
+          {`Ações de agenda do mês: ${actionsUsed} de ${actionsMax}. Negociações e nomeações marcadas aqui entram na agenda e valem ao encerrar o mês na Presidência.`}
         </Text>
       </View>
     </Card>

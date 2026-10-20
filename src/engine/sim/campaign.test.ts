@@ -100,7 +100,7 @@ describe('Estratégias-robô: ações legítimas (GAME_DESIGN.md §4.3 e ECONOMI
   });
 
   for (const s of STRATEGIES) {
-    it(`${s.id}: o motor não rejeita nenhuma decisão (orçamento de pontos e andamento, §4.3)`, () => {
+    it(`${s.id}: o motor não rejeita nenhuma decisão (orçamento de ações e andamento, §4.3)`, () => {
       for (const seed of SEEDS_SHORT) {
         const rejected = playInputs(s, seed, PROTOTYPE_MONTHS).reduce((n, step) => n + step.rejected, 0);
         expect(rejected).toBe(0);

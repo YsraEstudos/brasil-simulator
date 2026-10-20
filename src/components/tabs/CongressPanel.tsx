@@ -31,7 +31,7 @@ import {
   type Proposal,
 } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
-import { draftPoints, findDecision, fits, gameStore, hasDecision, useGame, type ActiveCampaign } from '@/store';
+import { draftCost, findDecision, fits, gameStore, hasDecision, useGame, type ActiveCampaign } from '@/store';
 import { TECHNICAL_MINISTER, type Bloc, type Ministry } from '@/types/scenario';
 
 import { signedInt } from './StatRow';
@@ -44,17 +44,17 @@ const IN_CONGRESS = new Set(['em_tramitacao', 'parada', 'apreciacao_veto']);
 /**
  * Aba Congresso (POLITICAL_RULES.md §6): hemiciclo da Câmara com a base do governo, Mesas e pauta das Casas,
  * propostas por etapa com votos previstos e negociação, blocos e ministérios. Negociar e nomear entram na
- * agenda do mês (mesmos pontos da Presidência).
+ * agenda do mês (mesmas ações da Presidência).
  */
 export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
   const { state } = campaign;
   const content = useMemo(() => loadContent(state.scenarioId), [state.scenarioId]);
   const draft = useGame((s) => s.draft);
   const blocs = content.scenario.blocs;
-  const pointsMax = state.resources.agendaPointsPerMonth;
-  const pointsUsed = draftPoints(draft, content);
+  const actionsMax = state.resources.agendaActionsPerMonth;
+  const actionsUsed = draftCost(draft, content);
 
-  /** Ação com alvo: marcada, disponível (alvo válido) e cabendo nos pontos. */
+  /** Ação com alvo: marcada, disponível (alvo válido) e cabendo nas ações. */
   const agenda = {
     included: (d: Decision) => hasDecision(draft, d),
     pending: (d: Decision) => findDecision(draft, d),
@@ -62,7 +62,7 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
       const action = AGENDA_ACTIONS[d.policyId];
       return action !== undefined && validateActionTarget(action, d, state, content) === null;
     },
-    fits: (d: Decision) => fits(draft, d, content, pointsMax),
+    fits: (d: Decision) => fits(draft, d, content, actionsMax),
     toggle: (d: Decision) => gameStore.getState().toggleDecision(d),
   };
 
@@ -71,7 +71,7 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
 
   return (
     <>
-      <CongressHemicycle state={state} content={content} pointsUsed={pointsUsed} pointsMax={pointsMax} />
+      <CongressHemicycle state={state} content={content} actionsUsed={actionsUsed} actionsMax={actionsMax} />
 
       <Card title="Mesas e pauta">
         {HOUSES.map((house) => {
@@ -136,7 +136,7 @@ function ActionButton({ decision, label, agenda }: { decision: Decision; label: 
       label={included ? `Retirar: ${label}` : `${label} (${cost})`}
       variant={included ? 'secondary' : 'ghost'}
       disabled={blocked}
-      accessibilityHint={blocked ? 'Pontos de agenda insuficientes neste mês' : undefined}
+      accessibilityHint={blocked ? 'Ações de agenda insuficientes neste mês' : undefined}
       onPress={() => agenda.toggle(decision)}
       block
     />

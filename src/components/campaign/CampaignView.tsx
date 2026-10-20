@@ -15,7 +15,7 @@ import {
   type SanctionChoice,
 } from '@/engine';
 import type { Policy } from '@/types/policy';
-import { decisionCost, draftPoints, fits, gameStore, hasDecision, useGame, type ActiveCampaign } from '@/store';
+import { decisionCost, draftCost, fits, gameStore, hasDecision, useGame, type ActiveCampaign } from '@/store';
 
 import { AgendaActions } from './AgendaActions';
 import { DecisionPanel } from './DecisionPanel';
@@ -51,9 +51,9 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
   const [expandedPolicy, setExpandedPolicy] = useState<string | null>(null);
   const [openProposal, setOpenProposal] = useState<string | null>(null);
 
-  const pointsMax = state.resources.agendaPointsPerMonth;
+  const actionsMax = state.resources.agendaActionsPerMonth;
   const totalMonths = campaignMonths(state.scenarioId);
-  const pointsUsed = draftPoints(draft, content);
+  const actionsUsed = draftCost(draft, content);
   const { toggleDecision, toggleEventChoice } = gameStore.getState();
 
   const inbox: PendingItem[] = state.events.pending.flatMap((pending) => {
@@ -83,26 +83,26 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
   };
 
   const canInclude = (policy: Policy): boolean =>
-    selected.includes(policy.id) || fits(draft, simple(policy.id), content, pointsMax);
+    selected.includes(policy.id) || fits(draft, simple(policy.id), content, actionsMax);
 
   const choiceCost = (eventId: string, choiceId: string | undefined): number =>
     eventsById.get(eventId)?.choices.find((c) => c.id === choiceId)?.agendaCost ?? 0;
   const canChoose = (eventId: string, choiceId: string): boolean => {
     const current = draft.eventChoices[eventId];
     const releasing = current === undefined ? 0 : choiceCost(eventId, current);
-    return pointsUsed - releasing + choiceCost(eventId, choiceId) <= pointsMax;
+    return actionsUsed - releasing + choiceCost(eventId, choiceId) <= actionsMax;
   };
 
   const toggleSimple = (id: string) => {
     const decision = simple(id);
-    if (selected.includes(id) || fits(draft, decision, content, pointsMax)) toggleDecision(decision);
+    if (selected.includes(id) || fits(draft, decision, content, actionsMax)) toggleDecision(decision);
   };
 
   // Vedação eleitoral (Fase 08): incluir novo benefício na janela exige a quebra declarada (`vedacao_bypass`).
   const isVedada = (policy: Policy): boolean => vedacaoAtiva(state, content) && isNovoBeneficio(policy);
   const toggleBypass = (id: string) => {
     const decision: Decision = { ...simple(id), params: { vedacao_bypass: true } };
-    if (selected.includes(id) || fits(draft, decision, content, pointsMax)) toggleDecision(decision);
+    if (selected.includes(id) || fits(draft, decision, content, actionsMax)) toggleDecision(decision);
   };
 
   const endMonth = async () => {
@@ -132,7 +132,7 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
         <Text color="textSecondary">
           {finished
             ? `Campanha encerrada em ${monthLabel(state.monthIndex - 1)}.`
-            : `Mês ${state.monthIndex + 1} de ${totalMonths} · ${pointsMax} pontos de agenda · capital político ${formatNumber(state.resources.politicalCapital)}`}
+            : `Mês ${state.monthIndex + 1} de ${totalMonths} · ${actionsMax} ações por mês · capital político ${formatNumber(state.resources.politicalCapital)}`}
         </Text>
       </View>
 
@@ -161,9 +161,9 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
         report={lastReport}
         draft={draft}
         onToggle={(decision) => {
-          if (hasDecision(draft, decision) || fits(draft, decision, content, pointsMax)) toggleDecision(decision);
+          if (hasDecision(draft, decision) || fits(draft, decision, content, actionsMax)) toggleDecision(decision);
         }}
-        fitsDecision={(decision) => fits(draft, decision, content, pointsMax)}
+        fitsDecision={(decision) => fits(draft, decision, content, actionsMax)}
       />
 
       {lastReport && <MonthSummary report={lastReport} content={content} />}
@@ -195,8 +195,8 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
             content={content}
             selected={selected}
             expandedId={expandedPolicy}
-            pointsUsed={pointsUsed}
-            pointsMax={pointsMax}
+            actionsUsed={actionsUsed}
+            actionsMax={actionsMax}
             onExpand={setExpandedPolicy}
             onToggle={toggleSimple}
             canInclude={canInclude}
@@ -204,13 +204,13 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
             onToggleBypass={toggleBypass}
           />
 
-          <PublicPoliciesPanel state={state} content={content} pointsMax={pointsMax} />
+          <PublicPoliciesPanel state={state} content={content} actionsMax={actionsMax} />
 
           <AgendaActions
             state={state}
             content={content}
             selected={selected}
-            canInclude={(cost) => pointsUsed + cost <= pointsMax}
+            canInclude={(cost) => actionsUsed + cost <= actionsMax}
             onToggle={toggleSimple}
           />
 

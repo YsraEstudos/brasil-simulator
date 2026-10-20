@@ -5,7 +5,7 @@ import { TEST_BILL, TEST_EVENT, TEST_PEC, testContent } from '@/tests/fixtures';
 
 import {
   draftInput,
-  draftPoints,
+  draftCost,
   EMPTY_DRAFT,
   findDecision,
   fits,
@@ -32,7 +32,7 @@ describe('rascunho da agenda do mês (GAME_DESIGN.md §4.3)', () => {
   it('marcar de novo desmarca; custos vêm do catálogo', () => {
     let d = toggleDecision(EMPTY_DRAFT, policy(TEST_PEC.id));
     d = toggleDecision(d, { policyId: PRESSURE_ACTION_ID, agendaCost: 99 });
-    expect(draftPoints(d, content)).toBe(TEST_PEC.agendaCost + 1);
+    expect(draftCost(d, content)).toBe(TEST_PEC.agendaCost + 1);
     d = toggleDecision(d, policy(TEST_PEC.id));
     expect(d.decisions.map((x) => x.policyId)).toEqual([PRESSURE_ACTION_ID]);
   });
@@ -46,14 +46,14 @@ describe('rascunho da agenda do mês (GAME_DESIGN.md §4.3)', () => {
     d = toggleDecision(d, negotiate('centro'));
     d = toggleDecision(d, negotiate('direita'));
     expect(d.decisions).toHaveLength(3);
-    expect(draftPoints(d, content)).toBe(3);
+    expect(draftCost(d, content)).toBe(3);
   });
 
-  it('fits considera o custo liberado ao trocar e os pontos dos eventos', () => {
+  it('fits considera o custo liberado ao trocar e as ações dos eventos', () => {
     let d = toggleDecision(EMPTY_DRAFT, appoint('centro'));
     d = toggleDecision(d, policy(TEST_BILL.id));
     d = toggleEventChoice(d, TEST_EVENT.id, 'subsidiar');
-    expect(draftPoints(d, content)).toBe(3);
+    expect(draftCost(d, content)).toBe(3);
     expect(fits(d, appoint('direita'), content, 3)).toBe(true);
     expect(fits(d, negotiate('centro'), content, 3)).toBe(false);
   });

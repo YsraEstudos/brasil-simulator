@@ -36,7 +36,7 @@ O plano de tarefas de cada fase (formato dos `FASE_06.md` e `FASE_07.md`) é cri
 
 **Modo de dificuldade (GAME_DESIGN.md §6; POLITICAL_RULES.md §1.1):**
 
-- Pontos de agenda: 2–3; ruído alto nos efeitos.
+- Ações de agenda: 2–3; ruído alto nos efeitos.
 - Atraso real na divulgação de dados (ex.: PIB trimestral).
 - Explicações como cadeia causal estimada, com incerteza.
 - Previsões ministeriais com margem de erro e viés institucional.

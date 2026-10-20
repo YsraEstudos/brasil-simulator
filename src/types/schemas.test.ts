@@ -157,7 +157,7 @@ describe('Scenario', () => {
     const content = { scenario: r.scenario, policies: {}, events: [], calibration: DEFAULT_CALIBRATION };
     const state = createInitialState({ content, difficulty: 'casual', seed: 1 });
     expect(state.indicators.inflation12m).toBe(0.045);
-    expect(state.resources.agendaPointsPerMonth).toBe(4);
+    expect(state.resources.agendaActionsPerMonth).toBe(4);
   });
 
   it('cadeiras somam 513 na Câmara e 81 no Senado (POLITICAL_RULES.md §3)', () => {

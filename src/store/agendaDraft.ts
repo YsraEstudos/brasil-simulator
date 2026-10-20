@@ -12,7 +12,7 @@ export interface AgendaDraft {
 
 export const EMPTY_DRAFT: AgendaDraft = { decisions: [], eventChoices: {} };
 
-/** Custo em pontos: o do catálogo de políticas ou de ações (o motor confere de novo). */
+/** Custo em ações: o do catálogo de políticas ou de ações (o motor confere de novo). */
 export function decisionCost(decision: Decision, content: GameContent): number {
   return content.policies[decision.policyId]?.agendaCost ?? AGENDA_ACTIONS[decision.policyId]?.agendaCost ?? 0;
 }
@@ -63,8 +63,8 @@ function eventChoiceCost(content: GameContent, eventId: string, choiceId: string
   return content.events.find((e) => e.id === eventId)?.choices.find((c) => c.id === choiceId)?.agendaCost ?? 0;
 }
 
-/** Pontos de agenda usados pelo rascunho (decisões e respostas a eventos). */
-export function draftPoints(draft: AgendaDraft, content: GameContent): number {
+/** Ações de agenda usadas pelo rascunho (decisões e respostas a eventos). */
+export function draftCost(draft: AgendaDraft, content: GameContent): number {
   const decisions = draft.decisions.reduce((n, d) => n + decisionCost(d, content), 0);
   const events = Object.entries(draft.eventChoices).reduce(
     (n, [eventId, choiceId]) => n + eventChoiceCost(content, eventId, choiceId),
@@ -73,11 +73,11 @@ export function draftPoints(draft: AgendaDraft, content: GameContent): number {
   return decisions + events;
 }
 
-/** Cabe nos pontos do mês se for incluída (a já marcada sempre pode ser desmarcada ou trocada). */
-export function fits(draft: AgendaDraft, decision: Decision, content: GameContent, pointsMax: number): boolean {
+/** Cabe nas ações do mês se for incluída (a já marcada sempre pode ser desmarcada ou trocada). */
+export function fits(draft: AgendaDraft, decision: Decision, content: GameContent, actionsMax: number): boolean {
   const existing = findDecision(draft, decision);
   const released = existing ? decisionCost(existing, content) : 0;
-  return draftPoints(draft, content) - released + decisionCost(decision, content) <= pointsMax;
+  return draftCost(draft, content) - released + decisionCost(decision, content) <= actionsMax;
 }
 
 /** Entrada do mês para o motor, com os custos do catálogo. */

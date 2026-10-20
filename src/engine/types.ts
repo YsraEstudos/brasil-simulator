@@ -8,10 +8,10 @@ import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 8;
+export const STATE_SCHEMA_VERSION = 9;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.8.0';
+export const ENGINE_VERSION = '0.8.1';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -38,8 +38,8 @@ export type IndicatorKey = keyof Indicators;
 export interface Resources {
   /** 0–100 */
   politicalCapital: number;
-  /** Pontos de agenda por mês (GAME_DESIGN.md §4.3). */
-  agendaPointsPerMonth: number;
+  /** Ações de agenda por mês (GAME_DESIGN.md §4.3). */
+  agendaActionsPerMonth: number;
 }
 
 /** Grupos de receita federal (ECONOMIC_MODEL.md §5.7). */
@@ -447,7 +447,7 @@ export interface EventsState {
 export interface Decision {
   /** ID de conteúdo em português: política (`infraestrutura_credito_adicional`) ou ação de agenda (`actions.ts`). */
   policyId: string;
-  /** Custo em pontos de agenda. O motor usa o custo do catálogo quando a política existe. */
+  /** Custo em ações de agenda. O motor usa o custo do catálogo quando a política existe. */
   agendaCost: number;
   params?: Readonly<Record<string, number | string | boolean>>;
 }
@@ -466,7 +466,7 @@ export interface MonthInput {
 
 export type DecisionRejection =
   | 'alvo_invalido'
-  | 'sem_pontos_de_agenda'
+  | 'sem_acoes_de_agenda'
   | 'custo_invalido'
   | 'politica_desconhecida'
   | 'acao_repetida'
@@ -658,7 +658,7 @@ export type ReportDraft = Pick<MonthReport, 'proposalChanges' | 'eventsResolved'
 export interface StepContext {
   rng: Rng;
   content: GameContent;
-  /** Decisões aceitas neste mês (já descontados os pontos de agenda), na ordem enviada. */
+  /** Decisões aceitas neste mês (já descontadas as ações de agenda), na ordem enviada. */
   decisions: readonly Decision[];
   /** Respostas a eventos aceitas neste mês. */
   eventChoices: readonly EventChoice[];

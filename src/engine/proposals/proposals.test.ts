@@ -166,7 +166,7 @@ describe('propostas: ciclo de vida (GAME_DESIGN.md §9)', () => {
       policies: { ...testContent().policies, ...Object.fromEntries(copias.map((p) => [p.id, p])) },
     });
     const base = testState();
-    const state0 = { ...base, resources: { ...base.resources, agendaPointsPerMonth: 10 } };
+    const state0 = { ...base, resources: { ...base.resources, agendaActionsPerMonth: 10 } };
     const out = advanceMonth(state0, { decisions: copias.map((p) => decisao(p.id)) }, content, [proposalsStep]);
     expect(out.report.rejected).toEqual([]);
 
@@ -187,7 +187,7 @@ describe('propostas: ciclo de vida (GAME_DESIGN.md §9)', () => {
     });
     const base = favoravel();
     // Duas no mês 0; a terceira lota a pauta no mês 1 e a quarta fica parada.
-    let s = passo({ ...base, resources: { ...base.resources, agendaPointsPerMonth: 10 } }, content, [
+    let s = passo({ ...base, resources: { ...base.resources, agendaActionsPerMonth: 10 } }, content, [
       decisao(copias[0].id),
       decisao(copias[1].id),
     ]);
@@ -211,7 +211,7 @@ describe('propostas: ciclo de vida (GAME_DESIGN.md §9)', () => {
     const outroPl: Policy = { ...TEST_BILL, id: 'teste_pl_outro' };
     const content = comPolitica(outroPl);
     const base = testState();
-    const state0 = { ...base, resources: { ...base.resources, agendaPointsPerMonth: 10 } };
+    const state0 = { ...base, resources: { ...base.resources, agendaActionsPerMonth: 10 } };
     const out = advanceMonth(
       state0,
       { decisions: [decisao(TEST_PEC.id), decisao(TEST_BILL.id), decisao(outroPl.id)] },
@@ -403,7 +403,7 @@ describe('propostas: negociação (POLITICAL_RULES.md §6.2–6.3)', () => {
     };
     const content = comPolitica(lento);
     const base = testState();
-    const state0 = { ...base, resources: { ...base.resources, agendaPointsPerMonth: 10 } };
+    const state0 = { ...base, resources: { ...base.resources, agendaActionsPerMonth: 10 } };
     const enviada = passo(state0, content, [decisao(lento.id), decisao(TEST_PEC.id)]);
     expect(proposta(enviada, lento.id).voteMonth).toBe(4);
     const out = mes(enviada, content, [

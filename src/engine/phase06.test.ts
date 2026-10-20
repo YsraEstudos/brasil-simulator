@@ -6,7 +6,7 @@ import type { Policy } from '@/types/policy';
 import { advanceMonth } from './advanceMonth';
 import { BRAND_ACTION_ID, DIRECTIVE_ACTION_ID } from './actions';
 import { checkInvariants } from './invariants';
-import type { Decision, GameContent } from './types';
+import { ENGINE_VERSION, STATE_SCHEMA_VERSION, type Decision, type GameContent } from './types';
 import { PARAMS } from './economy/calibration';
 import { createInitialState, currentNominalGdpMillions } from './state';
 import { upgradeGameState } from './upgrade';
@@ -14,10 +14,10 @@ import { upgradeGameState } from './upgrade';
 const content = loadContent('brasil_2027_01');
 
 describe('contratos da Fase 06 (AI_INSTRUCTIONS §2.10)', () => {
-  it('campanha nova tem estado v8, sociedade e execução pública serializáveis', () => {
+  it('campanha nova tem estado v9, sociedade e execução pública serializáveis', () => {
     const state = createInitialState({ content, difficulty: 'estrategica', seed: 42 });
-    expect(state.schemaVersion).toBe(8);
-    expect(state.engineVersion).toBe('0.8.0');
+    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.engineVersion).toBe(ENGINE_VERSION);
     expect(state).toHaveProperty('society');
     expect(state).toHaveProperty('publicPolicies', {
       directives: [],
@@ -35,7 +35,7 @@ describe('contratos da Fase 06 (AI_INSTRUCTIONS §2.10)', () => {
     delete raw.publicPolicies;
     const original = structuredClone(raw);
     const next = upgradeGameState(5, raw);
-    expect(next.schemaVersion).toBe(8);
+    expect(next.schemaVersion).toBe(STATE_SCHEMA_VERSION);
     expect(next).toHaveProperty('society');
     expect(next).toHaveProperty('publicPolicies');
     for (const key of Object.keys(raw).filter((k) => k !== 'schemaVersion' && k !== 'engineVersion')) {
@@ -183,7 +183,7 @@ describe('integração da execução pública (GAME_DESIGN §9.2)', () => {
     const original = state.proposals[0];
     state = {
       ...state,
-      resources: { ...state.resources, agendaPointsPerMonth: 10 },
+      resources: { ...state.resources, agendaActionsPerMonth: 10 },
       proposals: [0, 1, 2, 3].map((i) => ({ ...original, id: `marca_${i}`, status: 'em_execucao' })),
     };
     const decisions: Decision[] = state.proposals.map((p, i) => ({

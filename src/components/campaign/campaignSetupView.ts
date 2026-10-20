@@ -1,4 +1,4 @@
-import { ADVICE_PARAMS, AGENDA_POINTS, DEFAULT_CALIBRATION, type Difficulty } from '@/engine';
+import { ADVICE_PARAMS, AGENDA_ACTIONS_PER_MONTH, DEFAULT_CALIBRATION, type Difficulty } from '@/engine';
 import {
   isKnownScenario,
   parseSeedInput,
@@ -12,8 +12,8 @@ import type { Scenario } from '@/types/scenario';
 import { DIFFICULTY } from './labels';
 
 /**
- * Textos da tela NOVO JOGO derivados do que o motor realmente faz (não do que o design ainda planeja): pontos de
- * agenda de `AGENDA_POINTS`, bônus e ruídos da calibração padrão e margens dos pareceres de `ADVICE_PARAMS`.
+ * Textos da tela NOVO JOGO derivados do que o motor realmente faz (não do que o design ainda planeja): ações de
+ * agenda de `AGENDA_ACTIONS_PER_MONTH`, bônus e ruídos da calibração padrão e margens dos pareceres de `ADVICE_PARAMS`.
  */
 
 const pct = (fraction: number) => `${Math.round(fraction * 100)}%`;
@@ -31,15 +31,15 @@ export interface DifficultyView {
   id: Difficulty;
   name: string;
   tagline: string;
-  agendaPoints: number;
+  actionsPerMonth: number;
   /** Diferenças implementadas no motor, em frases curtas. */
   effects: string[];
 }
 
 function buildDifficultyView(id: Difficulty): DifficultyView {
-  const points = AGENDA_POINTS[id];
+  const points = AGENDA_ACTIONS_PER_MONTH[id];
   const noise = noiseFactor(id);
-  const common = [`${points} pontos de agenda por mês`];
+  const common = [`${points} ações de agenda por mês`];
   const effects: Record<Difficulty, () => string[]> = {
     casual: () => [
       ...common,
@@ -73,7 +73,7 @@ function buildDifficultyView(id: Difficulty): DifficultyView {
     id,
     name: DIFFICULTY[id].name,
     tagline: TAGLINES[id],
-    agendaPoints: points,
+    actionsPerMonth: points,
     effects: effects[id](),
   };
 }
@@ -168,7 +168,7 @@ export const SCENARIO_KIND_LABEL: Record<ScenarioOption['kind'], string> = {
 export interface SetupSummary {
   name: string | null;
   difficulty: string;
-  agendaPoints: number;
+  actionsPerMonth: number;
   scenario: string;
   version: string;
   duration: string;
@@ -184,7 +184,7 @@ export function setupSummary(form: CampaignSetupForm): SetupSummary {
   return {
     name: name.length > 0 ? name : null,
     difficulty: DIFFICULTY[form.difficulty].name,
-    agendaPoints: AGENDA_POINTS[form.difficulty],
+    actionsPerMonth: AGENDA_ACTIONS_PER_MONTH[form.difficulty],
     scenario: scenario ? scenarioTitle(scenario) : '—',
     version: scenario ? `v${scenario.version}` : '—',
     duration: scenario ? `até ${durationLabel(campaignMonths(form.scenarioId))}` : '—',

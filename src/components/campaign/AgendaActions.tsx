@@ -17,7 +17,7 @@ export interface AgendaActionsProps {
   state: GameState;
   content: GameContent;
   selected: readonly string[];
-  /** Se ainda cabe nos pontos de agenda do mês. */
+  /** Se ainda cabe nas ações de agenda do mês. */
   canInclude: (cost: number) => boolean;
   onToggle: (id: string) => void;
 }
@@ -48,7 +48,7 @@ export function AgendaActions({ state, content, selected, canInclude, onToggle }
           return (
             <Card key={action.id} title={action.name} subtitle={action.summary}>
               <Text variant="caption" color="textSecondary">
-                Ação imediata · {costText(action.agendaCost)} de agenda
+                Ação imediata · custo: {costText(action.agendaCost)}
               </Text>
               {action.id === PRESSURE_ACTION_ID && (
                 <Text variant="caption" color="warning">
@@ -59,7 +59,7 @@ export function AgendaActions({ state, content, selected, canInclude, onToggle }
                 label={included ? 'Retirar da agenda' : 'Incluir na agenda'}
                 variant={included ? 'secondary' : 'primary'}
                 disabled={blocked}
-                accessibilityHint={blocked ? 'Pontos de agenda insuficientes neste mês' : undefined}
+                accessibilityHint={blocked ? 'Ações de agenda insuficientes neste mês' : undefined}
                 onPress={() => onToggle(action.id)}
                 block
               />

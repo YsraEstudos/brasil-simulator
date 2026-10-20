@@ -29,8 +29,8 @@ export function shortMonthLabel(monthIndex: number): string {
 }
 
 export const DIFFICULTY: Record<Difficulty, { name: string; description: string }> = {
-  casual: { name: 'Casual', description: 'Regras simplificadas, 4 pontos de agenda, menos imprevistos.' },
-  estrategica: { name: 'Estratégica', description: 'Regras completas e 3 pontos de agenda. O modo padrão.' },
+  casual: { name: 'Casual', description: 'Regras simplificadas, 4 ações por mês, menos imprevistos.' },
+  estrategica: { name: 'Estratégica', description: 'Regras completas e 3 ações por mês. O modo padrão.' },
   realismo: { name: 'Realismo Extremo', description: 'Regras detalhadas, dados com atraso e mais incerteza.' },
 };
 
@@ -62,9 +62,9 @@ export const VOTING_INTENTION_META: { label: string; goodWhen: 'up' | 'down'; de
   decimals: 1,
 };
 
-/** 0 → "0 pontos", 1 → "1 ponto", 2 → "2 pontos". */
-export function costText(points: number): string {
-  return `${points} ${points === 1 ? 'ponto' : 'pontos'}`;
+/** 0 → "0 ações", 1 → "1 ação", 2 → "2 ações". */
+export function costText(cost: number): string {
+  return `${cost} ${cost === 1 ? 'ação' : 'ações'}`;
 }
 
 const AREA_LABELS: Record<string, string> = {
@@ -114,7 +114,7 @@ export { PROPOSAL_IN_PROGRESS } from '@/engine';
 
 export const REJECTION_REASON_LABEL: Record<DecisionRejection, string> = {
   alvo_invalido: 'alvo da ação indisponível',
-  sem_pontos_de_agenda: 'sem pontos de agenda suficientes',
+  sem_acoes_de_agenda: 'sem ações de agenda suficientes',
   custo_invalido: 'custo inválido',
   politica_desconhecida: 'política indisponível neste cenário',
   acao_repetida: 'ação já feita neste mês',

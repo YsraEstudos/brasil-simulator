@@ -76,12 +76,12 @@ Quando o jogador tenta algo que não é sua competência, o jogo **explica o mot
 
 1. **Briefing do mês**: resumo do que aconteceu, indicadores, alertas dos ministérios e manchetes.
 2. **Caixa de entrada**: eventos que pedem decisão (crise, pedido de governador, votação marcada, escândalo).
-3. **Agenda presidencial**: o jogador escolhe ações até o limite de **pontos de agenda** do mês. As decisões grandes passam pela **mesa de despacho** (§4.4).
+3. **Agenda presidencial**: o jogador escolhe ações até o limite de **ações de agenda** do mês. As decisões grandes passam pela **mesa de despacho** (§4.4).
 4. **Encerrar o mês**: o motor processa instituições, economia, sociedade e eventos.
 5. **Relatório de consequências**: o que mudou, por quê e o que está em andamento.
 
-### 4.3 Pontos de agenda
-O presidente não faz tudo ao mesmo tempo. Cada mês oferece um número limitado de pontos (padrão: 3; varia com dificuldade, crises e qualidade da equipe ministerial). Exemplos de custo:
+### 4.3 Ações de agenda
+O presidente não faz tudo ao mesmo tempo. Cada mês oferece um número limitado de ações (padrão: 3; varia com dificuldade, crises e qualidade da equipe ministerial). Exemplos de custo:
 
 | Ação | Custo |
 | --- | --- |
@@ -100,7 +100,7 @@ O presidente não faz tudo ao mesmo tempo. Cada mês oferece um número limitado
 Isso obriga o jogador a priorizar e impede que ele dispare todas as reformas no primeiro mês. Um segundo limite atua no Congresso: a **capacidade de pauta** ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.3) só deixa andar um número limitado de propostas prioritárias ao mesmo tempo. O **capital político** (§5) é gasto em negociações, MPs, demissões e votações forçadas.
 
 ### 4.3.1 Aba Congresso (Fase 04)
-Mostra as Mesas (bloco que preside cada Casa e relação com ele), a ocupação da pauta de cada Casa, as propostas por etapa (Casa, turnos, data prevista, relator), o parecer de articulação para a próxima votação com as contrapartidas já negociadas, os blocos com as pastas que ocupam e os ministérios com ocupante e risco de escândalo. Negociações e nomeações marcadas ali entram na **mesma agenda do mês** da Presidência (mesmos pontos) e valem ao encerrar o mês. Projetos aprovados aparecem na caixa de entrada para sanção ou veto (POLITICAL_RULES.md §6.5, §7).
+Mostra as Mesas (bloco que preside cada Casa e relação com ele), a ocupação da pauta de cada Casa, as propostas por etapa (Casa, turnos, data prevista, relator), o parecer de articulação para a próxima votação com as contrapartidas já negociadas, os blocos com as pastas que ocupam e os ministérios com ocupante e risco de escândalo. Negociações e nomeações marcadas ali entram na **mesma agenda do mês** da Presidência (mesmas ações) e valem ao encerrar o mês. Projetos aprovados aparecem na caixa de entrada para sanção ou veto (POLITICAL_RULES.md §6.5, §7).
 
 ### 4.4 Mesa de despacho
 Antes de confirmar uma decisão grande (proposta ao Congresso, MP, corte, reforma, resposta a crise), o jogador vê um cartão de despacho com **três pareceres curtos** (até 2 linhas cada), que podem discordar entre si:
@@ -133,7 +133,7 @@ A mesa de despacho (§4.4) passou a dizer onde a política pesa mais por habitan
 | **Base parlamentar** | cadeiras | Coalizão, cargos, emendas, alinhamento | Atritos, escândalos, eleições se aproximando |
 | **Confiança do mercado** | índice | Previsibilidade fiscal, cumprimento de metas | Descumprimento de metas, medidas surpresa |
 | **Espaço orçamentário** | R$ | Crescimento da receita, cortes, reformas | Despesas obrigatórias crescentes, frustração de receita |
-| **Pontos de agenda** | por mês | Equipe competente, estabilidade | Crises simultâneas |
+| **Ações de agenda** | por mês | Equipe competente, estabilidade | Crises simultâneas |
 
 Aprovação do governo e intenção de voto são **indicadores distintos** (o segundo só aparece a partir da Fase 08).
 
@@ -145,7 +145,7 @@ As três dificuldades usam **o mesmo motor**. Elas mudam parâmetros, visibilida
 
 | Aspecto | Casual | Estratégica (padrão) | Realismo Extremo |
 | --- | --- | --- | --- |
-| Pontos de agenda | 4 | 3 | 2–3 |
+| Ações de agenda | 4 | 3 | 2–3 |
 | Congresso | Mais receptivo | Calibrado | Calibrado, com comportamento individual a partir da Fase 09 |
 | Ruído nos efeitos | Baixo | Médio | Alto |
 | Atraso de divulgação de dados | Nenhum | Nenhum | Igual ao real (PIB trimestral etc.) |
@@ -261,8 +261,8 @@ O fim desta campanha gera legado; eleição e sucessão continuam para a Fase 08
 O catálogo tem 42 políticas: 10 legadas, 22 rotinas e 10 projetos novos.
 Na Presidência, a agenda normal filtra políticas por área; rotinas ficam nas
 diretrizes ministeriais. Escolher orçamento/diretriz ou nomear uma marca apenas
-prepara a agenda: o motor aplica a decisão ao encerrar o mês, pelo custo de um
-ponto. A carteira mostra fase, avanço, desembolso, atraso e manutenção.
+prepara a agenda: o motor aplica a decisão ao encerrar o mês, pelo custo de uma
+ação. A carteira mostra fase, avanço, desembolso, atraso e manutenção.
 
 Na Economia, o painel social mostra os seis setores e cinco quintis, renda
 real, salário mínimo, desemprego e pobreza estimada, com números provisórios
