@@ -1,13 +1,15 @@
 # Plano — Painel único (o jogo inteiro a partir da mesa)
 
-Versão 0.1 do documento • 20/10/2026 • ⬜ Aguardando revisão do autor
-Documentos relacionados: [GAME_DESIGN.md](GAME_DESIGN.md) §4.2–§4.5 · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) §2–§3
+Versão 0.2 do documento • 20/10/2026 • ✅ Etapas 1–5 implementadas em 20/10/2026 (Etapas 1–2 nos PRs #17 e #18; Etapas 3–5 no PR da branch `feat/painel-etapas-3-5`) • v0.2: decisões da §6 tomadas
+Documentos relacionados: [GAME_DESIGN.md](GAME_DESIGN.md) §4.2–§4.6 · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) §2–§3
 
 ---
 
 ## 1. Objetivo
 
-Hoje o jogo é dividido em 5 abas (Presidência, Painel, Economia, Congresso, Notícias) e cada uma é um mundo
+> **Status (20/10/2026):** o plano foi executado. Esta seção e as §2–§3 descrevem o desenho original; o estado final está em [GAME_DESIGN.md](GAME_DESIGN.md) §4.6.
+
+Antes deste plano, o jogo é dividido em 5 abas (Presidência, Painel, Economia, Congresso, Notícias) e cada uma é um mundo
 separado: o jogador decide na Presidência, olha o mapa no Painel, negocia no Congresso e volta à Presidência para
 encerrar o mês. A partir deste plano:
 
@@ -149,7 +151,7 @@ sistema de design (`Card`, `Indicator`…). Para a troca não parecer outro app:
 > **Antes de começar:** a Etapa 1 parte de uma `main` que já tenha o PR "Ações de agenda" (estado v9), que mexe
 > em vários dos mesmos componentes (`CampaignView`, `PainelScreen`, `hudData`…).
 
-### Etapa 1 — Painel como casa, sem abas
+### Etapa 1 — Painel como casa, sem abas ✅ (20/10/2026, PR #17)
 - `(tabs)` → `(jogo)` com `Stack`; rotas da §3.1.
 - Componente `src/components/painel/SubScreen.tsx` (moldura: Voltar ao Painel, título, faixa de mês/ações/capital,
   "voltar" do Android).
@@ -158,26 +160,26 @@ sistema de design (`Card`, `Indicator`…). Para a troca não parecer outro app:
 - Entradas do jogo vão para `/painel`. Doca provisória com os 4 botões de subtela.
 - **Resultado:** já dá para jogar sem barra de abas, tudo saindo do Painel.
 
-### Etapa 2 — O mês se joga no Painel
+### Etapa 2 — O mês se joga no Painel ✅ (20/10/2026, PR #18)
 - Encerrar o mês na doca (com estado `busy` e contagem de ações).
 - Folha **Relatório do mês**, aberta sozinha após encerrar.
 - Folha **Menu** (substitui o ← da Presidência).
 - Reorganização dos trilhos e da faixa de números (§2.4).
 - Tira do Gabinete o cabeçalho, os indicadores, o resumo e os botões finais.
 
-### Etapa 3 — Folhas que decidem
+### Etapa 3 — Folhas que decidem ✅ (20/10/2026, PR da branch `feat/painel-etapas-3-5`)
 - **Alertas e eventos** com `EventInbox` completo (escolha, pareceres, sanção/veto) — tela estreita, então os
   cartões de evento ficam recolhidos e abrem um por vez.
 - Folha **Indicadores** unificada com "Por que mudou?".
 - Folha **Eleições** (condicional) e subtela **Legado** ao fim da campanha.
 - Selos nos botões da doca.
 
-### Etapa 4 — Gabinete e Congresso definitivos
+### Etapa 4 — Gabinete e Congresso definitivos ✅ (20/10/2026, PR da branch `feat/painel-etapas-3-5`)
 - Gabinete só com decisões, políticas públicas, marcas e agenda; `CampaignView` é desmontado (ou removido).
 - Congresso com o hemiciclo no topo e as propostas em tramitação (`ProposalList` sai do Gabinete).
 - Pausa do globo fora de foco.
 
-### Etapa 5 — Acabamento
+### Etapa 5 — Acabamento ✅ (20/10/2026, PR da branch `feat/painel-etapas-3-5`)
 - Tema escuro forçado nas subtelas (§3.3); reestilização opcional.
 - Documentos: GAME_DESIGN §4.2, §4.3.1, §4.5 (de "aba" para "subtela/folha"), ROADMAP (§2.1, adição), e páginas
   `docs/EXPLICACOES-paginas/tela-*.html` (Presidência some; Painel, Gabinete).
@@ -196,15 +198,15 @@ sistema de design (`Card`, `Indicator`…). Para a troca não parecer outro app:
 
 ---
 
-## 6. Decisões em aberto (com recomendação)
+## 6. Decisões (tomadas em 20/10/2026)
 
-| # | Pergunta | Recomendação |
+| # | Pergunta | Decisão |
 | --- | --- | --- |
-| P1 | Nome da subtela que herda a Presidência | **Gabinete** (a Presidência deixa de ser lugar; o Painel é o Palácio). |
-| P2 | Congresso: folha rápida antes da subtela? | **Não**, direto na subtela — menos um toque e um botão a menos na mesa. |
-| P3 | Modo demonstração (Painel sem partida) | **Remover** do caminho normal: só se chega ao Painel com partida; sem partida, volta ao menu. |
-| P4 | Responder eventos na folha ou numa subtela | **Folha** (pedido do autor: Alertas continua modal). Se ficar apertado, um evento por vez. |
-| P5 | Reestilizar os cartões das subtelas no visual HUD | Depois; na Etapa 5 só o tema escuro forçado. |
+| P1 | Nome da subtela que herda a Presidência | **Gabinete** (a Presidência deixa de ser lugar; o Painel é o Palácio). Rota `/gabinete`. |
+| P2 | Congresso: folha rápida antes da subtela? | **Não**: o botão da doca leva direto à subtela, que abre com o hemiciclo no topo. |
+| P3 | Modo demonstração (Painel sem partida) | **Mantido só como reserva** (fallback sem partida); o caminho normal só chega ao Painel com partida. |
+| P4 | Responder eventos na folha ou numa subtela | **Folha**: Alertas e eventos responde ali mesmo, com os três pareceres da mesa de despacho, e sanciona/veta projetos. |
+| P5 | Reestilizar os cartões das subtelas no visual HUD | Só o tema escuro forçado: a paleta do HUD vem do tema (as subtelas ficam sempre no visual escuro e dourado da mesa). A reestilização completa dos cartões fica para depois. |
 
 ## 7. Fora do escopo
 

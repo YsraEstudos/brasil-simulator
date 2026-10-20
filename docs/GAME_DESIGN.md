@@ -1,6 +1,6 @@
 # Brasil Simulator — Documento de Design do Jogo (GDD)
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato • v0.3 (Fase 04): negociação e nomeações na agenda, aba Congresso, sanção e veto • v0.4 (Fase 05): aba Brasil com o mapa da federação e visita a estado
+Versão 0.5 do documento • 20/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato • v0.3 (Fase 04): negociação e nomeações na agenda, aba Congresso, sanção e veto • v0.4 (Fase 05): mapa da federação e visita a estado • v0.5 (20/10/2026): Painel único — o jogo sem abas, com folhas e subtelas (§4.6)
 Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RULES.md](POLITICAL_RULES.md) · [DATA_SOURCES.md](DATA_SOURCES.md) · [ROADMAP.md](ROADMAP.md) · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)
 
 ---
@@ -74,11 +74,13 @@ Quando o jogador tenta algo que não é sua competência, o jogo **explica o mot
 
 ### 4.2 Estrutura de um turno (visão do jogador)
 
-1. **Briefing do mês**: resumo do que aconteceu, indicadores, alertas dos ministérios e manchetes.
-2. **Caixa de entrada**: eventos que pedem decisão (crise, pedido de governador, votação marcada, escândalo).
-3. **Agenda presidencial**: o jogador escolhe ações até o limite de **ações de agenda** do mês. As decisões grandes passam pela **mesa de despacho** (§4.4).
-4. **Encerrar o mês**: o motor processa instituições, economia, sociedade e eventos.
-5. **Relatório de consequências**: o que mudou, por quê e o que está em andamento.
+Todos os passos partem do **Painel** (§4.6):
+
+1. **Briefing do mês**: resumo do que aconteceu, indicadores, alertas dos ministérios e manchetes. Fica no HUD do Painel e nas folhas **Indicadores** e **Meta atual**; as manchetes, na subtela **Notícias**.
+2. **Caixa de entrada**: eventos que pedem decisão (crise, pedido de governador, votação marcada, escândalo). Ficam na folha **Alertas e eventos** (o sino do HUD), onde o jogador responde ali mesmo, vê os três pareceres da mesa de despacho e sanciona ou veta projetos aprovados. O selo do sino conta o que ainda não tem resposta marcada; sem resposta vale a escolha padrão do evento e, no projeto, a sanção tácita.
+3. **Agenda presidencial**: o jogador escolhe ações até o limite de **ações de agenda** do mês, no **Gabinete** (decisões, políticas públicas, marcas de governo e ações simples), no **Congresso** (negociações e nomeações) e no cartão de cada UF (visita). As decisões grandes passam pela **mesa de despacho** (§4.4).
+4. **Encerrar o mês**: botão dourado da doca do Painel, com "x de y ações usadas". O motor processa instituições, economia, sociedade e eventos.
+5. **Relatório de consequências**: a folha **Relatório do mês** abre sozinha ao encerrar; mostra o que mudou, por quê e o que está em andamento. Ao fim da campanha, o botão vira "Ver legado" e o jogo abre a subtela **Legado**.
 
 ### 4.3 Ações de agenda
 O presidente não faz tudo ao mesmo tempo. Cada mês oferece um número limitado de ações (padrão: 3; varia com dificuldade, crises e qualidade da equipe ministerial). Exemplos de custo:
@@ -99,8 +101,8 @@ O presidente não faz tudo ao mesmo tempo. Cada mês oferece um número limitado
 
 Isso obriga o jogador a priorizar e impede que ele dispare todas as reformas no primeiro mês. Um segundo limite atua no Congresso: a **capacidade de pauta** ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.3) só deixa andar um número limitado de propostas prioritárias ao mesmo tempo. O **capital político** (§5) é gasto em negociações, MPs, demissões e votações forçadas.
 
-### 4.3.1 Aba Congresso (Fase 04)
-Mostra as Mesas (bloco que preside cada Casa e relação com ele), a ocupação da pauta de cada Casa, as propostas por etapa (Casa, turnos, data prevista, relator), o parecer de articulação para a próxima votação com as contrapartidas já negociadas, os blocos com as pastas que ocupam e os ministérios com ocupante e risco de escândalo. Negociações e nomeações marcadas ali entram na **mesma agenda do mês** da Presidência (mesmas ações) e valem ao encerrar o mês. Projetos aprovados aparecem na caixa de entrada para sanção ou veto (POLITICAL_RULES.md §6.5, §7).
+### 4.3.1 Subtela Congresso (Fase 04)
+É aberta direto pela doca do Painel, com o hemiciclo no topo. Mostra as Mesas (bloco que preside cada Casa e relação com ele), a ocupação da pauta de cada Casa, as propostas por etapa (Casa, turnos, data prevista, relator), o parecer de articulação para a próxima votação com as contrapartidas já negociadas, os blocos com as pastas que ocupam e os ministérios com ocupante e risco de escândalo. Negociações e nomeações marcadas ali entram na **mesma agenda do mês** do Gabinete (mesmas ações) e valem ao encerrar o mês. Projetos aprovados aparecem na folha Alertas e eventos do Painel para sanção ou veto (POLITICAL_RULES.md §6.5, §7). As propostas que saíram do plenário (à espera de sanção, em vigor ou encerradas) ficam em **Fora do Congresso**, com o histórico de cada etapa.
 
 ### 4.4 Mesa de despacho
 Antes de confirmar uma decisão grande (proposta ao Congresso, MP, corte, reforma, resposta a crise), o jogador vê um cartão de despacho com **três pareceres curtos** (até 2 linhas cada), que podem discordar entre si:
@@ -115,12 +117,30 @@ Antes de confirmar uma decisão grande (proposta ao Congresso, MP, corte, reform
 - Nenhum parecer diz "a resposta certa"; cada um mostra um custo diferente da mesma escolha (§13).
 - Entra no protótipo (Fase 02) para as 8 decisões, em versão simples.
 - Desde a Fase 07, o parecer usa as mesmas escalas da execução: o custo do programa por convênio considera só os estados que devem aderir, o ganho de aprovação rende menos em pasta com ministro de bloco, e a Fazenda cita a defasagem do efeito fiscal, a credibilidade fiscal e o ganho real do salário mínimo.
-- Respostas a eventos também têm mesa de despacho: a caixa de entrada mostra os três pareceres da escolha marcada (ou da escolha padrão, se nenhuma foi marcada), lidos dos efeitos da própria escolha.
+- Respostas a eventos também têm mesa de despacho: a folha Alertas e eventos mostra os três pareceres da escolha marcada (ou da escolha padrão, se nenhuma foi marcada), lidos dos efeitos da própria escolha.
 
-### 4.5 Aba Brasil (Fase 05)
-O globo vira o mapa da federação: cada UF pintada pelo indicador escolhido — crescimento em 12 meses, desemprego e aprovação comparados à média nacional, PIB per capita (Brasil = 1) e relação com o governador. As escalas comparativas vão do vermelho (pior que a média) ao azul (melhor), com cinza na média; a renda usa um só azul. A legenda fica sempre visível e a **lista** mostra as 27 UFs ordenadas com o número (a mesma informação sem depender da cor). Tocar numa UF abre o cartão com os números da UF e do Brasil, o governador (bloco e relação), **"Por que esta UF está diferente da média?"** (as maiores causas do mês, do relatório) e o botão de **visita presidencial**, que entra na mesma agenda do mês. Não há decisão "estadual": o presidente só age por políticas federais, convênios e visitas (§3.2). Regras em [POLITICAL_RULES.md](POLITICAL_RULES.md) §2.1 e modelo em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.15.
+### 4.5 Mapa da federação no Painel (Fase 05)
+O globo do Painel é o mapa da federação: cada UF pintada pelo indicador escolhido — crescimento em 12 meses, desemprego e aprovação comparados à média nacional, PIB per capita (Brasil = 1) e relação com o governador. As escalas comparativas vão do vermelho (pior que a média) ao azul (melhor), com cinza na média; a renda usa um só azul. A legenda fica na folha **Camadas do mapa**, junto da escolha da camada, e a **lista** da folha **Visão regional** mostra as 27 UFs ordenadas com o número (a mesma informação sem depender da cor). Tocar numa UF abre o cartão com os números da UF e do Brasil, o governador (bloco e relação), **"Por que esta UF está diferente da média?"** (as maiores causas do mês, do relatório) e o botão de **visita presidencial**, que entra na mesma agenda do mês. Não há decisão "estadual": o presidente só age por políticas federais, convênios e visitas (§3.2). Regras em [POLITICAL_RULES.md](POLITICAL_RULES.md) §2.1 e modelo em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.15.
 
 A mesa de despacho (§4.4) passou a dizer onde a política pesa mais por habitante (Comunicação: "Favorece mais o Nordeste e o Norte") e, nos programas por convênio, quantos estados devem aderir (Articulação).
+
+### 4.6 A mesa do Painel: folhas e subtelas (Painel único, 20/10/2026)
+Não há barra de abas nem tela "Presidência". Depois de **Novo jogo**, **Carregar jogo** ou **Continuar**, o jogador cai direto no **Painel**: o globo do Brasil com HUD. Tudo parte dele e tudo volta para ele. O conteúdo chega à mesa de dois jeitos:
+
+- **Folha** — consulta ou decisão rápida, sem sair da mesa: abre por cima do globo e fecha no ✕.
+- **Subtela** — mesa de trabalho, com cenário próprio: troca a tela inteira, tem o botão **"Voltar ao Painel"** (que volta direto ao Painel, mesmo de uma subtela aberta a partir de outra) e uma faixa com mês, ações restantes e capital político. Sempre no visual escuro e dourado da mesa. O globo pausa enquanto uma subtela está aberta.
+
+**Regra:** se cabe numa folha e não precisa de cenário próprio, é folha; se é uma mesa de trabalho (muitas linhas, rolagem longa, cena 3D), é subtela.
+
+| Região | Conteúdo |
+| --- | --- |
+| HUD (topo) | Mês, turno e ações; aprovação, PIB e população; em retrato, 2ª linha com capital político, inflação e desemprego. ☰ Menu (voltar ao menu principal, que fecha a partida encerrada; Configurações), centralizar o globo e o sino de alertas. |
+| Trilho esquerdo ("o mês") — folhas | Alertas e eventos · Meta atual · Relatório do mês · Eleições (só no período eleitoral) |
+| Trilho direito ("o país") — folhas | Camadas do mapa · Visão regional (com a lista de UFs) · Indicadores (com "Por que mudou?", setores e gráfico do PIB) · Ministérios |
+| Doca (base) — subtelas | **Gabinete** (agenda presidencial: decisões com mesa de despacho, políticas públicas e marcas de governo, ações de agenda) · **Congresso** · **Economia** · **Notícias**, com selos (votação marcada no Congresso, manchetes novas) · botão **Encerrar o mês** ("Ver legado" com a campanha encerrada) |
+| Fim da campanha | Subtela **Legado**: o jogo abre nela quando a campanha termina. |
+
+Sem partida em andamento não há Painel: o modo demonstração (globo sem partida) só existe como reserva técnica. O plano e as decisões estão em [PLANO_PAINEL_UNICO.md](PLANO_PAINEL_UNICO.md).
 
 ---
 
@@ -248,7 +268,7 @@ Toda política do catálogo é um arquivo de dados (JSON validado por Zod em `sr
 Administrar 30+ políticas uma a uma, mês a mês, cansa no celular. Por isso as políticas têm dois níveis:
 
 1. **Rotina, por diretriz.** Para cada ministério o jogador define o orçamento anual e escolhe uma **diretriz** entre opções curtas (ex.: Segurança — "inteligência e fronteiras" ou "apoio a equipamentos estaduais"). As políticas de rotina rodam sozinhas a partir disso e só pedem atenção por eventos.
-2. **Marcas de governo (até 3 por mandato).** Megaprojetos escolhidos e nomeados pelo jogador (ex.: um programa de habitação, uma ferrovia, uma meta de alfabetização). Ficam fixados na tela da Presidência, têm eventos próprios de acompanhamento e pesam no **Relatório de Legado** (§7.1) e na campanha eleitoral (Fase 08).
+2. **Marcas de governo (até 3 por mandato).** Megaprojetos escolhidos e nomeados pelo jogador (ex.: um programa de habitação, uma ferrovia, uma meta de alfabetização). Ficam fixados no Gabinete, têm eventos próprios de acompanhamento e pesam no **Relatório de Legado** (§7.1) e na campanha eleitoral (Fase 08).
 
 ---
 
@@ -259,7 +279,7 @@ acompanhar obras e marcas. Campanhas legadas continuam com o limite de 12 meses.
 O fim desta campanha gera legado; eleição e sucessão continuam para a Fase 08.
 
 O catálogo tem 42 políticas: 10 legadas, 22 rotinas e 10 projetos novos.
-Na Presidência, a agenda normal filtra políticas por área; rotinas ficam nas
+No Gabinete, a agenda normal filtra políticas por área; rotinas ficam nas
 diretrizes ministeriais. Escolher orçamento/diretriz ou nomear uma marca apenas
 prepara a agenda: o motor aplica a decisão ao encerrar o mês, pelo custo de uma
 ação. A carteira mostra fase, avanço, desembolso, atraso e manutenção.
@@ -390,16 +410,16 @@ Os 10 eventos só encadeados são: Reservatórios baixos encarecem a conta de lu
 | `lider_sindical` | Marlene Duarte | Dirigente de uma central sindical | esquerda | 25 |
 | `vice_presidente` | Nelson Arantes | Vice-presidente da República | centro | 35 |
 
-**Aba Notícias.** O feed é gerado pelo motor a cada mês e persistido no save, com até 48 manchetes (as mais antigas saem primeiro) e até 6 por mês, em ordem de prioridade: institucional, evento, personagem, Congresso e, por último, economia. Cada manchete traz:
+**Subtela Notícias.** O feed é gerado pelo motor a cada mês e persistido no save, com até 48 manchetes (as mais antigas saem primeiro) e até 6 por mês, em ordem de prioridade: institucional, evento, personagem, Congresso e, por último, economia. Cada manchete traz:
 - **Causa** em uma linha ("Causa: ..."), obrigatória, rastreável ao evento, à escolha, à proposta, à decisão do Copom ou ao indicador que cruzou um nível;
 - **Tom** (positiva, negativa ou neutra), com texto e marca própria, para que a cor não seja o único sinal;
 - **Filtro** por tipo: Todas, Economia, Congresso, Eventos, Personagens e Instituições; as manchetes são agrupadas por mês.
 
 Notícias não vêm de rede: são geradas a partir do estado e do relatório do mês. Nenhuma manchete é reportagem real.
 
-**Mesa de notícias (apresentação da aba).** A aba é uma mesa em 3D vista de cima. O feed aparece como um jornal fictício (*O Arauto Nacional*) deitado sobre a mesa: uma edição por mês (as setas viram a página), cadernos para o filtro por tipo, manchete principal (a notícia de maior prioridade do mês), quadros de Instituições e "Na sua mesa" (eventos pendentes) e, na edição mais recente, o resumo do mês. Ao lado fica um notebook: tocá-lo leva a câmera até a tela, onde a rede social fictícia *Praça* mostra reações às manchetes (cidadãos inventados, a colunista e os personagens citados, cada um do lado que o próprio prestígio indica). As reações são só interface: determinísticas por notícia, não entram no motor nem no save. Em retrato o jornal fica abaixo do notebook e as redes ocupam a tela; em paisagem e no tablet o jornal fica à esquerda e as redes aparecem dentro da tela do notebook. Para rodar bem em Android modesto, a cena usa peças de poucos polígonos, luz pré-calculada no tampo, sombras falsas e só desenha enquanto a câmera se move.
+**Mesa de notícias (apresentação da subtela).** A subtela é uma mesa em 3D vista de cima. O feed aparece como um jornal fictício (*O Arauto Nacional*) deitado sobre a mesa: uma edição por mês (as setas viram a página), cadernos para o filtro por tipo, manchete principal (a notícia de maior prioridade do mês), quadros de Instituições e "Na sua mesa" (eventos pendentes) e, na edição mais recente, o resumo do mês. Ao lado fica um notebook: tocá-lo leva a câmera até a tela, onde a rede social fictícia *Praça* mostra reações às manchetes (cidadãos inventados, a colunista e os personagens citados, cada um do lado que o próprio prestígio indica). As reações são só interface: determinísticas por notícia, não entram no motor nem no save. Em retrato o jornal fica abaixo do notebook e as redes ocupam a tela; em paisagem e no tablet o jornal fica à esquerda e as redes aparecem dentro da tela do notebook. Para rodar bem em Android modesto, a cena usa peças de poucos polígonos, luz pré-calculada no tampo, sombras falsas e só desenha enquanto a câmera se move.
 
-**Quadro de Instituições.** Na aba Notícias, mostra a pressão de impeachment em faixas — **Baixa** (abaixo de 15%), **Moderada** (15% a 35%), **Alta** (35% a 60%) e **Crítica** (60% ou mais) — e as marcas institucionais ativas (CPI instalada, alerta ou parecer do TCU, denúncia de impeachment aceita, Câmara que autorizou o processo). Uma marca superada por outra deixa de aparecer. Os limites são **PROVISORIO**.
+**Quadro de Instituições.** Na subtela Notícias, mostra a pressão de impeachment em faixas — **Baixa** (abaixo de 15%), **Moderada** (15% a 35%), **Alta** (35% a 60%) e **Crítica** (60% ou mais) — e as marcas institucionais ativas (CPI instalada, alerta ou parecer do TCU, denúncia de impeachment aceita, Câmara que autorizou o processo). Uma marca superada por outra deixa de aparecer. Os limites são **PROVISORIO**.
 
 **Fora da Fase 07:** eleições e memória do eleitor (Fase 08); comissões, emendas de plenário e parlamentares individuais (Fase 09); personagens com agenda própria; imprensa com rede; julgamento de contas pelo Congresso como votação própria.
 
