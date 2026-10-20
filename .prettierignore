@@ -6,3 +6,7 @@ assets/
 src/globe/data/
 package-lock.json
 *.md
+# Site de explicações: páginas geradas por docs/explicacoes/build.mjs e dados gravados pela própria página.
+docs/EXPLICACOES.html
+docs/EXPLICACOES-paginas/
+docs/explicacoes/
