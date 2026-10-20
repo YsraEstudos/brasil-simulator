@@ -25,7 +25,7 @@
     {
       "id": "contestar_no_congresso",
       "label": "Contestar no Congresso",
-      "description": "Leva a contestação ao Congresso, que julga as contas. Custa dois pontos de agenda e mobilização da base, com ganho de relação e pequeno custo de credibilidade.",
+      "description": "Leva a contestação ao Congresso, que julga as contas. Custa duas ações de agenda e mobilização da base, com ganho de relação e pequeno custo de credibilidade.",
       "agendaCost": 2,
       "effects": [
         { "target": "relacao_congresso", "delta": 6, "lagMonths": 0, "durationMonths": 1 },

@@ -71,14 +71,14 @@ describe('Painel sem partida (demonstração)', () => {
 });
 
 describe('Painel com a partida', () => {
-  it('deriva mês, turno e pontos de agenda do estado', () => {
+  it('deriva mês, turno e ações de agenda do estado', () => {
     const active = campaign();
     const data = hudFromCampaign(active, content, EMPTY_DRAFT, null);
     expect(data.demo).toBe(false);
     expect(data.monthLabel).toBe('Janeiro de 2027');
     expect(data.turn).toBe(1);
     expect(data.turnTotal).toBe(months);
-    expect(data.pointsLeft).toBe(active.state.resources.agendaPointsPerMonth);
+    expect(data.actionsLeft).toBe(active.state.resources.agendaActionsPerMonth);
     expect(data.pendingCount).toBe(0);
   });
 

@@ -26,7 +26,7 @@ const DIRECTIVE_ACTION = AGENDA_ACTIONS[DIRECTIVE_ACTION_ID];
 export interface PublicPoliciesPanelProps {
   state: GameState;
   content: GameContent;
-  pointsMax: number;
+  actionsMax: number;
 }
 
 function routinePolicies(content: GameContent, ministryAreas: readonly string[]) {
@@ -62,7 +62,7 @@ function phaseLabel(phase: string): string {
 }
 
 /** Diretrizes, carteira e marcas da Fase 06 na tela da Presidência. */
-export function PublicPoliciesPanel({ state, content, pointsMax }: PublicPoliciesPanelProps) {
+export function PublicPoliciesPanel({ state, content, actionsMax }: PublicPoliciesPanelProps) {
   const { colors } = useTheme();
   const draft = useGame((s) => s.draft);
   const [openMinistryId, setOpenMinistryId] = useState<string | null>(null);
@@ -113,7 +113,7 @@ export function PublicPoliciesPanel({ state, content, pointsMax }: PublicPolicie
                         state={state}
                         content={content}
                         draft={draft}
-                        pointsMax={pointsMax}
+                        actionsMax={actionsMax}
                         current={current?.policyId === policy.id ? current : undefined}
                         colors={colors}
                       />
@@ -132,7 +132,7 @@ export function PublicPoliciesPanel({ state, content, pointsMax }: PublicPolicie
         projects={projects}
         capitalStockMillions={publicState.capitalStockMillions}
       />
-      <GovernmentBrands state={state} content={content} pointsMax={pointsMax} />
+      <GovernmentBrands state={state} content={content} actionsMax={actionsMax} />
     </View>
   );
 }
@@ -144,7 +144,7 @@ function DirectiveRow({
   state,
   content,
   draft,
-  pointsMax,
+  actionsMax,
   current,
   colors,
 }: {
@@ -154,7 +154,7 @@ function DirectiveRow({
   state: GameState;
   content: GameContent;
   draft: AgendaDraft;
-  pointsMax: number;
+  actionsMax: number;
   current?: { ministryId: string; policyId: string; annualMillions: number; year: number };
   colors: ReturnType<typeof useTheme>['colors'];
 }) {
@@ -179,7 +179,7 @@ function DirectiveRow({
   };
   const validation = invalid ? 'orçamento inválido' : validateActionTarget(DIRECTIVE_ACTION!, decision, state, content);
   const selected = hasDecision(draft, decision);
-  const canInclude = selected || (validation === null && fits(draft, decision, content, pointsMax));
+  const canInclude = selected || (validation === null && fits(draft, decision, content, actionsMax));
   const error =
     touched && invalid
       ? 'Informe um valor positivo em R$ milhões, usando números decimais.'
@@ -217,11 +217,11 @@ function DirectiveRow({
         </Text>
       )}
       <Button
-        label={selected ? 'Retirar diretriz da agenda' : 'Definir diretriz (1 ponto)'}
+        label={selected ? 'Retirar diretriz da agenda' : 'Definir diretriz (1 ação)'}
         variant={selected ? 'secondary' : 'primary'}
         disabled={!selected && !canInclude}
         accessibilityHint={
-          !selected && !canInclude ? 'Informe um orçamento válido e verifique os pontos de agenda' : undefined
+          !selected && !canInclude ? 'Informe um orçamento válido e verifique as ações de agenda' : undefined
         }
         onPress={toggle}
         block

@@ -21,7 +21,7 @@
     {
       "id": "mobilizar_base_e_negociar",
       "label": "Mobilizar a base e negociar votos",
-      "description": "Custa dois pontos de agenda e capital político. Mobiliza a base, negocia votos com a Presidência da Câmara e a aprovação sobe com a mobilização popular. A votação é adiada e o pedido é arquivado.",
+      "description": "Custa duas ações de agenda e capital político. Mobiliza a base, negocia votos com a Presidência da Câmara e a aprovação sobe com a mobilização popular. A votação é adiada e o pedido é arquivado.",
       "agendaCost": 2,
       "effects": [
         { "target": "aprovacao", "delta": 0.01, "lagMonths": 0, "durationMonths": 1 },

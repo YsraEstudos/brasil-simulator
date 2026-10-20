@@ -82,6 +82,7 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 | Contingenciamento | `spendingFreeze` |
 | Crédito adicional | `supplementaryCredit` |
 | Capital político | `politicalCapital` |
+| Ação de agenda (custo `agendaCost`, limite mensal `agendaActionsPerMonth`) | `AgendaAction` |
 | Aprovação | `approval` |
 | Relator | `rapporteur` |
 | Acréscimos do relator ("jabutis") | `rider` |

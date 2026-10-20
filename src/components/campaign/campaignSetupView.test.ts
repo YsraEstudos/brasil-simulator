@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ADVICE_PARAMS, AGENDA_POINTS, DEFAULT_CALIBRATION } from '@/engine';
+import { ADVICE_PARAMS, AGENDA_ACTIONS_PER_MONTH, DEFAULT_CALIBRATION } from '@/engine';
 import { DIFFICULTIES } from '@/store/campaignSetup';
 import { campaignMonths, SCENARIOS } from '@/store/scenarios';
 
@@ -16,13 +16,13 @@ import {
 
 // GAME_DESIGN.md §6 descreve metas; a tela só pode prometer o que o motor faz. Os números vêm das constantes do motor.
 describe('efeitos de dificuldade derivados do motor', () => {
-  it('pontos de agenda iguais a AGENDA_POINTS (Realismo com 3, não 2)', () => {
+  it('ações de agenda iguais a AGENDA_ACTIONS_PER_MONTH (Realismo com 3, não 2)', () => {
     for (const id of DIFFICULTIES) {
       const view = difficultyView(id);
-      expect(view.agendaPoints).toBe(AGENDA_POINTS[id]);
-      expect(view.effects[0]).toBe(`${AGENDA_POINTS[id]} pontos de agenda por mês`);
+      expect(view.actionsPerMonth).toBe(AGENDA_ACTIONS_PER_MONTH[id]);
+      expect(view.effects[0]).toBe(`${AGENDA_ACTIONS_PER_MONTH[id]} ações de agenda por mês`);
     }
-    expect(difficultyView('realismo').agendaPoints).toBe(3);
+    expect(difficultyView('realismo').actionsPerMonth).toBe(3);
   });
 
   it('bônus do Congresso no Casual vem de bonus_casual', () => {
@@ -112,7 +112,7 @@ describe('resumo da campanha', () => {
     const s = setupSummary(form);
     expect(s.name).toBe('Governo Novo');
     expect(s.difficulty).toBe('Casual');
-    expect(s.agendaPoints).toBe(AGENDA_POINTS.casual);
+    expect(s.actionsPerMonth).toBe(AGENDA_ACTIONS_PER_MONTH.casual);
     expect(s.scenario).toBe('Brasil, janeiro de 2027');
     expect(s.version).toBe('v0.5.0');
     expect(s.duration).toBe(`até ${durationLabel(campaignMonths('brasil_2027_01_v050'))}`);

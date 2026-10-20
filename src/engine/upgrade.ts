@@ -32,7 +32,21 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   if (version < 6) state = v5ToV6(state);
   if (version < 7) state = v6ToV7(state);
   if (version < 8) state = v7ToV8(state);
+  if (version < 9) state = v8ToV9(state);
   return state as unknown as GameState;
+}
+
+/**
+ * v8 (Fase 08) → v9: "pontos de agenda" viram "ações de agenda" — só o nome do campo persistido muda
+ * (`resources.agendaPointsPerMonth` → `resources.agendaActionsPerMonth`); valores e decisões ficam iguais.
+ */
+function v8ToV9(s: Raw): Raw {
+  const base = { ...s, schemaVersion: 9, engineVersion: ENGINE_VERSION };
+  const resources = (s.resources ?? {}) as Raw;
+  const legacy = resources.agendaPointsPerMonth;
+  if (legacy === undefined || resources.agendaActionsPerMonth !== undefined) return base;
+  const { agendaPointsPerMonth: _legacy, ...rest } = resources;
+  return { ...base, resources: { ...rest, agendaActionsPerMonth: legacy } };
 }
 
 /**

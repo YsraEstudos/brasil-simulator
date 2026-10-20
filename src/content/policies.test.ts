@@ -75,7 +75,7 @@ describe('catálogo de políticas', () => {
     }
   });
 
-  it('reforma_previdencia: PEC de 2 pontos, economia que cresce com o tempo e custo de aprovação', () => {
+  it('reforma_previdencia: PEC de 2 ações, economia que cresce com o tempo e custo de aprovação', () => {
     const reforma = POLICIES.reforma_previdencia;
     expect(reforma?.instruments[0]).toBe('pec');
     expect(reforma?.agendaCost).toBe(2);
@@ -85,7 +85,7 @@ describe('catálogo de políticas', () => {
     expect(reforma?.impacts.find((i) => i.channel === 'aprovacao')?.magnitude).toBeLessThan(0);
   });
 
-  it('reforma_administrativa usa PEC e custa 2 pontos de agenda', () => {
+  it('reforma_administrativa usa PEC e custa 2 ações de agenda', () => {
     const reforma = POLICIES.reforma_administrativa;
     expect(reforma).toBeDefined();
     expect(reforma?.instruments).toContain('pec');

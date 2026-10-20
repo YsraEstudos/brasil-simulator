@@ -127,8 +127,8 @@ describe('advanceMonth', () => {
     expect(JSON.stringify({ state, input })).toBe(before);
   });
 
-  it('limita as decisões aos pontos de agenda e usa o custo do catálogo (GAME_DESIGN.md §4.3)', () => {
-    // estratégica = 3 pontos (GAME_DESIGN.md §6); PEC custa 2 no catálogo, mesmo se a interface mandar 0
+  it('limita as decisões às ações de agenda e usa o custo do catálogo (GAME_DESIGN.md §4.3)', () => {
+    // estratégica = 3 ações (GAME_DESIGN.md §6); PEC custa 2 no catálogo, mesmo se a interface mandar 0
     const { report, state } = advanceMonth(
       campaign(),
       {
@@ -148,7 +148,7 @@ describe('advanceMonth', () => {
       [TEST_BILL.id, 1],
     ]);
     expect(report.rejected.map((r) => [r.decision.policyId, r.reason])).toEqual([
-      [TEST_DECREE.id, 'sem_pontos_de_agenda'],
+      [TEST_DECREE.id, 'sem_acoes_de_agenda'],
       ['inexistente', 'politica_desconhecida'],
       [TEST_BILL.id, 'ja_em_andamento'],
     ]);

@@ -441,7 +441,7 @@ export function adviseEventChoice(event: GameEvent, choiceId: string): EventAdvi
   if (capital !== 0) articulacao.push(`${capital > 0 ? 'Rende' : 'Custa'} capital político.`);
   if (governors !== 0) articulacao.push(`${governors > 0 ? 'Agrada' : 'Desagrada'} os governadores.`);
   if (choice.agendaCost > 0) {
-    articulacao.push(`Ocupa ${choice.agendaCost} ponto${choice.agendaCost > 1 ? 's' : ''} da agenda do mês.`);
+    articulacao.push(`Ocupa ${choice.agendaCost} ${choice.agendaCost > 1 ? 'ações' : 'ação'} da agenda do mês.`);
   }
   if (articulacao.length === 0) articulacao.push('Sem efeito direto no Congresso nem nos governadores.');
 

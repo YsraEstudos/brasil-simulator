@@ -26,9 +26,9 @@ export interface ElectionsCardProps {
   content: GameContent;
   report: MonthReport | undefined;
   draft: AgendaDraft;
-  /** Marca/desmarca a decisão no rascunho (quem chama confere se cabe nos pontos). */
+  /** Marca/desmarca a decisão no rascunho (quem chama confere se cabe nas ações). */
   onToggle: (decision: Decision) => void;
-  /** A decisão cabe nos pontos restantes do mês. */
+  /** A decisão cabe nas ações restantes do mês. */
   fitsDecision: (decision: Decision) => boolean;
 }
 

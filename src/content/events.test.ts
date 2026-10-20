@@ -72,7 +72,7 @@ describe('eventos (GAME_DESIGN.md §11.3)', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('cada escolha padrão custa 0 pontos de agenda', () => {
+  it('cada escolha padrão custa 0 ações de agenda', () => {
     for (const event of EVENTS) {
       const def = event.choices.find((c) => c.id === event.defaultChoice);
       expect(def, `${event.id}: escolha padrão ausente`).toBeDefined();

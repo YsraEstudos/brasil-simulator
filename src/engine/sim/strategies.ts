@@ -29,12 +29,12 @@ export interface Strategy {
   decide(state: GameState, content: GameContent): MonthInput;
 }
 
-/** Escolhe a resposta de um evento entre as que cabem nos pontos restantes (sempre há a padrão, custo 0). */
+/** Escolhe a resposta de um evento entre as que cabem nas ações restantes (sempre há a padrão, custo 0). */
 type EventChooser = (event: GameEvent, affordable: readonly EventChoiceDefinition[]) => string;
 
 interface EventAnswers {
   choices: EventChoice[];
-  /** Pontos de agenda gastos com eventos (o motor processa eventos antes das decisões). */
+  /** Ações de agenda gastas com eventos (o motor processa eventos antes das decisões). */
   spent: number;
 }
 
@@ -44,7 +44,7 @@ function answerEvents(state: GameState, content: GameContent, choose: EventChoos
   for (const pending of state.events.pending) {
     const event = content.events.find((e) => e.id === pending.eventId);
     if (!event) continue;
-    const left = state.resources.agendaPointsPerMonth - answers.spent;
+    const left = state.resources.agendaActionsPerMonth - answers.spent;
     const affordable = event.choices.filter((c) => c.agendaCost <= left);
     const fallback = event.choices.find((c) => c.id === event.defaultChoice);
     const picked = affordable.find((c) => c.id === choose(event, affordable)) ?? fallback;
@@ -73,10 +73,10 @@ function decisionFor(content: GameContent, policyId: string): Decision {
   return { policyId, agendaCost: content.policies[policyId].agendaCost };
 }
 
-/** Envia as políticas na ordem dada, enquanto couberem nos pontos que sobraram dos eventos. */
+/** Envia as políticas na ordem dada, enquanto couberem nas ações que sobraram dos eventos. */
 function sendInOrder(state: GameState, content: GameContent, order: readonly string[], eventSpent: number): Decision[] {
   const sendable = sendablePolicies(state, content);
-  let left = state.resources.agendaPointsPerMonth - eventSpent;
+  let left = state.resources.agendaActionsPerMonth - eventSpent;
   const decisions: Decision[] = [];
   for (const id of order) {
     if (!sendable.has(id)) continue;
@@ -171,7 +171,7 @@ const fisiologica: Strategy = {
   name: 'Fisiológica',
   decide(state, content) {
     const events = answerEvents(state, content, useDefault);
-    let left = state.resources.agendaPointsPerMonth - events.spent;
+    let left = state.resources.agendaActionsPerMonth - events.spent;
     const decisions: Decision[] = [];
     const take = (decision: Decision): boolean => {
       if (decision.agendaCost > left) return false;
@@ -225,7 +225,7 @@ const fisiologica: Strategy = {
       });
     }
 
-    const sends = sendInOrder(state, content, FISIOLOGICA_ORDER, state.resources.agendaPointsPerMonth - left);
+    const sends = sendInOrder(state, content, FISIOLOGICA_ORDER, state.resources.agendaActionsPerMonth - left);
     return { decisions: [...decisions, ...sends], eventChoices: events.choices };
   },
 };
@@ -282,7 +282,7 @@ const aleatoria: Strategy = {
     });
 
     const sendable = sendablePolicies(state, content);
-    let left = state.resources.agendaPointsPerMonth - events.spent;
+    let left = state.resources.agendaActionsPerMonth - events.spent;
     const decisions: Decision[] = [];
     for (;;) {
       const options = [...sendable].filter((id) => content.policies[id].agendaCost <= left);
@@ -316,7 +316,7 @@ const proOferta: Strategy = {
 };
 
 /**
- * A mesma estratégia, pressionando o Banco Central a cada trimestre quando sobra ponto de agenda depois das
+ * A mesma estratégia, pressionando o Banco Central a cada trimestre quando sobra ação de agenda depois das
  * decisões dela (o motor processa eventos e decisões na ordem enviada).
  */
 export function withQuarterlyPressure(base: Strategy): Strategy {
@@ -332,7 +332,7 @@ export function withQuarterlyPressure(base: Strategy): Strategy {
         return sum + (def?.agendaCost ?? 0);
       }, 0);
       const spent = eventCost + input.decisions.reduce((sum, d) => sum + d.agendaCost, 0);
-      if (state.resources.agendaPointsPerMonth - spent < pressure.agendaCost) return input;
+      if (state.resources.agendaActionsPerMonth - spent < pressure.agendaCost) return input;
       return { ...input, decisions: [...input.decisions, { policyId: pressure.id, agendaCost: pressure.agendaCost }] };
     },
   };

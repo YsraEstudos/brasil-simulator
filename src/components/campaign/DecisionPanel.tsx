@@ -17,11 +17,11 @@ export interface DecisionPanelProps {
   selected: readonly string[];
   /** Política com a mesa de despacho aberta. */
   expandedId: string | null;
-  pointsUsed: number;
-  pointsMax: number;
+  actionsUsed: number;
+  actionsMax: number;
   onExpand: (id: string | null) => void;
   onToggle: (id: string) => void;
-  /** Se incluir a política respeita os pontos restantes. */
+  /** Se incluir a política respeita as ações restantes. */
   canInclude: (policy: Policy) => boolean;
   /** Vedação eleitoral atingindo a política (novo benefício na janela): exige confirmação de quebra. */
   isVedada: (policy: Policy) => boolean;
@@ -35,8 +35,8 @@ export function DecisionPanel({
   content,
   selected,
   expandedId,
-  pointsUsed,
-  pointsMax,
+  actionsUsed,
+  actionsMax,
   onExpand,
   onToggle,
   canInclude,
@@ -57,7 +57,7 @@ export function DecisionPanel({
       <View style={styles.header}>
         <Text variant="title">Agenda presidencial</Text>
         <Text variant="body" color="textSecondary" tabular>
-          Pontos usados: {pointsUsed} de {pointsMax}
+          Ações usadas: {actionsUsed} de {actionsMax}
         </Text>
       </View>
       <View style={styles.filters} accessibilityLabel="Filtrar catálogo de políticas por área">
@@ -87,7 +87,7 @@ export function DecisionPanel({
         const meta = (
           <>
             <Text variant="caption" color="textSecondary">
-              {instrumentText} · {costText(policy.agendaCost)} de agenda
+              {instrumentText} · custo: {costText(policy.agendaCost)}
             </Text>
             {current && (
               <Text variant="caption" color={inProgress ? 'warning' : 'textMuted'}>

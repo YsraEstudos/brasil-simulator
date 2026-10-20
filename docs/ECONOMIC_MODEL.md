@@ -120,7 +120,7 @@ Limite de movimento por reunião: `max_passo` (ex.: 100 bp; 150 bp em crise). O 
 
 #### 5.4.1 Pressão pública sobre o Banco Central
 
-Ação de agenda "Pressionar o Banco Central" (custo 1 ponto). Decisão de design de 13/10/2026: o jogador **pode** tentar forçar juros menores, mas paga em credibilidade.
+Ação de agenda "Pressionar o Banco Central" (custo 1 ação). Decisão de design de 13/10/2026: o jogador **pode** tentar forçar juros menores, mas paga em credibilidade.
 
 ```
 submissao_t = sub_base * fracao_diretoria_indicada_t * (1 − autonomia_percebida_t)    // 0–1

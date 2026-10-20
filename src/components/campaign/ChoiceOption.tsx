@@ -13,7 +13,7 @@ export interface ChoiceOptionProps {
   selected: boolean;
   /** Opção aplicada se o jogador não responder. */
   isDefault?: boolean;
-  /** Cabe nos pontos de agenda (a já marcada sempre pode ser desmarcada). */
+  /** Cabe nas ações de agenda (a já marcada sempre pode ser desmarcada). */
   enabled: boolean;
   onPress: () => void;
 }

@@ -24,7 +24,7 @@ export interface EventInboxProps {
   items: readonly PendingItem[];
   /** Escolha marcada pelo jogador, por evento. */
   chosen: Readonly<Partial<Record<string, string>>>;
-  /** Se a opção cabe nos pontos de agenda restantes (a já marcada sempre pode ser desmarcada). */
+  /** Se a opção cabe nas ações de agenda restantes (a já marcada sempre pode ser desmarcada). */
   canChoose: (eventId: string, choiceId: string) => boolean;
   onChoose: (eventId: string, choiceId: string) => void;
   sanctions: readonly SanctionItem[];

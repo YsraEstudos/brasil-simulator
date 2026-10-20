@@ -26,7 +26,7 @@ import {
   type SocietyState,
 } from '@/engine';
 import type { IndicatorPoint } from '@/database/campaignRepository';
-import { draftPoints } from '@/store/agendaDraft';
+import { draftCost } from '@/store/agendaDraft';
 import type { AgendaDraft } from '@/store/agendaDraft';
 import type { ActiveCampaign } from '@/store/gameStore';
 
@@ -127,8 +127,8 @@ export interface HudData {
   monthLabel: string;
   turn: number;
   turnTotal: number;
-  /** Pontos de agenda ainda livres neste mês. */
-  pointsLeft: number;
+  /** Ações de agenda ainda livres neste mês. */
+  actionsLeft: number;
   /** Eventos aguardando resposta (selo do sino). */
   pendingCount: number;
   stats: readonly HudStat[];
@@ -445,7 +445,7 @@ export function hudFromCampaign(
     monthLabel: monthLabel(state.monthIndex),
     turn: state.monthIndex + 1,
     turnTotal: campaignMonths(state.scenarioId),
-    pointsLeft: state.resources.agendaPointsPerMonth - draftPoints(draft, content),
+    actionsLeft: state.resources.agendaActionsPerMonth - draftCost(draft, content),
     pendingCount: state.events.pending.length,
     stats: buildStats({
       indicators: state.indicators,
@@ -478,7 +478,7 @@ export function hudFromScenario(content: GameContent): HudData {
     monthLabel: monthLabel(0),
     turn: 1,
     turnTotal,
-    pointsLeft: 3,
+    actionsLeft: 3,
     pendingCount: 0,
     stats: buildStats({
       indicators,

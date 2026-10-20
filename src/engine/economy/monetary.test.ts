@@ -68,7 +68,7 @@ describe('Copom (ECONOMIC_MODEL.md §5.4)', () => {
 });
 
 describe('pressão pública sobre o Banco Central (ECONOMIC_MODEL.md §5.4.1)', () => {
-  it('custa 1 ponto de agenda, só uma vez por mês, e não vira proposta', () => {
+  it('custa 1 ação de agenda, só uma vez por mês, e não vira proposta', () => {
     const r = advanceMonth(
       testState(1, 'estrategica', content),
       { decisions: [...PRESS.decisions, ...PRESS.decisions] },

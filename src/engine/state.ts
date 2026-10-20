@@ -19,8 +19,8 @@ import {
   type RevenueGroup,
 } from './types';
 
-/** Pontos de agenda por dificuldade (GAME_DESIGN.md §6). */
-export const AGENDA_POINTS: Record<Difficulty, number> = {
+/** Ações de agenda por mês, por dificuldade (GAME_DESIGN.md §6). */
+export const AGENDA_ACTIONS_PER_MONTH: Record<Difficulty, number> = {
   casual: 4,
   estrategica: 3,
   realismo: 3,
@@ -93,7 +93,7 @@ export function createInitialState(c: NewCampaign): GameState {
     indicators: indicatorsFromScenario(scenario),
     resources: {
       politicalCapital: c.politicalCapital ?? INITIAL_POLITICAL_CAPITAL,
-      agendaPointsPerMonth: AGENDA_POINTS[c.difficulty],
+      agendaActionsPerMonth: AGENDA_ACTIONS_PER_MONTH[c.difficulty],
     },
     economy: initialEconomy(scenario, calibration),
     congress: {

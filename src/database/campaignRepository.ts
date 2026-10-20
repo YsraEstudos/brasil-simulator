@@ -2,6 +2,7 @@ import {
   SaveTooNewError,
   upgradeGameState,
   type Decision,
+  type DecisionRejection,
   type Difficulty,
   type GameState,
   type Indicators,
@@ -171,9 +172,15 @@ export async function loadIndicatorHistory(db: SqlDatabase, campaignId: string):
   });
 }
 
+/** Motivo de recusa como gravado antes da v9. */
+const LEGACY_REJECTION_REASONS: Record<string, DecisionRejection> = {
+  sem_pontos_de_agenda: 'sem_acoes_de_agenda',
+};
+
 /**
  * Relatório mensal salvo (decomposição causal); `null` se o mês saiu da retenção ou não existe. Relatórios
- * gravados antes da Fase 05 não têm a explicação por UF: ela vem como `null`.
+ * gravados antes da Fase 05 não têm a explicação por UF: ela vem como `null`. A v9 renomeou um motivo de
+ * recusa ("pontos" → "ações"): relatórios antigos são traduzidos na leitura para o rótulo continuar aparecendo.
  */
 export async function loadReport(db: SqlDatabase, campaignId: string, monthIndex: number): Promise<MonthReport | null> {
   const row = await db.first<{ report_json: string }>(
@@ -182,7 +189,11 @@ export async function loadReport(db: SqlDatabase, campaignId: string, monthIndex
   );
   if (!row) return null;
   const report = JSON.parse(row.report_json) as Partial<MonthReport>;
-  return { ...report, regional: report.regional ?? null } as MonthReport;
+  const rejected = (report.rejected ?? []).map((r) => ({
+    ...r,
+    reason: LEGACY_REJECTION_REASONS[r.reason] ?? r.reason,
+  }));
+  return { ...report, rejected, regional: report.regional ?? null } as MonthReport;
 }
 
 /** Estado mais recente da campanha, pronto para continuar jogando. */

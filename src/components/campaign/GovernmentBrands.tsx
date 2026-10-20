@@ -27,7 +27,7 @@ const BRAND_ACTION = AGENDA_ACTIONS[BRAND_ACTION_ID];
 export interface GovernmentBrandsProps {
   state: GameState;
   content: GameContent;
-  pointsMax: number;
+  actionsMax: number;
 }
 
 function decisionFor(proposalId: string, name: string): Decision {
@@ -61,7 +61,7 @@ function parseName(name: string): string {
 }
 
 /** Marcas de governo: nomear só prepara a agenda; o motor valida ao encerrar o mês. */
-export function GovernmentBrands({ state, content, pointsMax }: GovernmentBrandsProps) {
+export function GovernmentBrands({ state, content, actionsMax }: GovernmentBrandsProps) {
   const { colors } = useTheme();
   const draft = useGame((s) => s.draft);
   const publicState: PublicPolicyState = state.publicPolicies;
@@ -103,7 +103,7 @@ export function GovernmentBrands({ state, content, pointsMax }: GovernmentBrands
     }
     const validation = validateActionTarget(BRAND_ACTION!, decision, state, content);
     if (validation !== null) return;
-    if (!fits(draft, decision, content, pointsMax) || consumed >= BRAND_LIMIT) return;
+    if (!fits(draft, decision, content, actionsMax) || consumed >= BRAND_LIMIT) return;
     gameStore.getState().toggleDecision(decision);
   };
 
@@ -133,7 +133,7 @@ export function GovernmentBrands({ state, content, pointsMax }: GovernmentBrands
               state={state}
               content={content}
               draft={draft}
-              pointsMax={pointsMax}
+              actionsMax={actionsMax}
               consumed={consumed}
               colors={colors}
               onToggle={toggle}
@@ -153,7 +153,7 @@ function BrandRow({
   state,
   content,
   draft,
-  pointsMax,
+  actionsMax,
   consumed,
   colors,
   onToggle,
@@ -165,7 +165,7 @@ function BrandRow({
   state: GameState;
   content: GameContent;
   draft: AgendaDraft;
-  pointsMax: number;
+  actionsMax: number;
   consumed: number;
   colors: ThemeColors;
   onToggle: (decision: Decision) => void;
@@ -181,7 +181,7 @@ function BrandRow({
   const selected = hasDecision(draft, decision);
   const canInclude =
     selected ||
-    (validation === null && !invalid && fits(draft, decision, content, pointsMax) && consumed < BRAND_LIMIT);
+    (validation === null && !invalid && fits(draft, decision, content, actionsMax) && consumed < BRAND_LIMIT);
   const helper =
     invalid && touched
       ? 'Informe um nome entre 1 e 60 caracteres.'
@@ -222,11 +222,11 @@ function BrandRow({
             </Text>
           )}
           <Button
-            label={selected ? 'Retirar da agenda' : 'Marcar na agenda (1 ponto)'}
+            label={selected ? 'Retirar da agenda' : 'Marcar na agenda (1 ação)'}
             variant={selected ? 'secondary' : 'primary'}
             disabled={!selected && !canInclude}
             accessibilityHint={
-              !selected && !canInclude ? 'Informe um nome válido e verifique os pontos de agenda' : undefined
+              !selected && !canInclude ? 'Informe um nome válido e verifique as ações de agenda' : undefined
             }
             onPress={() => onToggle(decision)}
             block

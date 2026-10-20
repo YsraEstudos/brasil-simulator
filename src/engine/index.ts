@@ -91,7 +91,7 @@ export {
 } from './regions/regions';
 export { createRng, seedRng, type Rng, type RngState } from './rng';
 export {
-  AGENDA_POINTS,
+  AGENDA_ACTIONS_PER_MONTH,
   createInitialState,
   currentNominalGdpMillions,
   FALLBACK_ECONOMY,

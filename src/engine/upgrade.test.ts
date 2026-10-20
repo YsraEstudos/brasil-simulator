@@ -23,8 +23,8 @@ const content = loadContent(DEFAULT_SCENARIO_ID);
 
 describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
   // Fixture v6 gravado pelo motor 0.6.0 (Fase 06): cenário brasil_2027_01_v050, sete meses jogados, com pendências
-  // e eventos já disparados. FASE_07/FASE_08: save v6 vira v8 sem alterar os campos antigos.
-  it('save real v6 vira v8 com os campos antigos idênticos e os novos vazios', () => {
+  // e eventos já disparados. FASE_07/FASE_08/FASE_09: save v6 vira o estado atual sem alterar os campos antigos.
+  it('save real v6 vira o estado atual com os campos antigos idênticos e os novos vazios', () => {
     const raw = structuredClone(v6Save) as unknown;
     const state = upgradeGameState(6, raw);
     const legacy = structuredClone(v6Save);
@@ -49,8 +49,8 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
   });
 
   // Fixture v7 gravado pelo motor 0.7.0 (Fase 07): cenário brasil_2027_01_v060, sete meses jogados, com eventos,
-  // marcas e notícias. FASE_08.md: save v7 vira v8 sem alterar os campos antigos e sem criar `politics`.
-  it('save real v7 vira v8 com os campos antigos idênticos e sem estado eleitoral', () => {
+  // marcas e notícias. FASE_08: save v7 vira v8 sem criar `politics`. FASE_09: só o campo de ações de agenda muda.
+  it('save real v7 vira o estado atual com os campos antigos idênticos e sem estado eleitoral', () => {
     const raw = structuredClone(v7Save) as unknown;
     const state = upgradeGameState(7, raw);
     const legacy = structuredClone(v7Save);
@@ -63,6 +63,21 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
     expect(state.publicPolicies).toEqual(legacy.publicPolicies);
     expect(state.events).toEqual(legacy.events);
     expect(state.politics).toBeUndefined();
+    // v9: `agendaPointsPerMonth` vira `agendaActionsPerMonth`, com o mesmo valor.
+    expect(state.resources.agendaActionsPerMonth).toBe(legacy.resources.agendaPointsPerMonth);
+    expect(state.resources).not.toHaveProperty('agendaPointsPerMonth');
+  });
+
+  // A v9 (Fase 08) só troca o nome do campo persistido; valor, indicadores e economia ficam idênticos.
+  it('save v8 troca o nome do campo de ações de agenda sem tocar no valor', () => {
+    const v8Save = { ...structuredClone(v7Save), schemaVersion: 8, engineVersion: '0.8.0' };
+    const state = upgradeGameState(8, v8Save);
+    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.engineVersion).toBe(ENGINE_VERSION);
+    expect(state.resources.agendaActionsPerMonth).toBe(v8Save.resources.agendaPointsPerMonth);
+    expect(state.resources).not.toHaveProperty('agendaPointsPerMonth');
+    expect(state.indicators).toEqual(v8Save.indicators);
+    expect(state.economy).toEqual(v8Save.economy);
   });
 
   it('save real v7 atualizado continua jogável por 12 meses sem violar invariantes', () => {

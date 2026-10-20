@@ -56,7 +56,7 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
 ];
 
 /**
- * Processa um mês: valida as escolhas pelos pontos de agenda, roda as etapas e aplica as contribuições.
+ * Processa um mês: valida as escolhas pelas ações de agenda do mês, roda as etapas e aplica as contribuições.
  * Função pura: não altera `state` nem `input`; mesma entrada → mesma saída.
  */
 export function advanceMonth(
@@ -116,11 +116,11 @@ export function advanceMonth(
 }
 
 /**
- * Aceita primeiro as respostas a eventos e depois as decisões, na ordem enviada, enquanto houver pontos de
+ * Aceita primeiro as respostas a eventos e depois as decisões, na ordem enviada, enquanto houver ações de
  * agenda (GAME_DESIGN.md §4.3). O custo de uma política vem do catálogo, não do que a interface enviou.
  */
 function screenInput(state: GameState, input: MonthInput, content: GameContent) {
-  let left = state.resources.agendaPointsPerMonth;
+  let left = state.resources.agendaActionsPerMonth;
   const eventChoices: EventChoice[] = [];
   const answered = new Set<string>();
   for (const choice of input.eventChoices ?? []) {
@@ -151,7 +151,7 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
       } else if (actionsDone.has(key)) {
         rejected.push({ decision, reason: 'acao_repetida' });
       } else if (action.agendaCost > left) {
-        rejected.push({ decision, reason: 'sem_pontos_de_agenda' });
+        rejected.push({ decision, reason: 'sem_acoes_de_agenda' });
       } else {
         left -= action.agendaCost;
         actionsDone.add(key);
@@ -175,7 +175,7 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
     } else if (!Number.isFinite(cost) || cost < 0) {
       rejected.push({ decision, reason: 'custo_invalido' });
     } else if (cost > left) {
-      rejected.push({ decision, reason: 'sem_pontos_de_agenda' });
+      rejected.push({ decision, reason: 'sem_acoes_de_agenda' });
     } else {
       left -= cost;
       sent.add(decision.policyId);

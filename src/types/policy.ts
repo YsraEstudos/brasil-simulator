@@ -108,7 +108,7 @@ export const policySchema = z
     competence: competenceSchema,
     /** Instrumentos na ordem em que são usados (ex.: PLN e depois ato de execução). */
     instruments: z.array(instrumentSchema).min(1),
-    /** Custo em pontos de agenda (GAME_DESIGN.md §4.3). */
+    /** Custo em ações de agenda (GAME_DESIGN.md §4.3). */
     agendaCost: z.number().int().min(0).max(3),
     cost: z
       .object({

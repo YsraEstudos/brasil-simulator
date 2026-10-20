@@ -30,7 +30,7 @@ import {
 
 /**
  * Validação do alvo das ações de agenda (proposta, bloco, ministério). Usada pelo `advanceMonth` antes de
- * gastar pontos e pela interface para mostrar só o que é possível. `null` = válida.
+ * gastar ações e pela interface para mostrar só o que é possível. `null` = válida.
  */
 export function validateActionTarget(
   action: AgendaAction,
