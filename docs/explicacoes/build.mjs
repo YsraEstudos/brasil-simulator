@@ -5,12 +5,12 @@
 //   src/tema/          site.css e site.js, copiados para EXPLICACOES-paginas/assets/
 //   src/corpo/         fragmentos HTML usados por algumas páginas
 //
-// O build valida os dados (ids, grupos, fragmentos, documentos e páginas relacionadas) e confere
+// O build valida os dados (ids, grupos, fragmentos, documentos, caminhos do código e páginas relacionadas) e confere
 // todos os links internos do site gerado. Se algo estiver errado, ele para com a lista de erros.
 //
 // Uso: node docs/explicacoes/build.mjs
 
-import { readFileSync, writeFileSync, readdirSync, rmSync, mkdirSync, copyFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, rmSync, mkdirSync, copyFileSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { grupos, paginas } from './src/site.mjs';
@@ -18,6 +18,7 @@ import { inicioHtml, grupoHtml, paginaHtml, ESTADOS } from './src/layout.mjs';
 
 const aqui = dirname(fileURLToPath(import.meta.url));
 const docs = resolve(aqui, '..');
+const raiz = resolve(docs, '..');
 const src = join(aqui, 'src');
 const pastaSite = join(docs, 'EXPLICACOES-paginas');
 const pastaAssets = join(pastaSite, 'assets');
@@ -52,6 +53,14 @@ for (const p of paginas) {
   if (!ESTADOS[p.status]) erros.push(`${p.id}: status inválido "${p.status}"`);
   if (!Array.isArray(p.codigo) || p.codigo.length === 0) erros.push(`${p.id}: falta "codigo"`);
   if (p.corpo && !fragmentos.has(p.corpo)) erros.push(`${p.id}: fragmento inexistente "${p.corpo}"`);
+  // Caminhos do código, a partir da raiz do repositório: terminado em "/" é pasta, sem a barra é arquivo.
+  for (const caminho of p.codigo ?? []) {
+    const alvo = join(raiz, caminho);
+    const pasta = caminho.endsWith('/');
+    if (!existsSync(alvo) || statSync(alvo).isDirectory() !== pasta) {
+      erros.push(`${p.id}: ${pasta ? 'pasta' : 'arquivo'} de código inexistente "${caminho}"`);
+    }
+  }
   for (const [, arq] of p.docs ?? []) {
     if (!existsSync(join(docs, arq))) erros.push(`${p.id}: documento inexistente "${arq}"`);
   }

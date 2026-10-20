@@ -1,7 +1,7 @@
 # Plano — Painel único (o jogo inteiro a partir da mesa)
 
 Versão 0.2 do documento • 20/10/2026 • ✅ Etapas 1–5 implementadas em 20/10/2026 (Etapas 1–2 nos PRs #17 e #18; Etapas 3–5 no PR da branch `feat/painel-etapas-3-5`) • v0.2: decisões da §6 tomadas
-Documentos relacionados: [GAME_DESIGN.md](GAME_DESIGN.md) §4.2–§4.5 · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) §2–§3
+Documentos relacionados: [GAME_DESIGN.md](GAME_DESIGN.md) §4.2–§4.6 · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) §2–§3
 
 ---
 

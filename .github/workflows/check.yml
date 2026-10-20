@@ -24,6 +24,13 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
+      # Site de explicações: o build valida dados, caminhos do código e links, e o HTML versionado tem de ser o gerado.
+      - name: Docs build (site de explicações)
+        run: |
+          node docs/explicacoes/build.mjs
+          git diff --exit-code -- docs/EXPLICACOES.html docs/EXPLICACOES-paginas/
+          untracked=$(git ls-files --others --exclude-standard -- docs/EXPLICACOES.html docs/EXPLICACOES-paginas/)
+          if [[ -n "$untracked" ]]; then echo "::error::Páginas geradas fora do commit:"; echo "$untracked"; exit 1; fi
       - run: npm run test:coverage
       # O Sonar só roda quando o token e as variáveis existem no repositório; sem eles o passo é pulado.
       - name: Check SonarCloud configuration

@@ -296,7 +296,7 @@ export const paginas = [
       'Regra: consulta ou decisão rápida é folha, que abre por cima do globo; mesa de trabalho é subtela, que troca a tela inteira. O globo pausa enquanto uma subtela está aberta.',
       'Mapa de calor por indicador (crescimento, desemprego, aprovação, renda, relação com o governador) e visita a um estado pela agenda.',
     ],
-    docs: [['PLANO_PAINEL_UNICO.md', 'PLANO_PAINEL_UNICO.md'], ['GAME_DESIGN.md §4.5', 'GAME_DESIGN.md']],
+    docs: [['PLANO_PAINEL_UNICO.md', 'PLANO_PAINEL_UNICO.md'], ['GAME_DESIGN.md §4.6 (mesa) e §4.5 (mapa)', 'GAME_DESIGN.md']],
     relacionados: ['tela-gabinete', 'tela-congresso', 'tela-economia', 'tela-noticias', 'tela-legado', 'motor-regioes', 'sis-globo'],
   },
   {
@@ -505,7 +505,7 @@ export const paginas = [
     grupo: 'sistemas',
     titulo: 'Notícias (jogador)',
     status: 'rascunho',
-    resumo: 'Manchetes com tom e causa, no feed e na mesa de redes sociais.',
+    resumo: 'Manchetes com tom e causa, no jornal do mês e nas redes sociais do notebook.',
     codigo: ['src/app/(jogo)/noticias.tsx'],
     pontos: [
       'Feed com filtro por tipo.',
