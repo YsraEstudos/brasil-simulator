@@ -284,12 +284,12 @@ export function PainelScreen() {
    */
   const endMonth = async () => {
     const before = gameStore.getState().active?.state.monthIndex;
-    // Falha ao gravar: o mês não avança, o rascunho fica e o aviso de erro aparece na mesa (`error` da store).
-    const ok = await gameStore.getState().endMonth();
-    setEndMonthFailed(!ok && gameStore.getState().error !== undefined);
-    if (!ok) return;
+    // O resultado vem do estado, não do `ok`: se o mês foi gravado e só a releitura da lista falhou, ele avançou.
+    // Falha antes de gravar: o mês fica, o rascunho também, e o aviso da mesa pede para tentar de novo.
+    await gameStore.getState().endMonth();
     const after = gameStore.getState().active;
     const outcome = endMonthOutcome(before, after?.state.monthIndex, after?.finished ?? false);
+    setEndMonthFailed(outcome === 'nada' && gameStore.getState().error !== undefined);
     if (outcome === 'relatorio') setSheet('relatorio');
     else if (outcome === 'legado') go('/legado');
   };
