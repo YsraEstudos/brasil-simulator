@@ -6,7 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CAMERA } from './config';
 import { GlobeController } from './controller';
+import type { LabelInsets } from './GlobeLabels';
 import { GlobeScene, type SceneStats } from './GlobeScene';
+import type { Rect } from './labels';
 import { findUf, ufBySigla, type Uf } from './ufs';
 
 const BRASIL_VIEW = { lon: -52, lat: -14, altitude: 0.75 };
@@ -32,7 +34,15 @@ export interface GlobeViewProps {
    * deve gastar GPU. A câmera, a seleção e os tiles ficam como estão; ao despausar o globo desenha um quadro na hora.
    */
   paused?: boolean;
+  /** Áreas do HUD (px da tela) onde nenhuma sigla ou capital pode tocar: botões, doca, barra do topo. */
+  reservedRects?: readonly Rect[];
+  /** Faixas da tela onde um rótulo não cabe por inteiro (área segura + barras do HUD). Padrão: área segura. */
+  labelInsets?: LabelInsets;
+  /** Tamanho dos rótulos: `labelScale(textScale)`. Padrão 1. */
+  labelScale?: number;
 }
+
+const NO_RECTS: readonly Rect[] = [];
 
 /** Ao despausar o laço sob demanda não tem quadro pedido: invalida um para o globo reaparecer sem esperar um gesto. */
 function ResumeOnUnpause({ paused }: { paused: boolean }) {
@@ -44,9 +54,22 @@ function ResumeOnUnpause({ paused }: { paused: boolean }) {
 }
 
 /** O globo da federação: câmera, toques e o mapa de calor; quem usa controla a seleção (`selectedId`/`onSelect`). */
-export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false }: GlobeViewProps) {
+export function GlobeView({
+  fills,
+  selectedId,
+  onSelect,
+  onReady,
+  paused = false,
+  reservedRects = NO_RECTS,
+  labelInsets,
+  labelScale = 1,
+}: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   const insets = useSafeAreaInsets();
+  const sceneInsets = useMemo<LabelInsets>(
+    () => labelInsets ?? { top: insets.top, right: insets.right, bottom: insets.bottom, left: insets.left },
+    [labelInsets, insets.top, insets.right, insets.bottom, insets.left],
+  );
   // Último toque no globo (o contador distingue dois toques seguidos na mesma UF).
   const [tap, setTap] = useState<{ uf: Uf | null; n: number }>({ uf: null, n: 0 });
   const selected = selectedId ? (ufBySigla(selectedId) ?? null) : null;
@@ -131,6 +154,9 @@ export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false
                 selectedUf={selected}
                 fills={fills}
                 onStats={__DEV__ ? setStats : undefined}
+                reservedRects={reservedRects}
+                labelInsets={sceneInsets}
+                labelScale={labelScale}
               />
             </Canvas>
           </View>

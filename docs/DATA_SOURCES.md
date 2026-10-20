@@ -70,6 +70,17 @@ Versão 0.1 do documento • Fase 00 • 13/10/2026 • ✅ Revisado pelo autor 
 
 Pipeline: `scripts/data/fetch_globe_data.py` (download para `data-raw/`) → `scripts/data/build_globe.py` (gera `assets/globe/` e `src/globe/data/`). As cores dos biomas são **estilizadas** (status `FICTICIO` quanto à aparência); limites de biomas, UFs, rios e altitudes são `REAL`, com simplificações de escala.
 
+### 3.2 Siglas, capitais e atlas de rótulos do globo (PR 2 do PLANO_GLOBO, 20/10/2026)
+
+| Dado | Fonte | Uso | Status / licença |
+| --- | --- | --- | --- |
+| Capitais das 27 UFs (`src/globe/data/capitals.json`): nome e coordenadas da sede municipal | IBGE (localidades / sedes municipais), valores de referência públicos digitados em `scripts/data/build_labels.py` com 3 casas decimais (~100 m) | Ponto e nome da capital no globo e no mapa 2D | `PROVISORIO`: conferir contra o arquivo oficial das sedes quando ele entrar no pipeline. O script falha se alguma capital cair fora do polígono da própria UF |
+| Âncora de cada sigla (`src/globe/data/labels.json`) | Calculada dos contornos de `ufs.json` (polo de inacessibilidade do maior anel, projeção com escala de longitude por cos(lat)) | Posição da sigla dentro da UF (o centroide cai fora de UFs côncavas) | Derivado; `REAL` quanto à geometria |
+| Prioridade e área (`labels.json`) | Prioridade = posto de população por UF em `src/data/scenarios/brasil_2027_01_v070.json`; área aproximada do polígono | Quem vence uma colisão de rótulos | Derivado do cenário (população `ESTIMADO`) |
+| Atlas de texto (`assets/globe/labels.png`) | Fonte DejaVu Sans Bold (derivada da Bitstream Vera; licença livre, permite uso e incorporação), lida do pacote `matplotlib`; os glifos entram **rasterizados** no atlas e nenhuma fonte é baixada ou distribuída com o app | 27 siglas + 27 nomes de capital, branco com contorno escuro, desenhados em 2x o tamanho lógico | Gerado; sem restrição de uso |
+
+Pipeline: `npm run build:labels` (`scripts/data/build_labels.py`; lê `src/globe/data/ufs.json`, gerado antes por `build_globe.py`; requer `pip install matplotlib` pela fonte). Determinístico: duas execuções geram arquivos idênticos.
+
 > **Códigos de séries:** serão levantados e conferidos na Fase 01/03. Nenhum código deve ser usado sem validação da resposta da API, porque séries são descontinuadas ou renumeradas.
 
 ---

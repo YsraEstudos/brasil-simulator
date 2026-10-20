@@ -7,6 +7,8 @@ import { EARTH_RADIUS_M, TILE_GRID, terrainExaggeration } from './config';
 import type { GlobeController } from './controller';
 import { ufFillGeometries } from './fills';
 import { lonLatToVec3, raySphere, tileBounds, vec3ToLonLat, type Vec3 } from './geo';
+import { GlobeLabels, type LabelInsets, type LabelsUpdater } from './GlobeLabels';
+import type { Rect } from './labels';
 import { selectTiles } from './lod';
 import {
   atmosphereFragmentShader,
@@ -151,9 +153,15 @@ type Props = {
   /** Cor de cada UF (sigla → hex) no mapa de calor; `null` = sem mapa. */
   fills?: Readonly<Record<string, string>> | null;
   onStats?: (s: SceneStats) => void;
+  /** Áreas do HUD onde nenhum rótulo pode tocar (px da tela). */
+  reservedRects: readonly Rect[];
+  /** Faixas da tela (área segura e barras do HUD) onde um rótulo não cabe por inteiro. */
+  labelInsets: LabelInsets;
+  /** `labelScale(textScale)`. */
+  labelScale: number;
 };
 
-export function GlobeScene({ controller, selectedUf, fills, onStats }: Props) {
+export function GlobeScene({ controller, selectedUf, fills, onStats, reservedRects, labelInsets, labelScale }: Props) {
   'use no memo'; // objetos three.js são mutados a cada quadro; fora do React Compiler
   const { camera, gl, size, invalidate } = useThree();
   const group = useRef<THREE.Group>(null);
@@ -188,6 +196,7 @@ export function GlobeScene({ controller, selectedUf, fills, onStats }: Props) {
   const projScreen = useMemo(() => new THREE.Matrix4(), []);
   const sphere = useMemo(() => new THREE.Sphere(), []);
   const last = useRef({ time: 0, stats: '' });
+  const labelsUpdate = useRef<LabelsUpdater | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -285,6 +294,7 @@ export function GlobeScene({ controller, selectedUf, fills, onStats }: Props) {
     cam.far = 120;
     cam.updateProjectionMatrix();
     cam.updateMatrixWorld();
+    labelsUpdate.current?.(cam, s); // rótulos: só refaz o layout se a câmera ou a tela mudaram
 
     // LOD dos tiles
     projScreen.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
@@ -373,6 +383,7 @@ export function GlobeScene({ controller, selectedUf, fills, onStats }: Props) {
       <group ref={group} />
       <UfFills fills={fills ?? NO_FILLS} invalidate={invalidate} />
       {highlight && <primitive object={highlight} />}
+      <GlobeLabels updateRef={labelsUpdate} reservedRects={reservedRects} insets={labelInsets} scale={labelScale} />
       <Atmosphere />
     </>
   );

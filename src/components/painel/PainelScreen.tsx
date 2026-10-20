@@ -49,6 +49,13 @@ import {
   StatCell,
 } from './HudBits';
 import { hudFromCampaign, hudFromScenario, type HudStatId } from './hudData';
+import {
+  DEMO_BADGE_BAND,
+  DOCK_HEIGHT_COMPACT,
+  DOCK_HEIGHT_PORTRAIT,
+  painelLabelReserve,
+  TOP_INSET,
+} from './hudReserved';
 import { Hud } from './hudTheme';
 import { InfoSheet } from './InfoSheet';
 import {
@@ -107,14 +114,6 @@ const MENU_ICON: SymbolViewProps['name'] = { ios: 'line.3.horizontal', android: 
 const HOME_ICON: SymbolViewProps['name'] = { ios: 'house.fill', android: 'home', web: 'home' };
 const SETTINGS_ICON: SymbolViewProps['name'] = { ios: 'gearshape.fill', android: 'settings', web: 'settings' };
 
-/** Medidas fixas da mesa (px, sem as safe areas), para os trilhos laterais não passarem por baixo do topo/doca. */
-const TOP_INSET = { portrait: 118 + 56, compact: 56 } as const;
-/** Retrato: a doca tem duas linhas — o Encerrar o mês (52) em cima e os quatro botões de subtela (54) embaixo. */
-const DOCK_HEIGHT_PORTRAIT = 54 + 6 + 52;
-/** Paisagem: a doca (botões de 40) e o Encerrar compacto, com a folga até a base; os trilhos param acima dela. */
-const DOCK_HEIGHT_COMPACT = 6 + 40 + 8;
-/** Faixa do `DemoBadge` acima da doca (selo + espaçamento). */
-const DEMO_BADGE_BAND = 28;
 /**
  * Paisagem: largura mínima para a doca (4 × 48 + 3 × 6) ficar centrada sem encostar no Encerrar o mês compacto do
  * canto direito; abaixo disso ela vai para a esquerda.
@@ -259,6 +258,22 @@ export function PainelScreen() {
   };
   const compact = size.width > size.height;
   const buttonSize = compact ? 40 : 48;
+  // Fim da barra do topo medido no layout: os cartões de números variam com a largura e a escala do texto, e as
+  // constantes de `hudReserved` não acompanham isso.
+  const [topBarBottom, setTopBarBottom] = useState(0);
+  // Áreas do HUD onde o mapa não pode pôr siglas e capitais (trilhos, barra do topo, doca): ver `hudReserved`.
+  const labelReserve = useMemo(() => {
+    const reserve = painelLabelReserve({
+      width: size.width,
+      height: size.height,
+      insets,
+      compact,
+      demo: hud.demo,
+      leftRailCount: leftRail(showElections).length,
+      rightRailCount: RIGHT_RAIL.length,
+    });
+    return { ...reserve, insets: { ...reserve.insets, top: Math.max(reserve.insets.top, topBarBottom) } };
+  }, [size.width, size.height, insets, compact, hud.demo, showElections, topBarBottom]);
 
   /** Fecha o detalhe e limpa a seleção do mapa (o ✕, o toque fora e o voltar do Android passam por aqui). */
   const closeSheet = () => {
@@ -576,6 +591,8 @@ export function PainelScreen() {
             renderer={mapRenderer}
             viewModel={mapModel}
             paused={!focused}
+            reservedRects={labelReserve.rects}
+            labelInsets={labelReserve.insets}
             onSelect={selectState}
             onGlobeFailure={() => setGlobeFailed(true)}
             onReady={(api) => {
@@ -585,6 +602,10 @@ export function PainelScreen() {
 
           <View
             pointerEvents="box-none"
+            onLayout={(e) => {
+              const { y, height } = e.nativeEvent.layout;
+              setTopBarBottom((b) => (b === y + height ? b : y + height));
+            }}
             style={[
               styles.top,
               { paddingTop: insets.top + 6, paddingLeft: 8 + insets.left, paddingRight: 8 + insets.right },

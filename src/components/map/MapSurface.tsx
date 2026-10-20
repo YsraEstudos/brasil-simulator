@@ -2,6 +2,8 @@ import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import type { GlobeApi, GlobeViewProps } from '@/globe/GlobeView';
+import { labelScale, type LabelViewport, type Rect } from '@/globe/labels';
+import { useGame } from '@/store';
 import type { MapRendererPref } from '@/store/mapRenderer';
 
 import { FlatBrazilMap } from './FlatBrazilMap';
@@ -26,8 +28,15 @@ export interface MapSurfaceProps {
   paused?: boolean;
   /** O globo lançou erro ao iniciar ou desenhar; a superfície já está mostrando o mapa 2D. */
   onGlobeFailure?: (error: Error) => void;
+  /** Áreas do HUD (px da superfície) onde nenhuma sigla ou capital pode tocar: botões, doca, barra do topo. */
+  reservedRects?: readonly Rect[];
+  /** Faixas onde um rótulo não cabe por inteiro (área segura + barras do HUD). */
+  labelInsets?: LabelViewport['insets'];
   style?: StyleProp<ViewStyle>;
 }
+
+/** Parâmetros de rótulo comuns ao globo e ao mapa 2D. */
+type LabelProps = { reservedRects?: readonly Rect[]; labelInsets?: LabelViewport['insets']; labelScale: number };
 
 /** API de câmera do mapa 2D: não há câmera para mover. */
 export const FLAT_MAP_API: GlobeApi = { flyToUf: () => undefined, reset: () => undefined };
@@ -39,19 +48,31 @@ function FlatMap({
   onReady,
   light,
   style,
+  labels,
 }: {
   viewModel: RegionalMapViewModel;
   onSelect: (sigla: string | null) => void;
   onReady?: (api: GlobeApi) => void;
   light: boolean;
   style?: StyleProp<ViewStyle>;
+  labels: LabelProps;
 }) {
   useEffect(() => {
     onReady?.(FLAT_MAP_API);
     // só na montagem: a API não depende de nada
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return <FlatBrazilMap viewModel={viewModel} onSelect={onSelect} variant={light ? 'light' : 'full'} style={style} />;
+  return (
+    <FlatBrazilMap
+      viewModel={viewModel}
+      onSelect={onSelect}
+      variant={light ? 'light' : 'full'}
+      reservedRects={labels.reservedRects}
+      labelInsets={labels.labelInsets}
+      labelScale={labels.labelScale}
+      style={style}
+    />
+  );
 }
 
 interface BoundaryProps {
@@ -88,9 +109,22 @@ function LazyGlobe(props: GlobeViewProps) {
   return <GlobeView {...props} />;
 }
 
-export function MapSurface({ renderer, viewModel, onSelect, onReady, paused, onGlobeFailure, style }: MapSurfaceProps) {
+export function MapSurface({
+  renderer,
+  viewModel,
+  onSelect,
+  onReady,
+  paused,
+  onGlobeFailure,
+  reservedRects,
+  labelInsets,
+  style,
+}: MapSurfaceProps) {
+  // O mesmo ajuste de texto do aplicativo vale para as siglas do globo e do mapa 2D.
+  const scale = labelScale(useGame((s) => s.textScale));
+  const labels: LabelProps = { reservedRects, labelInsets, labelScale: scale };
   const flat = (light: boolean) => (
-    <FlatMap viewModel={viewModel} onSelect={onSelect} onReady={onReady} light={light} style={style} />
+    <FlatMap viewModel={viewModel} onSelect={onSelect} onReady={onReady} light={light} style={style} labels={labels} />
   );
   if (renderer !== 'globe') return flat(renderer === 'flat-light');
   return (
@@ -101,6 +135,9 @@ export function MapSurface({ renderer, viewModel, onSelect, onReady, paused, onG
         onSelect={onSelect}
         onReady={onReady}
         paused={paused}
+        reservedRects={reservedRects}
+        labelInsets={labelInsets}
+        labelScale={scale}
       />
     </GlobeBoundary>
   );
