@@ -1375,7 +1375,8 @@
     var c = categoria(catId);
     if (!c) return;
     var id = novoId('feat-');
-    c.features.push({ id: id, titulo: 'Nova feature', descricao: '', concluida: false, cor: 'amarelo', html: '<p></p>' });
+    // Pela normalização: a feature nova nasce com todos os campos (itens, tamanho) que o render lê.
+    c.features.push(normalizarFeature({ id: id, titulo: 'Nova feature', cor: 'amarelo', html: '<p></p>' }));
     salvar();
     render();
     var titulo = raiz.querySelector('[data-feat="' + id + '"] [data-campo="titulo"]');
