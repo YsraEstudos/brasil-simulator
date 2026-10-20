@@ -7,7 +7,7 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'scripts/perf/**/*.test.mjs'],
     environment: 'node',
     // `npm run test:coverage` gera coverage/lcov.info para o SonarCloud (sonar-project.properties).
     coverage: {
