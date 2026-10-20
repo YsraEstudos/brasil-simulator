@@ -5,13 +5,16 @@ import { BackHandler, Image, StyleSheet, View, type LayoutChangeEvent } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
 
-import { shortMonthLabel } from '@/components/campaign/labels';
-import { Text } from '@/components/ui';
+import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER, shortMonthLabel } from '@/components/campaign/labels';
+import { MonthSummary } from '@/components/campaign/MonthSummary';
+import { WhyChanged } from '@/components/campaign/WhyChanged';
+import { Indicator, Text } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
-import { initialRegions } from '@/engine';
+import { indicatorsFromScenario, initialRegions, type IndicatorKey } from '@/engine';
 import { GlobeView, type GlobeApi } from '@/globe/GlobeView';
-import { gameStore, useGame } from '@/store';
+import { draftCost, gameStore, useGame } from '@/store';
 
 import { GdpChart } from './GdpChart';
 import {
@@ -20,20 +23,23 @@ import {
   DemoBadge,
   DockButton,
   EmptyNote,
+  EndMonthButton,
   GoalCheckRow,
   LinkRow,
   MapLayerLegend,
   MapLayerRow,
+  MenuRow,
   MinistryRow,
   RegionRow,
   RoundButton,
   SectorTile,
+  SheetHeading,
   StatCell,
 } from './HudBits';
 import { hudFromCampaign, hudFromScenario, type HudStatId } from './hudData';
 import { Hud } from './hudTheme';
 import { InfoSheet } from './InfoSheet';
-import { MiniHemicycle } from './MiniHemicycle';
+import { endMonthControl, LEFT_RAIL, monthAdvanced, RIGHT_RAIL, type RailSheetId } from './mesaNav';
 import { indicatorSpec, MAP_INDICATORS, mapRows, type MapIndicator } from './regionalMetrics';
 import { UfDetail, UfList } from './StateDetail';
 
@@ -56,56 +62,73 @@ const DOCK: readonly { route: DockRoute; icon: SymbolViewProps['name']; label: s
   { route: '/noticias', icon: { ios: 'newspaper.fill', android: 'newspaper', web: 'newspaper' }, label: 'Notícias' },
 ];
 
+/** Ícones dos botões de trilho (os ids e rótulos vêm de `mesaNav`). */
+const RAIL_ICONS: Readonly<Record<RailSheetId, SymbolViewProps['name']>> = {
+  alertas: { ios: 'bell.fill', android: 'notifications', web: 'notifications' },
+  meta: { ios: 'flag.fill', android: 'flag', web: 'flag' },
+  relatorio: { ios: 'doc.text.fill', android: 'description', web: 'description' },
+  camadas: { ios: 'square.3.layers.3d', android: 'layers', web: 'layers' },
+  regioes: { ios: 'map.fill', android: 'map', web: 'map' },
+  indicadores: { ios: 'chart.bar.fill', android: 'bar_chart', web: 'bar_chart' },
+  ministerios: { ios: 'building.columns.fill', android: 'account_balance', web: 'account_balance' },
+};
+
+const END_MONTH_ICON: SymbolViewProps['name'] = {
+  ios: 'calendar.badge.checkmark',
+  android: 'event_available',
+  web: 'event_available',
+};
+const LEGACY_ICON: SymbolViewProps['name'] = { ios: 'trophy.fill', android: 'emoji_events', web: 'emoji_events' };
+const MENU_ICON: SymbolViewProps['name'] = { ios: 'line.3.horizontal', android: 'menu', web: 'menu' };
+const HOME_ICON: SymbolViewProps['name'] = { ios: 'house.fill', android: 'home', web: 'home' };
+const SETTINGS_ICON: SymbolViewProps['name'] = { ios: 'gearshape.fill', android: 'settings', web: 'settings' };
+
 /** Medidas fixas da mesa (px, sem as safe areas), para os trilhos laterais não passarem por baixo do topo/doca. */
 const TOP_INSET = { portrait: 118 + 56, compact: 56 } as const;
-const DOCK_HEIGHT_PORTRAIT = 54;
+/** Retrato: a doca tem duas linhas — o Encerrar o mês (52) em cima e os quatro botões de subtela (54) embaixo. */
+const DOCK_HEIGHT_PORTRAIT = 54 + 6 + 52;
 /** Faixa do `DemoBadge` acima da doca em retrato (selo + espaçamento). */
 const DEMO_BADGE_BAND = 28;
 
-type SheetId =
-  'alertas' | 'congresso' | 'meta' | 'ministerios' | 'indicadores' | 'pib' | 'regioes' | 'estado' | 'camadas';
-
-interface MesaButton {
-  id: SheetId;
-  icon: SymbolViewProps['name'];
-  label: string;
-  badge?: number;
-  /** Botão ligado (ex.: camada do mapa ativa). */
-  active?: boolean;
-}
+/** Folhas da mesa: as dos trilhos, mais o cartão do estado (toque no globo) e o menu (botão ☰ do topo). */
+type SheetId = RailSheetId | 'estado' | 'menu';
 
 const SHEET_TITLES: Record<SheetId, string> = {
   alertas: 'Alertas e Eventos',
-  congresso: 'Congresso Nacional',
   meta: 'Meta Atual',
-  ministerios: 'Ministérios',
-  indicadores: 'Indicadores Nacionais',
-  pib: 'Evolução do PIB',
-  regioes: 'Visão Regional',
-  estado: 'Estado',
+  relatorio: 'Relatório do Mês',
   camadas: 'Camadas do Mapa',
+  regioes: 'Visão Regional',
+  indicadores: 'Indicadores',
+  ministerios: 'Ministérios',
+  estado: 'Estado',
+  menu: 'Menu',
 };
 
-const BACK_ICON: SymbolViewProps['name'] = { ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' };
 const CENTER_ICON: SymbolViewProps['name'] = { ios: 'globe.americas', android: 'public', web: 'public' };
 
 /**
- * Painel (GAME_DESIGN.md §4.2): a mesa do jogo em tela cheia — o globo ocupa a tela toda e a interface vem por
- * cima, como HUD: números translúcidos no topo, botões redondos nas laterais e a doca embaixo. Cada botão
- * redondo abre o detalhe numa folha animada; nada rola e nada rouba espaço do globo. O toque num estado do globo
- * abre o cartão da UF (§4.5: números, porquê da diferença e visita presidencial). Não há barra de abas: a doca
- * da base abre as subtelas (Gabinete, Congresso, Economia, Notícias) por `router.push` e o botão de voltar leva
- * ao menu principal (a partida continua em memória).
+ * Painel (GAME_DESIGN.md §4.2; PLANO_PAINEL_UNICO.md): a mesa do jogo em tela cheia — o globo ocupa a tela toda e
+ * a interface vem por cima, como HUD: números translúcidos no topo, botões redondos nas laterais e a doca embaixo.
+ * Cada botão redondo abre o detalhe numa folha animada; nada rola e nada rouba espaço do globo. O toque num estado
+ * do globo abre o cartão da UF (§4.5: números, porquê da diferença e visita presidencial). O mês inteiro se joga
+ * daqui: o trilho esquerdo traz o mês (alertas, meta, relatório), o direito o país (camadas, regiões, indicadores
+ * com o "Por que mudou?", ministérios) e a doca da base abre as subtelas (Gabinete, Congresso, Economia, Notícias)
+ * por `router.push` e traz o botão dourado "Encerrar o mês" — depois dele o relatório do mês abre sozinho. Não há
+ * barra de abas: o ☰ do topo abre a folha Menu (voltar ao menu principal, que mantém a partida em memória, e
+ * configurações).
  */
 export function PainelScreen() {
   const active = useGame((s) => s.active);
   const draft = useGame((s) => s.draft);
+  const busy = useGame((s) => s.busy);
   const insets = useSafeAreaInsets();
   const [series, setSeries] = useState<{ id: string; points: readonly IndicatorPoint[] } | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
+  const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
   const globe = useRef<GlobeApi | null>(null);
 
   const scenarioId = active?.state.scenarioId ?? DEFAULT_SCENARIO_ID;
@@ -165,6 +188,7 @@ export function PainelScreen() {
   const closeSheet = () => {
     setSheet(null);
     setSelectedUf(null);
+    setOpenIndicator(null);
   };
 
   /** Abre uma subtela: o detalhe fecha antes de navegar (ao voltar, a mesa está limpa). */
@@ -174,13 +198,24 @@ export function PainelScreen() {
   };
 
   /**
-   * Volta ao menu principal; a partida em andamento continua em memória, com o rascunho (o CONTINUAR a retoma). Uma
-   * partida encerrada (só aberta para ver o resultado) é fechada, para o CONTINUAR buscar a última partida salva.
+   * Volta à tela de abertura. A partida em andamento continua aberta em memória, com o rascunho do mês: CONTINUAR
+   * retoma daqui. Uma partida encerrada (só aberta para ver o legado) é fechada, para CONTINUAR buscar a última
+   * partida salva em vez de reabrir o resultado.
    */
   const leaveToMenu = async () => {
     closeSheet();
     if (active?.finished) await gameStore.getState().leaveCampaign();
     router.navigate('/');
+  };
+
+  /**
+   * Encerra o mês e, se ele avançou, abre o relatório (GAME_DESIGN.md §4.2, passo 5). A store limpa o rascunho
+   * sozinha quando o mês avança; uma recusa (erro ou outra operação em curso) deixa tudo como está.
+   */
+  const endMonth = async () => {
+    const before = gameStore.getState().active?.state.monthIndex;
+    await gameStore.getState().endMonth();
+    if (monthAdvanced(before, gameStore.getState().active?.state.monthIndex)) setSheet('relatorio');
   };
 
   /** Toque no globo: abre o cartão do estado; sem partida em andamento o mapa é só imagem. */
@@ -228,54 +263,41 @@ export function PainelScreen() {
     </>
   );
 
-  const leftButtons: MesaButton[] = [
-    {
-      id: 'alertas',
-      icon: { ios: 'bell.fill', android: 'notifications', web: 'notifications' },
-      label: 'Alertas e eventos',
-      badge: hud.pendingCount,
-    },
-    { id: 'congresso', icon: { ios: 'person.3.fill', android: 'groups', web: 'groups' }, label: 'Congresso Nacional' },
-    { id: 'meta', icon: { ios: 'flag.fill', android: 'flag', web: 'flag' }, label: 'Meta Atual' },
-    {
-      id: 'camadas',
-      icon: { ios: 'square.3.layers.3d', android: 'layers', web: 'layers' },
-      label: 'Camadas do mapa',
-      active: layer !== null,
-    },
-  ];
-  const rightButtons: MesaButton[] = [
-    {
-      id: 'ministerios',
-      icon: { ios: 'building.columns.fill', android: 'account_balance', web: 'account_balance' },
-      label: 'Ministérios',
-    },
-    {
-      id: 'indicadores',
-      icon: { ios: 'chart.bar.fill', android: 'bar_chart', web: 'bar_chart' },
-      label: 'Indicadores Nacionais',
-    },
-    {
-      id: 'pib',
-      icon: { ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' },
-      label: 'Evolução do PIB',
-    },
-    { id: 'regioes', icon: { ios: 'map.fill', android: 'map', web: 'map' }, label: 'Visão Regional' },
-  ];
-  const rail = (buttons: MesaButton[]) => (
+  // Trilhos (ids e rótulos em `mesaNav`): selo de pendências no sino e camada do mapa ativa acesa.
+  const rail = (entries: typeof LEFT_RAIL) => (
     <View pointerEvents="box-none" style={{ gap: compact ? 6 : 10 }}>
-      {buttons.map((button) => (
+      {entries.map((entry) => (
         <RoundButton
-          key={button.id}
-          icon={button.icon}
-          label={button.label}
+          key={entry.id}
+          icon={RAIL_ICONS[entry.id]}
+          label={entry.label}
           size={buttonSize}
-          badge={button.badge}
-          active={button.active}
-          onPress={() => setSheet(button.id)}
+          badge={entry.id === 'alertas' ? hud.pendingCount : undefined}
+          active={entry.id === 'camadas' && layer !== null}
+          onPress={() => setSheet(entry.id)}
         />
       ))}
     </View>
+  );
+
+  // Botão dourado da doca: encerra o mês, ou (campanha encerrada) leva ao legado, que vive no Gabinete.
+  const endControl = endMonthControl({
+    hasCampaign: active !== null,
+    finished: active?.finished ?? false,
+    busy,
+    actionsUsed: active ? draftCost(draft, content) : 0,
+    actionsMax: active?.state.resources.agendaActionsPerMonth ?? 0,
+  });
+  const endButton = (
+    <EndMonthButton
+      icon={endControl.mode === 'legado' ? LEGACY_ICON : END_MONTH_ICON}
+      label={endControl.label}
+      caption={endControl.caption}
+      busy={busy && endControl.mode === 'encerrar'}
+      disabled={endControl.disabled}
+      compact={compact}
+      onPress={endControl.mode === 'legado' ? () => go('/gabinete') : () => void endMonth()}
+    />
   );
 
   const sheetBody = (): ReactNode => {
@@ -306,15 +328,11 @@ export function PainelScreen() {
             />
           </>
         );
-      case 'congresso':
-        return (
-          <>
-            <MiniHemicycle blocs={content.scenario.blocs} congress={hud.congress} />
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <Text style={{ color: Hud.textMuted, fontSize: 10.5 }}>{`Ações de agenda: ${hud.actionsLeft}`}</Text>
-              <LinkRow label="Negociar apoios" onPress={() => go('/congresso')} />
-            </View>
-          </>
+      case 'relatorio':
+        return active?.lastReport ? (
+          <MonthSummary report={active.lastReport} content={content} />
+        ) : (
+          <EmptyNote text="O primeiro relatório chega quando você encerrar o mês." />
         );
       case 'meta':
         return (
@@ -327,16 +345,40 @@ export function PainelScreen() {
         );
       case 'ministerios':
         return hud.ministries.map((ministry) => <MinistryRow key={ministry.id} ministry={ministry} />);
-      case 'indicadores':
+      case 'indicadores': {
+        // Sem partida mostra os valores do cenário, sem variação nem "Por que mudou?" (ainda não há mês encerrado).
+        const indicators = active?.state.indicators ?? indicatorsFromScenario(content.scenario);
         return (
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            {hud.sectors.map((sector) => (
-              <SectorTile key={sector.id} sector={sector} />
-            ))}
-          </View>
+          <>
+            <View style={styles.indicatorGrid}>
+              {INDICATOR_ORDER.map((key) => {
+                const meta = INDICATOR_META[key];
+                return (
+                  <Indicator
+                    key={key}
+                    label={meta.label}
+                    value={indicators[key]}
+                    previous={active?.previous?.[key]}
+                    goodWhen={meta.goodWhen}
+                    decimals={meta.decimals}
+                    context={meta.context}
+                    onPress={() => setOpenIndicator((cur) => (cur === key ? null : key))}
+                  />
+                );
+              })}
+            </View>
+            {openIndicator && <WhyChanged indicator={openIndicator} report={active?.lastReport} />}
+            <SheetHeading text="Setores da economia" />
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {hud.sectors.map((sector) => (
+                <SectorTile key={sector.id} sector={sector} />
+              ))}
+            </View>
+            <SheetHeading text="PIB em 12 meses" />
+            <GdpChart series={hud.series} height={150} />
+          </>
         );
-      case 'pib':
-        return <GdpChart series={hud.series} height={150} />;
+      }
       case 'regioes':
         return (
           <>
@@ -368,6 +410,30 @@ export function PainelScreen() {
           />
         ) : (
           <EmptyNote text="Toque num estado do mapa para ver os números e o porquê da diferença." />
+        );
+      case 'menu':
+        return (
+          <>
+            <MenuRow
+              icon={HOME_ICON}
+              label="Voltar ao menu principal"
+              disabled={busy}
+              onPress={() => void leaveToMenu()}
+            />
+            <MenuRow
+              icon={SETTINGS_ICON}
+              label="Configurações"
+              onPress={() => {
+                closeSheet();
+                router.push('/configuracoes');
+              }}
+            />
+            {active && (
+              <Text style={{ color: Hud.textMuted, fontSize: 10.5, paddingTop: 2 }}>
+                {`${active.name} · ${DIFFICULTY[active.state.difficulty].name}`}
+              </Text>
+            )}
+          </>
         );
       case 'camadas':
         return (
@@ -420,12 +486,7 @@ export function PainelScreen() {
               { paddingTop: insets.top + 6, paddingLeft: 8 + insets.left, paddingRight: 8 + insets.right },
             ]}>
             <View pointerEvents="box-none" style={styles.topRow}>
-              <RoundButton
-                icon={BACK_ICON}
-                label="Voltar ao menu"
-                size={compact ? 36 : 40}
-                onPress={() => void leaveToMenu()}
-              />
+              <RoundButton icon={MENU_ICON} label="Menu" size={compact ? 36 : 40} onPress={() => setSheet('menu')} />
               <Image
                 source={logo}
                 style={{ height: compact ? 26 : 30, width: (compact ? 26 : 30) * 2 }}
@@ -473,11 +534,13 @@ export function PainelScreen() {
                 paddingRight: 8 + insets.right,
               },
             ]}>
-            {rail(leftButtons)}
-            {rail(rightButtons)}
+            {rail(LEFT_RAIL)}
+            {rail(RIGHT_RAIL)}
           </View>
 
-          {/* Doca: as subtelas do jogo. Retrato: ícone + rótulo na largura toda; paisagem: só ícones, baixa e central. */}
+          {/* Doca: as subtelas do jogo e o Encerrar o mês. Retrato: o Encerrar numa linha própria, à direita, acima dos
+              quatro botões (ícone + rótulo na largura toda — com cinco na mesma linha, 360 px não dá); paisagem: só
+              ícones, baixa e central, e o Encerrar compacto no canto inferior direito. */}
           <View
             pointerEvents="box-none"
             style={[
@@ -494,6 +557,11 @@ export function PainelScreen() {
                 <DemoBadge />
               </View>
             )}
+            {!compact && (
+              <View pointerEvents="box-none" style={styles.endRow}>
+                {endButton}
+              </View>
+            )}
             <View pointerEvents="box-none" style={compact ? styles.dockCompact : styles.dock}>
               {DOCK.map((item) => (
                 <DockButton
@@ -506,6 +574,13 @@ export function PainelScreen() {
               ))}
             </View>
           </View>
+          {compact && (
+            <View
+              pointerEvents="box-none"
+              style={{ position: 'absolute', right: 8 + insets.right, bottom: 6 + insets.bottom }}>
+              {endButton}
+            </View>
+          )}
           {compact && hud.demo && (
             <View
               pointerEvents="none"
@@ -539,6 +614,8 @@ const styles = StyleSheet.create({
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   bottomPortrait: { alignItems: 'flex-start', gap: 6 },
   bottomCompact: { alignItems: 'center' },
+  endRow: { alignSelf: 'stretch', alignItems: 'flex-end' },
   dock: { alignSelf: 'stretch', flexDirection: 'row', gap: 6 },
   dockCompact: { flexDirection: 'row', gap: 6 },
+  indicatorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
 });

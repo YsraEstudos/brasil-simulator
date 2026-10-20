@@ -1,5 +1,5 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { Pressable, type StyleProp, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, type StyleProp, View, type ViewStyle } from 'react-native';
 
 import { binColor, legendLabels, type MapIndicatorSpec } from './regionalMetrics';
 import { Text } from '@/components/ui';
@@ -225,6 +225,61 @@ export function DockButton({
   );
 }
 
+/**
+ * Botão de destaque da doca: "Encerrar o mês" (ou "Ver legado" com a campanha encerrada). Dourado cheio, maior que
+ * os botões de subtela, com a legenda embaixo ("x de y ações usadas"); no lugar do ícone mostra o indicador de
+ * carregamento enquanto a store processa o mês. Em paisagem (`compact`) fica mais baixo e mais estreito.
+ */
+export function EndMonthButton({
+  icon,
+  label,
+  caption,
+  busy,
+  disabled,
+  compact,
+  onPress,
+}: {
+  icon: SymbolViewProps['name'];
+  label: string;
+  /** Linha de baixo: ações usadas, situação da campanha ou aviso. */
+  caption: string;
+  /** O mês está sendo processado: mostra o carregamento (o toque já vem desabilitado). */
+  busy?: boolean;
+  disabled?: boolean;
+  compact?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={compact ? 4 : 2}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}. ${caption}`}
+      accessibilityState={{ disabled: !!disabled, busy: !!busy }}
+      style={({ pressed }) => [
+        styles.endButton,
+        compact ? styles.endButtonCompact : styles.endButtonFull,
+        disabled && !busy && styles.endButtonDisabled,
+        pressed && styles.endButtonPressed,
+      ]}>
+      {busy ? (
+        <ActivityIndicator size="small" color={Hud.board} />
+      ) : (
+        <HudIcon name={icon} size={compact ? 16 : 20} color={Hud.board} />
+      )}
+      <View style={styles.endButtonText}>
+        <Text style={[styles.endLabel, compact && styles.endLabelCompact]} numberOfLines={1}>
+          {label}
+        </Text>
+        <Text style={styles.endCaption} numberOfLines={1}>
+          {caption}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
 export function DemoBadge() {
   return (
     <View style={styles.demoBadge}>
@@ -422,6 +477,43 @@ export function GoalCheckRow({ check }: { check: HudGoalCheck }) {
   );
 }
 
+/** Linha de ação da folha Menu: ícone, rótulo e seta; mesmo vidro das linhas de camada. */
+export function MenuRow({
+  icon,
+  label,
+  disabled,
+  onPress,
+}: {
+  icon: SymbolViewProps['name'];
+  label: string;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      style={({ pressed }) => [
+        styles.layerRow,
+        disabled && styles.layerRowDisabled,
+        pressed && styles.layerRowPressed,
+      ]}>
+      <View style={styles.rowIcon}>
+        <HudIcon name={icon} size={15} />
+      </View>
+      <Text style={styles.menuLabel}>{label}</Text>
+      <Text style={styles.menuChevron}>›</Text>
+    </Pressable>
+  );
+}
+
+/** Subtítulo de seção dentro de uma folha (ex.: "Setores", "PIB em 12 meses"). */
+export function SheetHeading({ text }: { text: string }) {
+  return <Text style={styles.sheetHeading}>{text}</Text>;
+}
+
 export function EmptyNote({ text }: { text: string }) {
   return <Text style={styles.emptyNote}>{text}</Text>;
 }
@@ -488,6 +580,33 @@ const styles = {
   dockButtonFull: { flex: 1, minWidth: 0, height: 54, gap: 3, borderRadius: Radius.md },
   dockButtonCompact: { width: 48, height: 40, borderRadius: 20 },
   dockLabel: { color: Hud.title, fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+  endButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: Hud.titleBright,
+    backgroundColor: Hud.title,
+  },
+  endButtonFull: { minWidth: 216, height: 52, paddingHorizontal: 16, borderRadius: Radius.md },
+  endButtonCompact: { minWidth: 148, height: 40, paddingHorizontal: 12, borderRadius: 20 },
+  endButtonDisabled: { opacity: 0.45 },
+  endButtonPressed: { transform: [{ scale: 0.96 }], backgroundColor: Hud.titleBright },
+  endButtonText: { flexShrink: 1, alignItems: 'flex-start' },
+  endLabel: { color: Hud.board, fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  endLabelCompact: { fontSize: 12 },
+  endCaption: { color: '#3a2f14', fontSize: 9.5, fontWeight: '600' },
+  menuLabel: { flex: 1, color: Hud.text, fontSize: 12.5, fontWeight: '700' },
+  menuChevron: { color: Hud.textMuted, fontSize: 18, fontWeight: '700' },
+  sheetHeading: {
+    color: Hud.textMuted,
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    paddingTop: 4,
+  },
   roundBadge: {
     position: 'absolute',
     top: -4,
