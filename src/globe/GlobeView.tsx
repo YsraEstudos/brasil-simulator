@@ -4,8 +4,9 @@ import { Platform, StyleSheet, Text, View, type ViewInstance } from 'react-nativ
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CAMERA } from './config';
+import { CAMERA, GLOBE_STATS_ENABLED } from './config';
 import { GlobeController } from './controller';
+import { GlFailureWatcher, GlobePerfProbe, type GlFailureHandler, type GlobePerf } from './diagnostics';
 import { GlobeScene, type SceneStats } from './GlobeScene';
 import { findUf, ufBySigla, type Uf } from './ufs';
 
@@ -32,6 +33,11 @@ export interface GlobeViewProps {
    * deve gastar GPU. A câmera, a seleção e os tiles ficam como estão; ao despausar o globo desenha um quadro na hora.
    */
   paused?: boolean;
+  /**
+   * Falha gráfica: `init-error` (shader não compilou) em qualquer plataforma; `context-lost` só na web (o expo-gl
+   * nativo não expõe perda de contexto). Não altera o desenho: quem usa decide cair no mapa 2D.
+   */
+  onGlFailure?: GlFailureHandler;
 }
 
 /** Ao despausar o laço sob demanda não tem quadro pedido: invalida um para o globo reaparecer sem esperar um gesto. */
@@ -44,7 +50,7 @@ function ResumeOnUnpause({ paused }: { paused: boolean }) {
 }
 
 /** O globo da federação: câmera, toques e o mapa de calor; quem usa controla a seleção (`selectedId`/`onSelect`). */
-export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false }: GlobeViewProps) {
+export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false, onGlFailure }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   const insets = useSafeAreaInsets();
   // Último toque no globo (o contador distingue dois toques seguidos na mesma UF).
@@ -69,6 +75,7 @@ export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controller]);
   const [stats, setStats] = useState<SceneStats | null>(null);
+  const [perf, setPerf] = useState<GlobePerf | null>(null);
   const container = useRef<ViewInstance>(null);
 
   const gesture = useMemo(() => {
@@ -126,11 +133,13 @@ export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false
               linear
               camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}>
               <ResumeOnUnpause paused={paused} />
+              <GlFailureWatcher onFailure={onGlFailure} />
+              {GLOBE_STATS_ENABLED && <GlobePerfProbe onPerf={setPerf} />}
               <GlobeScene
                 controller={controller}
                 selectedUf={selected}
                 fills={fills}
-                onStats={__DEV__ ? setStats : undefined}
+                onStats={GLOBE_STATS_ENABLED ? setStats : undefined}
               />
             </Canvas>
           </View>
@@ -140,6 +149,13 @@ export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false
       {stats && (
         <Text style={[styles.stats, { top: insets.top + 52, left: 16 + insets.left }]} pointerEvents="none">
           tiles {stats.tiles} · cache {stats.cached} · nível {stats.maxLevel}
+          {perf &&
+            `
+ms p50 ${perf.p50} · p95 ${perf.p95} · p99 ${perf.p99} · ${perf.fps} qps · longos ${perf.longFrames}` +
+              `
+chamadas ${perf.calls} · tri ${perf.triangles} · progs ${perf.programs}` +
+              `
+texturas (contagem) ${perf.textures} · geometrias ${perf.geometries}`}
         </Text>
       )}
     </View>
