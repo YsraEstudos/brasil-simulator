@@ -3,6 +3,7 @@ import { blocRelation, RELACAO_ESCALA, RELACAO_MAX, RELACAO_MIN } from '../congr
 import type { Calibration } from '../economy/calibration';
 import { DEMAND_GAIN } from '../economy/demand';
 import { activeImpulses } from '../impulses';
+import { regionalAlignmentOf } from '../politics/alignment';
 import type { RegionalScope, SectorId } from '../../types/regions';
 import type { ScenarioUf } from '../../types/scenario';
 import type {
@@ -31,6 +32,8 @@ const PERCENT = 100;
 
 /** Causa da normalização da atividade: o que a UF "perde" ou "ganha" porque as demais também mudaram. */
 const OTHERS_CAUSE = 'demais_ufs';
+/** Causa do desvio de aprovação pelo alinhamento da UF com o perfil ideológico do governo (PLANO_GLOBO.md §5.1). */
+export const ALIGNMENT_CAUSE = 'alinhamento_perfil';
 /** Causa da normalização à média nacional (desemprego e aprovação). */
 const NORMALIZATION_CAUSE = 'media_nacional';
 
@@ -187,6 +190,19 @@ function distribute(
       delta: (c.aprovacao_governador * relations[i]) / RELACAO_ESCALA,
     },
   ]);
+
+  // Alinhamento com o perfil do governo: desvio bruto `k·tanh((alinhamento − média)/s)`; a normalização à média
+  // nacional abaixo o centra (D7), então o termo só redistribui. Sem inclinações no cenário, não age.
+  const alignment = regionalAlignmentOf(state.government.profile, ufs, pop);
+  if (alignment) {
+    ufs.forEach((_, i) => {
+      approvalRaw[i].push({
+        cause: ALIGNMENT_CAUSE,
+        label: 'Alinhamento com o perfil do governo',
+        delta: alignment.raw[i],
+      });
+    });
+  }
 
   // Gasto e tributo federal pela chave de cada impulso: demanda local e aprovação per capita.
   for (const impulse of activeImpulses(impulses, t, DEMAND_TARGETS)) {

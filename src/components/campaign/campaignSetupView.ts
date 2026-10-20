@@ -1,4 +1,12 @@
-import { ADVICE_PARAMS, AGENDA_ACTIONS_PER_MONTH, DEFAULT_CALIBRATION, type Difficulty } from '@/engine';
+import {
+  ADVICE_PARAMS,
+  AGENDA_ACTIONS_PER_MONTH,
+  DEFAULT_CALIBRATION,
+  describeProfile,
+  PROFILE_PRESETS,
+  type Difficulty,
+  type ProfilePresetId,
+} from '@/engine';
 import {
   isKnownScenario,
   parseSeedInput,
@@ -95,6 +103,43 @@ export function difficultyView(id: Difficulty): DifficultyView {
   return DIFFICULTY_VIEWS[id];
 }
 
+export interface ProfilePresetView {
+  id: ProfilePresetId;
+  name: string;
+  description: string;
+  /** Posição nos eixos em palavras (ex.: "Mercado · Progressista"), a mesma da folha "Perfil do governo". */
+  axes: string;
+  economic: number;
+  social: number;
+}
+
+/** Perfis iniciais do NOVO JOGO (PLANO_GLOBO.md §5.1), na ordem de exibição, com a posição descrita em palavras. */
+export function profilePresetViews(): ProfilePresetView[] {
+  return PROFILE_PRESETS.map((p) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    axes: describeProfile(p).label,
+    economic: p.economic,
+    social: p.social,
+  }));
+}
+
+export function profilePresetView(id: ProfilePresetId | undefined): ProfilePresetView {
+  const views = profilePresetViews();
+  return views.find((v) => v.id === id) ?? views[0];
+}
+
+function profileSummary(id: ProfilePresetId | undefined): string {
+  const view = profilePresetView(id);
+  return view.axes === view.name ? view.name : `${view.name} (${view.axes})`;
+}
+
+/** O cenário traz a inclinação política das UFs (v0.8.0 em diante): só nele o perfil muda a aprovação. */
+export function scenarioHasLean(scenario: Scenario | undefined): boolean {
+  return scenario?.regions?.ufs.every((u) => u.lean !== undefined) ?? false;
+}
+
 /** Parêntese no fim do nome do cenário: onde começa e o que diz (sem outro ")" dentro). */
 function trailingNote(name: string): { start: number; note: string } | null {
   const s = name.trimEnd();
@@ -154,6 +199,7 @@ export function scenarioFeatures(scenario: Scenario): string[] {
   if (scenario.policies.length > 0) f.push(`${scenario.policies.length} políticas públicas`);
   if (scenario.institutions) f.push('Ministérios e instituições');
   if (scenario.regions) f.push('27 unidades da Federação');
+  if (scenarioHasLean(scenario)) f.push('Inclinação política das UFs');
   if (scenario.characters && scenario.characters.length > 0) f.push(`${scenario.characters.length} personagens`);
   if (scenario.elections) f.push('Eleições e reeleição');
   return f;
@@ -171,6 +217,8 @@ export interface SetupSummary {
   actionsPerMonth: number;
   scenario: string;
   version: string;
+  /** Perfil ideológico inicial do governo (nome e posição nos eixos). */
+  profile: string;
   duration: string;
   seed: string;
 }
@@ -187,6 +235,7 @@ export function setupSummary(form: CampaignSetupForm): SetupSummary {
     actionsPerMonth: AGENDA_ACTIONS_PER_MONTH[form.difficulty],
     scenario: scenario ? scenarioTitle(scenario) : '—',
     version: scenario ? `v${scenario.version}` : '—',
+    profile: profileSummary(form.profileId),
     duration: scenario ? `até ${durationLabel(campaignMonths(form.scenarioId))}` : '—',
     seed: !seed.ok ? 'Inválida' : seed.value === null ? 'Aleatória' : String(seed.value),
   };

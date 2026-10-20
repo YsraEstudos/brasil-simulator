@@ -4,6 +4,7 @@ import brasil from '@/data/scenarios/brasil_2027_01.json';
 import brasilV050 from '@/data/scenarios/brasil_2027_01_v050.json';
 import brasilV060 from '@/data/scenarios/brasil_2027_01_v060.json';
 import brasilV070 from '@/data/scenarios/brasil_2027_01_v070.json';
+import brasilV080 from '@/data/scenarios/brasil_2027_01_v080.json';
 import prototipo from '@/data/scenarios/prototipo_ficticio.json';
 import { parseScenario, type Scenario } from '@/types/scenario';
 import type { DataValue } from '@/types/data';
@@ -31,12 +32,12 @@ function parseOrThrow(raw: unknown): Scenario {
 }
 
 describe('cenários embutidos', () => {
-  it('cenários legados validam e o padrão é a revisão v0.7.0 (Fase 08)', () => {
+  it('cenários legados validam e o padrão é a revisão v0.8.0 (PR 4 do PLANO_GLOBO)', () => {
     const a = parseScenario(prototipo);
     const b = parseScenario(brasil);
     expect(a.ok).toBe(true);
     expect(b.ok).toBe(true);
-    expect(DEFAULT_SCENARIO_ID).toBe('brasil_2027_01_v070');
+    expect(DEFAULT_SCENARIO_ID).toBe('brasil_2027_01_v080');
     expect(Object.keys(SCENARIOS)).toEqual(
       expect.arrayContaining([
         'prototipo_ficticio',
@@ -44,6 +45,7 @@ describe('cenários embutidos', () => {
         'brasil_2027_01_v050',
         'brasil_2027_01_v060',
         'brasil_2027_01_v070',
+        'brasil_2027_01_v080',
       ]),
     );
   });
@@ -255,10 +257,70 @@ describe('brasil_2027_01_v070 (Fase 08: eleições e mandatos)', () => {
   });
 });
 
+describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das UFs)', () => {
+  const s = parseOrThrow(brasilV080);
+  const v070 = parseOrThrow(brasilV070);
+
+  it('é a versão 0.8.0, de dois mandatos, e a v0.7.0 não ganhou inclinação (cenário publicado não muda)', () => {
+    expect(s.id).toBe('brasil_2027_01_v080');
+    expect(s.version).toBe('0.8.0');
+    expect(campaignMonths(s.id)).toBe(TWO_TERM_MONTHS);
+    expect(v070.regions?.ufs.every((u) => u.lean === undefined)).toBe(true);
+    expect(v070.regions?.meta.lean).toBeUndefined();
+  });
+
+  it('difere do v0.7.0 apenas em id, version e na inclinação (lean) das UFs, com metadados PROVISORIO', () => {
+    const semLean = (scenario: Scenario): Record<string, unknown> => {
+      const resto: Record<string, unknown> = { ...scenario };
+      delete resto.id;
+      delete resto.version;
+      return {
+        ...resto,
+        regions: {
+          meta: { ...scenario.regions?.meta, lean: undefined },
+          ufs: scenario.regions?.ufs.map((u) => ({ ...u, lean: undefined })),
+        },
+      };
+    };
+    expect(semLean(s)).toEqual(semLean(v070));
+    expect(s.regions?.meta.lean?.status).toBe('PROVISORIO');
+    expect(s.regions?.meta.lean?.note?.trim().length ?? 0).toBeGreaterThan(0);
+  });
+
+  it('as 27 UFs têm inclinação nos eixos [−1, 1] e as regiões seguem o padrão: Nordeste estatista, Sul de mercado', () => {
+    const ufs = s.regions?.ufs ?? [];
+    expect(ufs).toHaveLength(27);
+    for (const u of ufs) {
+      expect(Math.abs(u.lean?.economic ?? 9), u.id).toBeLessThanOrEqual(1);
+      expect(Math.abs(u.lean?.social ?? 9), u.id).toBeLessThanOrEqual(1);
+    }
+    const mean = (region: string, axis: 'economic' | 'social') => {
+      const rows = ufs.filter((u) => u.region === region);
+      return rows.reduce((n, u) => n + (u.lean?.[axis] ?? 0), 0) / rows.length;
+    };
+    expect(mean('nordeste', 'economic')).toBeLessThan(0);
+    expect(mean('sul', 'economic')).toBeGreaterThan(0);
+    expect(mean('sul', 'social')).toBeGreaterThan(mean('nordeste', 'social'));
+  });
+
+  it('rejeita inclinação em só parte das UFs ou sem os metadados da série', () => {
+    const base = structuredClone(brasilV080) as {
+      regions: { meta: Record<string, unknown>; ufs: Record<string, unknown>[] };
+    };
+    const parcial = structuredClone(base);
+    delete parcial.regions.ufs[0].lean;
+    expect(parseScenario(parcial).ok).toBe(false);
+    const semMeta = structuredClone(base);
+    delete semMeta.regions.meta.lean;
+    expect(parseScenario(semMeta).ok).toBe(false);
+    expect(parseScenario(base).ok).toBe(true);
+  });
+});
+
 describe('cenário padrão e duração da campanha', () => {
-  it('o padrão é brasil_2027_01_v070, registrado em SCENARIOS, e dura 96 meses (dois mandatos)', () => {
+  it('o padrão é brasil_2027_01_v080, registrado em SCENARIOS, e dura 96 meses (dois mandatos)', () => {
     expect(SCENARIOS[DEFAULT_SCENARIO_ID]).toBeDefined();
-    expect(SCENARIOS[DEFAULT_SCENARIO_ID]?.version).toBe('0.7.0');
+    expect(SCENARIOS[DEFAULT_SCENARIO_ID]?.version).toBe('0.8.0');
     expect(campaignMonths(DEFAULT_SCENARIO_ID)).toBe(TWO_TERM_MONTHS);
   });
 

@@ -9,6 +9,7 @@ import { resolveEventsStep, triggerEventsStep } from './events/events';
 import { pruneImpulses } from './impulses';
 import { appendNews, generateNews } from './news';
 import { opinionStep } from './politics/opinion';
+import { governmentProfileStep } from './politics/profile';
 import { publicPoliciesStep, reservePublicAction } from './publicPolicies/publicPolicies';
 import { societyStep } from './society/society';
 import { proposalsStep, reissueBarredPolicies } from './proposals/proposals';
@@ -32,7 +33,8 @@ import {
 
 /**
  * Etapas do mês, na ordem do pipeline (ECONOMIC_MODEL.md §4): respostas a eventos, nomeações de ministros,
- * propostas e Congresso (negociação, votações, sanção, execução), relações com os blocos, economia, opinião
+ * propostas e Congresso (negociação, votações, sanção, execução), relações com os blocos, perfil ideológico do
+ * governo (PLANO_GLOBO.md §5.1), economia, opinião
  * pública, eleições (FASE_08.md), distribuição às UFs (ECONOMIC_MODEL.md §5.15), posse dos governadores
  * eleitos e, por fim, sorteio dos eventos que chegam à caixa de entrada do mês seguinte.
  *
@@ -46,6 +48,7 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
   proposalsStep,
   congressStep,
   publicPoliciesStep,
+  governmentProfileStep,
   economyStep,
   societyStep,
   opinionStep,
@@ -75,6 +78,7 @@ export function advanceMonth(
     notes: [],
     copom: null,
     regional: null,
+    profileMoves: [],
   };
   const ctx = { rng, content, decisions: screened.accepted, eventChoices: screened.eventChoices, draft };
   const contributions: Contribution[] = [];
@@ -109,6 +113,7 @@ export function advanceMonth(
     copom: draft.copom,
     notes: draft.notes,
     regional: draft.regional,
+    profileMoves: draft.profileMoves ?? [],
   };
   // Notícias (FASE_07.md): geradas depois dos indicadores e do relatório finais, com causa; o relatório não muda.
   const news = generateNews({ previous: state, next, report, content });

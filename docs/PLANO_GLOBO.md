@@ -276,6 +276,8 @@ Troca de governador aparece no mês da posse, separada do resultado presidencial
 Status: PR 0 e PR 1 implementados em 20/10/2026 (aguardando revisão e medição no moto g20).
 PR 3 (série regional: migração 5 `regional_indicator_history`, cartão do estado com variação, 12 meses e ranking) implementado em 20/10/2026.
 
+PR 4 (motor) implementado em 20/10/2026: perfil do governo (`government.profile`, estado v10), escolha no Novo Jogo, movimento por decisão, inclinação das UFs no cenário v0.8.0 (`PROVISORIO`), efeito regional (`alinhamento_perfil`) e nacional (`eleitor_mediano`), `alignmentView` e `previewProfilePush`. Interface implementada em 20/10/2026: folha "Perfil do governo" (botão do trilho direito da mesa; plano de dois eixos, rastro de até 12 meses lido dos snapshots, UFs, eleitor mediano, termo nacional e decisões que mais moveram o perfil), camada "Alinhamento" (globo 3D, mapa 2D e lista, escondida em cenário sem inclinação) e o empurrão no perfil na prévia da decisão (`RegionalPreviewCard`, sempre como estimativa). Regras em [POLITICAL_RULES.md](POLITICAL_RULES.md) §11.2.
+
 Versões do estado: o PR 4 sobe `STATE_SCHEMA_VERSION` (perfil do governo) e o PR 7 sobe de novo (clima); cada
 um com a sua função de atualização e teste com save da versão anterior.
 

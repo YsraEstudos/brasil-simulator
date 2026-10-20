@@ -50,7 +50,9 @@ function relationLabel(relation: number): string {
 /** Título da seção de causas, conforme o indicador do mapa. */
 function whyTitle(indicator: MapIndicator): string {
   if (indicator === 'desemprego') return 'Por que o desemprego difere da média nacional';
-  if (indicator === 'aprovacao' || indicator === 'governador') return 'Por que a aprovação difere da média nacional';
+  if (indicator === 'aprovacao' || indicator === 'governador' || indicator === 'alinhamento') {
+    return 'Por que a aprovação difere da média nacional';
+  }
   return 'Por que a economia está acima ou abaixo da tendência';
 }
 

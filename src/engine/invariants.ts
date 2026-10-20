@@ -166,6 +166,12 @@ export function checkInvariants(
     }
   }
 
+  // Perfil ideológico (PLANO_GLOBO.md §5.1): média móvel de posições em [−1, 1], logo sempre dentro dos eixos.
+  const profile = next.government.profile;
+  if (!(Math.abs(profile.economic) <= 1 && Math.abs(profile.social) <= 1)) {
+    errors.push(`perfil ideológico fora de [−1, 1]: ${profile.economic} / ${profile.social}`);
+  }
+
   if (next.society !== prev.society) errors.push(...checkSociety(next.society, next));
   errors.push(...checkPublicPolicies(next));
   return errors;

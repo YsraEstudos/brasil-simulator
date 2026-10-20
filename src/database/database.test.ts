@@ -19,11 +19,13 @@ import {
   listCampaigns,
   loadIndicatorHistory,
   loadLatestState,
+  loadProfileHistory,
   loadRegionalHistory,
   loadReport,
   loadStateAt,
   recordMonth,
   REGIONAL_FIELDS,
+  PROFILE_HISTORY_MONTHS,
   REPORT_RETENTION_MONTHS,
   SaveTooNewError,
   SNAPSHOT_RETENTION_MONTHS,
@@ -231,6 +233,18 @@ describe('campanhas', () => {
       JSON.stringify(old),
     ]);
     expect((await loadReport(db, 'c1', 0))?.regional).toBeNull();
+  });
+
+  it('relatório gravado antes da v10 (sem decisões que moveram o perfil) volta com `profileMoves` vazio', async () => {
+    const state = newState(6);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    const { profileMoves: _omit, ...old } = advanceMonth(state, { decisions: [] }, content, []).report;
+    await db.run('INSERT INTO month_reports (campaign_id, month_index, report_json) VALUES (?, ?, ?)', [
+      'c1',
+      0,
+      JSON.stringify(old),
+    ]);
+    expect((await loadReport(db, 'c1', 0))?.profileMoves).toEqual([]);
   });
 
   it('relatório gravado antes da v9 (motivo "sem_pontos_de_agenda") volta com o motivo atual', async () => {
@@ -469,5 +483,72 @@ describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
   it('cenário sem dados regionais não grava linha (lacuna, não zeros)', async () => {
     await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state: newState() });
     expect(await loadRegionalHistory(db, 'c1')).toEqual([]);
+  });
+});
+
+describe('rastro do perfil do governo (PLANO_GLOBO.md §5.2, PR 4)', () => {
+  let db: SqlDatabase;
+  beforeEach(async () => {
+    db = openNodeDatabase();
+    await migrate(db);
+  });
+
+  async function play(months: number, withMoves = false): Promise<GameState> {
+    let state: GameState = { ...newState(), government: { profile: { economic: 0.4, social: -0.2 } } };
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    for (let m = 0; m < months; m++) {
+      const r = advanceMonth(state, { decisions: [] }, content, []);
+      const profileMoves = withMoves
+        ? [
+            {
+              sourceId: 'p' + m,
+              kind: 'sancao' as const,
+              label: 'Lei ' + m,
+              delta: { economic: 0.01 * (m + 1), social: 0 },
+            },
+          ]
+        : undefined;
+      await recordMonth(db, 'c1', { ...r, report: { ...r.report, profileMoves } });
+      state = r.state;
+    }
+    return state;
+  }
+
+  it('devolve o perfil de cada mês gravado, do mais antigo ao mais recente, a começar pela posse', async () => {
+    const state = await play(3);
+    const { trail, moves } = await loadProfileHistory(db, 'c1');
+    expect(trail.map((p) => p.monthIndex)).toEqual([0, 1, 2, 3]);
+    expect(trail[0].profile).toEqual({ economic: 0.4, social: -0.2 });
+    expect(trail[3].profile).toEqual(state.government.profile);
+    expect(moves).toEqual([]);
+  });
+
+  it(`guarda no máximo os últimos ${PROFILE_HISTORY_MONTHS} meses`, async () => {
+    await play(SNAPSHOT_RETENTION_MONTHS + 2);
+    const { trail } = await loadProfileHistory(db, 'c1');
+    expect(trail).toHaveLength(PROFILE_HISTORY_MONTHS);
+    expect(trail[trail.length - 1].monthIndex).toBe(SNAPSHOT_RETENTION_MONTHS + 2);
+  });
+
+  it('snapshot anterior à v10 não entra no rastro (nada de perfil neutro inventado)', async () => {
+    await play(2);
+    await db.run('UPDATE snapshots SET state_schema_version = 9 WHERE campaign_id = ? AND month_index <= 1', ['c1']);
+    const { trail } = await loadProfileHistory(db, 'c1');
+    expect(trail.map((p) => p.monthIndex)).toEqual([2]);
+  });
+
+  it('decisões que moveram o perfil: dos relatórios, do mês mais recente para o mais antigo, sem meses vazios', async () => {
+    await play(3, true);
+    const { moves } = await loadProfileHistory(db, 'c1');
+    expect(moves.map((m) => m.monthIndex)).toEqual([2, 1, 0]);
+    expect(moves[0].moves[0]).toMatchObject({ sourceId: 'p2', kind: 'sancao' });
+  });
+
+  it('relatório antigo (sem o campo) e campanha sem dados voltam vazios', async () => {
+    await play(2);
+    const { trail, moves } = await loadProfileHistory(db, 'c1');
+    expect(trail).toHaveLength(3);
+    expect(moves).toEqual([]);
+    expect(await loadProfileHistory(db, 'inexistente')).toEqual({ trail: [], moves: [] });
   });
 });

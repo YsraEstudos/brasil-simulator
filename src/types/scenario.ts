@@ -166,6 +166,12 @@ export const scenarioUfSchema = z
     poverty: unitInterval,
     /** Governador fictício: bloco a que pertence e relação inicial com o presidente (−100…100). */
     governor: z.object({ bloc: contentIdSchema, relation: z.number().min(-100).max(100) }).strict(),
+    /**
+     * Inclinação política do eleitorado da UF nos mesmos eixos de `Bloc.ideology` e `Policy.position`
+     * (PLANO_GLOBO.md §5.1): econômico −1 estado … 1 mercado; social −1 progressista … 1 conservador. Opcional:
+     * sem ela (cenários até a v0.7.0) o alinhamento com o perfil do governo não age. Tudo ou nada em todas as UFs.
+     */
+    lean: z.object({ economic: axis, social: axis }).strict().optional(),
   })
   .strict();
 export type ScenarioUf = z.infer<typeof scenarioUfSchema>;
@@ -184,6 +190,8 @@ export const scenarioRegionsSchema = z
         unemployment: dataSeriesSchema,
         poverty: dataSeriesSchema,
         governors: dataSeriesSchema,
+        /** Origem e status da inclinação política das UFs (`PROVISORIO`); obrigatória quando as UFs têm `lean`. */
+        lean: dataSeriesSchema.optional(),
       })
       .strict(),
     ufs: z.array(scenarioUfSchema).length(UF_COUNT),
@@ -326,6 +334,21 @@ export const scenarioSchema = z
           code: 'custom',
           path: ['regions', 'ufs'],
           message: `participações somam ${shares}, esperado 1`,
+        });
+      }
+      const withLean = ufs.filter((u) => u.lean !== undefined).length;
+      if (withLean !== 0 && withLean !== ufs.length) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['regions', 'ufs'],
+          message: `inclinação (lean) em ${withLean} de ${ufs.length} UFs: todas ou nenhuma`,
+        });
+      }
+      if (withLean > 0 && !s.regions.meta.lean) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['regions', 'meta', 'lean'],
+          message: 'UFs com inclinação exigem os metadados da série (status e fonte)',
         });
       }
       for (const u of ufs) {

@@ -2,7 +2,7 @@
   "id": "fase07_eco_greve_caminhoneiros",
   "title": "Caminhoneiros ameaçam parar",
   "description": "Entidades do transporte de carga anunciam paralisação por causa do preço do diesel e do frete. Com a inflação alta e o crescimento fraco, a categoria cobra subsídio e alerta para o risco de desabastecimento.",
-  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070", "brasil_2027_01_v080"],
   "trigger": {
     "monthsOfYear": [],
     "conditions": [

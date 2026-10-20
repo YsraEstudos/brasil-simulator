@@ -106,6 +106,9 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 | Folha (modal de consulta ou decisão rápida, por cima do globo) | `sheet` |
 | Subtela (mesa de trabalho em tela cheia, com "Voltar ao Painel": `/gabinete`, `/congresso`, `/economia`, `/noticias`, `/legado`) | `SubScreen` |
 | Gabinete (subtela da agenda presidencial; antiga tela Presidência) | `gabinete` |
+| Perfil ideológico do governo (média móvel das posições das decisões; eixos econômico e social) | `government.profile` (`IdeologyPoint`) |
+| Inclinação política da UF / alinhamento do perfil com ela | `lean` (`ScenarioUf.lean`) / `alignment` |
+| Eleitor mediano (média ponderada das inclinações das UFs) | `medianVoter` |
 
 ---
 

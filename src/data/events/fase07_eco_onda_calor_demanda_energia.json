@@ -2,7 +2,7 @@
   "id": "fase07_eco_onda_calor_demanda_energia",
   "title": "Onda de calor puxa a demanda de energia",
   "description": "Uma onda de calor fora de época eleva o consumo de energia, com ar-condicionado ligado em todo o país. A demanda bate recordes e as usinas trabalham no limite.",
-  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070", "brasil_2027_01_v080"],
   "trigger": {
     "monthsOfYear": [10, 11, 12, 1, 2],
     "conditions": [],

@@ -2,7 +2,7 @@
   "id": "fase07_eco_quebra_safra_termos_troca",
   "title": "Quebra de safra piora os termos de troca",
   "description": "Uma quebra de safra em grandes culturas reduz a oferta interna e derruba o preço do que o país exporta. A conta externa piora, a renda do campo encolhe e o câmbio tende a se desvalorizar.",
-  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070", "brasil_2027_01_v080"],
   "trigger": {
     "monthsOfYear": [3, 4, 5, 6],
     "conditions": [],

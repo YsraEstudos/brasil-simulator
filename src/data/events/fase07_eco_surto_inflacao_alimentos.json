@@ -2,7 +2,7 @@
   "id": "fase07_eco_surto_inflacao_alimentos",
   "title": "Alimentos disparam no mercado",
   "description": "Os preços de alimentos básicos sobem mais que o restante da economia e empurram a inflação dos últimos doze meses para cima. As famílias de baixa renda sentem primeiro, e a autoridade monetária acompanha de perto as expectativas.",
-  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070", "brasil_2027_01_v080"],
   "trigger": {
     "monthsOfYear": [],
     "conditions": [

@@ -10,7 +10,7 @@
     "maxOccurrences": 1,
     "requiresFlags": ["pol_camara_cargos"]
   },
-  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070", "brasil_2027_01_v080"],
   "onFire": [{ "target": "relacao_congresso", "delta": -2, "lagMonths": 0, "durationMonths": 1 }],
   "choices": [
     {
