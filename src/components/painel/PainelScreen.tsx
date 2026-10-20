@@ -420,7 +420,12 @@ export function PainelScreen() {
               { paddingTop: insets.top + 6, paddingLeft: 8 + insets.left, paddingRight: 8 + insets.right },
             ]}>
             <View pointerEvents="box-none" style={styles.topRow}>
-              <RoundButton icon={BACK_ICON} label="Voltar ao menu" size={compact ? 36 : 40} onPress={() => void leaveToMenu()} />
+              <RoundButton
+                icon={BACK_ICON}
+                label="Voltar ao menu"
+                size={compact ? 36 : 40}
+                onPress={() => void leaveToMenu()}
+              />
               <Image
                 source={logo}
                 style={{ height: compact ? 26 : 30, width: (compact ? 26 : 30) * 2 }}
