@@ -44,7 +44,7 @@ const IN_CONGRESS = new Set(['em_tramitacao', 'parada', 'apreciacao_veto']);
 /**
  * Aba Congresso (POLITICAL_RULES.md §6): hemiciclo da Câmara com a base do governo, Mesas e pauta das Casas,
  * propostas por etapa com votos previstos e negociação, blocos e ministérios. Negociar e nomear entram na
- * agenda do mês (mesmas ações da Presidência).
+ * agenda do mês (mesmas ações do Gabinete).
  */
 export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
   const { state } = campaign;

@@ -5,13 +5,14 @@ import { Alert, Button, Card, formatMoneyMillions, Indicator, Text } from '@/com
 import { MaxContentWidth, Spacing, TEXT_SCALES } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-/** Vitrine do sistema de design (rota /design, fora das abas). Dados PROVISORIO, só para visualização. */
+/** Vitrine do sistema de design (rota /design, fora do jogo). Dados PROVISORIO, só para visualização. */
 export default function DesignScreen() {
-  const { scheme, textScale, setTextScale } = useTheme();
+  const { scheme, colors, textScale, setTextScale } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
     <ScrollView
+      style={{ backgroundColor: colors.background }}
       contentContainerStyle={[
         styles.content,
         {

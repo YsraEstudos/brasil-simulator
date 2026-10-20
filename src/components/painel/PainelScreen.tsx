@@ -18,6 +18,7 @@ import {
   AlertCard,
   BellButton,
   DemoBadge,
+  DockButton,
   EmptyNote,
   GoalCheckRow,
   LinkRow,
@@ -38,8 +39,28 @@ import { UfDetail, UfList } from './StateDetail';
 
 const logo = require('../../../assets/images/logo-brasil.png');
 
-/** Números da faixa de baixo (retrato); no topo ficam os quatro principais. */
-const BOTTOM_STATS: readonly HudStatId[] = ['capital', 'inflacao', 'desemprego'];
+/** Segunda linha do topo (retrato), abaixo dos quatro principais; a base do Painel fica para a doca. */
+const SECOND_ROW_STATS: readonly HudStatId[] = ['capital', 'inflacao', 'desemprego'];
+
+/** Subtelas que a doca abre (rotas do grupo `(jogo)`). */
+type DockRoute = '/gabinete' | '/congresso' | '/economia' | '/noticias';
+
+const DOCK: readonly { route: DockRoute; icon: SymbolViewProps['name']; label: string }[] = [
+  { route: '/gabinete', icon: { ios: 'building.2.fill', android: 'domain', web: 'domain' }, label: 'Gabinete' },
+  { route: '/congresso', icon: { ios: 'person.3.fill', android: 'groups', web: 'groups' }, label: 'Congresso' },
+  {
+    route: '/economia',
+    icon: { ios: 'dollarsign.circle.fill', android: 'attach_money', web: 'attach_money' },
+    label: 'Economia',
+  },
+  { route: '/noticias', icon: { ios: 'newspaper.fill', android: 'newspaper', web: 'newspaper' }, label: 'Notícias' },
+];
+
+/** Medidas fixas da mesa (px, sem as safe areas), para os trilhos laterais não passarem por baixo do topo/doca. */
+const TOP_INSET = { portrait: 118 + 56, compact: 56 } as const;
+const DOCK_HEIGHT_PORTRAIT = 54;
+/** Faixa do `DemoBadge` acima da doca em retrato (selo + espaçamento). */
+const DEMO_BADGE_BAND = 28;
 
 type SheetId =
   'alertas' | 'congresso' | 'meta' | 'ministerios' | 'indicadores' | 'pib' | 'regioes' | 'estado' | 'camadas';
@@ -70,10 +91,11 @@ const CENTER_ICON: SymbolViewProps['name'] = { ios: 'globe.americas', android: '
 
 /**
  * Painel (GAME_DESIGN.md §4.2): a mesa do jogo em tela cheia — o globo ocupa a tela toda e a interface vem por
- * cima, como HUD: números translúcidos no topo, botões redondos nas laterais e os complementos embaixo. Cada
- * botão abre o detalhe numa folha animada; nada rola e nada rouba espaço do globo. O toque num estado do globo
- * abre o cartão da UF (§4.5: números, porquê da diferença e visita presidencial). A barra de abas some nesta
- * aba (js-tabs) e o botão de voltar retorna para a Presidência, onde ela reaparece.
+ * cima, como HUD: números translúcidos no topo, botões redondos nas laterais e a doca embaixo. Cada botão
+ * redondo abre o detalhe numa folha animada; nada rola e nada rouba espaço do globo. O toque num estado do globo
+ * abre o cartão da UF (§4.5: números, porquê da diferença e visita presidencial). Não há barra de abas: a doca
+ * da base abre as subtelas (Gabinete, Congresso, Economia, Notícias) por `router.push` e o botão de voltar leva
+ * ao menu principal (a partida continua em memória).
  */
 export function PainelScreen() {
   const active = useGame((s) => s.active);
@@ -145,10 +167,20 @@ export function PainelScreen() {
     setSelectedUf(null);
   };
 
-  /** Sai da mesa para outra aba: o detalhe fecha antes de navegar (ao voltar, a mesa está limpa). */
-  const go = (route: '/presidencia' | '/congresso') => {
+  /** Abre uma subtela: o detalhe fecha antes de navegar (ao voltar, a mesa está limpa). */
+  const go = (route: DockRoute) => {
     closeSheet();
-    router.navigate(route);
+    router.push(route);
+  };
+
+  /**
+   * Volta ao menu principal; a partida em andamento continua em memória, com o rascunho (o CONTINUAR a retoma). Uma
+   * partida encerrada (só aberta para ver o resultado) é fechada, para o CONTINUAR buscar a última partida salva.
+   */
+  const leaveToMenu = async () => {
+    closeSheet();
+    if (active?.finished) await gameStore.getState().leaveCampaign();
+    router.navigate('/');
   };
 
   /** Toque no globo: abre o cartão do estado; sem partida em andamento o mapa é só imagem. */
@@ -168,7 +200,7 @@ export function PainelScreen() {
     setSheet('estado');
   };
 
-  // Android: com um painel aberto, o "voltar" do sistema fecha só o painel em vez de trocar de aba.
+  // Android: com um painel aberto, o "voltar" do sistema fecha só o painel em vez de sair da mesa.
   useEffect(() => {
     if (sheet === null) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -252,7 +284,7 @@ export function PainelScreen() {
         return (
           <>
             {hud.alerts.length > 0 ? (
-              hud.alerts.map((alert) => <AlertCard key={alert.id} alert={alert} onPress={() => go('/presidencia')} />)
+              hud.alerts.map((alert) => <AlertCard key={alert.id} alert={alert} onPress={() => go('/gabinete')} />)
             ) : (
               <EmptyNote
                 text={
@@ -263,8 +295,14 @@ export function PainelScreen() {
               />
             )}
             <LinkRow
-              label={hud.demo ? 'Ir para a Presidência' : 'Ver todos os eventos'}
-              onPress={() => go('/presidencia')}
+              label={
+                hud.demo
+                  ? 'Ir para o Gabinete'
+                  : hud.alerts.length > 0
+                    ? 'Responder no Gabinete'
+                    : 'Ver todos os eventos'
+              }
+              onPress={() => go('/gabinete')}
             />
           </>
         );
@@ -384,9 +422,9 @@ export function PainelScreen() {
             <View pointerEvents="box-none" style={styles.topRow}>
               <RoundButton
                 icon={BACK_ICON}
-                label="Voltar para a Presidência"
+                label="Voltar ao menu"
                 size={compact ? 36 : 40}
-                onPress={() => go('/presidencia')}
+                onPress={() => void leaveToMenu()}
               />
               <Image
                 source={logo}
@@ -408,9 +446,14 @@ export function PainelScreen() {
               <BellButton count={hud.pendingCount} onPress={() => setSheet('alertas')} />
             </View>
             {!compact && (
-              <View pointerEvents="none" style={styles.topCellsRow}>
-                {topCells}
-              </View>
+              <>
+                <View pointerEvents="none" style={styles.topCellsRow}>
+                  {topCells}
+                </View>
+                <View pointerEvents="none" style={styles.topCellsRow}>
+                  {SECOND_ROW_STATS.map((id) => statCell(id))}
+                </View>
+              </>
             )}
           </View>
 
@@ -420,8 +463,12 @@ export function PainelScreen() {
               StyleSheet.absoluteFill,
               styles.rails,
               {
-                paddingTop: (compact ? 56 : 118) + insets.top,
-                paddingBottom: (compact ? 10 : 60) + insets.bottom,
+                paddingTop: (compact ? TOP_INSET.compact : TOP_INSET.portrait) + insets.top,
+                // Retrato: doca + folga (+ selo de demonstração acima dela). Paisagem: a doca é central e estreita,
+                // os trilhos ficam nas laterais e só precisam da folga.
+                paddingBottom: compact
+                  ? 10 + insets.bottom
+                  : 8 + DOCK_HEIGHT_PORTRAIT + 10 + (hud.demo ? DEMO_BADGE_BAND : 0) + insets.bottom,
                 paddingLeft: 8 + insets.left,
                 paddingRight: 8 + insets.right,
               },
@@ -430,17 +477,35 @@ export function PainelScreen() {
             {rail(rightButtons)}
           </View>
 
-          {!compact && (
-            <View
-              pointerEvents="none"
-              style={[
-                styles.bottom,
-                { paddingBottom: 8 + insets.bottom, paddingLeft: 8 + insets.left, paddingRight: 8 + insets.right },
-              ]}>
-              {hud.demo && <DemoBadge />}
-              <View style={styles.bottomCells}>{BOTTOM_STATS.map((id) => statCell(id))}</View>
+          {/* Doca: as subtelas do jogo. Retrato: ícone + rótulo na largura toda; paisagem: só ícones, baixa e central. */}
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.bottom,
+              compact ? styles.bottomCompact : styles.bottomPortrait,
+              {
+                paddingBottom: (compact ? 6 : 8) + insets.bottom,
+                paddingLeft: 8 + insets.left,
+                paddingRight: 8 + insets.right,
+              },
+            ]}>
+            {!compact && hud.demo && (
+              <View pointerEvents="none">
+                <DemoBadge />
+              </View>
+            )}
+            <View pointerEvents="box-none" style={compact ? styles.dockCompact : styles.dock}>
+              {DOCK.map((item) => (
+                <DockButton
+                  key={item.route}
+                  icon={item.icon}
+                  label={item.label}
+                  compact={compact}
+                  onPress={() => go(item.route)}
+                />
+              ))}
             </View>
-          )}
+          </View>
           {compact && hud.demo && (
             <View
               pointerEvents="none"
@@ -471,6 +536,9 @@ const styles = StyleSheet.create({
   topCellsInline: { flex: 1, minWidth: 0, flexDirection: 'row', gap: 4, marginHorizontal: 8 },
   topCellsRow: { flexDirection: 'row', gap: 4 },
   rails: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  bottomCells: { flex: 1, minWidth: 0, flexDirection: 'row', gap: 4 },
+  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  bottomPortrait: { alignItems: 'flex-start', gap: 6 },
+  bottomCompact: { alignItems: 'center' },
+  dock: { alignSelf: 'stretch', flexDirection: 'row', gap: 6 },
+  dockCompact: { flexDirection: 'row', gap: 6 },
 });

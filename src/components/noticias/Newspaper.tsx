@@ -81,7 +81,7 @@ export function Newspaper({
   const styles = useScaledStyles(baseStyles);
   const [filter, setFilter] = useState<NewsFilter>('todas');
   const [index, setIndex] = useState(0);
-  // As abas ficam montadas: se um mês foi encerrado em outra aba, a edição nova entra na posição 0 e o jornal
+  // As telas empilhadas ficam montadas: se um mês foi encerrado em outra tela, a edição nova entra na posição 0 e o jornal
   // volta para ela (senão a posição guardada passaria a mostrar outra edição, ou nenhuma, se a mais antiga saiu).
   const latestMonth = editions[0]?.monthIndex;
   const [seenLatest, setSeenLatest] = useState(latestMonth);
@@ -207,8 +207,7 @@ export function Newspaper({
                 pending.map((p) => (
                   <Text key={p.key} style={styles.boxText}>
                     {`• ${p.title} `}
-                    <Text
-                      style={styles.boxSmall}>{`(${shortMonthLabel(p.monthIndex)} · responda na Presidência)`}</Text>
+                    <Text style={styles.boxSmall}>{`(${shortMonthLabel(p.monthIndex)} · responda no Gabinete)`}</Text>
                   </Text>
                 ))
               )}

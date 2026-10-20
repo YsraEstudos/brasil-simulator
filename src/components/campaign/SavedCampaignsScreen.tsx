@@ -46,7 +46,7 @@ export function SavedCampaignsScreen() {
     setPending(null);
     if (c.id === activeId) {
       // A mesma partida já está aberta: volta a ela sem recarregar (o rascunho do mês continua).
-      router.replace('/presidencia');
+      router.replace('/painel');
       return;
     }
     setLoadingId(c.id);
@@ -54,7 +54,7 @@ export function SavedCampaignsScreen() {
     const ok = await gameStore.getState().continueCampaign(c.id);
     if (!mounted.current) return;
     setLoadingId(null);
-    if (ok) router.replace('/presidencia');
+    if (ok) router.replace('/painel');
     else setOpError(gameStore.getState().error ?? 'Tente de novo em instantes.');
   };
 

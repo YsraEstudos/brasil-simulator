@@ -188,6 +188,43 @@ export function RoundButton({
   );
 }
 
+/**
+ * Botão da doca da mesa (base do Painel): leva a uma subtela. Mesmo vidro e moldura dourada do `RoundButton`;
+ * em retrato é ícone + rótulo curto e ocupa uma fatia da doca, em paisagem (`compact`) é só o ícone.
+ */
+export function DockButton({
+  icon,
+  label,
+  compact,
+  onPress,
+}: {
+  icon: SymbolViewProps['name'];
+  /** Rótulo curto: aparece em retrato e é sempre o rótulo de acessibilidade. */
+  label: string;
+  compact?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={compact ? 4 : 2}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.dockButton,
+        compact ? styles.dockButtonCompact : styles.dockButtonFull,
+        pressed && styles.roundButtonPressed,
+      ]}>
+      <HudIcon name={icon} size={compact ? 18 : 20} />
+      {!compact && (
+        <Text style={styles.dockLabel} numberOfLines={1}>
+          {label}
+        </Text>
+      )}
+    </Pressable>
+  );
+}
+
 export function DemoBadge() {
   return (
     <View style={styles.demoBadge}>
@@ -441,6 +478,16 @@ const styles = {
   },
   roundButtonPressed: { transform: [{ scale: 0.93 }], backgroundColor: Hud.tile },
   roundButtonActive: { borderColor: Hud.title, backgroundColor: '#3a2f14cc' },
+  dockButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Hud.glassBorder,
+    backgroundColor: Hud.glass,
+  },
+  dockButtonFull: { flex: 1, minWidth: 0, height: 54, gap: 3, borderRadius: Radius.md },
+  dockButtonCompact: { width: 48, height: 40, borderRadius: 20 },
+  dockLabel: { color: Hud.title, fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
   roundBadge: {
     position: 'absolute',
     top: -4,

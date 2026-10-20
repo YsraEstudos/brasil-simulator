@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 
 import { Hud } from '@/components/painel/hudTheme';
+import { BackToPainelButton } from '@/components/painel/SubScreen';
 import { activeInstitutionalMarks, pressureBand } from '@/components/tabs/institutionsView';
 import { NoCampaign } from '@/components/tabs/NoCampaign';
 import { Alert } from '@/components/ui';
@@ -47,7 +48,7 @@ import { SocialScreen } from './SocialScreen';
  */
 type Mode = 'mesa' | 'indo' | 'pc' | 'saindo' | 'voltando';
 
-/** Aba Notícias (GAME_DESIGN.md §12–§13): carregamento, partida ausente ou a mesa de notícias. */
+/** Subtela Notícias (GAME_DESIGN.md §12–§13): carregamento, partida ausente ou a mesa de notícias. */
 export function NewsDeskScreen() {
   const status = useGame((s) => s.status);
   const error = useGame((s) => s.error);
@@ -59,6 +60,11 @@ export function NewsDeskScreen() {
       <View style={[styles.center, { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
         {status === 'iniciando' ? <ActivityIndicator color={Hud.title} size="large" /> : <NoCampaign />}
         {error && <Alert tone="negative" title="Algo deu errado ao salvar ou carregar" message={error} />}
+        <View
+          pointerEvents="box-none"
+          style={[styles.backButton, { top: insets.top + BACK_MARGIN, left: insets.left + BACK_MARGIN }]}>
+          <BackToPainelButton />
+        </View>
       </View>
     );
   }
@@ -194,8 +200,8 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
     [paper, social],
   );
 
-  // Botão voltar do Android: do notebook (ou do caminho até ele) volta para a mesa. Só com a aba em foco — as
-  // abas ficam montadas, e um ouvinte global esquecido aqui roubaria o voltar de outra tela.
+  // Botão voltar do Android: do notebook (ou do caminho até ele) volta para a mesa. Só com a tela em foco — as
+  // telas empilhadas continuam montadas, e um ouvinte global esquecido aqui roubaria o voltar de outra tela.
   useFocusEffect(
     useCallback(() => {
       if (mode !== 'indo' && mode !== 'pc' && mode !== 'saindo') return;
@@ -300,11 +306,24 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
         </Animated.View>
       )}
 
+      {/* Voltar ao Painel: com o olhar na mesa. No notebook o voltar é o das próprias redes (de volta à mesa). */}
+      {mode === 'mesa' && (
+        <View
+          pointerEvents="box-none"
+          style={[styles.backButton, { top: insets.top + BACK_MARGIN, left: insets.left + BACK_MARGIN }]}>
+          <BackToPainelButton />
+        </View>
+      )}
+
       {/* Falha de salvar/carregar com a partida aberta: o aviso fica por cima da mesa até a store limpar o erro. */}
       {error && (
         <View
           pointerEvents="box-none"
-          style={[styles.errorBanner, { top: insets.top + 8, left: insets.left + 12, right: insets.right + 12 }]}>
+          style={[
+            styles.errorBanner,
+            // Abaixo do botão de voltar, que ocupa o canto superior esquerdo.
+            { top: insets.top + BACK_MARGIN + BACK_SPACE, left: insets.left + 12, right: insets.right + 12 },
+          ]}>
           <Alert tone="negative" title="Algo deu errado ao salvar ou carregar" message={error} />
         </View>
       )}
@@ -321,8 +340,13 @@ const SOCIAL_FADE_MS = 620;
 /** Quantas vezes o anel do notebook pulsa a cada chegada na mesa. */
 const PULSES = 4;
 
+/** Margem do botão de voltar ao Painel em relação à área segura, e o espaço que ele ocupa (botão + folga). */
+const BACK_MARGIN = 8;
+const BACK_SPACE = 48;
+
 const styles = StyleSheet.create({
   hidden: { display: 'none' },
+  backButton: { position: 'absolute' },
   errorBanner: { position: 'absolute' },
   root: { flex: 1, backgroundColor: '#0b0806', overflow: 'hidden' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, backgroundColor: Hud.board },

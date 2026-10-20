@@ -180,9 +180,9 @@ function NewCampaignForm({
     const result = await gameStore.getState().newCampaign({ ...rest, seed: seed ?? undefined });
     if (!mounted.current) return;
     if (result.ok) {
-      // A campanha está gravada: entra na Presidência sem deixar o formulário enviado na pilha.
+      // A campanha está gravada: entra no Painel sem deixar o formulário enviado na pilha.
       completed.current = true;
-      router.replace('/presidencia');
+      router.replace('/painel');
       return;
     }
     submitLock.current = false;
@@ -433,7 +433,7 @@ function NewCampaignForm({
               onPress={onSubmit}
               disabled={!check.ok || busy}
               loading={submitting}
-              hint="Cria a campanha e abre a Presidência"
+              hint="Cria a campanha e abre o Painel"
             />
             {!check.ok && (
               <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(120)}>

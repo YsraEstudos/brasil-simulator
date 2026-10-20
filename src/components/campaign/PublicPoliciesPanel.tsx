@@ -61,7 +61,7 @@ function phaseLabel(phase: string): string {
   );
 }
 
-/** Diretrizes, carteira e marcas da Fase 06 na tela da Presidência. */
+/** Diretrizes, carteira e marcas da Fase 06 no Gabinete. */
 export function PublicPoliciesPanel({ state, content, actionsMax }: PublicPoliciesPanelProps) {
   const { colors } = useTheme();
   const draft = useGame((s) => s.draft);

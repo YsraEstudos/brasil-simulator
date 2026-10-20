@@ -89,7 +89,7 @@ export function CongressHemicycle({ state, content, actionsUsed, actionsMax }: C
           {`Base aliada (relação acima de ${ALLY_RELATION}): ${formatNumber(allies.chamber)} deputados, ${formatNumber(allies.senate)} senadores · PEC exige ${PEC_CHAMBER}/${PEC_SENATE}.`}
         </Text>
         <Text variant="caption" color="textSecondary" tabular>
-          {`Ações de agenda do mês: ${actionsUsed} de ${actionsMax}. Negociações e nomeações marcadas aqui entram na agenda e valem ao encerrar o mês na Presidência.`}
+          {`Ações de agenda do mês: ${actionsUsed} de ${actionsMax}. Negociações e nomeações marcadas aqui entram na agenda e valem ao encerrar o mês no Gabinete.`}
         </Text>
       </View>
     </Card>

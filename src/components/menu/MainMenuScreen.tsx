@@ -149,13 +149,13 @@ export function MainMenuScreen() {
         showNote('Nenhuma partida salva — comece um NOVO JOGO');
         return;
       }
-      // Só entra na Presidência se a partida carregou de fato (a falha fica registrada na store).
+      // Só entra no Painel se a partida carregou de fato (a falha fica registrada na store).
       if (!(await gameStore.getState().continueCampaign(last.id))) {
         showNote('Não foi possível carregar a última partida');
         return;
       }
     }
-    router.push('/presidencia');
+    router.push('/painel');
   }, [active, busy, campaigns, showNote, status]);
 
   const onPressItem = useCallback(
