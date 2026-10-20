@@ -16,3 +16,4 @@ export type { IndicatorPoint } from '@/database/campaignRepository';
 export * from './agendaDraft';
 export type { NewCampaignResult } from './gameStore';
 export * from './campaignSetup';
+export * from './mapRenderer';

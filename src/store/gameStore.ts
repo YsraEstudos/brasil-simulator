@@ -39,6 +39,7 @@ import {
   type SetupErrors,
   type SetupPrefs,
 } from './campaignSetup';
+import { DEFAULT_MAP_RENDERER, MAP_RENDERER_KEY, resolveMapRenderer, type MapRendererPref } from './mapRenderer';
 
 /** Campanha encerrada: prazo do cenário cumprido ou condenação por impeachment (FASE_07.md). */
 function isFinished(state: GameState): boolean {
@@ -78,6 +79,8 @@ export interface GameStoreState {
   campaigns: CampaignSummary[];
   active: ActiveCampaign | null;
   textScale: TextScale;
+  /** Renderizador do mapa regional (Configurações; guardado em `settings`, fora do `GameState`). */
+  mapRenderer: MapRendererPref;
   /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
   draft: AgendaDraft;
   /** Últimas dificuldade e cenário usados em NOVO JOGO (lidos uma vez no início, gravados após criar). */
@@ -101,6 +104,7 @@ export interface GameStoreState {
   leaveCampaign(): Promise<boolean>;
   deleteCampaign(id: string): Promise<boolean>;
   setTextScale(scale: TextScale): Promise<boolean>;
+  setMapRenderer(renderer: MapRendererPref): Promise<boolean>;
 }
 
 export interface GameStoreDeps {
@@ -151,6 +155,7 @@ export function createGameStore(deps: GameStoreDeps) {
       campaigns: [],
       active: null,
       textScale: 1,
+      mapRenderer: DEFAULT_MAP_RENDERER,
       draft: EMPTY_DRAFT,
       setupPrefs: DEFAULT_SETUP_PREFS,
 
@@ -171,7 +176,13 @@ export function createGameStore(deps: GameStoreDeps) {
           } catch {
             // segue com os padrões
           }
-          set({ textScale, setupPrefs, campaigns: await listCampaigns(db), status: 'pronto' });
+          let mapRenderer = DEFAULT_MAP_RENDERER;
+          try {
+            mapRenderer = resolveMapRenderer(await getSetting<unknown>(db, MAP_RENDERER_KEY, null));
+          } catch {
+            // segue com o globo
+          }
+          set({ textScale, mapRenderer, setupPrefs, campaigns: await listCampaigns(db), status: 'pronto' });
         } catch (e) {
           set({ status: 'erro', error: e instanceof Error ? e.message : String(e) });
         }
@@ -328,6 +339,12 @@ export function createGameStore(deps: GameStoreDeps) {
         run(async (d) => {
           set({ textScale: scale });
           await setSetting(d, TEXT_SCALE_KEY, scale);
+        }),
+
+      setMapRenderer: (renderer) =>
+        run(async (d) => {
+          set({ mapRenderer: renderer });
+          await setSetting(d, MAP_RENDERER_KEY, renderer);
         }),
     };
   });

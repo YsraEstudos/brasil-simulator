@@ -122,7 +122,7 @@ Antes de confirmar uma decisão grande (proposta ao Congresso, MP, corte, reform
 ### 4.5 Mapa da federação no Painel (Fase 05)
 O globo do Painel é o mapa da federação: cada UF pintada pelo indicador escolhido — crescimento em 12 meses, desemprego e aprovação comparados à média nacional, PIB per capita (Brasil = 1) e relação com o governador. As escalas comparativas vão do vermelho (pior que a média) ao azul (melhor), com cinza na média; a renda usa um só azul. A legenda fica na folha **Camadas do mapa**, junto da escolha da camada, e a **lista** da folha **Visão regional** mostra as 27 UFs ordenadas com o número (a mesma informação sem depender da cor). Tocar numa UF abre o cartão com os números da UF e do Brasil, o governador (bloco e relação), **"Por que esta UF está diferente da média?"** (as maiores causas do mês, do relatório) e o botão de **visita presidencial**, que entra na mesma agenda do mês. Não há decisão "estadual": o presidente só age por políticas federais, convênios e visitas (§3.2). Regras em [POLITICAL_RULES.md](POLITICAL_RULES.md) §2.1 e modelo em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.15.
 
-A mesa de despacho (§4.4) passou a dizer onde a política pesa mais por habitante (Comunicação: "Favorece mais o Nordeste e o Norte") e, nos programas por convênio, quantos estados devem aderir (Articulação).
+A mesa de despacho (§4.4) passou a dizer onde a política pesa mais por habitante (Comunicação: "Favorece mais o Nordeste e o Norte") e, nos programas por convênio, quantos estados devem aderir (Articulação). A prévia regional da mesa de despacho tem um mini-mapa 2D com as três UFs que mais pesam por habitante, a parcela de recursos de cada UF, a adesão provável do governador e as incertezas (votação no Congresso, sorteio de adesão, efeito com defasagem), sempre rotulada como "Estimativa — não é garantia". Em **Configurações**, a opção **Mapa** escolhe o renderizador do Painel entre Globo 3D (padrão), Mapa 2D e Mapa 2D leve; a escolha fica fora do save e, se o globo 3D não iniciar, o Painel cai para o Mapa 2D na sessão, com o aviso "O globo 3D não iniciou".
 
 ### 4.6 A mesa do Painel: folhas e subtelas (Painel único, 20/10/2026)
 Não há barra de abas nem tela "Presidência". Depois de **Novo jogo**, **Carregar jogo** ou **Continuar**, o jogador cai direto no **Painel**: o globo do Brasil com HUD. Tudo parte dele e tudo volta para ele. O conteúdo chega à mesa de dois jeitos:
@@ -139,6 +139,8 @@ Não há barra de abas nem tela "Presidência". Depois de **Novo jogo**, **Carre
 | Trilho direito ("o país") — folhas | Camadas do mapa · Visão regional (com a lista de UFs) · Indicadores (com "Por que mudou?", setores e gráfico do PIB) · Ministérios |
 | Doca (base) — subtelas | **Gabinete** (agenda presidencial: decisões com mesa de despacho, políticas públicas e marcas de governo, ações de agenda) · **Congresso** · **Economia** · **Notícias**, com selos (votação marcada no Congresso, manchetes novas) · botão **Encerrar o mês** ("Ver legado" com a campanha encerrada) |
 | Fim da campanha | Subtela **Legado**: o jogo abre nela quando a campanha termina. |
+
+Em **Configurações** (☰ Menu), a opção **Mapa** define se o país aparece no globo 3D, no Mapa 2D ou no Mapa 2D leve (§4.5); a opção não muda a simulação.
 
 Sem partida em andamento não há Painel: o modo demonstração (globo sem partida) só existe como reserva técnica. O plano e as decisões estão em [PLANO_PAINEL_UNICO.md](PLANO_PAINEL_UNICO.md).
 

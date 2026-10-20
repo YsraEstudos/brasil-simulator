@@ -5,16 +5,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Text } from '@/components/ui';
 import { MaxContentWidth, Spacing, TEXT_SCALES } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { gameStore, MAP_RENDERER_OPTIONS, useGame } from '@/store';
 
 import { enterAt, goBack, SetupHeader } from '../campaign/SetupBits';
 
 /**
  * CONFIGURAÇÕES (rota `/configuracoes`): ajustes do jogador fora das abas, abertos pelo botão CONFIGURAÇÕES do
- * menu principal. Por ora, o tamanho do texto — o ajuste que o jogador usa para ler melhor o jogo.
+ * menu principal: o tamanho do texto (o ajuste que o jogador usa para ler melhor o jogo) e o tipo de mapa do Painel.
  */
 export function SettingsScreen() {
   const { colors, textScale, setTextScale } = useTheme();
   const insets = useSafeAreaInsets();
+  const mapRenderer = useGame((s) => s.mapRenderer);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -48,6 +50,28 @@ export function SettingsScreen() {
             </Text>
           </Card>
         </Animated.View>
+
+        <Animated.View entering={enterAt(1)}>
+          <Card title="Mapa" subtitle="Como o mapa do Painel é desenhado neste aparelho">
+            {MAP_RENDERER_OPTIONS.map((option) => (
+              <View key={option.id} style={styles.option}>
+                <Button
+                  label={option.label}
+                  variant={option.id === mapRenderer ? 'primary' : 'secondary'}
+                  onPress={() => void gameStore.getState().setMapRenderer(option.id)}
+                  accessibilityHint={option.id === mapRenderer ? 'Mapa atual' : option.description}
+                  block
+                />
+                <Text variant="caption" color="textSecondary">
+                  {option.description}
+                </Text>
+              </View>
+            ))}
+            <Text variant="caption" color="textSecondary">
+              Se o globo 3D não iniciar, o jogo usa o mapa 2D sozinho.
+            </Text>
+          </Card>
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -57,4 +81,5 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { gap: Spacing.three, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  option: { gap: Spacing.one },
 });

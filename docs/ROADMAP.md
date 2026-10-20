@@ -100,6 +100,14 @@ Decisão: a tela "Brasil" é um globo 3D (three.js + @react-three/fiber + expo-g
 - [ ] Rótulos de UFs e capitais
 - [ ] Mapas de calor por indicador (Fase 05)
 
+### 4.2 Globo vivo (antecipado a pedido, 20/10/2026)
+
+Plano de clima, dia e noite, alinhamento ideológico, mapa eleitoral e mapa 2D em [PLANO_GLOBO.md](PLANO_GLOBO.md); roteiro de 15 PRs em §7.
+
+- [x] PR 0: medição no aparelho (contador de dev no app e `scripts/perf/medir-globo.ps1` via adb; `docs/MEDICAO_GLOBO.md`, em branch separada)
+- [x] PR 1: prévia regional na mesa de despacho e mapa 2D (Mapa 2D e Mapa 2D leve em Configurações)
+- [ ] PRs 2–14: ver [PLANO_GLOBO.md](PLANO_GLOBO.md) §7
+
 ## 5. Fase 02 — plano de tarefas
 
 1. ✅ Cenário `brasil_2027_01` v0.1.0 com valores `PROVISORIO` (aprovação inicial `FICTICIO`) e bloco econômico; é o cenário padrão das novas campanhas.

@@ -1,5 +1,6 @@
 import { VISIT_ACTION_ID } from '../actions';
 import { blocRelation, RELACAO_ESCALA, RELACAO_MAX, RELACAO_MIN } from '../congress/relations';
+import type { Calibration } from '../economy/calibration';
 import { DEMAND_GAIN } from '../economy/demand';
 import { activeImpulses } from '../impulses';
 import type { RegionalScope, SectorId } from '../../types/regions';
@@ -458,6 +459,21 @@ export const REGION_NAMES: Readonly<Record<string, string>> = {
 };
 
 /**
+ * Peso de cada UF na chave de distribuição (soma 1) e incidência per capita (peso ÷ participação na população;
+ * 1 = média nacional), na ordem do cenário (ECONOMIC_MODEL.md §5.15). Base única da mesa de despacho
+ * (`regionalIncidence`) e da prévia regional da decisão (`regions/preview.ts`).
+ */
+export function ufIncidence(
+  ufs: readonly ScenarioUf[],
+  structural: readonly number[],
+  regional: ImpulseRegional,
+): { id: string; weight: number; ratio: number }[] {
+  const pop = populationShares(ufs);
+  const w = keyWeights(ufs, structural, regional);
+  return ufs.map((u, i) => ({ id: u.id, weight: w[i], ratio: w[i] / pop[i] }));
+}
+
+/**
  * Incidência per capita de uma chave por grande região (1 = média nacional), na ordem de `REGION_NAMES`, e a UF
  * mais concentrada. Usada pela mesa de despacho para dizer onde a política pesa mais.
  */
@@ -468,19 +484,38 @@ export function regionalIncidence(
   const ufs = regionsOf(content);
   if (ufs.length === 0) return { regions: [], topUf: null };
   const pop = populationShares(ufs);
-  const w = keyWeights(
+  const ratios = ufIncidence(
     ufs,
     ufs.map((u) => u.gdpShare),
     regional,
   );
   const regions = Object.keys(REGION_NAMES).map((id) => {
-    const weight = ufs.reduce((n, u, i) => (u.region === id ? n + w[i] : n), 0);
+    const weight = ufs.reduce((n, u, i) => (u.region === id ? n + ratios[i].weight : n), 0);
     const people = ufs.reduce((n, u, i) => (u.region === id ? n + pop[i] : n), 0);
     return { id, ratio: people > 0 ? weight / people : 0 };
   });
-  const ratios = ufs.map((u, i) => ({ id: u.id, ratio: w[i] / pop[i] }));
   const top = ratios.reduce((a, b) => (b.ratio > a.ratio ? b : a), ratios[0]);
-  return { regions, topUf: top };
+  return { regions, topUf: { id: top.id, ratio: top.ratio } };
+}
+
+/**
+ * Probabilidade de um governador aderir a programa por convênio (POLITICAL_RULES.md §2.1):
+ * `adesao_base + adesao_relacao × relação/100`, limitada a [0, 1]. Fórmula única do sorteio da execução
+ * (`proposals.ts`), do parecer (`expectedAdhesion`) e da prévia regional.
+ */
+export function adhesionProbability(
+  c: Pick<Calibration, 'adesao_base' | 'adesao_relacao'>,
+  governorRelation: number,
+): number {
+  return Math.min(1, Math.max(0, c.adesao_base + (c.adesao_relacao * governorRelation) / RELACAO_MAX));
+}
+
+/** Probabilidade de adesão de cada UF, na ordem do cenário (vazio sem UFs). */
+export function adhesionProbabilities(state: Readonly<GameState>, content: GameContent): number[] {
+  const ufs = regionsOf(content);
+  if (ufs.length === 0) return [];
+  const view = regionsView(state, content);
+  return ufs.map((_, i) => adhesionProbability(content.calibration, view[i].governorRelation));
 }
 
 /**
@@ -493,15 +528,10 @@ export function expectedAdhesion(
 ): { states: number; populationShare: number } | null {
   const ufs = regionsOf(content);
   if (ufs.length === 0) return null;
-  const c = content.calibration;
   const pop = populationShares(ufs);
-  const view = regionsView(state, content);
-  let states = 0;
-  let populationShare = 0;
-  ufs.forEach((_, i) => {
-    const p = Math.min(1, Math.max(0, c.adesao_base + (c.adesao_relacao * view[i].governorRelation) / RELACAO_MAX));
-    states += p;
-    populationShare += p * pop[i];
-  });
-  return { states, populationShare };
+  const probabilities = adhesionProbabilities(state, content);
+  return {
+    states: probabilities.reduce((n, p) => n + p, 0),
+    populationShare: probabilities.reduce((n, p, i) => n + p * pop[i], 0),
+  };
 }

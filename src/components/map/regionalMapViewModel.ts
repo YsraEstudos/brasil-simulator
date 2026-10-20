@@ -1,0 +1,86 @@
+import { binColor, indicatorSpec, legendLabels, type MapIndicator } from '@/components/painel/regionalMetrics';
+
+/**
+ * Modelo de dados do mapa regional, independente do renderizador (PLANO_GLOBO.md §3.4): o globo 3D (`GlobeView`) e o
+ * mapa 2D (`FlatBrazilMap`) recebem o mesmo `RegionalMapViewModel`. Aqui só se compõe o que `regionalMetrics` já
+ * produz (cores por UF, faixas e rótulos da legenda); nenhuma regra de cor mora neste módulo.
+ */
+
+/**
+ * `indicator`: mapa de calor de um indicador do jogo. `preview`: prévia de uma decisão (ex.: o efeito de uma política
+ * por UF, no Gabinete), com legenda própria.
+ */
+export type MapMode = 'indicator' | 'preview';
+
+export interface MapLegendEntry {
+  color: string;
+  label: string;
+}
+
+export interface MapLegend {
+  title: string;
+  entries: readonly MapLegendEntry[];
+}
+
+/** Texto fixo sobre uma UF (sigla, capital…). Reservado para os PRs de camadas; hoje sempre vazio. */
+export interface MapLabel {
+  sigla: string;
+  text: string;
+}
+
+/** Marcador agrupado por UF (evento, notícia…). Reservado para os PRs de camadas; hoje sempre vazio. */
+export interface MapMarker {
+  id: string;
+  sigla: string;
+  kind: string;
+  label: string;
+}
+
+export interface RegionalMapViewModel {
+  mode: MapMode;
+  /** Cor de cada UF (sigla → hex). Vazio: o renderizador usa a cor neutra de terra. */
+  fills: Readonly<Record<string, string>>;
+  selectedId: string | null;
+  legend: MapLegend | null;
+  labels: readonly MapLabel[];
+  markers: readonly MapMarker[];
+}
+
+export interface RegionalMapViewModelInput {
+  /** Indicador do mapa de calor; `null` = Satélite (sem mapa de calor). */
+  indicator?: MapIndicator | null;
+  /** Cores por sigla, como `mapFills` devolve; `null` quando não há mapa de calor. */
+  fills?: Readonly<Record<string, string>> | null;
+  selectedId?: string | null;
+  mode?: MapMode;
+  /** Legenda própria (prévia); no modo `indicator` a legenda sai do indicador. */
+  legend?: MapLegend | null;
+  labels?: readonly MapLabel[];
+  markers?: readonly MapMarker[];
+}
+
+const NO_FILLS: Readonly<Record<string, string>> = Object.freeze({});
+const NONE: readonly never[] = Object.freeze([]);
+
+/** Legenda do indicador: título e as cinco faixas (cor + rótulo), as mesmas do cartão de camadas. */
+export function indicatorLegend(id: MapIndicator): MapLegend {
+  const spec = indicatorSpec(id);
+  return {
+    title: spec.legend,
+    entries: legendLabels(spec).map((label, i) => ({ color: binColor(spec, i), label })),
+  };
+}
+
+/** Monta o modelo do mapa. Sem indicador e sem cores (Satélite) a legenda é `null` e os preenchimentos, vazios. */
+export function buildRegionalMapViewModel(input: RegionalMapViewModelInput = {}): RegionalMapViewModel {
+  const { indicator = null, fills = null, selectedId = null, mode = 'indicator', legend, labels, markers } = input;
+  const derived = mode === 'indicator' && indicator && fills ? indicatorLegend(indicator) : null;
+  return {
+    mode,
+    fills: fills ?? NO_FILLS,
+    selectedId,
+    legend: legend === undefined ? derived : legend,
+    labels: labels ?? NONE,
+    markers: markers ?? NONE,
+  };
+}

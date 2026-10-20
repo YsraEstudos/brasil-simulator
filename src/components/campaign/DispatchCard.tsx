@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { RegionalPreviewCard } from '@/components/map/RegionalPreviewCard';
 import { Alert, Button, Text } from '@/components/ui';
 import { Radius, Spacing, type ThemeColor } from '@/constants/theme';
 import { adviseDecision, type GameContent, type GameState, type Opinion } from '@/engine';
@@ -68,6 +69,7 @@ export function DispatchCard({
           </Text>
         </View>
       ))}
+      <RegionalPreviewCard state={state} content={content} policyId={policy.id} />
       {vedacao && (
         <Alert
           tone="warning"
