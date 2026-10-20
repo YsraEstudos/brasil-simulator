@@ -72,7 +72,7 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
     }
   }
 
-  // Políticas e ações marcadas sem alvo; as com alvo (negociação, ministérios) aparecem na aba Congresso. Decisões
+  // Políticas e ações marcadas sem alvo; as com alvo (negociação, ministérios) aparecem na subtela Congresso. Decisões
   // com apenas a quebra declarada da vedação contam como simples (a mesa de despacho as marca e desmarca).
   const selected = draft.decisions
     .filter((d) => d.params === undefined || Object.keys(d.params).every((key) => key === 'vedacao_bypass'))
@@ -113,7 +113,7 @@ export function CampaignView({ campaign }: { campaign: ActiveCampaign }) {
   };
 
   /**
-   * Volta à tela de abertura (a pilha de abas não tem cabeçalho com "voltar"). A partida em andamento continua aberta
+   * Volta à tela de abertura (a pilha do jogo não tem cabeçalho com "voltar" até o menu). A partida em andamento continua aberta
    * em memória, com o rascunho do mês: CONTINUAR retoma exatamente daqui. Uma partida encerrada (só aberta para ver o
    * resultado) é fechada, para CONTINUAR buscar a última partida salva em vez de reabrir o resultado.
    */

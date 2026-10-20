@@ -39,7 +39,7 @@ export function enterAt(index: number) {
     .damping(18);
 }
 
-/** Volta à tela anterior (menu ou Presidência); aberta direto por link, vai ao menu principal. */
+/** Volta à tela anterior (menu ou Painel); aberta direto por link, vai ao menu principal. */
 export function goBack() {
   if (router.canGoBack()) router.back();
   else router.replace('/');
