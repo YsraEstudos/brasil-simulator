@@ -8,7 +8,7 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 ## 1. Antes de qualquer tarefa
 
 1. Ler este arquivo e o documento da área afetada:
-   - interface → [GAME_DESIGN.md](GAME_DESIGN.md)
+   - interface → [GAME_DESIGN.md](GAME_DESIGN.md) (§4.6: Painel, folhas e subtelas; não há barra de abas)
    - economia → [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md)
    - Congresso, leis, orçamento → [POLITICAL_RULES.md](POLITICAL_RULES.md)
    - dados de cenário → [DATA_SOURCES.md](DATA_SOURCES.md)
@@ -102,6 +102,10 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 | Notícia (manchete persistida, com causa) | `NewsItem` (`EventsState.news`) |
 | Prestígio de personagem | `standing` (`EventsState.characters`, −100 a 100) |
 | Elenco (personagens do cenário) | `characters` (`Scenario.characters`) |
+| Painel (a mesa do jogo: globo com HUD; rota `/painel`, âncora do grupo `src/app/(jogo)/`) | `painel` |
+| Folha (modal de consulta ou decisão rápida, por cima do globo) | `sheet` |
+| Subtela (mesa de trabalho em tela cheia, com "Voltar ao Painel": `/gabinete`, `/congresso`, `/economia`, `/noticias`, `/legado`) | `SubScreen` |
+| Gabinete (subtela da agenda presidencial; antiga tela Presidência) | `gabinete` |
 
 ---
 

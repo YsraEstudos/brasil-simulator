@@ -1,6 +1,6 @@
 # Brasil Simulator — Roadmap
 
-Versão 0.4 do documento • 17/10/2026 • v0.2: adições do plano v1.1 (§2.1) e decisão D7 • v0.3: Fases 09–11 movidas para [ROADMAP_2.0.md](ROADMAP_2.0.md) • v0.4: status da Fase 08 e branches das Fases 07–08
+Versão 0.5 do documento • 20/10/2026 • v0.2: adições do plano v1.1 (§2.1) e decisão D7 • v0.3: Fases 09–11 movidas para [ROADMAP_2.0.md](ROADMAP_2.0.md) • v0.4: status da Fase 08 e branches das Fases 07–08 • v0.5: reorganização "Painel único" (§2.1)
 Prazos são estimativas para uma pessoa desenvolvendo com apoio intensivo de IA.
 
 ---
@@ -55,6 +55,7 @@ Revisão externa avaliada em 13/10/2026. A ordem das fases não mudou (o motor j
 | 05 | Estados como distribuição do agregado nacional (D7) | ECONOMIC_MODEL.md §5.12 |
 | 06 | Políticas de rotina por diretriz e até 3 marcas de governo | GAME_DESIGN.md §9.2 |
 | 08 | Memória curta do eleitor e vedações do ano eleitoral | POLITICAL_RULES.md §11 |
+| Interface (20/10/2026) | ✅ **Painel único**: sem barra de abas; o jogo abre no Painel (globo com HUD), com folhas (consulta rápida) e subtelas (Gabinete, Congresso, Economia, Notícias, Legado). Só interface e navegação: motor, banco e saves não mudam. Etapas 1–2 nos PRs #17 e #18; Etapas 3–5 na branch `feat/painel-etapas-3-5` | [PLANO_PAINEL_UNICO.md](PLANO_PAINEL_UNICO.md), GAME_DESIGN.md §4.6 |
 
 ---
 
@@ -83,7 +84,7 @@ Ordem sugerida, uma tarefa por branch/PR:
 6. ✅ Esquemas Zod para cenário e políticas (`src/types/`): valor com fonte/status, política, cenário com blocos e Copom.
 7. ✅ Banco SQLite: tabelas `campaigns`, `snapshots`, `decisions`, `events`, `schema_migrations`; sistema de migrações versionado com testes (expo-sqlite no app, `node:sqlite` nos testes).
 8. ✅ Sistema de design: tokens de cor (claro/escuro), tipografia, escala de texto ajustável, componentes base (Card, Indicator, Alert, Button). Vitrine em `/design`; a escala de texto passa a ser salva no item 10.
-9. ✅ Navegação: 5 abas — Presidência, Economia, Congresso, Brasil, Notícias.
+9. ✅ Navegação: 5 abas — Presidência, Economia, Congresso, Brasil, Notícias. *(Substituída em 20/10/2026 pelo Painel único, §2.1: sem abas, com folhas e subtelas.)*
 10. ✅ Criar, salvar, fechar e retomar uma partida fictícia (tela Presidência, store Zustand, cenário `prototipo_ficticio`, tamanho do texto salvo). Verificado na web e no moto g20 via Expo Go (criar, encerrar meses, fechar à força o app, reabrir e continuar).
 11. ⏸ Rodando no Expo Go em aparelho Android físico (moto g20). Build de desenvolvimento própria **adiada** (decisão de 13/10/2026: o lançamento está distante). Fazer quando acontecer o primeiro destes gatilhos: (a) adicionar biblioteca nativa que não existe no Expo Go; (b) o Expo Go da Play Store passar a exigir um SDK mais novo que o do projeto (atualizar o SDK ou gerar a build); (c) medir FPS e memória de verdade, que exige build de release; (d) preparação da Fase 10.
 
