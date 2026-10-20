@@ -163,6 +163,8 @@ export function PainelScreen() {
   const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
   // Último mês de notícias que o jogador abriu (por partida): o selo das Notícias some até sair um relatório novo.
   const [seenNews, setSeenNews] = useState<{ id: string; month: number } | null>(null);
+  // O erro da store veio do Encerrar o mês? Só então o aviso fala do mês (a store guarda erros de outras operações).
+  const [endMonthFailed, setEndMonthFailed] = useState(false);
   // Há subtela por cima do Painel? Então o globo não desenha (a pilha mantém o Painel montado por baixo).
   const focused = useIsFocused();
   const globe = useRef<GlobeApi | null>(null);
@@ -283,7 +285,9 @@ export function PainelScreen() {
   const endMonth = async () => {
     const before = gameStore.getState().active?.state.monthIndex;
     // Falha ao gravar: o mês não avança, o rascunho fica e o aviso de erro aparece na mesa (`error` da store).
-    if (!(await gameStore.getState().endMonth())) return;
+    const ok = await gameStore.getState().endMonth();
+    setEndMonthFailed(!ok && gameStore.getState().error !== undefined);
+    if (!ok) return;
     const after = gameStore.getState().active;
     const outcome = endMonthOutcome(before, after?.state.monthIndex, after?.finished ?? false);
     if (outcome === 'relatorio') setSheet('relatorio');
@@ -696,8 +700,18 @@ export function PainelScreen() {
                 <Alert
                   tone="negative"
                   title="Algo deu errado ao salvar"
-                  message={`${error} O mês não avançou e a agenda marcada continua: tente encerrar de novo.`}
-                  action={{ label: 'Fechar o aviso', onPress: () => gameStore.getState().clearError() }}
+                  message={
+                    endMonthFailed
+                      ? `${error} O mês não avançou e a agenda marcada continua: tente encerrar de novo.`
+                      : error
+                  }
+                  action={{
+                    label: 'Fechar o aviso',
+                    onPress: () => {
+                      setEndMonthFailed(false);
+                      gameStore.getState().clearError();
+                    },
+                  }}
                 />
               </ForceHudTheme>
             </View>
