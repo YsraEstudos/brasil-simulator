@@ -260,3 +260,31 @@ export const CLIMATE_INTENSITY_PARAM: Readonly<Record<Difficulty, ClimateParamNa
   estrategica: 'intensidade_estrategica',
   realismo: 'intensidade_realismo',
 };
+
+/**
+ * Valor esperado de cada termo de dano nacional sob o clima estacionário, como **fração do teto** do termo (o
+ * valor entre 0 e 1 que sai de `tanh`, antes de multiplicar pelo teto). O dano usado pela economia é o termo menos
+ * este valor: o clima fica de média zero em torno da normal climatológica (clima bom dá pressão negativa: boa safra,
+ * reservatórios cheios), em vez de virar inflação permanente. Sem isso, o lado ruim do clima (seca, cheia) só empurra
+ * para cima e, somado em anos, vira uma inflação média maior, Selic maior e aprovação menor em toda campanha.
+ *
+ * Depende da dificuldade (a magnitude muda a distribuição do clima) e do cenário (pesos de PIB e de agropecuária por
+ * UF): medido no cenário padrão (v0.8.0), 30 sementes × 2.880 meses após 120 de aquecimento, com os `CLIMATE_PARAMS`
+ * atuais. **Se algum parâmetro de evolução ou de dano mudar, refazer a medição**: o teste
+ * `evolution.test.ts` ("valores esperados") falha quando a tabela deixa de bater com uma medição nova. `PROVISORIO`.
+ * - `droughtGdp`: perda de PIB por seca ÷ `dano_pib_seca_max`;
+ * - `droughtFood`: alimentos ÷ `dano_alimentos_seca_max`; `droughtEnergy`: energia ÷ `dano_energia_seca_max`;
+ * - `rain`: índice nacional de cheia (usado pela perda de PIB e pelos alimentos da chuva excessiva).
+ */
+export interface ExpectedDamage {
+  droughtGdp: number;
+  droughtFood: number;
+  droughtEnergy: number;
+  rain: number;
+}
+
+export const CLIMATE_EXPECTED_DAMAGE: Readonly<Record<Difficulty, ExpectedDamage>> = {
+  casual: { droughtGdp: 0.0854, droughtFood: 0.1673, droughtEnergy: 0.1574, rain: 0.0028 },
+  estrategica: { droughtGdp: 0.1347, droughtFood: 0.2597, droughtEnergy: 0.2456, rain: 0.0278 },
+  realismo: { droughtGdp: 0.1599, droughtFood: 0.3052, droughtEnergy: 0.2887, rain: 0.0608 },
+};

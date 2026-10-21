@@ -286,6 +286,16 @@ Módulo `src/engine/climate/calibration.ts` (`CLIMATE_PARAMS`, não sobrescritos
 | `aprovacao_clima_max` | 0,015 | 0,005 – 0,03 | desvio máximo de aprovação da UF, para cada um de: cheia e seca prolongada (redistribui, D7) |
 | `seca_humor_limiar` | 0,5 | 0,3 – 0,8 | seca acumulada a partir da qual ela pesa no humor ("prolongada") |
 
+**Dano de média zero (`CLIMATE_EXPECTED_DAMAGE`, fora de `CLIMATE_PARAMS`).** Cada termo de dano nacional (PIB e energia e alimentos pela seca, PIB e alimentos pela chuva excessiva) é `teto × (índice − esperado)`, em que o índice é a saída do `tanh` (0–1) e o esperado é a média desse índice sob o clima estacionário. Sem isso o dano seria só adverso e viraria inflação permanente (medido em 20 anos × 10 sementes: inflação média +0,6 p.p., Selic final +0,6 a +2,5 p.p., aprovação −1 p.p.). Tabela por dificuldade (a magnitude muda a distribuição do clima), medida no cenário padrão com 30 sementes × 2.880 meses após 120 de aquecimento:
+
+| Dificuldade | PIB (seca) | Alimentos (seca) | Energia (seca) | Chuva (cheia) |
+| --- | --- | --- | --- | --- |
+| `casual` | 0,0854 | 0,1673 | 0,1574 | 0,0028 |
+| `estrategica` | 0,1347 | 0,2597 | 0,2456 | 0,0278 |
+| `realismo` | 0,1599 | 0,3052 | 0,2887 | 0,0608 |
+
+Clima melhor que o esperado dá pressão negativa (boa safra, reservatórios em bom nível), no máximo `−teto × esperado`; a seca vale até `teto × (1 − esperado)`. **Refazer a tabela se qualquer parâmetro de evolução ou de dano mudar** (o teste "CLIMATE_EXPECTED_DAMAGE bate com uma medição nova" falha, tolerância 0,03). Vale para o cenário padrão (v0.8.0); outro cenário com pesos de PIB e agropecuária por UF diferentes teria esperados um pouco diferentes.
+
 **Mudanças do PR 8 em relação ao PR 7:** `seca_deficit_referencia_mm` (60 mm) virou `seca_deficit_referencia` (0,25, relativo à chuva mensal média da UF); `cheia_peso_umidade` virou `cheia_absorcao_seca`; `seca_ganho` 0,3 → 0,25. Entraram `seca_expoente_aridez`, `cheia_vulnerabilidade_piso`, `dano_atividade_seca`, `dano_energia_seca_max`, `seca_escala_nacional`, `dano_pib_chuva_max`, `dano_alimentos_chuva_max`, `cheia_escala_nacional` e `seca_humor_limiar`. Nenhum foi removido por falta de uso.
 
-Os valores são ordem de grandeza e foram conferidos só por simulação de sanidade (96 meses, 3 sementes: ENSO de −0,6 a +0,8; seca > 0,5 em 0,2–7% dos meses × UF conforme a dificuldade; perda máxima de PIB por seca ≈ 0,2% e de alimentos ≈ 0,6 p.p.; humor regional de até ≈ 2 p.p.). A calibração fina e a força do humor pela chuva seguem como decisão em aberto (PLANO_GLOBO.md §10).
+Os valores são ordem de grandeza e foram conferidos só por simulação de sanidade (96 meses, 3 sementes: ENSO de −0,6 a +0,8; seca > 0,5 em 0,2–7% dos meses × UF conforme a dificuldade; perda máxima de PIB por seca ≈ 0,2% e de alimentos ≈ 0,6 p.p., antes de centrar; depois de centrar o dano vai de negativo a positivo e tem média ~0; humor regional de até ≈ 2 p.p.). A calibração fina e a força do humor pela chuva seguem como decisão em aberto (PLANO_GLOBO.md §10).

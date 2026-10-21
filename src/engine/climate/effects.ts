@@ -1,7 +1,7 @@
 import type { ScenarioUf } from '../../types/scenario';
-import type { ClimateState, GameContent, GameState, RegionalPiece, UfClimate } from '../types';
+import type { ClimateState, Difficulty, GameContent, GameState, RegionalPiece, UfClimate } from '../types';
 
-import { climateParam } from './calibration';
+import { CLIMATE_EXPECTED_DAMAGE, climateParam } from './calibration';
 
 /**
  * Efeitos do clima (PLANO_GLOBO.md §6.2; ECONOMIC_MODEL.md §5.18). Funções puras do estado climático e do cenário;
@@ -36,18 +36,30 @@ export const CLIMATE_CAUSES = {
 /** Macrorregiões cujos reservatórios sustentam o preço da energia (proxy documentada em `dano_energia_seca_max`). */
 const RESERVOIR_REGIONS: readonly string[] = ['sudeste', 'centro_oeste'];
 
-/** Dano nacional do clima no mês (todos ≥ 0; frações; ver `CLIMATE_PARAMS`). */
+/**
+ * Dano nacional do clima no mês, **com sinal e de média zero** em torno da normal climatológica (frações; ver
+ * `CLIMATE_PARAMS` e `CLIMATE_EXPECTED_DAMAGE`). Positivo = pressão adversa (perda de PIB, inflação mais alta);
+ * negativo = clima melhor que o esperado (boa safra, reservatórios cheios), com piso em `−teto × esperado`.
+ */
 export interface ClimateDamage {
-  /** Perda de nível do PIB por seca (fração; estado estacionário do hiato). */
+  /** Perda de nível do PIB por seca (fração; estado estacionário do hiato). Negativa = menos seca que o esperado. */
   droughtGdp: number;
-  /** Perda de nível do PIB por chuva excessiva. */
+  /** Perda de nível do PIB por chuva excessiva. Negativa = menos cheia que o esperado. */
   rainGdp: number;
-  /** Pressão da seca sobre a inflação de alimentos (fração em 12 meses). */
+  /** Pressão da seca sobre a inflação de alimentos (fração em 12 meses). Negativa = boa safra. */
   droughtFood: number;
-  /** Pressão da seca sobre a inflação via energia elétrica. */
+  /** Pressão da seca sobre a inflação via energia elétrica. Negativa = reservatórios melhores que o esperado. */
   droughtEnergy: number;
-  /** Pressão da chuva excessiva sobre a inflação de alimentos. */
+  /** Pressão da chuva excessiva sobre a inflação de alimentos. Negativa = menos cheia que o esperado. */
   rainFood: number;
+}
+
+/** Os termos do dano como fração do teto de cada um (0–1, saída do `tanh`), antes de tirar o valor esperado. */
+export interface ClimateDamageIndices {
+  droughtGdp: number;
+  droughtFood: number;
+  droughtEnergy: number;
+  rain: number;
 }
 
 const NO_DAMAGE: ClimateDamage = { droughtGdp: 0, rainGdp: 0, droughtFood: 0, droughtEnergy: 0, rainFood: 0 };
@@ -92,23 +104,22 @@ function weightedMean(values: readonly number[], weights: readonly number[]): nu
 }
 
 /**
- * Dano nacional do clima (agregado das UFs; PLANO_GLOBO.md §6.2), cada um saturado por `tanh` no teto da calibração:
+ * Termos do dano nacional como fração do teto, sem centrar (PLANO_GLOBO.md §6.2), cada um saturado por `tanh`:
  *
  *  - **PIB, seca**: soma do dano de atividade das UFs ponderada pelo PIB — `Σ pib_UF × dano_atividade_seca × agro_UF ×
  *    seca_UF`, saturada em `dano_pib_seca_max`. É o mesmo dano que cada UF sofre em `climateRegionalEffects`; aqui
  *    entra no total, lá só redistribui.
- *  - **Alimentos, seca**: seca média ponderada pelo PIB agropecuário (`pib_UF × agro_UF`) em `dano_alimentos_seca_max`.
- *  - **Energia, seca**: seca média do Sudeste e do Centro-Oeste ponderada pelo PIB em `dano_energia_seca_max`.
- *  - **PIB e alimentos, chuva**: risco de cheia médio ponderado pelo PIB em `dano_pib_chuva_max` e
- *    `dano_alimentos_chuva_max`.
- * Zero sem dados regionais no cenário. O peso agropecuário é o `sectors.agropecuaria` do cenário (dado por UF).
+ *  - **Alimentos, seca**: seca média ponderada pelo PIB agropecuário (`pib_UF × agro_UF`).
+ *  - **Energia, seca**: seca média do Sudeste e do Centro-Oeste ponderada pelo PIB.
+ *  - **Chuva excessiva** (PIB e alimentos): risco de cheia médio ponderado pelo PIB.
+ * `null` sem dados regionais no cenário. O peso agropecuário é o `sectors.agropecuaria` do cenário (dado por UF).
  */
-export function climateDamageOf(
+export function climateDamageIndices(
   climate: Readonly<ClimateState>,
   content: Pick<GameContent, 'scenario'>,
-): ClimateDamage {
+): ClimateDamageIndices | null {
   const ufs = scenarioUfs(content);
-  if (ufs.length === 0) return NO_DAMAGE;
+  if (ufs.length === 0) return null;
   const clima = climateByScenarioUf(climate, ufs);
   const gdp = ufs.map((u) => u.gdpShare);
   const agroGdp = ufs.map((u) => u.gdpShare * u.sectors.agropecuaria);
@@ -119,22 +130,38 @@ export function climateDamageOf(
     (s, u, i) => s + u.gdpShare * climateParam('dano_atividade_seca') * u.sectors.agropecuaria * dryness[i],
     0,
   );
-  const gdpCap = climateParam('dano_pib_seca_max');
-  const droughtGdp = gdpCap * Math.tanh(activityLoss / gdpCap);
-
-  const droughtFood = climateParam('dano_alimentos_seca_max') * Math.tanh(weightedMean(dryness, agroGdp) / scale);
   const reservoir = ufs.map((u, i) => (RESERVOIR_REGIONS.includes(u.region) ? gdp[i] : 0));
-  const droughtEnergy = climateParam('dano_energia_seca_max') * Math.tanh(weightedMean(dryness, reservoir) / scale);
-
   const vulnerability = floodVulnerabilities(ufs);
   const risk = clima.map((c, i) => floodRisk(c, vulnerability[i]));
-  const rainIndex = Math.tanh(weightedMean(risk, gdp) / climateParam('cheia_escala_nacional'));
   return {
-    droughtGdp,
-    rainGdp: climateParam('dano_pib_chuva_max') * rainIndex,
-    droughtFood,
-    droughtEnergy,
-    rainFood: climateParam('dano_alimentos_chuva_max') * rainIndex,
+    droughtGdp: Math.tanh(activityLoss / climateParam('dano_pib_seca_max')),
+    droughtFood: Math.tanh(weightedMean(dryness, agroGdp) / scale),
+    droughtEnergy: Math.tanh(weightedMean(dryness, reservoir) / scale),
+    rain: Math.tanh(weightedMean(risk, gdp) / climateParam('cheia_escala_nacional')),
+  };
+}
+
+/**
+ * Dano nacional do clima (agregado das UFs; PLANO_GLOBO.md §6.2): cada termo de `climateDamageIndices` menos o seu
+ * valor esperado na dificuldade (`CLIMATE_EXPECTED_DAMAGE`), vezes o teto. Média zero a longo prazo: clima ruim
+ * empurra preços e PIB para o lado adverso e clima bom (menos seca e menos cheia que o normal) para o favorável;
+ * a assimetria fica só no teto (a boa safra vale no máximo `−teto × esperado`, a seca até `teto × (1 − esperado)`).
+ */
+export function climateDamageOf(
+  climate: Readonly<ClimateState>,
+  content: Pick<GameContent, 'scenario'>,
+  difficulty: Difficulty,
+): ClimateDamage {
+  const index = climateDamageIndices(climate, content);
+  if (!index) return NO_DAMAGE;
+  const expected = CLIMATE_EXPECTED_DAMAGE[difficulty];
+  const rain = index.rain - expected.rain;
+  return {
+    droughtGdp: climateParam('dano_pib_seca_max') * (index.droughtGdp - expected.droughtGdp),
+    rainGdp: climateParam('dano_pib_chuva_max') * rain,
+    droughtFood: climateParam('dano_alimentos_seca_max') * (index.droughtFood - expected.droughtFood),
+    droughtEnergy: climateParam('dano_energia_seca_max') * (index.droughtEnergy - expected.droughtEnergy),
+    rainFood: climateParam('dano_alimentos_chuva_max') * rain,
   };
 }
 

@@ -14,10 +14,11 @@ import { createInitialState } from '@/engine/state';
 import type { ClimateState, Difficulty, GameState, MonthStep, UfClimate } from '@/engine/types';
 import { REGION_IDS, UF_IDS } from '@/types/regions';
 
-import { CLIMATE_INTENSITY_PARAM, CLIMATE_PARAMS, climateParam } from './calibration';
+import { CLIMATE_EXPECTED_DAMAGE, CLIMATE_INTENSITY_PARAM, CLIMATE_PARAMS, climateParam } from './calibration';
 import { checkClimate, climateOf, initialClimate } from './climate';
 import {
   CLIMATE_CAUSES,
+  climateDamageIndices,
   climateDamageOf,
   climateMoodTerms,
   climateRegionalEffects,
@@ -321,16 +322,20 @@ describe('seca reduz o PIB agregado e muda os desvios das UFs, sem contar duas v
   const wet = (state: GameState) => advanceMonth(state, EMPTY, content);
 
   it('o dano nacional da seca é a soma ponderada pelo PIB do dano das UFs, saturada no teto', () => {
-    const neutral = climateDamageOf(initialClimate(1), content);
-    expect(Object.values(neutral).every((v) => v === 0)).toBe(true);
-    const damage = climateDamageOf(withClimate(start, DROUGHT).climate, content);
+    // O clima neutro (sem seca, sem cheia) é melhor que o esperado: dano negativo (boa safra), nunca abaixo do piso.
+    const neutral = climateDamageOf(initialClimate(1), content, 'estrategica');
+    expect(Object.values(neutral).every((v) => v <= 0)).toBe(true);
+    expect(neutral.droughtFood).toBeGreaterThanOrEqual(
+      -climateParam('dano_alimentos_seca_max') * CLIMATE_EXPECTED_DAMAGE.estrategica.droughtFood - 1e-12,
+    );
+    const damage = climateDamageOf(withClimate(start, DROUGHT).climate, content, 'estrategica');
     expect(damage.droughtGdp).toBeGreaterThan(0);
     expect(damage.droughtGdp).toBeLessThan(climateParam('dano_pib_seca_max'));
     expect(damage.droughtFood).toBeGreaterThan(0);
     expect(damage.droughtFood).toBeLessThan(climateParam('dano_alimentos_seca_max'));
     // Uma seca em todo o país satura abaixo dos tetos, nunca acima.
     const all = Object.fromEntries(UF_IDS.map((id) => [id, { rain: -0.6, dryness: 1 }]));
-    const total = climateDamageOf(withClimate(start, all).climate, content);
+    const total = climateDamageOf(withClimate(start, all).climate, content, 'estrategica');
     expect(total.droughtGdp).toBeLessThanOrEqual(climateParam('dano_pib_seca_max'));
     expect(total.droughtFood).toBeLessThanOrEqual(climateParam('dano_alimentos_seca_max'));
     expect(total.droughtEnergy).toBeLessThanOrEqual(climateParam('dano_energia_seca_max'));
@@ -360,8 +365,8 @@ describe('seca reduz o PIB agregado e muda os desvios das UFs, sem contar duas v
     const out = wet(before);
     const month = toCalendar(before.monthIndex).month;
     const after = evolveClimate(before.climate, month, before.difficulty, CLIMATOLOGY);
-    const prev = climateDamageOf(before.climate, content);
-    const next = climateDamageOf(after, content);
+    const prev = climateDamageOf(before.climate, content, 'estrategica');
+    const next = climateDamageOf(after, content, 'estrategica');
     const expected = -(next.droughtGdp - content.calibration.rho_h * prev.droughtGdp);
     const growth = out.report.contributions.filter(
       (c) => c.indicator === 'gdpGrowth12m' && c.cause === CLIMATE_CAUSES.drought,
@@ -394,6 +399,92 @@ describe('seca reduz o PIB agregado e muda os desvios das UFs, sem contar duas v
     expect(mt ? mt.share / mt.structuralShare : 1).toBeLessThan(1);
     // Redistribuição: as participações continuam somando 1 (nenhum PIB é criado nem destruído pela etapa regional).
     expect(out.state.regions.ufs.reduce((s, u) => s + u.share, 0)).toBeCloseTo(1, 12);
+  });
+});
+
+describe('dano de média zero em torno da normal (sem inflação permanente)', () => {
+  /** Média de cada termo do dano (fração do teto) sob o clima estacionário: 8 sementes × 1.500 meses após 120 de aquecimento. */
+  function measuredMeans(difficulty: Difficulty) {
+    const sum = { droughtGdp: 0, droughtFood: 0, droughtEnergy: 0, rain: 0 };
+    let n = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      let climate = initialClimate(seed);
+      for (let m = 0; m < 1500; m++) {
+        climate = evolveClimate(climate, (m % 12) + 1, difficulty, CLIMATOLOGY);
+        if (m < 120) continue;
+        const index = climateDamageIndices(climate, content);
+        if (!index) throw new Error('cenário sem dados regionais');
+        sum.droughtGdp += index.droughtGdp;
+        sum.droughtFood += index.droughtFood;
+        sum.droughtEnergy += index.droughtEnergy;
+        sum.rain += index.rain;
+        n++;
+      }
+    }
+    return {
+      droughtGdp: sum.droughtGdp / n,
+      droughtFood: sum.droughtFood / n,
+      droughtEnergy: sum.droughtEnergy / n,
+      rain: sum.rain / n,
+    };
+  }
+
+  it('CLIMATE_EXPECTED_DAMAGE bate com uma medição nova (refazer a tabela se algum parâmetro do clima mudar)', () => {
+    for (const difficulty of DIFFICULTIES) {
+      const measured = measuredMeans(difficulty);
+      const table = CLIMATE_EXPECTED_DAMAGE[difficulty];
+      for (const key of Object.keys(table) as (keyof typeof table)[]) {
+        expect(Math.abs(measured[key] - table[key]), `${difficulty}.${key}`).toBeLessThan(0.03);
+      }
+    }
+  });
+
+  it('o dano médio é ~zero em cada dificuldade (clima ruim e clima bom se compensam)', () => {
+    for (const difficulty of DIFFICULTIES) {
+      let climate = initialClimate(17);
+      const sum = { droughtGdp: 0, droughtFood: 0, droughtEnergy: 0, rainFood: 0 };
+      let n = 0;
+      for (let m = 0; m < 4000; m++) {
+        climate = evolveClimate(climate, (m % 12) + 1, difficulty, CLIMATOLOGY);
+        if (m < 120) continue;
+        const d = climateDamageOf(climate, content, difficulty);
+        sum.droughtGdp += d.droughtGdp / climateParam('dano_pib_seca_max');
+        sum.droughtFood += d.droughtFood / climateParam('dano_alimentos_seca_max');
+        sum.droughtEnergy += d.droughtEnergy / climateParam('dano_energia_seca_max');
+        sum.rainFood += d.rainFood / climateParam('dano_alimentos_chuva_max');
+        n++;
+      }
+      for (const [key, total] of Object.entries(sum)) {
+        expect(Math.abs(total / n), `${difficulty}.${key}`).toBeLessThan(0.05);
+      }
+    }
+  });
+
+  it('clima favorável dá pressão negativa (boa safra, reservatórios bons) e clima adverso, positiva', () => {
+    const start = createInitialState({ content, difficulty: 'estrategica', seed: 2 });
+    const good = climateDamageOf(withClimate(start, {}, 0).climate, content, 'estrategica');
+    expect(good.droughtFood).toBeLessThan(0);
+    expect(good.droughtEnergy).toBeLessThan(0);
+    expect(good.droughtGdp).toBeLessThan(0);
+    const dry = Object.fromEntries(UF_IDS.map((id) => [id, { rain: -0.5, dryness: 0.9 }]));
+    const bad = climateDamageOf(withClimate(start, dry).climate, content, 'estrategica');
+    expect(bad.droughtFood).toBeGreaterThan(0);
+    expect(bad.droughtEnergy).toBeGreaterThan(0);
+    expect(bad.droughtGdp).toBeGreaterThan(0);
+    // Assimetria só no teto: o ganho máximo é teto × esperado; a perda máxima, teto × (1 − esperado).
+    const e = CLIMATE_EXPECTED_DAMAGE.estrategica.droughtFood;
+    expect(good.droughtFood).toBeGreaterThanOrEqual(-climateParam('dano_alimentos_seca_max') * e - 1e-12);
+    expect(bad.droughtFood).toBeLessThanOrEqual(climateParam('dano_alimentos_seca_max') * (1 - e) + 1e-12);
+  });
+
+  it('a economia recebe os impulsos com sinal e o rótulo acompanha: "Boa safra" no clima bom, "Seca" no ruim', () => {
+    const start = createInitialState({ content, difficulty: 'estrategica', seed: 2 });
+    const labelOf = (state: GameState, cause: string) =>
+      advanceMonth(state, EMPTY, content).report.contributions.find((c) => c.cause === cause)?.label;
+    const good = withClimate(start, {}, 0);
+    expect(labelOf(good, CLIMATE_CAUSES.droughtFood)).toBe('Boa safra (alimentos)');
+    const dry = withClimate(start, Object.fromEntries(UF_IDS.map((id) => [id, { rain: -0.5, dryness: 0.9 }])));
+    expect(labelOf(dry, CLIMATE_CAUSES.droughtFood)).toBe('Seca (alimentos)');
   });
 });
 

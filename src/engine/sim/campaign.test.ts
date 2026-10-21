@@ -150,9 +150,8 @@ describe('Estratégias-robô: campanhas de 20 anos (Fase 03, ROADMAP.md §2; ECO
         expect(run.max.riskPremium).toBeLessThanOrEqual(c.premio_base + c.premio_extra_max + 1e-12);
         // A dívida cresce com juros acima do crescimento e primário perto de zero (causa registrada no
         // ECONOMIC_MODEL.md §5.14), mas sem espiral numérica: o prêmio satura. Pressionar o BC 80 vezes leva a
-        // credibilidade ao piso e o prêmio à saturação; é o pior caso (~310% sem o clima; ~440% com os choques de seca e chuva
-        // do PR 8, que a espiral amplifica: teto subido de 4 para 5, PLANO_GLOBO.md §6.2).
-        expect(run.max.grossDebt).toBeLessThan(5);
+        // credibilidade ao piso e o prêmio à saturação; é o pior caso (~310%).
+        expect(run.max.grossDebt).toBeLessThan(4);
         expect(run.final.unemployment).toBeGreaterThan(0.02);
         expect(run.final.unemployment).toBeLessThan(0.2);
         expect(run.exchangeRateEnd).toBeGreaterThan(1);

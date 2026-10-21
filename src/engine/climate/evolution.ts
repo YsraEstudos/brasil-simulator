@@ -120,15 +120,19 @@ export function evolveClimate(
 }
 
 /**
+/**
  * Etapa do clima (antes de `economyStep`; PLANO_GLOBO.md §6.2): evolui ENSO, chuva e seca e calcula o dano
- * **agregado** que entra no nacional, uma única vez, pela fila de impulsos que a economia já lê:
+ * **agregado** que entra no nacional, uma única vez, pela fila de impulsos que a economia já lê. O dano tem **média
+ * zero** em torno da normal climatológica (`CLIMATE_EXPECTED_DAMAGE`): clima pior que o esperado pesa a favor da
+ * inflação e contra o PIB, clima melhor (boa safra, reservatórios cheios) pesa ao contrário.
  *
  *  - PIB: `choque.hiato` com o impulso `−(L − ρ_h · L_anterior)`, que mantém o hiato em `−L` (L = perda de nível do
- *    PIB do mês, com a persistência `rho_h` do hiato); quando a seca acaba o impulso devolve a perda, sem dano
- *    permanente. Passa, pelas fórmulas da economia, para o crescimento, o desemprego e a inflação, cada um com a sua
- *    causa ("Seca", "Chuvas acima do normal");
- *  - alimentos e energia: `choque.inflacao` (nível enquanto ativo), causas "Seca (alimentos)", "Seca (energia
- *    elétrica)" e "Chuvas acima do normal (alimentos)".
+ *    PIB do mês, com a persistência `rho_h` do hiato; negativa = ganho); quando a seca acaba o impulso devolve a
+ *    perda, sem dano permanente. Passa, pelas fórmulas da economia, para o crescimento, o desemprego e a inflação,
+ *    cada um com a sua causa ("Seca", "Chuvas acima do normal", ou a versão favorável);
+ *  - alimentos e energia: `choque.inflacao` (nível enquanto ativo, com sinal), causas "Seca (alimentos)" / "Boa
+ *    safra (alimentos)", "Seca (energia elétrica)" / "Reservatórios em bom nível (energia elétrica)" e
+ *    "Chuvas acima do normal (alimentos)".
  * Os impulsos valem só neste mês (`startMonth = endMonth`) e são recriados a cada mês a partir do clima, então não
  * ficam na fila (a fila é podada ao fim do mês). Sem dados regionais no cenário não há pesos para agregar: o clima
  * evolui, mas não há dano.
@@ -139,8 +143,8 @@ export const climateEvolutionStep: MonthStep = (input, ctx) => {
   const previous = input.climate;
   const climate = evolveClimate(previous, month, input.difficulty, climatology);
 
-  const before = climateDamageOf(previous, ctx.content);
-  const after = climateDamageOf(climate, ctx.content);
+  const before = climateDamageOf(previous, ctx.content, input.difficulty);
+  const after = climateDamageOf(climate, ctx.content, input.difficulty);
   const rho = ctx.content.calibration.rho_h;
   const t = input.monthIndex;
 
@@ -148,12 +152,38 @@ export const climateEvolutionStep: MonthStep = (input, ctx) => {
   const push = (sourceId: string, label: string, target: ScheduledImpulse['target'], delta: number) => {
     if (delta !== 0) impulses.push({ sourceId, label, target, delta, startMonth: t, endMonth: t });
   };
-  push(CLIMATE_CAUSES.drought, 'Seca', 'choque.hiato', -(after.droughtGdp - rho * before.droughtGdp));
-  push(CLIMATE_CAUSES.rain, 'Chuvas acima do normal', 'choque.hiato', -(after.rainGdp - rho * before.rainGdp));
-  push(CLIMATE_CAUSES.droughtFood, 'Seca (alimentos)', 'choque.inflacao', after.droughtFood);
-  push(CLIMATE_CAUSES.droughtEnergy, 'Seca (energia elétrica)', 'choque.inflacao', after.droughtEnergy);
-  push(CLIMATE_CAUSES.rainFood, 'Chuvas acima do normal (alimentos)', 'choque.inflacao', after.rainFood);
-
+  // O rótulo acompanha o sinal: dano positivo é o lado adverso do clima; negativo, o favorável (média zero).
+  const label = (damage: number, bad: string, good: string) => (damage > 0 ? bad : good);
+  push(
+    CLIMATE_CAUSES.drought,
+    label(after.droughtGdp, 'Seca', 'Menos seca que o normal'),
+    'choque.hiato',
+    -(after.droughtGdp - rho * before.droughtGdp),
+  );
+  push(
+    CLIMATE_CAUSES.rain,
+    label(after.rainGdp, 'Chuvas acima do normal', 'Chuvas dentro do normal'),
+    'choque.hiato',
+    -(after.rainGdp - rho * before.rainGdp),
+  );
+  push(
+    CLIMATE_CAUSES.droughtFood,
+    label(after.droughtFood, 'Seca (alimentos)', 'Boa safra (alimentos)'),
+    'choque.inflacao',
+    after.droughtFood,
+  );
+  push(
+    CLIMATE_CAUSES.droughtEnergy,
+    label(after.droughtEnergy, 'Seca (energia elétrica)', 'Reservatórios em bom nível (energia elétrica)'),
+    'choque.inflacao',
+    after.droughtEnergy,
+  );
+  push(
+    CLIMATE_CAUSES.rainFood,
+    label(after.rainFood, 'Chuvas acima do normal (alimentos)', 'Chuvas dentro do normal (alimentos)'),
+    'choque.inflacao',
+    after.rainFood,
+  );
   return {
     state: { ...input, climate, impulses: impulses.length > 0 ? [...input.impulses, ...impulses] : input.impulses },
     contributions: [],
