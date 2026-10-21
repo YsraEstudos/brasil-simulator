@@ -3,6 +3,7 @@ import type { Scenario } from '../types/scenario';
 import type { Calibration } from './economy/calibration';
 import { initialFiscal, type FiscalValues } from './economy/fiscal';
 import { DEFAULT_PROFILE_PRESET, presetProfile, type ProfilePresetId } from './politics/calibration';
+import { initialClimate } from './climate/climate';
 import { initialRegions } from './regions/regions';
 import { seedRng } from './rng';
 import { initialSociety, initialSocietyForGame } from './society/society';
@@ -114,6 +115,7 @@ export function createInitialState(c: NewCampaign): GameState {
     society: initialSociety(),
     publicPolicies: initialPublicPolicies(),
     government: { profile: presetProfile(c.profile ?? DEFAULT_PROFILE_PRESET) },
+    climate: initialClimate(c.seed),
   };
   return { ...state, society: initialSocietyForGame(state), regions: { ufs: initialRegions(state, c.content).ufs } };
 }

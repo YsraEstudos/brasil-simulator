@@ -1,6 +1,7 @@
 import type { GameEvent } from '../types/event';
 import type { Policy } from '../types/policy';
 import type { RegionalKey, RegionalScope } from '../types/regions';
+import type { Climatology } from '../types/climate';
 import type { Scenario } from '../types/scenario';
 import type { Calibration } from './economy/calibration';
 import type { Rng, RngState } from './rng';
@@ -8,7 +9,7 @@ import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 10;
+export const STATE_SCHEMA_VERSION = 11;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
 export const ENGINE_VERSION = '0.9.0';
@@ -543,6 +544,30 @@ export interface GovernmentState {
   profile: IdeologyPoint;
 }
 
+/** Situação climática de uma UF (PLANO_GLOBO.md §6.1). Neutra = chuva 0 e seca 0. */
+export interface UfClimate {
+  /** Sigla da UF. */
+  id: string;
+  /** Anomalia de chuva do mês, em fração da normal do mês (−1 … ∞; 0 = normal, −0,3 = 30% abaixo da normal). */
+  rain: number;
+  /** Seca acumulada com memória, 0 (sem seca) … 1 (seca extrema). */
+  dryness: number;
+}
+
+/**
+ * Estado climático (v11; PLANO_GLOBO.md §6.1, D-G6). Vive no `GameState`, mas com PRNG **próprio**, derivado da
+ * semente da campanha com sal estável (`deriveSeed`), para que os sorteios dos demais sistemas não mudem de ordem.
+ * Saves anteriores à v11 migram com clima neutro; até o PR 8 nenhuma etapa o altera.
+ */
+export interface ClimateState {
+  /** Índice ENSO, −1 (La Niña forte) … 1 (El Niño forte); 0 = neutro. */
+  enso: number;
+  /** As 27 UFs, na ordem de `UF_IDS`. */
+  ufs: UfClimate[];
+  /** Estado do PRNG do clima, independente de `GameState.rng`. */
+  rng: RngState;
+}
+
 /** Como uma decisão moveu o perfil: sancionada/executada, enviada ao Congresso, vetada ou escolha de evento. */
 export type ProfileMoveKind = 'sancao' | 'proposta' | 'veto' | 'evento';
 
@@ -581,6 +606,8 @@ export interface GameState {
   publicPolicies: PublicPolicyState;
   /** Perfil ideológico do governo (v10; PLANO_GLOBO.md §5.1). */
   government: GovernmentState;
+  /** Clima: ENSO, chuva e seca por UF e PRNG próprio (v11; PLANO_GLOBO.md §6.1). */
+  climate: ClimateState;
   /** Eleições e intenção de voto (Fase 08); cenários sem eleições e saves antigos ficam sem o campo. */
   politics?: PoliticsState;
 }
@@ -683,6 +710,11 @@ export interface GameContent {
   policies: Readonly<Record<string, Policy>>;
   events: readonly GameEvent[];
   calibration: Calibration;
+  /**
+   * Climatologia do país (normais de chuva por UF × mês, teleconexão ENSO): conteúdo compartilhado por todos os
+   * cenários, não parte de um cenário (PLANO_GLOBO.md §6.1). Nenhuma etapa a lê ainda (PR 8).
+   */
+  climatology: Climatology;
 }
 
 /** Partes do relatório que as etapas preenchem (o resto é montado pelo `advanceMonth`). */

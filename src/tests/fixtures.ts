@@ -1,3 +1,4 @@
+import { CLIMATOLOGY } from '@/content/climate';
 import { DEFAULT_CALIBRATION } from '@/engine/economy/calibration';
 import { createInitialState } from '@/engine/state';
 import type { Difficulty, GameContent, GameState } from '@/engine/types';
@@ -202,6 +203,7 @@ export function testContent(overrides: Partial<GameContent> = {}): GameContent {
     },
     events: [TEST_EVENT],
     calibration: DEFAULT_CALIBRATION,
+    climatology: CLIMATOLOGY,
     ...overrides,
   };
 }

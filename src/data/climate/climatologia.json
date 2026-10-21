@@ -1,0 +1,46 @@
+{
+  "id": "climatologia_br",
+  "version": "0.1.0",
+  "rain": {
+    "meta": {"unit": "mm/mês", "status": "PROVISORIO", "series": "Precipitação acumulada mensal normal (1991–2020), média por UF", "method": "aproximação de design por regime regional, arredondada a 5 mm (tabela em build_climatology.py)", "note": "Digitado a partir do conhecimento público da climatologia (alvo: Normais Climatológicas 1991–2020 do INMET, média por UF); arquivo oficial não importado. Gerado por scripts/data/build_climatology.py."},
+    "ufs": [
+      {"id":"RO","region":"norte","mm":[300,300,300,250,100,30,25,50,120,210,250,300]},
+      {"id":"AC","region":"norte","mm":[290,290,280,220,110,50,40,50,100,190,230,270]},
+      {"id":"AM","region":"norte","mm":[270,290,310,290,230,120,85,60,80,120,170,230]},
+      {"id":"RR","region":"norte","mm":[40,30,45,100,250,300,280,200,120,90,80,70]},
+      {"id":"PA","region":"norte","mm":[270,320,350,320,220,110,85,60,60,80,100,170]},
+      {"id":"AP","region":"norte","mm":[270,330,370,380,330,230,200,100,50,40,60,150]},
+      {"id":"TO","region":"norte","mm":[260,240,260,160,40,5,5,10,50,140,220,270]},
+      {"id":"MA","region":"nordeste","mm":[220,260,310,300,170,70,50,25,30,45,65,130]},
+      {"id":"PI","region":"nordeste","mm":[160,170,220,180,60,15,10,5,15,45,80,120]},
+      {"id":"CE","region":"nordeste","mm":[100,135,200,205,115,65,35,10,8,10,15,50]},
+      {"id":"RN","region":"nordeste","mm":[35,60,110,150,120,100,75,35,15,10,10,20]},
+      {"id":"PB","region":"nordeste","mm":[35,65,110,140,110,110,85,45,25,15,15,25]},
+      {"id":"PE","region":"nordeste","mm":[55,80,130,160,140,135,105,55,30,25,25,45]},
+      {"id":"AL","region":"nordeste","mm":[60,85,125,175,200,185,140,90,55,40,35,55]},
+      {"id":"SE","region":"nordeste","mm":[60,85,130,165,185,165,120,85,55,40,40,55]},
+      {"id":"BA","region":"nordeste","mm":[105,90,110,110,60,40,35,25,35,70,135,125]},
+      {"id":"MG","region":"sudeste","mm":[245,140,140,65,30,10,10,15,40,110,210,260]},
+      {"id":"ES","region":"sudeste","mm":[150,90,110,100,70,50,50,45,60,110,200,210]},
+      {"id":"RJ","region":"sudeste","mm":[175,130,145,125,85,60,55,50,75,95,130,175]},
+      {"id":"SP","region":"sudeste","mm":[245,205,160,80,70,50,40,35,75,115,140,200]},
+      {"id":"PR","region":"sul","mm":[190,170,130,120,120,105,90,85,130,150,140,170]},
+      {"id":"SC","region":"sul","mm":[190,170,150,115,110,105,115,110,140,160,140,160]},
+      {"id":"RS","region":"sul","mm":[130,130,120,110,115,140,140,145,150,140,115,120]},
+      {"id":"MS","region":"centro_oeste","mm":[205,175,150,100,90,50,40,40,80,130,150,200]},
+      {"id":"MT","region":"centro_oeste","mm":[260,240,245,140,45,12,8,15,60,140,210,270]},
+      {"id":"GO","region":"centro_oeste","mm":[260,210,210,110,35,8,5,10,45,140,220,280]},
+      {"id":"DF","region":"centro_oeste","mm":[235,190,205,125,35,8,10,12,45,165,235,245]}
+    ]
+  },
+  "enso": {
+    "meta": {"unit": "fração da normal por unidade de ENSO", "status": "PROVISORIO", "series": "Anomalia de chuva por macrorregião e estação para ENSO = +1 (El Niño); La Niña inverte o sinal", "method": "sinais da literatura geral (CPTEC/INPE, NOAA/CPC); magnitudes de design", "note": "Estações austrais: verão dez–fev, outono mar–mai, inverno jun–ago, primavera set–nov. Digitado a partir do conhecimento público da climatologia (alvo: Normais Climatológicas 1991–2020 do INMET, média por UF); arquivo oficial não importado. Gerado por scripts/data/build_climatology.py."},
+    "teleconnection": {
+      "norte": {"verao":-0.12,"outono":-0.15,"inverno":-0.05,"primavera":-0.12},
+      "nordeste": {"verao":-0.1,"outono":-0.2,"inverno":-0.03,"primavera":-0.08},
+      "centro_oeste": {"verao":-0.03,"outono":-0.04,"inverno":0.0,"primavera":-0.03},
+      "sudeste": {"verao":-0.02,"outono":0.03,"inverno":0.05,"primavera":0.06},
+      "sul": {"verao":0.05,"outono":0.12,"inverno":0.15,"primavera":0.25}
+    }
+  }
+}

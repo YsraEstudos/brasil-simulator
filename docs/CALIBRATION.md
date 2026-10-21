@@ -249,3 +249,32 @@ Módulo `src/engine/politics/calibration.ts` (`PROFILE_PARAMS`, não sobrescrito
 | `eleitor_mediano_distancia_neutra` | 0,2 | 0,1 – 0,35 | distância normalizada ao mediano em que o termo nacional é zero |
 | `eleitor_mediano_escala` | 0,15 | 0,08 – 0,3 | distância normalizada que satura o termo nacional |
 | `ufs_destacadas_previa`, `faixa_central` | 5; 0,2 | — | só interface (prévia e descrição em palavras) |
+
+## Clima (PR 7 do PLANO_GLOBO)
+
+Módulo `src/engine/climate/calibration.ts` (`CLIMATE_PARAMS`, não sobrescritos pelo cenário). Valores `PROVISORIO`; **contrato do PR 7: nenhum código do motor os lê ainda** (só validadores e testes), de modo que não mudam nenhum resultado. Existem para o `climateEvolutionStep` e os efeitos regionais do PR 8, que os revisa e remove os que não usar. Faixa e justificativa de cada um no código; o teste confere valor dentro da faixa.
+
+| Parâmetro | Valor | Faixa | Significado |
+| --- | --- | --- | --- |
+| `enso_persistencia` | 0,92 | 0,85 – 0,97 | φ: coeficiente AR(1) mensal do ENSO latente (constante de tempo de ~1 ano) |
+| `enso_choque` | 0,18 | 0,1 – 0,3 | desvio do choque mensal sobre o ENSO latente (estacionário ≈ 0,46 antes da saturação) |
+| `enso_saturacao` | 1 | 0,7 – 1,5 | escala da saturação: ENSO = tanh(latente ÷ escala) |
+| `chuva_persistencia` | 0,35 | 0,1 – 0,6 | fração da anomalia do mês anterior que a UF carrega |
+| `chuva_choque_regional` | 0,14 | 0,05 – 0,25 | desvio do choque mensal compartilhado pela macrorregião |
+| `chuva_choque_uf` | 0,16 | 0,05 – 0,3 | desvio do ruído mensal próprio da UF |
+| `chuva_anomalia_max` | 0,6 | 0,4 – 0,9 | anomalia máxima em módulo (tanh) |
+| `intensidade_casual` / `_estrategica` / `_realismo` | 0,7 / 1 / 1,2 | 0,5–1 / 0,8–1,2 / 1–1,5 | magnitude por dificuldade (nunca o lugar) |
+| `seca_limiar_anomalia` | −0,1 | −0,3 – 0 | anomalia abaixo da qual o mês conta como déficit |
+| `seca_deficit_referencia_mm` | 60 | 30 – 120 | déficit/excesso em mm que satura ganho/recuperação da seca (distingue semiárido de região úmida) |
+| `seca_ganho` | 0,3 | 0,15 – 0,5 | aumento máximo mensal da seca |
+| `seca_memoria` | 0,85 | 0,7 – 0,95 | fração da seca que persiste de um mês para o outro |
+| `seca_recuperacao` | 0,25 | 0,1 – 0,5 | redução máxima mensal extra por chuva acima da normal |
+| `cheia_limiar_anomalia` | 0,35 | 0,2 – 0,6 | anomalia positiva a partir da qual o risco de cheia sobe |
+| `cheia_peso_umidade` | 0,5 | 0,2 – 0,8 | peso da anomalia positiva do mês anterior (solo úmido) |
+| `cheia_escala` | 0,25 | 0,1 – 0,5 | excesso acima do limiar que satura o risco (tanh) |
+| `cheia_risco_max` | 0,6 | 0,3 – 0,9 | risco mensal máximo de cheia (nunca certeza) |
+| `dano_pib_seca_max` | 0,005 | 0,002 – 0,01 | perda máxima de nível do PIB por seca nacional extrema |
+| `dano_alimentos_seca_max` | 0,01 | 0,005 – 0,02 | pressão máxima da seca sobre a inflação de alimentos (12 meses) |
+| `aprovacao_clima_max` | 0,015 | 0,005 – 0,03 | desvio máximo de aprovação da UF por chuva/seca (redistribui, D7) |
+
+Os três últimos (tetos de efeito) são só ordem de grandeza e serão calibrados no PR 8 com as suítes de sensibilidade; a força do humor pela chuva é uma das decisões de calibração em aberto (PLANO_GLOBO.md §10).

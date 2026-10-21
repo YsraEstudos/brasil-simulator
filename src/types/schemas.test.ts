@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { CLIMATOLOGY } from '../content/climate';
 import { createInitialState, DEFAULT_CALIBRATION, indicatorsFromScenario } from '../engine';
 import { dataValueSchema, type DataValue } from './data';
 import { parsePolicy, type Policy } from './policy';
@@ -154,7 +155,13 @@ describe('Scenario', () => {
     const r = parseScenario(scenario);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    const content = { scenario: r.scenario, policies: {}, events: [], calibration: DEFAULT_CALIBRATION };
+    const content = {
+      scenario: r.scenario,
+      policies: {},
+      events: [],
+      calibration: DEFAULT_CALIBRATION,
+      climatology: CLIMATOLOGY,
+    };
     const state = createInitialState({ content, difficulty: 'casual', seed: 1 });
     expect(state.indicators.inflation12m).toBe(0.045);
     expect(state.resources.agendaActionsPerMonth).toBe(4);

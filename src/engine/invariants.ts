@@ -1,3 +1,4 @@
+import { checkClimate } from './climate/climate';
 import { MEMORY_MONTHS } from './elections/elections';
 import { populationShares, regionsOf } from './regions/regions';
 import { checkSociety } from './society/society';
@@ -171,6 +172,9 @@ export function checkInvariants(
   if (!(Math.abs(profile.economic) <= 1 && Math.abs(profile.social) <= 1)) {
     errors.push(`perfil ideológico fora de [−1, 1]: ${profile.economic} / ${profile.social}`);
   }
+
+  // Clima (PLANO_GLOBO.md §6.1): ENSO em [−1, 1], seca em [0, 1], anomalia de chuva finita e acima de −100%.
+  errors.push(...checkClimate(next.climate));
 
   if (next.society !== prev.society) errors.push(...checkSociety(next.society, next));
   errors.push(...checkPublicPolicies(next));

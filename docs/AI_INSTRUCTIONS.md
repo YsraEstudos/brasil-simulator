@@ -109,6 +109,9 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 | Perfil ideológico do governo (média móvel das posições das decisões; eixos econômico e social) | `government.profile` (`IdeologyPoint`) |
 | Inclinação política da UF / alinhamento do perfil com ela | `lean` (`ScenarioUf.lean`) / `alignment` |
 | Eleitor mediano (média ponderada das inclinações das UFs) | `medianVoter` |
+| Clima (ENSO, chuva e seca por UF, PRNG próprio) | `GameState.climate` (`ClimateState`, `UfClimate`) |
+| Anomalia de chuva (fração da normal do mês) / seca acumulada (0–1) | `rain` / `dryness` |
+| Normal de chuva (mm por UF e mês) / teleconexão ENSO (macrorregião × estação) | `rainfallNormal` / `ensoTeleconnection` (`Climatology`) |
 
 ---
 

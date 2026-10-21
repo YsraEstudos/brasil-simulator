@@ -136,7 +136,20 @@ export {
   type UfAlignment,
 } from './politics/profile';
 export { ALIGNMENT_CAUSE } from './regions/regions';
-export { createRng, seedRng, type Rng, type RngState } from './rng';
+export { createRng, deriveSeed, seedRng, type Rng, type RngState } from './rng';
+export { CLIMATE_INTENSITY_PARAM, CLIMATE_PARAMS, climateParam, type ClimateParamName } from './climate/calibration';
+export {
+  CLIMATE_SEED_SALT,
+  climateOf,
+  climateRngState,
+  climateSeed,
+  ensoTeleconnection,
+  ensoTeleconnectionOf,
+  initialClimate,
+  rainfallNormal,
+  regionOfUf,
+  seasonOf,
+} from './climate/climate';
 export {
   AGENDA_ACTIONS_PER_MONTH,
   createInitialState,
