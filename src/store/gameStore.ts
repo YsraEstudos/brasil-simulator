@@ -21,6 +21,7 @@ import {
 import { getSetting, setSetting } from '@/database/settingsRepository';
 import type { SqlDatabase } from '@/database/types';
 import { DEFAULT_PROFILE_3D, type Profile3d } from '@/globe/qualityProfiles';
+import { DEFAULT_DAY_TIME, type DayTimeSetting } from '@/globe/visualClock';
 import { campaignMonths, loadContent, SCENARIOS } from '@/content';
 import {
   advanceMonth,
@@ -44,6 +45,7 @@ import {
   type SetupErrors,
   type SetupPrefs,
 } from './campaignSetup';
+import { MAP_DAY_TIME_KEY, resolveDayTime } from './mapDayTime';
 import {
   DEFAULT_MAP_QUALITY,
   LEGACY_MAP_RENDERER_KEY,
@@ -97,6 +99,8 @@ export interface GameStoreState {
   mapQuality: MapQualityChoice;
   /** Último perfil 3D a que o ajuste automático chegou (guardado em `settings`; o próximo início já parte dele). */
   autoProfile: Profile3d;
+  /** Hora do dia do mapa (fixa / sempre dia / real; Configurações; guardada em `settings`). Só visual. */
+  dayTime: DayTimeSetting;
   /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
   draft: AgendaDraft;
   /** Últimas dificuldade e cenário usados em NOVO JOGO (lidos uma vez no início, gravados após criar). */
@@ -128,6 +132,8 @@ export interface GameStoreState {
   setMapQuality(choice: MapQualityChoice): Promise<boolean>;
   /** Resultado do ajuste automático: vale na hora e é gravado sem marcar `busy` (vem do laço de quadros do globo). */
   setAutoProfile(profile: Profile3d): Promise<void>;
+  /** Escolha da hora do dia do mapa; vale na hora e é gravada. */
+  setDayTime(setting: DayTimeSetting): Promise<boolean>;
 }
 
 export interface GameStoreDeps {
@@ -180,6 +186,7 @@ export function createGameStore(deps: GameStoreDeps) {
       textScale: 1,
       mapQuality: DEFAULT_MAP_QUALITY,
       autoProfile: DEFAULT_PROFILE_3D,
+      dayTime: DEFAULT_DAY_TIME,
       draft: EMPTY_DRAFT,
       setupPrefs: DEFAULT_SETUP_PREFS,
 
@@ -212,7 +219,21 @@ export function createGameStore(deps: GameStoreDeps) {
           } catch {
             // segue com o automático
           }
-          set({ textScale, mapQuality, autoProfile, setupPrefs, campaigns: await listCampaigns(db), status: 'pronto' });
+          let dayTime = DEFAULT_DAY_TIME;
+          try {
+            dayTime = resolveDayTime(await getSetting<unknown>(db, MAP_DAY_TIME_KEY, null));
+          } catch {
+            // segue com a hora fixa da tarde
+          }
+          set({
+            textScale,
+            mapQuality,
+            autoProfile,
+            dayTime,
+            setupPrefs,
+            campaigns: await listCampaigns(db),
+            status: 'pronto',
+          });
         } catch (e) {
           set({ status: 'erro', error: e instanceof Error ? e.message : String(e) });
         }
@@ -402,6 +423,12 @@ export function createGameStore(deps: GameStoreDeps) {
         run(async (d) => {
           set({ mapQuality: choice });
           await setSetting(d, MAP_QUALITY_KEY, choice);
+        }),
+
+      setDayTime: (setting) =>
+        run(async (d) => {
+          set({ dayTime: setting });
+          await setSetting(d, MAP_DAY_TIME_KEY, setting);
         }),
 
       async setAutoProfile(profile) {

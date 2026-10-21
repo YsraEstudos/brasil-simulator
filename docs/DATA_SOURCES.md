@@ -81,6 +81,14 @@ Pipeline: `scripts/data/fetch_globe_data.py` (download para `data-raw/`) → `sc
 
 Pipeline: `npm run build:labels` (`scripts/data/build_labels.py`; lê `src/globe/data/ufs.json`, gerado antes por `build_globe.py`; requer `pip install matplotlib` pela fonte). Determinístico: duas execuções geram arquivos idênticos.
 
+### 3.3 Luzes das cidades à noite (PR 6 do PLANO_GLOBO, 21/10/2026)
+
+| Dado | Fonte | Uso | Status / licença |
+| --- | --- | --- | --- |
+| 150 maiores municípios (`src/globe/data/cities.json`): nome, UF, coordenadas da sede (lon/lat, 3 casas) e população | Aproximação do Censo 2022 do IBGE (SIDRA, tabela 4709) e das sedes municipais do IBGE, **digitada de memória** em `scripts/data/build_cities.py` (sem download no pipeline), população arredondada ao milhar | Pontos de luz no lado noturno do globo (tamanho/brilho por log da população) e círculos no mapa 2D | `PROVISORIO`: a ordem de grandeza é confiável, mas as populações podem errar por alguns milhares e o corte nos 150 maiores pode trocar municípios de ~200 mil habitantes. O script falha se alguma sede cair fora do polígono da própria UF (tolerância de litoral de 5 km). Conferir contra o arquivo oficial quando o download do Censo/sedes entrar no pipeline. Dado só visual: não entra no motor nem no cenário |
+
+Pipeline: `npm run build:cities` (`scripts/data/build_cities.py`; lê `src/globe/data/ufs.json`, gerado antes por `build_globe.py`). Determinístico. A textura de luzes noturnas (NASA Black Marble, domínio público) citada no plano para o perfil Alto **não** foi adotada neste PR.
+
 > **Códigos de séries:** serão levantados e conferidos na Fase 01/03. Nenhum código deve ser usado sem validação da resposta da API, porque séries são descontinuadas ou renumeradas.
 
 ---

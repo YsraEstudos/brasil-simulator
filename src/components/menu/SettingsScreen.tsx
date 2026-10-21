@@ -5,20 +5,30 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Text } from '@/components/ui';
 import { MaxContentWidth, Spacing, TEXT_SCALES } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { gameStore, MAP_QUALITY_AUTO, MAP_QUALITY_OPTIONS, profileLabel, useGame } from '@/store';
+import { FIXED_HOURS } from '@/globe/visualClock';
+import {
+  DAY_MODE_OPTIONS,
+  FIXED_HOUR_LABELS,
+  gameStore,
+  MAP_QUALITY_AUTO,
+  MAP_QUALITY_OPTIONS,
+  profileLabel,
+  useGame,
+} from '@/store';
 
 import { enterAt, goBack, SetupHeader } from '../campaign/SetupBits';
 
 /**
  * CONFIGURAÇÕES (rota `/configuracoes`): ajustes do jogador fora das abas, abertos pelo botão CONFIGURAÇÕES do
  * menu principal: o tamanho do texto (o ajuste que o jogador usa para ler melhor o jogo) e a qualidade do mapa do Painel
- * (Automático ou um perfil fixo; PLANO_GLOBO.md §3.1).
+ * (Automático ou um perfil fixo; PLANO_GLOBO.md §3.1) e a hora do dia do mapa (fixa / sempre dia / real; §4.1).
  */
 export function SettingsScreen() {
   const { colors, textScale, setTextScale } = useTheme();
   const insets = useSafeAreaInsets();
   const mapQuality = useGame((s) => s.mapQuality);
   const autoProfile = useGame((s) => s.autoProfile);
+  const dayTime = useGame((s) => s.dayTime);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -74,6 +84,47 @@ export function SettingsScreen() {
             ))}
             <Text variant="caption" color="textSecondary">
               Escolher um perfil desliga o ajuste automático. Se o globo 3D não iniciar, o jogo usa o mapa 2D sozinho.
+            </Text>
+          </Card>
+        </Animated.View>
+
+        <Animated.View entering={enterAt(2)}>
+          <Card title="Hora do dia" subtitle="Dia e noite no mapa do Painel (só visual: não muda a simulação)">
+            {DAY_MODE_OPTIONS.map((option) => (
+              <View key={option.id} style={styles.option}>
+                <Button
+                  label={option.label}
+                  variant={option.id === dayTime.mode ? 'primary' : 'secondary'}
+                  onPress={() => void gameStore.getState().setDayTime({ ...dayTime, mode: option.id })}
+                  accessibilityHint={option.id === dayTime.mode ? 'Escolha atual' : option.description}
+                  block
+                />
+                <Text variant="caption" color="textSecondary">
+                  {option.description}
+                </Text>
+              </View>
+            ))}
+            {dayTime.mode === 'fixa' && (
+              <View style={styles.option}>
+                <Text variant="caption" color="textSecondary">
+                  Hora fixa (horário de Brasília)
+                </Text>
+                <View style={styles.row}>
+                  {FIXED_HOURS.map((hour) => (
+                    <Button
+                      key={hour}
+                      label={FIXED_HOUR_LABELS[hour]}
+                      variant={hour === dayTime.hour ? 'primary' : 'secondary'}
+                      onPress={() => void gameStore.getState().setDayTime({ ...dayTime, hour })}
+                      accessibilityHint={hour === dayTime.hour ? 'Hora atual' : 'Usar esta hora'}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+            <Text variant="caption" color="textSecondary">
+              A estação do ano segue o mês do jogo. Escolha a hora Noite para ver as luzes das cidades. O mapa 2D leve
+              não mostra dia e noite.
             </Text>
           </Card>
         </Animated.View>

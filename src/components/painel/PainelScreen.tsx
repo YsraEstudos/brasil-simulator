@@ -23,7 +23,14 @@ import { Alert, Indicator, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
-import { indicatorsFromScenario, initialRegions, SANCTION_ACTION_ID, type Decision, type IndicatorKey } from '@/engine';
+import {
+  indicatorsFromScenario,
+  initialRegions,
+  SANCTION_ACTION_ID,
+  toCalendar,
+  type Decision,
+  type IndicatorKey,
+} from '@/engine';
 import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
@@ -192,6 +199,10 @@ export function PainelScreen() {
     }),
     [mapPlan.profile3d, mapPlan.auto],
   );
+  // Dia e noite (só visual): a hora escolhida em Configurações e o mês do calendário da campanha (estação do ano).
+  const dayTime = useGame((s) => s.dayTime);
+  const skyMonth = toCalendar(active?.state.monthIndex ?? 0).month;
+  const sky = useMemo(() => ({ setting: dayTime, month: skyMonth }), [dayTime, skyMonth]);
   const [globeFailed, setGlobeFailed] = useState(false);
   const [globeNoticeClosed, setGlobeNoticeClosed] = useState(false);
 
@@ -641,6 +652,7 @@ export function PainelScreen() {
           <MapSurface
             renderer={mapRenderer}
             quality={globeQuality}
+            sky={sky}
             viewModel={mapModel}
             paused={!focused}
             reservedRects={labelReserve.rects}

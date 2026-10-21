@@ -3,8 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 import { cameraPose, verticalFovDeg } from './camera';
+import { cityPointBuffers } from './cities';
 import { EARTH_RADIUS_M, TILE_GRID, terrainExaggeration } from './config';
 import type { GlobeController } from './controller';
+import { deviceUtc } from './deviceClock';
 import { ufFillGeometries } from './fills';
 import { lonLatToVec3, raySphere, tileBounds, vec3ToLonLat, type Vec3 } from './geo';
 import { GlobeLabels, type LabelInsets, type LabelsUpdater } from './GlobeLabels';
@@ -14,6 +16,8 @@ import type { GlobeBudget } from './qualityProfiles';
 import {
   atmosphereFragmentShader,
   atmosphereVertexShader,
+  cityLightsFragmentShader,
+  cityLightsVertexShader,
   fillFragmentShader,
   fillVertexShader,
   globeFragmentShader,
@@ -22,6 +26,7 @@ import {
   tileVertexShader,
 } from './shaders';
 import { loadTexture, TileStore } from './tileStore';
+import { computeSun, sunKey, type SkyInput } from './visualClock';
 
 const DEG = Math.PI / 180;
 
@@ -104,6 +109,31 @@ function Atmosphere() {
   );
 }
 
+/** Uniforms do Sol compartilhados pelo globo base, por todos os tiles e pelas luzes: um valor só, sem emenda. */
+type SunUniforms = { uSunDir: { value: THREE.Vector3 }; uSunOn: { value: number } };
+
+/** Luzes das cidades: diâmetro (px lógicos) do maior município no zoom geral e raio em que os pontos flutuam. */
+const CITY_POINT_PX = 16;
+const CITY_LIGHTS_RADIUS = 1.001;
+/** Acima do mapa de calor (4) e do contorno da UF (5), abaixo dos rótulos (6): as luzes não somem sob a cor da UF. */
+const CITY_LIGHTS_RENDER_ORDER = 5.5;
+
+/** Crescimento das luzes ao aproximar a câmera (altitude em raios terrestres): menores de longe, maiores de perto. */
+function cityZoom(altitude: number): number {
+  return Math.min(2.4, Math.max(0.7, 0.9 / Math.sqrt(altitude)));
+}
+
+/** Grava o Sol nos uniforms compartilhados; `true` se mudou desde a última chamada (`last.key`). */
+function writeSun(uniforms: SunUniforms, input: SkyInput, last: { key: string }): boolean {
+  const sun = computeSun(input);
+  const key = sunKey(sun);
+  if (key === last.key) return false;
+  last.key = key;
+  uniforms.uSunDir.value.set(...sun.dir);
+  uniforms.uSunOn.value = sun.enabled ? 1 : 0;
+  return true;
+}
+
 /** Opacidade do mapa de calor: o relevo continua visível por baixo. */
 const FILL_OPACITY = 0.8;
 
@@ -167,6 +197,8 @@ type Props = {
   budget: GlobeBudget;
   /** Chamado a cada quadro desenhado (amostragem do ajuste automático); `undefined` = ninguém amostra. */
   onFrame?: (frame: SceneFrame) => void;
+  /** Dia e noite: a escolha da hora e o mês do jogo. No modo `real` o Sol só anda quando já há um quadro. */
+  sky: SkyInput;
 };
 
 export function GlobeScene({
@@ -179,6 +211,7 @@ export function GlobeScene({
   labelScale,
   budget,
   onFrame,
+  sky,
 }: Props) {
   'use no memo'; // objetos three.js são mutados a cada quadro; fora do React Compiler
   const { camera, gl, size, invalidate } = useThree();
@@ -190,14 +223,48 @@ export function GlobeScene({
     [gl, invalidate],
   );
   const [world, setWorld] = useState<THREE.Texture | null>(null);
+  const sunUniforms = useMemo<SunUniforms>(
+    () => ({ uSunDir: { value: new THREE.Vector3(0, 0, 1) }, uSunOn: { value: 0 } }),
+    [],
+  );
+  const lights = useMemo(() => {
+    const { positions, weights } = cityPointBuffers();
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('aWeight', new THREE.BufferAttribute(weights, 1));
+    const material = new THREE.ShaderMaterial({
+      vertexShader: cityLightsVertexShader,
+      fragmentShader: cityLightsFragmentShader,
+      uniforms: {
+        uSunDir: sunUniforms.uSunDir,
+        uRadius: { value: CITY_LIGHTS_RADIUS },
+        uPointPx: { value: CITY_POINT_PX },
+        uZoom: { value: 1 },
+      },
+      blending: THREE.AdditiveBlending,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const points = new THREE.Points(geometry, material);
+    points.frustumCulled = false; // os pontos estão na esfera inteira; o descarte é do shader
+    points.renderOrder = CITY_LIGHTS_RENDER_ORDER;
+    points.visible = false;
+    return points;
+  }, [sunUniforms]);
   const globeMaterial = useMemo(
     () =>
       new THREE.ShaderMaterial({
         vertexShader: globeVertexShader,
         fragmentShader: globeFragmentShader,
-        uniforms: { uWorld: { value: null }, uHideBox: { value: 0 } },
+        uniforms: {
+          uWorld: { value: null },
+          uHideBox: { value: 0 },
+          uSunDir: sunUniforms.uSunDir,
+          uSunOn: sunUniforms.uSunOn,
+        },
       }),
-    [],
+    [sunUniforms],
   );
   const starMaterial = useMemo(
     () =>
@@ -219,6 +286,18 @@ export function GlobeScene({
   const budgetRef = useRef(budget);
   const frameEvent = useRef<SceneFrame>({ atMs: 0, moving: false, tilesBusy: false });
   const lastCamera = useRef({ lon: NaN, lat: NaN, altitude: NaN });
+  // Sol: o quadro lê a escolha por aqui (como o orçamento). Hora fixa e "Sempre dia" só gravam ao mudar a escolha ou o
+  // mês, nunca pedem quadro sozinhos; "Hora real" regrava a cada quadro já desenhado (sem temporizador).
+  const skyRef = useRef(sky);
+  const lastSun = useRef({ key: '' });
+
+  useEffect(() => {
+    skyRef.current = sky;
+    const input = sky.setting.mode === 'real' ? { ...sky, utc: deviceUtc() } : sky;
+    writeSun(sunUniforms, input, lastSun.current);
+    lights.visible = sunUniforms.uSunOn.value > 0.5;
+    invalidate();
+  }, [sky, sunUniforms, lights, invalidate]);
 
   useEffect(() => {
     budgetRef.current = budget;
@@ -274,8 +353,10 @@ export function GlobeScene({
       geometry.dispose();
       globeMaterial.dispose();
       starMaterial.dispose();
+      lights.geometry.dispose();
+      (lights.material as THREE.Material).dispose();
     },
-    [store, geometry, globeMaterial, starMaterial],
+    [store, geometry, globeMaterial, starMaterial, lights],
   );
 
   const highlight = useMemo(() => {
@@ -308,6 +389,11 @@ export function GlobeScene({
     const dt = Math.min(0.05, Math.max(0, now - last.current.time));
     last.current.time = now;
     const moving = controller.step(dt);
+
+    // Sol em "Hora real": só aqui, num quadro que já vai ser desenhado.
+    if (skyRef.current.setting.mode === 'real') {
+      writeSun(sunUniforms, { ...skyRef.current, utc: deviceUtc() }, lastSun.current);
+    }
 
     // Câmera
     const cam = camera as THREE.PerspectiveCamera;
@@ -362,6 +448,8 @@ export function GlobeScene({
             uCell: { value: new THREE.Vector3(entry.cellX, entry.cellY, entry.side) },
             uHeightScale: { value: heightScale },
             uSkirt: { value: ((b.east - b.west) * DEG) / 40 },
+            uSunDir: sunUniforms.uSunDir,
+            uSunOn: sunUniforms.uSunOn,
           },
         });
         mesh = new THREE.Mesh(geometry, material);
@@ -389,6 +477,11 @@ export function GlobeScene({
     // Estrelas somem perto do solo, onde a câmera está dentro da atmosfera
     starMaterial.opacity = 0.8 * Math.min(1, Math.max(0, (s.altitude - 0.06) / 0.25));
     globeMaterial.uniforms.uHideBox.value = store.isLoaded('0/0/0') ? 1 : 0;
+    if (lights.visible) {
+      const u = (lights.material as THREE.ShaderMaterial).uniforms;
+      u.uZoom.value = cityZoom(s.altitude);
+      u.uPointPx.value = CITY_POINT_PX * gl.getPixelRatio();
+    }
 
     if (onStats) {
       const stats = { tiles: draw.length, cached: store.size, maxLevel };
@@ -425,6 +518,7 @@ export function GlobeScene({
       )}
       <group ref={group} />
       <UfFills fills={fills ?? NO_FILLS} invalidate={invalidate} />
+      <primitive object={lights} />
       {highlight && <primitive object={highlight} />}
       <GlobeLabels updateRef={labelsUpdate} reservedRects={reservedRects} insets={labelInsets} scale={labelScale} />
       <Atmosphere />

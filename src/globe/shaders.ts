@@ -1,6 +1,7 @@
 import { HEIGHT_OFFSET, HEIGHT_SCALE, ROOT, TILE_GRID } from './config';
 import { LABEL_MIN_FACING } from './labelLayout';
 import { QuadKind } from './labelQuads';
+import { LIGHTS_FULL_BELOW, LIGHTS_OFF_ABOVE, NIGHT_FLOOR, TERMINATOR_FROM, TERMINATOR_TO } from './visualClock';
 
 const f = (n: number) => n.toFixed(6);
 
@@ -8,6 +9,25 @@ const f = (n: number) => n.toFixed(6);
 const SHADE = /* glsl */ `
 float viewShade(vec3 normal, vec3 pos) {
   return 0.80 + 0.20 * max(dot(normal, normalize(cameraPosition - pos)), 0.0);
+}`;
+
+/**
+ * Dia e noite (PLANO_GLOBO.md §4.1), igual no globo e nos tiles para não haver emenda: o vertex shader calcula
+ * `dot(normal da esfera, Sol)` (ou 2.0 com "Sempre dia", que deixa o dia pleno sem ramo no fragmento) e o fragmento
+ * aplica a faixa do terminador. As constantes vêm de `visualClock.ts`, as mesmas do mapa 2D e dos testes.
+ */
+const SUN_VERTEX = /* glsl */ `
+uniform vec3 uSunDir; // direção do Sol (ponto subsolar) no referencial do globo
+uniform float uSunOn; // 0 = sem iluminação ("Sempre dia")
+varying float vSun;
+float sunDot(vec3 normal) {
+  return uSunOn > 0.5 ? dot(normal, uSunDir) : 2.0;
+}`;
+
+const SUN_FRAGMENT = /* glsl */ `
+varying float vSun;
+float sunLight(float ndl) {
+  return ${f(NIGHT_FLOOR)} + ${f(1 - NIGHT_FLOOR)} * smoothstep(${f(TERMINATOR_FROM)}, ${f(TERMINATOR_TO)}, ndl);
 }`;
 
 export const tileVertexShader = /* glsl */ `
@@ -21,6 +41,7 @@ uniform float uSkirt;       // profundidade da saia (esconde frestas entre níve
 varying vec2 vUv;
 varying float vShade;
 ${SHADE}
+${SUN_VERTEX}
 void main() {
   vec2 uv = position.xy;   // u para leste, v para sul
   float lon = mix(uBounds.x, uBounds.z, uv.x);
@@ -36,6 +57,7 @@ void main() {
   vec3 p = dir * (1.0 + max(h, 0.0) * uHeightScale - position.z * uSkirt);
   vUv = vec2((uCell.x + uv.x) / uCell.z, 1.0 - (uCell.y + uv.y) / uCell.z);
   vShade = viewShade(dir, p);
+  vSun = sunDot(dir);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }`;
 
@@ -44,8 +66,9 @@ precision mediump float;
 uniform sampler2D uColor;
 varying vec2 vUv;
 varying float vShade;
+${SUN_FRAGMENT}
 void main() {
-  gl_FragColor = vec4(texture2D(uColor, vUv).rgb * vShade, 1.0);
+  gl_FragColor = vec4(texture2D(uColor, vUv).rgb * (vShade * sunLight(vSun)), 1.0);
 }`;
 
 export const globeVertexShader = /* glsl */ `
@@ -53,10 +76,12 @@ precision highp float;
 varying vec2 vUv;
 varying float vShade;
 ${SHADE}
+${SUN_VERTEX}
 void main() {
   vUv = uv;
   vec4 wp = modelMatrix * vec4(position, 1.0);
   vShade = viewShade(normalize(wp.xyz), wp.xyz);
+  vSun = sunDot(normalize(wp.xyz));
   gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
 
@@ -67,11 +92,47 @@ uniform sampler2D uWorld;
 uniform float uHideBox;
 varying vec2 vUv;
 varying float vShade;
+${SUN_FRAGMENT}
 void main() {
   float lon = vUv.x * 360.0 - 180.0;
   float lat = vUv.y * 180.0 - 90.0;
   if (uHideBox > 0.5 && lon > ${f(ROOT.west)} && lon < ${f(ROOT.east)} && lat > ${f(ROOT.south)} && lat < ${f(ROOT.north)}) discard;
-  gl_FragColor = vec4(texture2D(uWorld, vUv).rgb * vShade, 1.0);
+  gl_FragColor = vec4(texture2D(uWorld, vUv).rgb * (vShade * sunLight(vSun)), 1.0);
+}`;
+
+/**
+ * Luzes das cidades: um `Points` só (uma chamada de desenho), brilho aditivo e tamanho por log da população
+ * (`aWeight`, 0,3–1). A posição é a direção na esfera. Só aparecem no lado noturno (`dot(normal, Sol)` abaixo do
+ * terminador) e no hemisfério visível; sem teste de profundidade (o relevo exagerado cobriria os pontos) mas com o
+ * descarte do hemisfério oculto, como o mapa de calor. Não são iluminadas pela luz de câmera.
+ */
+export const cityLightsVertexShader = /* glsl */ `
+precision highp float;
+uniform vec3 uSunDir;
+uniform float uRadius;   // raio em que os pontos flutuam
+uniform float uPointPx;  // diâmetro, em px do aparelho, do maior município
+uniform float uZoom;     // 1 no zoom geral, cresce ao aproximar
+attribute float aWeight;
+varying float vAlpha;
+void main() {
+  vec3 dir = normalize(position);
+  vec3 p = dir * uRadius;
+  float facing = dot(dir, normalize(cameraPosition - p));
+  float night = 1.0 - smoothstep(${f(LIGHTS_FULL_BELOW)}, ${f(LIGHTS_OFF_ABOVE)}, dot(dir, uSunDir));
+  vAlpha = night * (0.55 + 0.45 * aWeight);
+  gl_PointSize = uPointPx * uZoom * aWeight;
+  gl_Position = (facing < 0.0 || night <= 0.0)
+    ? vec4(2.0, 2.0, 2.0, 1.0) // fora do volume de recorte: o ponto some
+    : projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}`;
+
+export const cityLightsFragmentShader = /* glsl */ `
+precision mediump float;
+varying float vAlpha;
+void main() {
+  float d = length(gl_PointCoord - 0.5) * 2.0; // 0 no centro, 1 na borda
+  float glow = pow(clamp(1.0 - d, 0.0, 1.0), 1.3);
+  gl_FragColor = vec4(vec3(1.0, 0.82, 0.48), glow * vAlpha);
 }`;
 
 export const atmosphereVertexShader = /* glsl */ `

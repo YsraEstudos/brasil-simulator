@@ -17,3 +17,4 @@ export * from './agendaDraft';
 export type { NewCampaignResult } from './gameStore';
 export * from './campaignSetup';
 export * from './mapQuality';
+export * from './mapDayTime';

@@ -12,6 +12,7 @@ import { GlobeScene, type SceneFrame, type SceneStats } from './GlobeScene';
 import type { Rect } from './labels';
 import { budgetOf, DEFAULT_PROFILE_3D, type Profile3d } from './qualityProfiles';
 import { findUf, ufBySigla, type Uf } from './ufs';
+import { DEFAULT_DAY_TIME, type SkyInput } from './visualClock';
 
 const BRASIL_VIEW = { lon: -52, lat: -14, altitude: 0.75 };
 /** Altitude da câmera ao ir até uma UF. */
@@ -55,9 +56,14 @@ export interface GlobeViewProps {
   labelScale?: number;
   /** Perfil de qualidade; padrão: Equilibrado fixo (os tetos atuais do globo). */
   quality?: GlobeQuality;
+  /** Dia e noite: a escolha da hora do dia e o mês do calendário do jogo (estação). Padrão: tarde, janeiro. */
+  sky?: SkyInput;
 }
 
 const NO_RECTS: readonly Rect[] = [];
+
+/** Sem `sky`: hora fixa padrão (tarde) em janeiro. */
+const DEFAULT_SKY: SkyInput = { setting: DEFAULT_DAY_TIME, month: 1 };
 
 /** Ao despausar o laço sob demanda não tem quadro pedido: invalida um para o globo reaparecer sem esperar um gesto. */
 function ResumeOnUnpause({ paused }: { paused: boolean }) {
@@ -79,6 +85,7 @@ export function GlobeView({
   labelInsets,
   labelScale = 1,
   quality = DEFAULT_QUALITY,
+  sky = DEFAULT_SKY,
 }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   const insets = useSafeAreaInsets();
@@ -202,6 +209,7 @@ export function GlobeView({
                 labelScale={labelScale}
                 budget={budget}
                 onFrame={autoOn ? onFrame : undefined}
+                sky={sky}
               />
             </Canvas>
           </View>

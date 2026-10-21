@@ -165,6 +165,10 @@ no moto g20 mostrar folga.
   pelo **mês do jogo** (declinação solar do `monthIndex`). Não afeta o motor.
 - `uSunDir` no globo base e nos tiles com a mesma convenção (sem emenda); piso noturno ~0,35 para o mapa seguir
   legível; mapa de calor, rótulos e marcadores não são iluminados.
+- **Convenção (PR 6):** o Sol é um vetor unitário no referencial do globo (`lonLatToVec3`: lon 0 em +x, polo norte em
+  +y, lon −90° em +z) apontando para o ponto subsolar: latitude = declinação do dia 15 do mês do calendário do jogo
+  (−23° em dezembro, +23° em junho), longitude = −15° × (hora UTC − 12). Horas fixas em Brasília (UTC−3): manhã 9h,
+  tarde 15h (padrão), entardecer 18h, noite 22h. Equação do tempo ignorada. Dia = `dot(normal, Sol) > 0`.
 - Transição de 1,5 s do Sol ao encerrar o mês — só se "Reduzir movimento" estiver desligado.
 
 ### 4.2 Nuvens (opcionais) e seca
@@ -306,6 +310,8 @@ PR 5 (perfis de qualidade e orçamento) implementado em 20/10/2026: `qualityProf
 PR 3 (série regional: migração 5 `regional_indicator_history`, cartão do estado com variação, 12 meses e ranking) implementado em 20/10/2026.
 
 PR 4 (motor) implementado em 20/10/2026: perfil do governo (`government.profile`, estado v10), escolha no Novo Jogo, movimento por decisão, inclinação das UFs no cenário v0.8.0 (`PROVISORIO`), efeito regional (`alinhamento_perfil`) e nacional (`eleitor_mediano`), `alignmentView` e `previewProfilePush`. Interface implementada em 20/10/2026: folha "Perfil do governo" (botão do trilho direito da mesa; plano de dois eixos, rastro de até 12 meses lido dos snapshots, UFs, eleitor mediano, termo nacional e decisões que mais moveram o perfil), camada "Alinhamento" (globo 3D, mapa 2D e lista, escondida em cenário sem inclinação) e o empurrão no perfil na prévia da decisão (`RegionalPreviewCard`, sempre como estimativa). Regras em [POLITICAL_RULES.md](POLITICAL_RULES.md) §11.2.
+
+PR 6 (dia e noite + luzes das cidades) implementado em 21/10/2026: `visualClock.ts` (puro; Sol pelo mês do jogo e pela hora, em hora fixa de Brasília — padrão **tarde, 15h** —, "Sempre dia" ou "Hora real" com o relógio UTC do aparelho), `uSunDir`/`uSunOn` compartilhados pelo globo base e por todos os tiles (mesma função `sunLight`, piso noturno 0,35, faixa do terminador `dot` −0,10…0,22; mapa de calor, contorno, rótulos e atmosfera não são iluminados), luzes das 150 maiores cidades (`cities.json`, um `Points`, brilho aditivo, só no lado noturno, em todos os perfis 3D), terminador e luzes no 2D completo (`flatSun.ts`: 5 faixas translúcidas empilhadas + círculos com degradê; só 25% da sombra sobre um mapa de calor; o 2D leve não mostra nada) e Configurações → "Hora do dia" (`mapa_hora`). Nenhum quadro periódico: hora fixa e "Sempre dia" só gravam o Sol ao mudar a escolha ou o mês; "Hora real" relê o relógio dentro do `useFrame` (e a tela 2D, ao renderizar). **Fora deste PR:** a transição de 1,5 s do Sol ao encerrar o mês (§4.1) — não existe a opção "Reduzir movimento" no app, então o Sol muda de estação de uma vez; entra junto com essa opção. A textura de luzes noturnas do perfil Alto (`cityLightsTexture`) segue reservada. Pendente de medição no moto g20: custo das luzes e do `varying` extra nos tiles.
 
 Versões do estado: o PR 4 sobe `STATE_SCHEMA_VERSION` (perfil do governo) e o PR 7 sobe de novo (clima); cada
 um com a sua função de atualização e teste com save da versão anterior.
