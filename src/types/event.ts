@@ -76,6 +76,25 @@ export const conditionVariableSchema = z.enum([
 ]);
 export type ConditionVariable = z.infer<typeof conditionVariableSchema>;
 
+/** Tipos de gatilho climático (PLANO_GLOBO.md §6.3): lêem `GameState.climate` e devolvem as UFs atingidas. */
+export const climateTriggerKindSchema = z.enum(['drought', 'flood']);
+export type ClimateTriggerKind = z.infer<typeof climateTriggerKindSchema>;
+
+/**
+ * Gatilho climático especializado. `drought`: UFs com índice de seca (`dryness`) ≥ `threshold`. `flood`: UFs com risco
+ * de cheia (`floodRisk`) ÷ risco máximo ≥ `threshold`. Em ambos, a **severidade** da UF é um número em [0, 1]; o evento
+ * só pode disparar se houver UF atingida, e a probabilidade mensal é `trigger.probability` × a maior severidade
+ * (`probability` passa a ser a probabilidade com severidade máxima).
+ */
+export const climateTriggerSchema = z
+  .object({
+    kind: climateTriggerKindSchema,
+    /** Severidade mínima (0–1) para a UF entrar no local do evento. */
+    threshold: z.number().gt(0).max(1),
+  })
+  .strict();
+export type ClimateTrigger = z.infer<typeof climateTriggerSchema>;
+
 export const eventConditionSchema = z
   .object({
     variable: conditionVariableSchema,
@@ -108,8 +127,28 @@ export const eventEffectSchema = z
      * todas as UFs; nos demais, concentra o efeito nessas UFs (por população) sem mudar o total nacional.
      */
     regions: z.array(regionalScopeSchema).min(1).optional(),
+    /**
+     * Efeito no **local do evento**, congelado no disparo (PLANO_GLOBO.md §6.3): o escopo vira as UFs atingidas
+     * (`PendingEvent.location`), sejam quais forem as condições climáticas na hora da resposta. Evento sem local
+     * (save antigo ou evento nacional) usa `regions`, se houver, ou fica nacional. Só em evento geográfico
+     * (`trigger.climate`) ou encadeado (herda o local de quem o originou).
+     */
+    atLocation: z.boolean().optional(),
+    /**
+     * Com `atLocation`, em alvos `regiao.*`: o efeito de cada UF atingida é `delta × severidade da UF` (0–1, a do
+     * local congelado), em vez do mesmo `delta` para todas. `delta` é o efeito na severidade máxima.
+     */
+    scaleBySeverity: z.boolean().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((e, ctx) => {
+    if (e.scaleBySeverity && !e.atLocation) {
+      ctx.addIssue({ code: 'custom', path: ['scaleBySeverity'], message: 'scaleBySeverity exige atLocation' });
+    }
+    if (e.scaleBySeverity && !e.target.startsWith('regiao.')) {
+      ctx.addIssue({ code: 'custom', path: ['scaleBySeverity'], message: 'scaleBySeverity só vale em alvos regiao.*' });
+    }
+  });
 export type EventEffect = z.infer<typeof eventEffectSchema>;
 
 /** Evento encadeado: agendado quando a escolha é aplicada (FASE_07.md §Contratos). */
@@ -187,6 +226,11 @@ export const gameEventSchema = z
         requiresFlags: z.array(contentIdSchema).optional(),
         /** Nenhuma destas marcas pode estar gravada. */
         forbidsFlags: z.array(contentIdSchema).optional(),
+        /**
+         * Gatilho climático (PLANO_GLOBO.md §6.3): além das demais condições, o clima precisa ter UF atingida. As UFs
+         * atingidas viram o local do evento, congelado no disparo (`PendingEvent.location`).
+         */
+        climate: climateTriggerSchema.optional(),
       })
       .strict(),
     /** Marcas gravadas quando o evento chega à caixa de entrada. */
@@ -196,6 +240,13 @@ export const gameEventSchema = z
      * antigos não recebem eventos novos (AI_INSTRUCTIONS.md §8).
      */
     onlyScenarios: z.array(contentIdSchema).min(1).optional(),
+    /**
+     * Eventos que esta versão substitui nos cenários em que ela existe: o sorteio mensal ignora os substituídos
+     * (sem editar o arquivo publicado). Uma pendência ou um encadeado dos substituídos que já existam num save
+     * continuam sendo resolvidos normalmente. Exige `onlyScenarios`, para a versão antiga seguir valendo nos demais
+     * cenários.
+     */
+    replaces: z.array(contentIdSchema).min(1).optional(),
     /** Personagem fictício em destaque (ID de `scenario.characters`); aparece no briefing e nas manchetes. */
     characterId: contentIdSchema.optional(),
     /**
@@ -212,6 +263,20 @@ export const gameEventSchema = z
   })
   .strict()
   .superRefine((e, ctx) => {
+    if (e.replaces && !e.onlyScenarios) {
+      ctx.addIssue({ code: 'custom', path: ['replaces'], message: 'replaces exige onlyScenarios' });
+    }
+    if (e.replaces?.includes(e.id)) {
+      ctx.addIssue({ code: 'custom', path: ['replaces'], message: 'evento não substitui a si mesmo' });
+    }
+    const located = [...e.onFire, ...e.choices.flatMap((c) => c.effects)].some((fx) => fx.atLocation);
+    if (located && !e.trigger.climate && !e.chainedOnly) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['trigger', 'climate'],
+        message: 'atLocation exige gatilho climático ou evento encadeado',
+      });
+    }
     if (e.trigger.probabilityFactor === 'characterStanding') {
       ctx.addIssue({
         code: 'custom',

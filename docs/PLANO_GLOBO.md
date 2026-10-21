@@ -276,9 +276,9 @@ Troca de governador aparece no mês da posse, separada do resultado presidencial
 
 ### 6.3 Eventos geográficos
 
-- `PendingEvent` (e `ScheduledEvent`, `eventsFired`, `NewsItem`, relatório) ganha `instanceId` e
+- `PendingEvent` (e `ScheduledEvent`, o relatório `eventInstances`, `NewsItem`) ganha `instanceId` e
   `location: { affectedUfs, primaryUf?, severityByUf? }`, **gravados no disparo**. Responder dois meses depois
-  atinge as mesmas UFs.
+  atinge as mesmas UFs. (`eventsFired` segue a lista de ids; a identidade e o local vão em `eventInstances`.)
 - Gatilho climático especializado que devolve as UFs atingidas (não basta `droughtMax`).
 - **Sem contagem dupla:** o clima dá a probabilidade e o dano de base; o evento traz a crise e as escolhas, sem
   repetir o choque. Nova versão dos arquivos de evento (sem editar os publicados).
@@ -317,8 +317,11 @@ PR 7 (contrato climático) implementado em 21/10/2026, **só contrato, sem mudar
 
 PR 8 (motor climático nacional + regional) implementado em 21/10/2026: `climateEvolutionStep` (antes de `economyStep`) evolui ENSO (AR(1) saturado), anomalia de chuva por UF (persistência + teleconexão ENSO da macrorregião na estação + choque regional compartilhado + ruído da UF, saturada em `chuva_anomalia_max`) e seca com memória e recuperação dirigida pelo déficit em mm contra a normal do mês e pela vulnerabilidade hídrica da UF (o semiárido seca mais depressa); só o `climate.rng` é consumido (33 normais por mês, ordem fixa: ENSO, 5 regiões, 27 UFs). O dano **agregado** (PIB, alimentos, energia, chuva excessiva) entra uma vez, antes da economia, pela fila de impulsos já existente (`choque.hiato` com a persistência do hiato, `choque.inflacao`), com as causas "Seca" e "Chuvas acima do normal" no "Por que mudou?"; o efeito **regional** (`climateRegionalEffects`, dentro de `regionsStep`) só redistribui — seca × participação da agropecuária na atividade da UF; chuva acima do normal e seca prolongada no humor, centrados pela média ponderada pela população (D7) — e a parte nacional do humor entra uma vez em `opinionStep`. O dano é de **média zero** em torno do clima esperado (`CLIMATE_EXPECTED_DAMAGE`): clima melhor que o normal dá boa safra e pressão negativa, para o clima não virar inflação permanente. Risco de cheia (`floodRisk`) é função pura para os PRs 9 e 10. Dificuldade escala só a magnitude. Regras em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.19; parâmetros (todos lidos; PROVISORIO) em [CALIBRATION.md](CALIBRATION.md). Testes: determinismo, PRNG principal intacto, limites, semiárido × úmido, D7 e somas das explicações em 60 meses, PIB agregado e desvios regionais sem contagem dupla (§8, testes 1, 4 e 5); as impressões digitais do PR 7 foram substituídas por esses testes.
 
-Versões do estado: o PR 4 sobe `STATE_SCHEMA_VERSION` para 10 (perfil do governo) e o PR 7 para 11 (clima); cada
-um com a sua função de atualização (`v9ToV10`, `v10ToV11`) e teste com save da versão anterior.
+PR 9 (eventos geográficos) implementado em 21/10/2026: `PendingEvent` ganha `instanceId` (`evento#mês`) e `location` (UFs atingidas, principal e severidade por UF), **congelados no disparo**, e o mesmo local vai para o relatório (`eventInstances`), as notícias, os encadeados e o banco; os efeitos das escolhas (`atLocation`, `scaleBySeverity`) usam o local congelado (estado v12, `v11ToV12`: pendências antigas ganham a identidade e ficam sem local = nacional). Gatilho climático `trigger.climate` (`drought`/`flood` + limiar de severidade 0–1) devolve as UFs atingidas; a probabilidade é `probability × severidade máxima`. Novas versões `seca_safra_energia_v2` e `enchentes_metropole_v2`, só no v0.8.0, que substituem as antigas no sorteio (`replaces`, sem editar os arquivos publicados) e **não repetem o choque do clima** (sem efeito de disparo; escolhas só com custo e benefício da resposta). Textos aceitam `{uf}`, `{uf_principal}`, `{siglas}` e `{regiao}`; a caixa de entrada mostra "Atinge: CE, PI". Marcadores no mapa ficam para o PR 11. Regras em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.20, [GAME_DESIGN.md](GAME_DESIGN.md) §11.3.2 e [CALIBRATION.md](CALIBRATION.md). Teste 6 (§8): `src/engine/events/geo.test.ts`.
+
+Versões do estado: o PR 4 sobe `STATE_SCHEMA_VERSION` para 10 (perfil do governo), o PR 7 para 11 (clima) e o PR 9 para 12
+(identidade e local do evento); cada um com a sua função de atualização (`v9ToV10`, `v10ToV11`, `v11ToV12`) e teste com
+save da versão anterior.
 
 ---
 

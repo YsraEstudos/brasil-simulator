@@ -97,3 +97,17 @@ export const STANDING_LIMIT = 100;
 
 /** Limite da relação com o Congresso e com os governadores (−100…100), na mesma escala do prestígio. */
 export const RELATION_LIMIT = 100;
+
+/**
+ * Eventos geográficos (PLANO_GLOBO.md §6.3; PR 9). O local de um evento climático é congelado no disparo.
+ * `PROVISORIO`, a rever na revisão de calibração do PLANO_GLOBO.md §10.
+ */
+export const GEO_EVENT_PARAMS = {
+  ufs_max: {
+    value: 8,
+    min: 3,
+    max: 12,
+    note: 'máximo de UFs no local de um evento climático (as de maior severidade); o resto do país segue sob o efeito do próprio clima',
+    basis: `${JOGO}; o cartão do evento e a notícia precisam caber numa linha legível`,
+  },
+} as const satisfies Record<string, ParamSpec>;

@@ -61,7 +61,11 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
     expect(state.economy).toEqual(legacy.economy);
     expect(state.society).toEqual(legacy.society);
     expect(state.publicPolicies).toEqual(legacy.publicPolicies);
-    expect(state.events).toEqual(legacy.events);
+    // v12: as pendências ganham a identidade (`evento#mês`), sem local; o resto dos eventos fica idêntico.
+    expect(state.events).toEqual({
+      ...legacy.events,
+      pending: legacy.events.pending.map((p) => ({ ...p, instanceId: `${p.eventId}#${p.monthIndex}` })),
+    });
     expect(state.politics).toBeUndefined();
     // v9: `agendaPointsPerMonth` vira `agendaActionsPerMonth`, com o mesmo valor.
     expect(state.resources.agendaActionsPerMonth).toBe(legacy.resources.agendaPointsPerMonth);

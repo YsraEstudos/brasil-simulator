@@ -1,4 +1,5 @@
 import {
+  localizeEvent,
   SANCTION_ACTION_ID,
   SANCTION_CHOICES,
   standingOf,
@@ -18,12 +19,15 @@ import type { PendingItem, SanctionItem } from './EventInbox';
  * do mês e responde "cabe na agenda?". Lógica pura — sem React —, usada pela folha "Alertas e eventos" do Painel.
  */
 
-/** Eventos que pedem resposta neste mês, com a definição do evento (pendências de eventos que sumiram do conteúdo caem fora). */
+/**
+ * Eventos que pedem resposta neste mês, com a definição do evento (pendências de eventos que sumiram do conteúdo caem fora).
+ * Os textos já vêm com o local congelado no disparo (`{uf}`, `{regiao}`; PLANO_GLOBO.md §6.3).
+ */
 export function pendingItems(state: Readonly<GameState>, content: GameContent): PendingItem[] {
   const eventsById = new Map(content.events.map((e) => [e.id, e]));
   return state.events.pending.flatMap((pending) => {
     const event = eventsById.get(pending.eventId);
-    return event ? [{ event, pending }] : [];
+    return event ? [{ event: localizeEvent(event, pending.location, content), pending }] : [];
   });
 }
 

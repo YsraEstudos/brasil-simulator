@@ -9,7 +9,7 @@ import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 11;
+export const STATE_SCHEMA_VERSION = 12;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
 export const ENGINE_VERSION = '0.9.0';
@@ -389,11 +389,39 @@ export interface CongressState {
   cabinet: MinistryState[];
 }
 
+/**
+ * Local de um evento geográfico (PLANO_GLOBO.md §6.3), **congelado no disparo**: responder meses depois atinge as
+ * mesmas UFs, mesmo que o clima já tenha mudado. Evento sem local (`location` ausente) é nacional.
+ */
+export interface EventLocation {
+  /** Siglas das UFs atingidas, da mais para a menos atingida (empate: ordem de `UF_IDS`). Nunca vazia. */
+  affectedUfs: string[];
+  /** A UF mais atingida (= `affectedUfs[0]`). */
+  primaryUf?: string;
+  /** Severidade de cada UF atingida, 0–1 (seca: índice de seca; cheia: risco ÷ risco máximo). */
+  severityByUf?: Record<string, number>;
+}
+
 /** Evento à espera de resposta do jogador (GAME_DESIGN.md §4.2, caixa de entrada). */
 export interface PendingEvent {
   eventId: string;
   /** Mês em que apareceu. Sem resposta até o fim do mês seguinte → escolha padrão. */
   monthIndex: number;
+  /**
+   * Identidade desta ocorrência: `${eventId}#${monthIndex}` (o mês de chegada à caixa de entrada). O mesmo evento
+   * não está pendente duas vezes ao mesmo tempo, então a identidade é única; vale também nas notícias e nos
+   * relatórios. Saves anteriores à v12 ganham o campo na atualização.
+   */
+  instanceId: string;
+  /** Local congelado no disparo; ausente = evento nacional (e saves anteriores à v12). */
+  location?: EventLocation;
+}
+
+/** Ocorrência de evento que chegou à caixa de entrada no mês, para o relatório (PLANO_GLOBO.md §6.3). */
+export interface FiredEvent {
+  eventId: string;
+  instanceId: string;
+  location?: EventLocation;
 }
 
 /** Evento encadeado já sorteado, à espera do mês de chegada (FASE_07.md). */
@@ -404,6 +432,8 @@ export interface ScheduledEvent {
   /** Evento e escolha que o originaram (rastro de causa para as notícias). */
   causeEventId: string;
   causeChoiceId: string;
+  /** Local herdado do evento que o originou (se ele era geográfico); o encadeado atinge as mesmas UFs. */
+  location?: EventLocation;
 }
 
 /** Tom editorial de uma notícia. */
@@ -423,6 +453,10 @@ export interface NewsItem {
   /** Evento, proposta ou política de origem, quando houver. */
   sourceId?: string;
   characterId?: string;
+  /** Ocorrência do evento que originou a notícia (`PendingEvent.instanceId`); ausente em notícias antigas ou sem evento. */
+  instanceId?: string;
+  /** Local do evento, congelado no disparo; ausente = nacional. */
+  location?: EventLocation;
 }
 
 export interface EventsState {
@@ -680,9 +714,14 @@ export interface MonthReport {
   contributions: Contribution[];
   proposalChanges: ProposalChange[];
   /** Escolhas aplicadas a eventos (do jogador ou automáticas, quando o prazo venceu). */
-  eventsResolved: { eventId: string; choiceId: string; automatic: boolean }[];
+  eventsResolved: { eventId: string; choiceId: string; automatic: boolean; instanceId?: string }[];
   /** Eventos que apareceram neste mês e aguardam resposta. */
   eventsFired: string[];
+  /**
+   * As mesmas ocorrências de `eventsFired`, com identidade e local congelado (PLANO_GLOBO.md §6.3). Ausente em
+   * relatórios anteriores à v12.
+   */
+  eventInstances?: FiredEvent[];
   /** Reunião do Copom no mês, se houve. */
   copom: CopomDecision | null;
   /** Avisos curtos para o jogador (ex.: gasto acima do limite). */
@@ -718,7 +757,10 @@ export interface GameContent {
 }
 
 /** Partes do relatório que as etapas preenchem (o resto é montado pelo `advanceMonth`). */
-export type ReportDraft = Pick<MonthReport, 'proposalChanges' | 'eventsResolved' | 'eventsFired' | 'notes'> & {
+export type ReportDraft = Pick<
+  MonthReport,
+  'proposalChanges' | 'eventsResolved' | 'eventsFired' | 'eventInstances' | 'notes'
+> & {
   copom: CopomDecision | null;
   regional: UfExplanation[] | null;
   profileMoves?: ProfileMove[];

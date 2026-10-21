@@ -425,6 +425,16 @@ Notícias não vêm de rede: são geradas a partir do estado e do relatório do 
 
 **Fora da Fase 07:** eleições e memória do eleitor (Fase 08); comissões, emendas de plenário e parlamentares individuais (Fase 09); personagens com agenda própria; imprensa com rede; julgamento de contas pelo Congresso como votação própria.
 
+### 11.3.2 Eventos geográficos (PR 9 do PLANO_GLOBO, cenário v0.8.0)
+
+Status: **FICTICIO** (casos e textos), gatilhos e efeitos **PROVISORIO**. Regras de motor em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.20; formato em [FASE_07.md](FASE_07.md) (contratos de evento); plano em [PLANO_GLOBO.md](PLANO_GLOBO.md) §6.3.
+
+- **Onde acontece.** Um evento geográfico tem `trigger.climate` (`drought` ou `flood`, com `threshold` de 0 a 1): no sorteio mensal o motor lê o clima e devolve as **UFs atingidas** (seca: índice de seca ≥ limiar; cheia: risco de cheia ÷ risco máximo ≥ limiar), da mais para a menos atingida, até 8. Sem UF atingida o evento não é elegível. O local é gravado **no disparo** (`PendingEvent.location`) e não muda mais: responder depois atinge as mesmas UFs, mesmo que o clima já tenha mudado.
+- **Quando acontece.** `probabilidade = trigger.probability × a maior severidade do local`: o clima dá a chance; `probability` é a que vale com severidade máxima. Seca severa (≥ 0,7): 0,35, intervalo de 18 meses, até 3 vezes. Chuva forte (severidade ≥ 0,25): 0,6 (= `cheia_risco_max`, ou seja, a chance é o próprio risco de cheia da UF mais atingida), intervalo de 12 meses, até 3 vezes. Em 12 campanhas de 48 meses sem responder: Casual 0,3 seca e nenhuma cheia por campanha; Estratégica 0,8 e 0,8; Realismo 1,3 e 2,0.
+- **O que traz.** A crise e as escolhas, **sem repetir o choque**: o dano econômico da seca e da chuva (PIB, alimentos, energia, atividade e humor das UFs) é do clima (ECONOMIC_MODEL.md §5.19) e já aparece nos indicadores quando o evento chega; os eventos v2 não têm efeito de disparo. As escolhas têm só o custo e o benefício **da resposta**: gasto concentrado nas UFs atingidas (`atLocation`), aprovação e relação com os governadores nelas, atividade de reconstrução, e o custo político de não responder.
+- **Versões novas, sem editar as publicadas.** `seca_safra_energia_v2` e `enchentes_metropole_v2` existem só no cenário `brasil_2027_01_v080` (`onlyScenarios`) e declaram `replaces` com os ids antigos: no v0.8.0 os antigos saem do **sorteio**, mas continuam conhecidos, então uma pendência de save em andamento ainda é resolvida como era. Nos cenários até o v0.7.0 nada muda.
+- **Texto com o local.** Os textos do evento aceitam `{uf}` (nomes: "Ceará, Piauí e Rio Grande do Sul"), `{uf_principal}`, `{siglas}` ("CE, PI e RS") e `{regiao}` ("Nordeste e Sul"); sem local viram "o país". Valem no briefing, nas escolhas e nas manchetes. A caixa de entrada mostra "Atinge: CE, PI, RS". As notícias e o relatório do mês carregam a ocorrência (`instanceId` = `evento#mês`) e o local; marcadores no mapa são do PR 11.
+
 ### 11.4 Critério de conclusão do protótipo
 Jogar os 12 meses, tomar decisões diferentes em duas campanhas, observar consequências diferentes e explicáveis, e conseguir reiniciar ou retomar a campanha.
 

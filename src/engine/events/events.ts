@@ -15,6 +15,7 @@ import {
 import { meanGovernorRelation } from '../regions/regions';
 import {
   TECHNICAL_OCCUPANT,
+  type EventLocation,
   type EventsState,
   type GameContent,
   type GameState,
@@ -26,6 +27,7 @@ import {
 } from '../types';
 
 import { STANDING_LIMIT } from './calibration';
+import { climateLocation, eventInstanceId, worstSeverity } from './location';
 import { impeachmentPressure, meanCongressRelation } from './pressure';
 
 /**
@@ -38,14 +40,21 @@ import { impeachmentPressure, meanCongressRelation } from './pressure';
 
 const MONTHS_PER_YEAR = 12;
 
-/** Converte efeitos de evento em impulsos agendados a partir de `firstMonth` (ECONOMIC_MODEL.md §5.11). */
+/**
+ * Converte efeitos de evento em impulsos agendados a partir de `firstMonth` (ECONOMIC_MODEL.md §5.11).
+ *
+ * `location` é o local **congelado no disparo** do evento (PLANO_GLOBO.md §6.3): um efeito `atLocation` age nas UFs
+ * atingidas (com `scaleBySeverity`, um impulso por UF com `delta × severidade`). Sem local (evento nacional ou save
+ * antigo), o efeito `atLocation` cai para `regions`, se houver, ou fica nacional como era.
+ */
 export function effectsToImpulses(
   effects: readonly EventEffect[],
   firstMonth: number,
   sourceId: string,
   fallbackLabel: string,
+  location?: Readonly<EventLocation>,
 ): ScheduledImpulse[] {
-  return effects.map((effect) => {
+  return effects.flatMap((effect): ScheduledImpulse[] => {
     const startMonth = firstMonth + effect.lagMonths;
     const impulse: ScheduledImpulse = {
       sourceId,
@@ -55,8 +64,18 @@ export function effectsToImpulses(
       startMonth,
       endMonth: effect.durationMonths === null ? null : startMonth + effect.durationMonths - 1,
     };
+    if (effect.atLocation && location && location.affectedUfs.length > 0) {
+      if (effect.scaleBySeverity) {
+        return location.affectedUfs.map((uf) => ({
+          ...impulse,
+          delta: effect.delta * (location.severityByUf?.[uf] ?? 1),
+          regional: { key: 'populacao', scope: [uf] },
+        }));
+      }
+      return [{ ...impulse, regional: { key: 'populacao', scope: [...location.affectedUfs] } }];
+    }
     // ECONOMIC_MODEL.md §5.15: efeito concentrado nas UFs atingidas, repartido pela população.
-    return effect.regions ? { ...impulse, regional: { key: 'populacao', scope: [...effect.regions] } } : impulse;
+    return [effect.regions ? { ...impulse, regional: { key: 'populacao', scope: [...effect.regions] } } : impulse];
   });
 }
 
@@ -66,6 +85,17 @@ export function effectsToImpulses(
  */
 export function eventsForScenario(events: readonly GameEvent[], scenarioId: string): GameEvent[] {
   return events.filter((e) => e.onlyScenarios === undefined || e.onlyScenarios.includes(scenarioId));
+}
+
+/**
+ * Eventos que podem **entrar no sorteio** do cenário: os do cenário menos os substituídos por uma versão nova que
+ * existe nele (`replaces`; PLANO_GLOBO.md §6.3). Os substituídos continuam em `eventsForScenario`: pendências e
+ * encadeados que já existem num save seguem sendo resolvidos.
+ */
+export function drawableEvents(events: readonly GameEvent[], scenarioId: string): GameEvent[] {
+  const inScenario = eventsForScenario(events, scenarioId);
+  const replaced = new Set(inScenario.flatMap((e) => e.replaces ?? []));
+  return inScenario.filter((e) => !replaced.has(e.id));
 }
 
 /** Marca gravada no estado (`EventsState.flags`, FASE_07.md). */
@@ -170,14 +200,17 @@ export const resolveEventsStep: MonthStep = (state, ctx: StepContext) => {
    * que escolhas sem cadeia não consumam a semente.
    */
   const applyChoice = (
-    eventId: string,
-    entryMonth: number,
+    entry: PendingEvent,
     event: GameEvent,
     choiceId: string,
     definition: EventChoiceDefinition,
     automatic: boolean,
   ) => {
-    impulses.push(...effectsToImpulses(definition.effects, t, `evento:${eventId}_${entryMonth}`, event.title));
+    const eventId = entry.eventId;
+    // O local foi congelado no disparo: responder meses depois atinge as mesmas UFs (PLANO_GLOBO.md §6.3).
+    impulses.push(
+      ...effectsToImpulses(definition.effects, t, `evento:${eventId}_${entry.monthIndex}`, event.title, entry.location),
+    );
     if (definition.dismissMinister) dismiss();
 
     const flags = { ...memory.flags };
@@ -198,11 +231,12 @@ export const resolveEventsStep: MonthStep = (state, ctx: StepContext) => {
         monthIndex: t + follow.delayMonths,
         causeEventId: eventId,
         causeChoiceId: choiceId,
+        ...(entry.location ? { location: entry.location } : {}),
       });
     }
 
     memory = { ...memory, flags, characters, scheduled };
-    ctx.draft.eventsResolved.push({ eventId, choiceId, automatic });
+    ctx.draft.eventsResolved.push({ eventId, choiceId, automatic, instanceId: entry.instanceId });
   };
 
   for (const choice of ctx.eventChoices) {
@@ -212,7 +246,7 @@ export const resolveEventsStep: MonthStep = (state, ctx: StepContext) => {
     if (index < 0 || !event || !definition) continue;
     const entry = pending[index];
     pending = pending.filter((_, i) => i !== index);
-    applyChoice(choice.eventId, entry.monthIndex, event, choice.choiceId, definition, false);
+    applyChoice(entry, event, choice.choiceId, definition, false);
   }
 
   const remaining: PendingEvent[] = [];
@@ -224,7 +258,7 @@ export const resolveEventsStep: MonthStep = (state, ctx: StepContext) => {
       continue;
     }
     const definition = event.choices.find((c) => c.id === event.defaultChoice);
-    if (definition) applyChoice(entry.eventId, entry.monthIndex, event, event.defaultChoice, definition, true);
+    if (definition) applyChoice(entry, event, event.defaultChoice, definition, true);
   }
 
   return {
@@ -233,12 +267,22 @@ export const resolveEventsStep: MonthStep = (state, ctx: StepContext) => {
   };
 };
 
-/** Probabilidade do evento neste estado: a base, multiplicada pelo fator (limitado a [0, 1]) se houver. */
-export function eventProbability(state: Readonly<GameState>, event: GameEvent, content: GameContent): number {
+/**
+ * Probabilidade do evento neste estado: a base, multiplicada pelo fator (limitado a [0, 1]) se houver. Com gatilho
+ * climático, a base é `probability` × a maior severidade do `location` (PLANO_GLOBO.md §6.3): é o clima que dá a
+ * probabilidade; `probability` é a que vale com severidade máxima.
+ */
+export function eventProbability(
+  state: Readonly<GameState>,
+  event: GameEvent,
+  content: GameContent,
+  location?: Readonly<EventLocation>,
+): number {
   const { probability, probabilityFactor } = event.trigger;
-  if (probabilityFactor === undefined) return probability;
+  const base = event.trigger.climate && location ? probability * worstSeverity(location) : probability;
+  if (probabilityFactor === undefined) return base;
   const factor = Math.min(1, Math.max(0, conditionValue(state, probabilityFactor, content)));
-  return probability * factor;
+  return base * factor;
 }
 
 /**
@@ -252,12 +296,16 @@ function fireEvent(
   book: { pending: PendingEvent[]; lastFired: Record<string, number>; count: Record<string, number> },
   impulses: ScheduledImpulse[],
   flags: Record<string, number>,
+  location?: EventLocation,
 ) {
-  book.pending.push({ eventId: event.id, monthIndex: n });
+  // O local é gravado aqui, uma vez: a resposta (e os efeitos dela) usa este local, não o clima do dia da resposta.
+  const instanceId = eventInstanceId(event.id, n);
+  book.pending.push({ eventId: event.id, monthIndex: n, instanceId, ...(location ? { location } : {}) });
   book.lastFired[event.id] = n;
   book.count[event.id] = (book.count[event.id] ?? 0) + 1;
   ctx.draft.eventsFired.push(event.id);
-  impulses.push(...effectsToImpulses(event.onFire, n, `evento:${event.id}_${n}`, event.title));
+  (ctx.draft.eventInstances ??= []).push({ eventId: event.id, instanceId, ...(location ? { location } : {}) });
+  impulses.push(...effectsToImpulses(event.onFire, n, `evento:${event.id}_${n}`, event.title, location));
   for (const flag of event.onFireFlags ?? []) flags[flag] = n;
 }
 
@@ -295,11 +343,11 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
     const allowed =
       flagsAllow(state, event) && event.trigger.conditions.every((c) => conditionHolds(state, c, ctx.content));
     if (!allowed) continue;
-    fireEvent(event, n, ctx, book, impulses, flags);
+    fireEvent(event, n, ctx, book, impulses, flags, item.location);
   }
 
   let firedNow = 0;
-  for (const event of events) {
+  for (const event of drawableEvents(ctx.content.events, state.scenarioId)) {
     if (firedNow >= maxPerMonth) break;
     if (event.chainedOnly) continue;
     const { trigger } = event;
@@ -312,9 +360,13 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
       (trigger.monthsOfYear.length === 0 || trigger.monthsOfYear.includes(monthOfYear)) &&
       flagsAllow(state, event) &&
       trigger.conditions.every((c) => conditionHolds(state, c, ctx.content));
-    if (!eligible || !ctx.rng.chance(eventProbability(state, event, ctx.content))) continue;
+    if (!eligible) continue;
+    // Gatilho climático: sem UF atingida o evento não é elegível (e não consome sorteio).
+    const location = trigger.climate ? climateLocation(state, ctx.content, trigger.climate) : undefined;
+    if (trigger.climate && !location) continue;
+    if (!ctx.rng.chance(eventProbability(state, event, ctx.content, location))) continue;
 
-    fireEvent(event, n, ctx, book, impulses, flags);
+    fireEvent(event, n, ctx, book, impulses, flags, location);
     firedNow += 1;
   }
 

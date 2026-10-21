@@ -65,12 +65,12 @@ export interface ClimateDamageIndices {
 const NO_DAMAGE: ClimateDamage = { droughtGdp: 0, rainGdp: 0, droughtFood: 0, droughtEnergy: 0, rainFood: 0 };
 
 /** Cenário com UFs: o clima só tem peso (PIB, agropecuária, população) quando há dados regionais. */
-function scenarioUfs(content: Pick<GameContent, 'scenario'>): readonly ScenarioUf[] {
+export function scenarioUfs(content: Pick<GameContent, 'scenario'>): readonly ScenarioUf[] {
   return content.scenario.regions?.ufs ?? [];
 }
 
 /** Clima de cada UF do cenário, na ordem do cenário (neutro se a sigla não estiver no estado). */
-function climateByScenarioUf(climate: Readonly<ClimateState>, ufs: readonly ScenarioUf[]): UfClimate[] {
+export function climateByScenarioUf(climate: Readonly<ClimateState>, ufs: readonly ScenarioUf[]): UfClimate[] {
   const byId = new Map(climate.ufs.map((u) => [u.id, u]));
   return ufs.map((u) => byId.get(u.id) ?? { id: u.id, rain: 0, dryness: 0 });
 }

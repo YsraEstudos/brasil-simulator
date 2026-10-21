@@ -16,6 +16,8 @@ import regimesDiferenciados from '@/data/events/regimes_diferenciados.json';
 import revisaoRating from '@/data/events/revisao_rating.json';
 import saidaCapitais from '@/data/events/saida_capitais.json';
 import secaSafraEnergia from '@/data/events/seca_safra_energia.json';
+import enchentesMetropoleV2 from '@/data/events/enchentes_metropole_v2.json';
+import secaSafraEnergiaV2 from '@/data/events/seca_safra_energia_v2.json';
 import fase07EcoBancosPreveemRecessao from '@/data/events/fase07_eco_bancos_preveem_recessao.json';
 import fase07EcoBoomCommodities from '@/data/events/fase07_eco_boom_commodities.json';
 import fase07EcoCriseHidricaContaLuz from '@/data/events/fase07_eco_crise_hidrica_conta_luz.json';
@@ -56,7 +58,9 @@ import fase07PolViceConspira from '@/data/events/fase07_pol_vice_conspira.json';
 
 /**
  * Eventos (src/data/events/*.json), validados ao carregar (GAME_DESIGN.md §11.3): os 10 do protótipo, os 5 de
- * 2027 da Fase 03 o das dívidas estaduais da Fase 05 e os 37 da Fase 07 (`fase07_*`, só no cenário v0.6.0). A ordem importa: o sorteio segue esta lista até `max_eventos_mes` (o orçamento de transição
+ * 2027 da Fase 03 o das dívidas estaduais da Fase 05, os 37 da Fase 07 (`fase07_*`, só nos cenários v0.6.0 em diante) e as
+ * versões geográficas de seca e enchente (`*_v2`, PR 9 do PLANO_GLOBO, só no cenário v0.8.0: substituem as antigas no
+ * sorteio por `replaces`). A ordem importa: o sorteio segue esta lista até `max_eventos_mes` (o orçamento de transição
  * vem primeiro para sempre chegar em fevereiro de 2027).
  */
 const RAW_EVENTS: readonly unknown[] = [
@@ -113,6 +117,8 @@ const RAW_EVENTS: readonly unknown[] = [
   fase07PolStfSuspende,
   fase07PolSudesteFrente,
   fase07PolViceConspira,
+  secaSafraEnergiaV2,
+  enchentesMetropoleV2,
 ];
 
 function load(raw: unknown, index: number): GameEvent {

@@ -1,4 +1,5 @@
 import type { GameContent, IndicatorKey, MonthReport, ProposalTransition } from '../types';
+import { formatEventText } from '../events/location';
 
 import { pct } from './format';
 
@@ -128,7 +129,10 @@ export function headlines(report: MonthReport, content: GameContent): string[] {
 
   const titleOf = (eventId: string): string => content.events.find((e) => e.id === eventId)?.title ?? eventId;
 
-  for (const eventId of report.eventsFired) lines.push(`Urgente: ${titleOf(eventId)}`);
+  for (const eventId of report.eventsFired) {
+    const location = report.eventInstances?.find((i) => i.eventId === eventId)?.location;
+    lines.push(`Urgente: ${formatEventText(titleOf(eventId), location, content)}`);
+  }
 
   for (const resolved of report.eventsResolved) {
     if (resolved.automatic) lines.push(`Sem resposta do governo: ${titleOf(resolved.eventId)}`);

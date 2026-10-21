@@ -1,0 +1,136 @@
+{
+  "id": "enchentes_metropole_v2",
+  "title": "Chuvas fortes alagam cidades",
+  "description": "Chuvas muito acima do normal deixam bairros alagados e famílias desabrigadas em {uf}. Os efeitos das chuvas sobre a economia e o humor local já estão nos indicadores; governadores e prefeitos de {regiao} pedem apoio federal.",
+  "onlyScenarios": ["brasil_2027_01_v080"],
+  "replaces": ["enchentes_metropole"],
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [],
+    "probability": 0.6,
+    "cooldownMonths": 12,
+    "maxOccurrences": 3,
+    "climate": { "kind": "flood", "threshold": 0.25 }
+  },
+  "onFire": [],
+  "choices": [
+    {
+      "id": "credito_extraordinario",
+      "label": "Crédito extraordinário",
+      "description": "Acelera a reconstrução em {uf} e melhora a aprovação, mas abre despesa fora do limite do orçamento e arranha a credibilidade.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.extraordinario",
+          "delta": 0.002,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "label": "Crédito extraordinário às enchentes",
+          "atLocation": true
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.012,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "regiao.aprovacao",
+          "delta": 0.015,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "label": "Crédito extraordinário às enchentes",
+          "atLocation": true
+        },
+        {
+          "target": "credibilidade",
+          "delta": -0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 6,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "atLocation": true
+        }
+      ]
+    },
+    {
+      "id": "mutirao_reconstrucao",
+      "label": "Mutirão federal de reconstrução",
+      "description": "Manda equipes e obras para refazer moradias e vias em {uf}: reanima a atividade local e agrada a população, mas ocupa a agenda e pesa no investimento por meses.",
+      "agendaCost": 2,
+      "effects": [
+        {
+          "target": "gasto.investimento",
+          "delta": 0.0015,
+          "lagMonths": 0,
+          "durationMonths": 9,
+          "label": "Mutirão de reconstrução",
+          "atLocation": true
+        },
+        {
+          "target": "regiao.atividade",
+          "delta": 0.004,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "label": "Mutirão de reconstrução",
+          "atLocation": true
+        },
+        {
+          "target": "regiao.aprovacao",
+          "delta": 0.018,
+          "lagMonths": 0,
+          "durationMonths": 4,
+          "label": "Mutirão de reconstrução",
+          "atLocation": true
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.008,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 8,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "atLocation": true
+        }
+      ]
+    },
+    {
+      "id": "defesa_civil",
+      "label": "Acionar a Defesa Civil",
+      "description": "Atende com recursos já previstos e reforça a responsabilidade institucional, mas a resposta é lenta e a aprovação sofre em {uf}.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": -0.008,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "regiao.aprovacao",
+          "delta": -0.015,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "label": "Resposta lenta às enchentes",
+          "atLocation": true
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "defesa_civil",
+  "dataStatus": "FICTICIO"
+}
