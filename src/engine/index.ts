@@ -151,6 +151,22 @@ export {
   seasonOf,
 } from './climate/climate';
 export {
+  CLIMATE_CAUSES,
+  climateDamageOf,
+  climateMoodTerms,
+  climateRegionalEffects,
+  floodRisk,
+  floodVulnerabilities,
+  type ClimateDamage,
+} from './climate/effects';
+export {
+  CLIMATE_DRAWS_PER_MONTH,
+  climateEvolutionStep,
+  evolveClimate,
+  nextDryness,
+  waterVulnerability,
+} from './climate/evolution';
+export {
   AGENDA_ACTIONS_PER_MONTH,
   createInitialState,
   currentNominalGdpMillions,

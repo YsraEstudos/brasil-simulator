@@ -1,4 +1,5 @@
 import { TERM_MONTHS } from '../calendar';
+import { climateMoodTerms } from '../climate/effects';
 import { activeImpulses } from '../impulses';
 import { populationShares, regionsOf } from '../regions/regions';
 import type { Contribution, GameState, MonthStep } from '../types';
@@ -73,6 +74,12 @@ export const opinionStep: MonthStep = (state, ctx) => {
     label: 'Distância do eleitor médio',
     delta: adj * medianTerm,
   });
+
+  // Humor por chuva acima do normal e seca prolongada (PLANO_GLOBO.md §6.2): o nível nacional é a média dos termos das
+  // UFs ponderada pela população, somada uma vez aqui; o `regionsStep` só a redistribui (D7). Pequeno e saturado.
+  for (const term of climateMoodTerms(state, ctx.content, populationShares(ufs))) {
+    candidates.push({ indicator: 'approval', cause: term.cause, label: term.label, delta: adj * term.delta });
+  }
 
   for (const impulse of activeImpulses(state.impulses, t, ['aprovacao'])) {
     candidates.push({

@@ -48,7 +48,7 @@ const FALLBACK_SEED = 0;
  * (`seed`, presente em todo estado desde a v1) com o sal estável do clima (`initialClimate`): assim um save
  * atualizado tem exatamente o mesmo clima de uma campanha nova da mesma semente, e a migração é determinística e
  * não depende do cenário nem do PRNG principal (`rng` fica intacto). Sem `seed` inteiro (não ocorre em saves
- * reais), usa-se 0. Nenhuma etapa lê o clima antes do PR 8, então a simulação do save é idêntica.
+ * reais), usa-se 0. A partir do PR 8 o clima evolui e age, então o save atualizado deixa de jogar como antes (o clima nasce neutro e passa a mexer na economia).
  */
 function v10ToV11(s: Raw): Raw {
   const seed = typeof s.seed === 'number' && Number.isInteger(s.seed) ? s.seed : FALLBACK_SEED;

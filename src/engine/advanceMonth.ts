@@ -2,6 +2,7 @@ import { actionKey, AGENDA_ACTIONS } from './actions';
 import { validateActionTarget } from './agenda';
 import { electionsStep, governorTurnoverStep } from './elections/elections';
 import { isNovoBeneficio, vedacaoAtiva } from './elections/vedacao';
+import { climateEvolutionStep } from './climate/evolution';
 import { cabinetStep } from './congress/cabinet';
 import { congressStep } from './congress/congress';
 import { economyStep } from './economy/economy';
@@ -34,8 +35,8 @@ import {
 /**
  * Etapas do mês, na ordem do pipeline (ECONOMIC_MODEL.md §4): respostas a eventos, nomeações de ministros,
  * propostas e Congresso (negociação, votações, sanção, execução), relações com os blocos, perfil ideológico do
- * governo (PLANO_GLOBO.md §5.1), economia, opinião
- * pública, eleições (FASE_08.md), distribuição às UFs (ECONOMIC_MODEL.md §5.15), posse dos governadores
+ * governo (PLANO_GLOBO.md §5.1), clima (PLANO_GLOBO.md §6.2: dano agregado antes da economia), economia, opinião
+ * pública, eleições (FASE_08.md), distribuição às UFs (ECONOMIC_MODEL.md §5.15; o efeito regional do clima entra aqui), posse dos governadores
  * eleitos e, por fim, sorteio dos eventos que chegam à caixa de entrada do mês seguinte.
  *
  * Contrato de ordem eleitoral (revisão do PR #9): `electionsStep` roda ANTES de `regionsStep` (a contribuição
@@ -49,6 +50,7 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
   congressStep,
   publicPoliciesStep,
   governmentProfileStep,
+  climateEvolutionStep,
   economyStep,
   societyStep,
   opinionStep,
