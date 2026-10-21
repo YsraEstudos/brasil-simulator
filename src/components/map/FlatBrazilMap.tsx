@@ -9,13 +9,22 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import Svg, { Circle, Defs, G, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, G, Line, Path, Pattern, RadialGradient, Stop } from 'react-native-svg';
 
 import type { LabelViewport, Rect } from '@/globe/labels';
 import { findUf } from '@/globe/ufs';
 import type { SunState } from '@/globe/visualClock';
 
 import { layoutFlatLabels } from './flatLabels';
+import {
+  CLOUD_ICON_PATH,
+  cloudIconPlacements,
+  HATCH_PATTERN_ID,
+  HATCH_STROKE_OPACITY,
+  HATCH_STROKE_WIDTH,
+  HATCH_TILE,
+  hatchedPaths,
+} from './flatClimate';
 import { flatMap, type FlatUf } from './flatProjection';
 import { flatSunFor, LIGHT_COLOR, SHADOW_COLOR, SHADOW_OVER_FILL } from './flatSun';
 import type { RegionalMapViewModel } from './regionalMapViewModel';
@@ -65,6 +74,9 @@ export interface FlatBrazilMapProps {
 const FLAT = flatMap();
 const VIEWBOX = `0 0 ${FLAT.viewBox.width} ${FLAT.viewBox.height}`;
 const CITY_GLOW_ID = 'cityGlow';
+/** Ícone de nuvem da chuva acima do normal: branco com contorno escuro, legível sobre qualquer cor de camada. */
+const CLOUD_ICON_FILL = '#ffffff';
+const CLOUD_ICON_STROKE = '#10141c';
 
 interface UfPathProps {
   uf: FlatUf;
@@ -190,6 +202,17 @@ export function FlatBrazilMap({
 
   const selected = viewModel.selectedId ? FLAT.ufs.find((u) => u.sigla === viewModel.selectedId) : undefined;
 
+  // Clima (só no 2D completo): hachura nas UFs em seca forte ou chuva forte e um ícone de nuvem por UF com chuva acima do
+  // normal. Estático: refeito só quando o modelo muda (nada anima).
+  const hatched = useMemo(
+    () => (variant === 'full' ? hatchedPaths(viewModel.climate.hatched) : []),
+    [variant, viewModel.climate.hatched],
+  );
+  const cloudIcons = useMemo(
+    () => (variant === 'full' ? cloudIconPlacements(viewModel.climate.clouds) : []),
+    [variant, viewModel.climate.clouds],
+  );
+
   // Um só toque para o mapa todo: o ponto volta para lon/lat e `findUf` acha a UF (o mesmo teste do globo). O
   // `onPress` por `<Path>` não funciona na web (o react-native-svg repassa os handlers de toque ao DOM).
   const onPress = (event: GestureResponderEvent) => {
@@ -219,6 +242,31 @@ export function FlatBrazilMap({
         {FLAT.ufs.map((uf) => (
           <UfPath key={uf.sigla} uf={uf} fill={viewModel.fills[uf.sigla] ?? LAND} />
         ))}
+        {hatched.length > 0 && (
+          <G pointerEvents="none">
+            <Defs>
+              <Pattern
+                id={HATCH_PATTERN_ID}
+                patternUnits="userSpaceOnUse"
+                width={HATCH_TILE}
+                height={HATCH_TILE}
+                patternTransform="rotate(45)">
+                <Line
+                  x1={0}
+                  y1={0}
+                  x2={0}
+                  y2={HATCH_TILE}
+                  stroke="#ffffff"
+                  strokeOpacity={HATCH_STROKE_OPACITY}
+                  strokeWidth={HATCH_STROKE_WIDTH}
+                />
+              </Pattern>
+            </Defs>
+            {hatched.map((h) => (
+              <Path key={h.sigla} d={h.d} fill={`url(#${HATCH_PATTERN_ID})`} />
+            ))}
+          </G>
+        )}
         {night && (
           <G pointerEvents="none">
             {night.bands.map((band, i) => (
@@ -240,6 +288,22 @@ export function FlatBrazilMap({
                 fill={`url(#${CITY_GLOW_ID})`}
                 opacity={light.opacity}
               />
+            ))}
+          </G>
+        )}
+        {cloudIcons.length > 0 && (
+          <G pointerEvents="none">
+            {cloudIcons.map((icon) => (
+              <G key={icon.sigla} transform={`translate(${icon.x} ${icon.y}) scale(${icon.scale})`}>
+                <Path
+                  d={CLOUD_ICON_PATH}
+                  fill={CLOUD_ICON_FILL}
+                  fillOpacity={0.92}
+                  stroke={CLOUD_ICON_STROKE}
+                  strokeWidth={1.4}
+                  strokeLinejoin="round"
+                />
+              </G>
             ))}
           </G>
         )}

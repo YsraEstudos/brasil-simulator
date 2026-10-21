@@ -63,6 +63,7 @@
     "build:globe": "python scripts/data/build_globe.py",
     "build:labels": "python scripts/data/build_labels.py",
     "build:cities": "python scripts/data/build_cities.py",
+    "build:globe-climate": "python scripts/data/build_globe_climate.py",
     "build:climate": "python scripts/data/build_climatology.py",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

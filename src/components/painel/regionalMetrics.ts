@@ -1,6 +1,7 @@
 import { formatNumber, formatPercent, formatPointsDelta } from '@/components/ui/format';
 import {
   alignmentView,
+  CLIMATE_CAUSES,
   hasLean,
   populationShares,
   regionsOf,
@@ -8,6 +9,7 @@ import {
   type GameContent,
   type GameState,
   type RegionalPiece,
+  type UfClimate,
   type UfExplanation,
   type UfState,
 } from '@/engine';
@@ -17,7 +19,8 @@ import {
  * valor por UF, faixa de cor, texto e a explicação "Por que esta UF está diferente da média?".
  */
 
-export type MapIndicator = 'crescimento' | 'desemprego' | 'aprovacao' | 'renda' | 'governador' | 'alinhamento';
+export type MapIndicator =
+  'crescimento' | 'desemprego' | 'aprovacao' | 'renda' | 'governador' | 'alinhamento' | 'chuva' | 'seca';
 
 export interface MapIndicatorSpec {
   id: MapIndicator;
@@ -29,7 +32,22 @@ export interface MapIndicatorSpec {
   /** Meia-largura da faixa central (cinza) e passo das faixas, na unidade do valor. */
   step: number;
   legend: string;
+  /** Cores próprias da camada (as 5 faixas); sem elas valem `DIVERGING` ou `SEQUENTIAL`, conforme a escala. */
+  palette?: readonly string[];
+  /** Limites das 4 divisas das faixas de uma escala sequencial; sem eles valem os da renda relativa. */
+  edges?: readonly number[];
 }
+
+/**
+ * Cores da chuva: divergente marrom (mais seco que a normal) ↔ azul (mais chuvoso), cinza no meio. O marrom não se
+ * confunde com o vermelho de "pior" das outras camadas, porque aqui nenhum lado é bom ou ruim em si (seca e cheia
+ * pesam nos dois sentidos).
+ */
+export const RAIN_PALETTE = ['#a9632c', '#d9a26a', '#9a9893', '#86b6ef', '#3987e5'] as const;
+/** Cores da seca: sequencial do cinza-escuro (sem seca) à palha clara (seca severa), a família do tom da seca no globo. */
+export const DRYNESS_PALETTE = ['#3b3a34', '#6f5f33', '#a47f35', '#d3a63e', '#f2d27a'] as const;
+/** Faixas da seca: sem (< 10%), leve, moderada, forte e severa (≥ 75%). */
+export const DRYNESS_EDGES = [0.1, 0.25, 0.5, 0.75] as const;
 
 export const MAP_INDICATORS: readonly MapIndicatorSpec[] = [
   {
@@ -80,6 +98,26 @@ export const MAP_INDICATORS: readonly MapIndicatorSpec[] = [
     step: 0.005,
     legend: 'Alinhamento do estado com o perfil do governo, em aprovação a mais ou a menos que a média (estimativa)',
   },
+  {
+    id: 'chuva',
+    label: 'Chuva',
+    scale: 'diverging',
+    goodWhen: 'up',
+    // Menos de 5% da normal é "normal"; a faixa forte começa em ±15%, onde o globo já desenha chuva forte (HEAVY_RAIN_FROM).
+    step: 0.05,
+    legend: 'Chuva do mês comparada à normal do estado (marrom = mais seco, azul = mais chuvoso)',
+    palette: RAIN_PALETTE,
+  },
+  {
+    id: 'seca',
+    label: 'Seca',
+    scale: 'sequential',
+    goodWhen: 'down',
+    step: 0.25,
+    legend: 'Índice de seca: falta de água acumulada no solo e nos reservatórios (0 a 100%)',
+    palette: DRYNESS_PALETTE,
+    edges: DRYNESS_EDGES,
+  },
 ];
 
 /**
@@ -114,6 +152,7 @@ export function ufValue(
   state: GameState,
   populationShare: number,
   alignmentDeviation = 0,
+  climate?: Pick<UfClimate, 'rain' | 'dryness'>,
 ): number {
   switch (id) {
     case 'crescimento':
@@ -128,14 +167,25 @@ export function ufValue(
       return uf.governorRelation;
     case 'alinhamento':
       return alignmentDeviation;
+    case 'chuva':
+      return climate?.rain ?? 0;
+    case 'seca':
+      return climate?.dryness ?? 0;
   }
+}
+
+const RENT_EDGES = [0.5, 0.75, 1, 1.5] as const;
+
+/** Paleta das 5 faixas da camada. */
+export function paletteOf(spec: MapIndicatorSpec): readonly string[] {
+  return spec.palette ?? (spec.scale === 'sequential' ? SEQUENTIAL : DIVERGING);
 }
 
 /** Índice da faixa de cor (0 … 4). Divergente: 2 = na média; 0 e 4 = longe dela (vermelho = pior). */
 export function bin(spec: MapIndicatorSpec, value: number): number {
   if (spec.scale === 'sequential') {
-    // Renda relativa: < 0,5 | 0,5–0,75 | 0,75–1 | 1–1,5 | > 1,5 da média nacional
-    const edges = [0.5, 0.75, 1, 1.5];
+    // Renda relativa: < 0,5 | 0,5–0,75 | 0,75–1 | 1–1,5 | > 1,5 da média nacional (a seca traz as suas faixas)
+    const edges = spec.edges ?? RENT_EDGES;
     return edges.filter((e) => value >= e).length;
   }
   const signed = spec.goodWhen === 'up' ? value : -value;
@@ -145,15 +195,17 @@ export function bin(spec: MapIndicatorSpec, value: number): number {
 }
 
 export function binColor(spec: MapIndicatorSpec, index: number): string {
-  return (spec.scale === 'sequential' ? SEQUENTIAL : DIVERGING)[index];
+  return paletteOf(spec)[index];
 }
 
 /** Rótulos das faixas da legenda, da primeira à última cor. */
 export function legendLabels(spec: MapIndicatorSpec): string[] {
+  if (spec.id === 'seca') return ['sem seca', 'leve', 'moderada', 'forte', 'severa'];
   if (spec.scale === 'sequential') return ['< 0,5', '0,5–0,75', '0,75–1', '1–1,5', '> 1,5'];
   const worse = spec.goodWhen === 'up' ? 'abaixo' : 'acima';
   const better = spec.goodWhen === 'up' ? 'acima' : 'abaixo';
   if (spec.id === 'governador') return ['hostil', 'distante', 'neutro', 'próximo', 'aliado'];
+  if (spec.id === 'chuva') return ['bem mais seco', 'mais seco', 'normal', 'mais chuvoso', 'bem mais chuvoso'];
   if (spec.id === 'alinhamento') return ['bem distante', 'distante', 'na média', 'alinhado', 'bem alinhado'];
   return [`bem ${worse}`, worse, 'na média', better, `bem ${better}`];
 }
@@ -170,6 +222,11 @@ export function formatValue(id: MapIndicator, value: number): string {
       return formatNumber(value, 2);
     case 'governador':
       return `${value > 0 ? '+' : ''}${formatNumber(value, 0)}`;
+    case 'chuva':
+      // Percentual da normal do mês, com sinal: +25% = chove um quarto a mais que o normal.
+      return `${value > 0 ? '+' : ''}${formatPercent(value, 0)}`;
+    case 'seca':
+      return formatPercent(value, 0);
   }
 }
 
@@ -191,8 +248,9 @@ export function mapRows(id: MapIndicator, state: GameState, content: GameContent
   const deviations = new Map<string, number>(
     id === 'alinhamento' ? (alignmentView(state, content)?.ufs ?? []).map((a) => [a.id, a.approvalDeviation]) : [],
   );
+  const climate = new Map(state.climate.ufs.map((c) => [c.id, c]));
   return regionsView(state, content).map((uf, i) => {
-    const value = ufValue(id, uf, state, pop[i], deviations.get(uf.id) ?? 0);
+    const value = ufValue(id, uf, state, pop[i], deviations.get(uf.id) ?? 0, climate.get(uf.id));
     return {
       uf,
       name: scenarioUfs[i].name,
@@ -226,7 +284,11 @@ export function explanationFor(id: MapIndicator, explanation: UfExplanation | un
       ? explanation.unemployment
       : id === 'aprovacao' || id === 'governador' || id === 'alinhamento'
         ? explanation.approval
-        : explanation.activity;
+        : id === 'chuva'
+          ? explanation.approval.filter((p) => p.cause === CLIMATE_CAUSES.rainMood)
+          : id === 'seca'
+            ? explanation.activity.filter((p) => p.cause === CLIMATE_CAUSES.drought)
+            : explanation.activity;
   const sorted = [...pieces].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
   const top = sorted.slice(0, MAX_PIECES - 1).filter((p) => Math.abs(p.delta) >= MIN_SHOWN);
   const rest = sorted.slice(top.length).reduce((s, p) => s + p.delta, 0);
@@ -236,7 +298,7 @@ export function explanationFor(id: MapIndicator, explanation: UfExplanation | un
 
 /** Texto de uma parcela: p.p. para desemprego e aprovação, % para a atividade. */
 export function formatPiece(id: MapIndicator, delta: number): string {
-  if (id === 'desemprego' || id === 'aprovacao' || id === 'governador' || id === 'alinhamento') {
+  if (id === 'desemprego' || id === 'aprovacao' || id === 'governador' || id === 'alinhamento' || id === 'chuva') {
     return formatPointsDelta(delta);
   }
   return `${delta > 0 ? '+' : ''}${formatPercent(delta)}`;

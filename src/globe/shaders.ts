@@ -4,6 +4,12 @@ import { QuadKind } from './labelQuads';
 import { LIGHTS_FULL_BELOW, LIGHTS_OFF_ABOVE, NIGHT_FLOOR, TERMINATOR_FROM, TERMINATOR_TO } from './visualClock';
 
 const f = (n: number) => n.toFixed(6);
+const DEG = Math.PI / 180;
+
+/** Quanto da cor vai para a palha com seca máxima (1): o relevo e a hidrografia continuam legíveis. */
+const DROUGHT_STRENGTH = 0.62;
+/** Faixa (fração da caixa) em que a calota de nuvens esmaece nas bordas. */
+const CLOUD_EDGE_FADE = 0.07;
 
 /** Sombreamento suave de "luz de câmera", igual no globo e nos tiles para não haver emenda. */
 const SHADE = /* glsl */ `
@@ -30,6 +36,16 @@ float sunLight(float ndl) {
   return ${f(NIGHT_FLOOR)} + ${f(1 - NIGHT_FLOOR)} * smoothstep(${f(TERMINATOR_FROM)}, ${f(TERMINATOR_TO)}, ndl);
 }`;
 
+/**
+ * Posição na caixa da quadtree (0–1 em lon e lat, v = 0 no sul): as texturas de clima e de água cobrem a mesma caixa
+ * dos tiles. `highp` em coordenadas (PLANO_GLOBO.md §3.2). Mesma expressão no globo e nos tiles, sem emenda.
+ */
+const GEO_BOX = /* glsl */ `
+vec2 geoBox(float lon, float lat) {
+  return vec2((lon - ${f(ROOT.west * DEG)}) / ${f((ROOT.east - ROOT.west) * DEG)},
+              (lat - ${f(ROOT.south * DEG)}) / ${f((ROOT.north - ROOT.south) * DEG)});
+}`;
+
 export const tileVertexShader = /* glsl */ `
 precision highp float;
 precision highp sampler2D;
@@ -39,9 +55,11 @@ uniform vec3 uCell;         // célula do tile no atlas (x, y a partir do topo) 
 uniform float uHeightScale; // exagero / raio da Terra em metros
 uniform float uSkirt;       // profundidade da saia (esconde frestas entre níveis)
 varying vec2 vUv;
+varying vec2 vGeo;
 varying float vShade;
 ${SHADE}
 ${SUN_VERTEX}
+${GEO_BOX}
 void main() {
   vec2 uv = position.xy;   // u para leste, v para sul
   float lon = mix(uBounds.x, uBounds.z, uv.x);
@@ -56,9 +74,28 @@ void main() {
   vec3 dir = vec3(cl * cos(lon), sin(lat), -cl * sin(lon));
   vec3 p = dir * (1.0 + max(h, 0.0) * uHeightScale - position.z * uSkirt);
   vUv = vec2((uCell.x + uv.x) / uCell.z, 1.0 - (uCell.y + uv.y) / uCell.z);
+  vGeo = geoBox(lon, lat);
   vShade = viewShade(dir, p);
   vSun = sunDot(dir);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}`;
+
+/**
+ * Seca (PLANO_GLOBO.md §4.2): puxa a cor para palha/ocre pela seca da textura de clima (canal G), **só onde a máscara
+ * de água diz terra** e preservando a luminância (o relevo sombreado continua legível). `uDrought` é 0 com clima neutro
+ * e o bloco inteiro é pulado (nenhuma leitura de textura): nenhuma mudança visual sem seca.
+ */
+const DROUGHT_FRAGMENT = /* glsl */ `
+uniform highp sampler2D uClimate; // R nuvem, G seca, B chuva forte (128²)
+uniform highp sampler2D uWater;   // R = 1 em água (mar, lagos) e fora do Brasil (256²)
+uniform float uDrought;           // 0 = sem seca em lugar nenhum
+varying highp vec2 vGeo;
+vec3 droughtTint(vec3 color) {
+  if (uDrought < 0.5) return color;
+  float k = texture2D(uClimate, vGeo).g * (1.0 - texture2D(uWater, vGeo).r);
+  float luma = dot(color, vec3(0.299, 0.587, 0.114));
+  vec3 straw = vec3(0.80, 0.66, 0.36) * (0.45 + 0.85 * luma);
+  return mix(color, straw, k * ${f(DROUGHT_STRENGTH)});
 }`;
 
 export const tileFragmentShader = /* glsl */ `
@@ -67,8 +104,10 @@ uniform sampler2D uColor;
 varying vec2 vUv;
 varying float vShade;
 ${SUN_FRAGMENT}
+${DROUGHT_FRAGMENT}
 void main() {
-  gl_FragColor = vec4(texture2D(uColor, vUv).rgb * (vShade * sunLight(vSun)), 1.0);
+  vec3 color = droughtTint(texture2D(uColor, vUv).rgb);
+  gl_FragColor = vec4(color * (vShade * sunLight(vSun)), 1.0);
 }`;
 
 export const globeVertexShader = /* glsl */ `
@@ -133,6 +172,44 @@ void main() {
   float d = length(gl_PointCoord - 0.5) * 2.0; // 0 no centro, 1 na borda
   float glow = pow(clamp(1.0 - d, 0.0, 1.0), 1.3);
   gl_FragColor = vec4(vec3(1.0, 0.82, 0.48), glow * vAlpha);
+}`;
+
+/**
+ * Nuvens (PLANO_GLOBO.md §4.2): uma calota 32×32 sobre a caixa do Brasil, uma chamada de desenho. A cobertura vem da
+ * textura de clima (R; B = chuva forte: mais densa e mais cinza) e a forma, de duas leituras do ruído pré-gerado
+ * (R8 256², ladrilhável), a segunda em outra escala e deslocada. O ruído anda por `uDrift` (parado, exceto no Alto) e a
+ * borda da caixa esmaece para a calota não aparecer. A luz do Sol é a mesma `sunLight` do globo e dos tiles.
+ */
+export const cloudVertexShader = /* glsl */ `
+precision highp float;
+varying vec2 vGeo;
+${SUN_VERTEX}
+void main() {
+  vGeo = uv;
+  vSun = sunDot(normalize(position));
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+
+export const cloudFragmentShader = /* glsl */ `
+precision highp float;
+uniform highp sampler2D uClimate;
+uniform highp sampler2D uNoise;
+uniform vec2 uDrift;     // deslocamento do ruído, em repetições
+uniform float uTiles;    // repetições do ruído sobre a caixa
+uniform float uOpacity;  // 0–1: zoom e mapa de calor
+varying vec2 vGeo;
+${SUN_FRAGMENT}
+void main() {
+  vec4 climate = texture2D(uClimate, vGeo);
+  vec2 p = vGeo * uTiles + uDrift;
+  float n = 0.62 * texture2D(uNoise, p).r + 0.38 * texture2D(uNoise, p * 2.7 + vec2(0.31, 0.57) - uDrift * 0.6).r;
+  float threshold = mix(0.80, 0.50, climate.r) - 0.20 * climate.b;
+  float density = smoothstep(threshold, threshold + 0.20, n);
+  vec2 edge = smoothstep(0.0, ${f(CLOUD_EDGE_FADE)}, vGeo) * smoothstep(0.0, ${f(CLOUD_EDGE_FADE)}, 1.0 - vGeo);
+  float alpha = density * edge.x * edge.y * uOpacity * 0.85;
+  if (alpha < 0.01) discard;
+  vec3 color = mix(vec3(0.95, 0.97, 1.0), vec3(0.50, 0.54, 0.60), climate.b * 0.85);
+  gl_FragColor = vec4(color * sunLight(vSun), alpha);
 }`;
 
 export const atmosphereVertexShader = /* glsl */ `

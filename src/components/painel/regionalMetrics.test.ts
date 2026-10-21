@@ -16,6 +16,10 @@ import {
   mapFills,
   mapRows,
   MAX_PIECES,
+  paletteOf,
+  formatPiece,
+  DRYNESS_PALETTE,
+  RAIN_PALETTE,
   SEQUENTIAL,
 } from './regionalMetrics';
 
@@ -29,7 +33,7 @@ describe('mapa da federação', () => {
     for (const m of MAP_INDICATORS) {
       const rows = mapRows(m.id, state, content);
       expect(rows).toHaveLength(27);
-      const palette: readonly string[] = m.scale === 'sequential' ? SEQUENTIAL : DIVERGING;
+      const palette = paletteOf(m);
       for (const r of rows) expect(palette).toContain(r.color);
       expect(Object.keys(mapFills(rows))).toHaveLength(27);
     }
@@ -116,5 +120,118 @@ describe('camada Alinhamento (PLANO_GLOBO.md §5.2)', () => {
     const antigo = loadContent('brasil_2027_01_v070');
     expect(availableIndicators(antigo).map((m) => m.id)).not.toContain('alinhamento');
     expect(availableIndicators(antigo)).toHaveLength(MAP_INDICATORS.length - 1);
+  });
+});
+
+describe('camadas Chuva e Seca (PLANO_GLOBO.md §4.2)', () => {
+  /** Estado com o clima dado por UF (`rain`, `dryness`); as demais ficam neutras. */
+  function withClimate(over: Record<string, { rain?: number; dryness?: number }>) {
+    return {
+      ...state,
+      climate: {
+        ...state.climate,
+        ufs: state.climate.ufs.map((u) => ({ ...u, ...over[u.id] })),
+      },
+    };
+  }
+  const wet = withClimate({
+    BA: { rain: -0.4, dryness: 0.9 },
+    PI: { rain: -0.08, dryness: 0.6 },
+    CE: { rain: 0.02, dryness: 0.3 },
+    SP: { rain: 0.1, dryness: 0.12 },
+    RS: { rain: 0.5, dryness: 0 },
+  });
+  const rain = (id: string) => mapRows('chuva', wet, content).find((r) => r.uf.id === id)!;
+  const dry = (id: string) => mapRows('seca', wet, content).find((r) => r.uf.id === id)!;
+
+  it('estão no seletor com escala, paleta e legenda de cinco faixas', () => {
+    expect(availableIndicators(content).map((m) => m.id)).toEqual(expect.arrayContaining(['chuva', 'seca']));
+    expect(indicatorSpec('chuva').scale).toBe('diverging');
+    expect(indicatorSpec('seca').scale).toBe('sequential');
+    for (const id of ['chuva', 'seca'] as const) {
+      const spec = indicatorSpec(id);
+      expect(paletteOf(spec)).toHaveLength(5);
+      expect(legendLabels(spec)).toHaveLength(5);
+    }
+    expect(paletteOf(indicatorSpec('chuva'))).toEqual([...RAIN_PALETTE]);
+    expect(paletteOf(indicatorSpec('seca'))).toEqual([...DRYNESS_PALETTE]);
+  });
+
+  it('o valor da UF é a anomalia de chuva e o índice de seca do estado do jogo', () => {
+    expect(rain('BA').value).toBe(-0.4);
+    expect(rain('RS').value).toBe(0.5);
+    expect(dry('BA').value).toBe(0.9);
+    expect(dry('RS').value).toBe(0);
+    // clima neutro: chuva 0 (na normal) e seca 0 (sem seca) em todas as UFs
+    for (const r of mapRows('chuva', state, content)) expect(r.value).toBe(0);
+    for (const r of mapRows('seca', state, content)) expect(r.value).toBe(0);
+  });
+
+  it('chuva: marrom = mais seco que a normal, azul = mais chuvoso, cinza = na normal', () => {
+    const spec = indicatorSpec('chuva');
+    expect(rain('BA').color).toBe(RAIN_PALETTE[0]); // −40%: bem mais seco
+    expect(rain('PI').color).toBe(RAIN_PALETTE[1]); // −8%: mais seco
+    expect(rain('CE').color).toBe(RAIN_PALETTE[2]); // +2%: normal
+    expect(rain('SP').color).toBe(RAIN_PALETTE[3]); // +10%: mais chuvoso
+    expect(rain('RS').color).toBe(RAIN_PALETTE[4]); // +50%: bem mais chuvoso
+    expect(legendLabels(spec)).toEqual(['bem mais seco', 'mais seco', 'normal', 'mais chuvoso', 'bem mais chuvoso']);
+    expect(formatValue('chuva', 0.25)).toBe('+25%');
+    expect(formatValue('chuva', -0.4)).toBe('−40%');
+    expect(formatValue('chuva', 0)).toBe('0%');
+  });
+
+  it('seca: faixas sem / leve / moderada / forte / severa nos limites 10, 25, 50 e 75%', () => {
+    const spec = indicatorSpec('seca');
+    expect([0, 0.09, 0.1, 0.24, 0.25, 0.49, 0.5, 0.74, 0.75, 1].map((v) => bin(spec, v))).toEqual([
+      0, 0, 1, 1, 2, 2, 3, 3, 4, 4,
+    ]);
+    expect(dry('BA').color).toBe(DRYNESS_PALETTE[4]);
+    expect(dry('PI').color).toBe(DRYNESS_PALETTE[3]);
+    expect(dry('CE').color).toBe(DRYNESS_PALETTE[2]);
+    expect(dry('SP').color).toBe(DRYNESS_PALETTE[1]);
+    expect(dry('RS').color).toBe(DRYNESS_PALETTE[0]);
+    expect(legendLabels(spec)).toEqual(['sem seca', 'leve', 'moderada', 'forte', 'severa']);
+    expect(formatValue('seca', 0.9)).toBe('90%');
+  });
+
+  it('a lista ordena a chuva do mais chuvoso ao mais seco e a seca da menos à mais seca', () => {
+    const order = (id: 'chuva' | 'seca') => {
+      const spec = indicatorSpec(id);
+      return [...mapRows(id, wet, content)]
+        .sort((a, b) => (spec.goodWhen === 'up' ? b.value - a.value : a.value - b.value))
+        .map((r) => r.uf.id);
+    };
+    expect(order('chuva')[0]).toBe('RS');
+    expect(order('chuva').at(-1)).toBe('BA');
+    expect(order('seca').at(-1)).toBe('BA');
+    expect(indicatorSpec('seca').goodWhen).toBe('down');
+  });
+
+  it('cada UF tem uma linha e uma cor da paleta própria; os mapas de calor dão 27 cores', () => {
+    for (const id of ['chuva', 'seca'] as const) {
+      const rows = mapRows(id, wet, content);
+      expect(rows).toHaveLength(27);
+      for (const r of rows) expect(paletteOf(indicatorSpec(id))).toContain(r.color);
+      expect(Object.keys(mapFills(rows))).toHaveLength(27);
+    }
+  });
+
+  it('a explicação usa só as causas do clima: chuva no humor (p.p.), seca na atividade (%)', () => {
+    const x: UfExplanation = {
+      id: 'BA',
+      activity: [
+        { cause: 'clima_seca', label: 'Seca', delta: -0.004 },
+        { cause: 'outra', label: 'Outra', delta: 0.01 },
+      ],
+      unemployment: [],
+      approval: [
+        { cause: 'clima_chuvas_humor', label: 'Chuvas acima do normal', delta: -0.003 },
+        { cause: 'outra', label: 'Outra', delta: 0.01 },
+      ],
+    };
+    expect(explanationFor('chuva', x).map((p) => p.cause)).toEqual(['clima_chuvas_humor']);
+    expect(explanationFor('seca', x).map((p) => p.cause)).toEqual(['clima_seca']);
+    expect(formatPiece('chuva', -0.003)).toBe('−0,3 p.p.');
+    expect(formatPiece('seca', -0.004)).toBe('−0,4%');
   });
 });

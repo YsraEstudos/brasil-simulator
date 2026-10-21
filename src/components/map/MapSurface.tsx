@@ -4,6 +4,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import type { GlobeApi, GlobeQuality, GlobeViewProps } from '@/globe/GlobeView';
 import { labelScale, type LabelViewport, type Rect } from '@/globe/labels';
 import { deviceUtc } from '@/globe/deviceClock';
+import type { ClimateMapData } from '@/globe/climateTexture';
 import type { ProfileRenderer } from '@/globe/qualityProfiles';
 import { computeSun, type SkyInput, type SunState } from '@/globe/visualClock';
 import { useGame } from '@/store';
@@ -41,6 +42,10 @@ export interface MapSurfaceProps {
    * desenha a sombra do terminador e as luzes; o 2D leve não mostra nada. Padrão do globo: tarde, janeiro.
    */
   sky?: SkyInput;
+  /** Clima do mês para o globo (seca nos tiles e nuvens). O mapa 2D usa `viewModel.climate`. */
+  climate?: ClimateMapData | null;
+  /** "Nuvens" de Configurações: no globo liga a malha das nuvens (o perfil ainda manda); o 2D esconde os ícones via `viewModel`. */
+  clouds?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -132,6 +137,8 @@ export function MapSurface({
   labelInsets,
   quality,
   sky,
+  climate,
+  clouds,
   style,
 }: MapSurfaceProps) {
   // O mesmo ajuste de texto do aplicativo vale para as siglas do globo e do mapa 2D.
@@ -168,6 +175,8 @@ export function MapSurface({
         labelScale={scale}
         quality={quality}
         sky={sky}
+        climate={climate}
+        clouds={clouds}
       />
     </GlobeBoundary>
   );

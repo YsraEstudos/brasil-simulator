@@ -67,11 +67,14 @@ export const SERIES_METRICS: Record<'aprovacao' | 'desemprego' | 'crescimento' |
 };
 
 /**
- * Série do indicador do mapa; "renda" (derivada da participação no PIB) e "alinhamento" (já contido na aprovação,
- * que é o que o motor grava) não têm série própria e usam a aprovação.
+ * Série do indicador do mapa; "renda" (derivada da participação no PIB), "alinhamento", "chuva" e "seca" (já contidos
+ * na aprovação, que é o que o motor grava; o clima não tem série regional gravada) não têm série própria e usam a
+ * aprovação.
  */
 export function seriesMetricFor(indicator: MapIndicator): SeriesMetricSpec {
-  return indicator === 'renda' || indicator === 'alinhamento' ? SERIES_METRICS.aprovacao : SERIES_METRICS[indicator];
+  return indicator === 'renda' || indicator === 'alinhamento' || indicator === 'chuva' || indicator === 'seca'
+    ? SERIES_METRICS.aprovacao
+    : SERIES_METRICS[indicator];
 }
 
 export type ComparisonTone = 'positive' | 'negative' | 'neutral';

@@ -89,6 +89,16 @@ Pipeline: `npm run build:labels` (`scripts/data/build_labels.py`; lê `src/globe
 
 Pipeline: `npm run build:cities` (`scripts/data/build_cities.py`; lê `src/globe/data/ufs.json`, gerado antes por `build_globe.py`). Determinístico. A textura de luzes noturnas (NASA Black Marble, domínio público) citada no plano para o perfil Alto **não** foi adotada neste PR.
 
+### 3.4 Rasters do clima no globo (PR 10 do PLANO_GLOBO, 21/10/2026)
+
+| Dado | Fonte | Uso | Status / licença |
+| --- | --- | --- | --- |
+| Índice de UF (`src/globe/data/ufIndex.json`, 6,7 KiB): grade 256² (0,1875° ≈ 20 km) sobre a caixa da quadtree, 1 byte por célula (0 = fora do Brasil, 1…27 = `index` de `ufs.json`), RLE | Os mesmos polígonos de UF do IBGE (`data-raw/ibge/uf.geojson`, malha de qualidade máxima) que geram os tiles; amostra central de cada célula (vizinho mais próximo, sem filtro) | Monta, na CPU, a textura de clima 128² uma vez por mês (chuva, seca, nuvem) | Derivado de dado oficial; ID de categoria, nunca interpolado |
+| Máscara de água (`assets/globe/climate/water_mask.png`, 2,8 KiB): L8 256², 255 = água ou fora do Brasil, 0 = terra brasileira, com cobertura fracionária nas bordas | Lagos e represas do Natural Earth (`ne_10m_lakes.geojson`, domínio público) + ausência de UF (mar e países vizinhos) | Seca só tinge terra no sombreador dos tiles. Água **nunca** é detectada por cor | Rios não entram (linhas finas demais para 20 km). Resolução de 20 km: bordas de lago ficam suaves |
+| Ruído das nuvens (`assets/globe/climate/cloud_noise.png`, 23,7 KiB): L8 256², ladrilhável | Gerado pelo script (4 oitavas de ruído branco gaussiano, semente fixa) | Forma das nuvens (2 leituras por pixel da calota) | Sem fonte externa; determinístico |
+
+Pipeline: `npm run build:globe-climate` (`scripts/data/build_globe_climate.py [--raw data-raw]`; lê só os contornos de UF e os lagos, os mesmos insumos de `build_globe.py`, e **não** regera os tiles). Determinístico. Dado só visual: não entra no motor nem no cenário. O clima em si (chuva e seca por UF) é do motor ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.18–5.19).
+
 > **Códigos de séries:** serão levantados e conferidos na Fase 01/03. Nenhum código deve ser usado sem validação da resposta da API, porque séries são descontinuadas ou renumeradas.
 
 ---

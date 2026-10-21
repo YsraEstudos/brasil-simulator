@@ -45,6 +45,7 @@ import {
   type SetupErrors,
   type SetupPrefs,
 } from './campaignSetup';
+import { DEFAULT_MAP_CLOUDS, MAP_CLOUDS_KEY, resolveMapClouds } from './mapClouds';
 import { MAP_DAY_TIME_KEY, resolveDayTime } from './mapDayTime';
 import {
   DEFAULT_MAP_QUALITY,
@@ -101,6 +102,8 @@ export interface GameStoreState {
   autoProfile: Profile3d;
   /** Hora do dia do mapa (fixa / sempre dia / real; Configurações; guardada em `settings`). Só visual. */
   dayTime: DayTimeSetting;
+  /** Nuvens do mapa (sim/não; Configurações; guardada em `settings`). Só visual; o perfil de qualidade pode não as permitir. */
+  mapClouds: boolean;
   /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
   draft: AgendaDraft;
   /** Últimas dificuldade e cenário usados em NOVO JOGO (lidos uma vez no início, gravados após criar). */
@@ -134,6 +137,8 @@ export interface GameStoreState {
   setAutoProfile(profile: Profile3d): Promise<void>;
   /** Escolha da hora do dia do mapa; vale na hora e é gravada. */
   setDayTime(setting: DayTimeSetting): Promise<boolean>;
+  /** Liga ou desliga as nuvens do mapa; vale na hora e é gravada. */
+  setMapClouds(on: boolean): Promise<boolean>;
 }
 
 export interface GameStoreDeps {
@@ -187,6 +192,7 @@ export function createGameStore(deps: GameStoreDeps) {
       mapQuality: DEFAULT_MAP_QUALITY,
       autoProfile: DEFAULT_PROFILE_3D,
       dayTime: DEFAULT_DAY_TIME,
+      mapClouds: DEFAULT_MAP_CLOUDS,
       draft: EMPTY_DRAFT,
       setupPrefs: DEFAULT_SETUP_PREFS,
 
@@ -225,11 +231,18 @@ export function createGameStore(deps: GameStoreDeps) {
           } catch {
             // segue com a hora fixa da tarde
           }
+          let mapClouds = DEFAULT_MAP_CLOUDS;
+          try {
+            mapClouds = resolveMapClouds(await getSetting<unknown>(db, MAP_CLOUDS_KEY, null));
+          } catch {
+            // segue com as nuvens ligadas
+          }
           set({
             textScale,
             mapQuality,
             autoProfile,
             dayTime,
+            mapClouds,
             setupPrefs,
             campaigns: await listCampaigns(db),
             status: 'pronto',
@@ -429,6 +442,12 @@ export function createGameStore(deps: GameStoreDeps) {
         run(async (d) => {
           set({ dayTime: setting });
           await setSetting(d, MAP_DAY_TIME_KEY, setting);
+        }),
+
+      setMapClouds: (on) =>
+        run(async (d) => {
+          set({ mapClouds: on });
+          await setSetting(d, MAP_CLOUDS_KEY, on);
         }),
 
       async setAutoProfile(profile) {

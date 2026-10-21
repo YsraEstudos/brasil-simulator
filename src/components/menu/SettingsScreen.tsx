@@ -10,6 +10,7 @@ import {
   DAY_MODE_OPTIONS,
   FIXED_HOUR_LABELS,
   gameStore,
+  MAP_CLOUDS_DESCRIPTION,
   MAP_QUALITY_AUTO,
   MAP_QUALITY_OPTIONS,
   profileLabel,
@@ -21,7 +22,7 @@ import { enterAt, goBack, SetupHeader } from '../campaign/SetupBits';
 /**
  * CONFIGURAÇÕES (rota `/configuracoes`): ajustes do jogador fora das abas, abertos pelo botão CONFIGURAÇÕES do
  * menu principal: o tamanho do texto (o ajuste que o jogador usa para ler melhor o jogo) e a qualidade do mapa do Painel
- * (Automático ou um perfil fixo; PLANO_GLOBO.md §3.1) e a hora do dia do mapa (fixa / sempre dia / real; §4.1).
+ * (Automático ou um perfil fixo; PLANO_GLOBO.md §3.1) a hora do dia do mapa (fixa / sempre dia / real; §4.1) e as nuvens (sim/não; §4.2).
  */
 export function SettingsScreen() {
   const { colors, textScale, setTextScale } = useTheme();
@@ -29,6 +30,7 @@ export function SettingsScreen() {
   const mapQuality = useGame((s) => s.mapQuality);
   const autoProfile = useGame((s) => s.autoProfile);
   const dayTime = useGame((s) => s.dayTime);
+  const mapClouds = useGame((s) => s.mapClouds);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -125,6 +127,27 @@ export function SettingsScreen() {
             <Text variant="caption" color="textSecondary">
               A estação do ano segue o mês do jogo. Escolha a hora Noite para ver as luzes das cidades. O mapa 2D leve
               não mostra dia e noite.
+            </Text>
+          </Card>
+        </Animated.View>
+
+        <Animated.View entering={enterAt(3)}>
+          <Card title="Nuvens" subtitle="Nuvens sobre o Brasil no mapa do Painel (só visual: não muda a simulação)">
+            <View style={styles.row}>
+              {([true, false] as const).map((on) => (
+                <Button
+                  key={String(on)}
+                  label={on ? 'Sim' : 'Não'}
+                  variant={on === mapClouds ? 'primary' : 'secondary'}
+                  onPress={() => void gameStore.getState().setMapClouds(on)}
+                  accessibilityHint={
+                    on === mapClouds ? 'Escolha atual' : on ? 'Mostrar as nuvens' : 'Esconder as nuvens'
+                  }
+                />
+              ))}
+            </View>
+            <Text variant="caption" color="textSecondary">
+              {MAP_CLOUDS_DESCRIPTION}
             </Text>
           </Card>
         </Animated.View>

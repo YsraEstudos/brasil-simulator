@@ -53,6 +53,8 @@ function whyTitle(indicator: MapIndicator): string {
   if (indicator === 'aprovacao' || indicator === 'governador' || indicator === 'alinhamento') {
     return 'Por que a aprovação difere da média nacional';
   }
+  if (indicator === 'chuva') return 'Como a chuva pesa na aprovação deste estado';
+  if (indicator === 'seca') return 'Como a seca pesa na atividade deste estado';
   return 'Por que a economia está acima ou abaixo da tendência';
 }
 
