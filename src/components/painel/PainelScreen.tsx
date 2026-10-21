@@ -27,7 +27,8 @@ import { indicatorsFromScenario, initialRegions, SANCTION_ACTION_ID, type Decisi
 import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
-import { draftCost, gameStore, useGame, type RegionalPoint } from '@/store';
+import type { Profile3d } from '@/globe/qualityProfiles';
+import { draftCost, gameStore, planMapQuality, useGame, type RegionalPoint } from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
 import { GdpChart } from './GdpChart';
@@ -177,9 +178,20 @@ export function PainelScreen() {
   // Há subtela por cima do Painel? Então o globo não desenha (a pilha mantém o Painel montado por baixo).
   const focused = useIsFocused();
   const globe = useRef<GlobeApi | null>(null);
-  // Preferência do mapa (Configurações). Se o globo falhar a superfície cai sozinha para o 2D só nesta sessão: nada é
-  // gravado, e o aviso aparece uma vez.
-  const mapRenderer = useGame((s) => s.mapRenderer);
+  // Qualidade do mapa (Configurações: Automático ou um perfil). Se o globo falhar a superfície cai sozinha para o 2D só
+  // nesta sessão: nada é gravado, e o aviso aparece uma vez.
+  const mapQuality = useGame((s) => s.mapQuality);
+  const autoProfile = useGame((s) => s.autoProfile);
+  const mapPlan = planMapQuality(mapQuality, autoProfile);
+  const mapRenderer = mapPlan.renderer;
+  const globeQuality = useMemo(
+    () => ({
+      profile: mapPlan.profile3d,
+      auto: mapPlan.auto,
+      onAutoProfile: (profile: Profile3d) => void gameStore.getState().setAutoProfile(profile),
+    }),
+    [mapPlan.profile3d, mapPlan.auto],
+  );
   const [globeFailed, setGlobeFailed] = useState(false);
   const [globeNoticeClosed, setGlobeNoticeClosed] = useState(false);
 
@@ -628,6 +640,7 @@ export function PainelScreen() {
           {/* O mapa é a tela: tudo o mais são camadas por cima. O toque num estado abre o cartão dele. */}
           <MapSurface
             renderer={mapRenderer}
+            quality={globeQuality}
             viewModel={mapModel}
             paused={!focused}
             reservedRects={labelReserve.rects}

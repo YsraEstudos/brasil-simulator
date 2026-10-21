@@ -200,19 +200,50 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     expect((await launchApp()).getState().textScale).toBe(1.3);
   });
 
-  it('o renderizador do mapa começa no globo e a escolha persiste entre aberturas do app', async () => {
+  it('a qualidade do mapa começa no Automático (Equilibrado) e a escolha persiste entre aberturas do app', async () => {
     const { launchApp } = await device();
     const first = await launchApp();
-    expect(first.getState().mapRenderer).toBe('globe');
-    await first.getState().setMapRenderer('flat-light');
-    expect(first.getState().mapRenderer).toBe('flat-light');
-    expect((await launchApp()).getState().mapRenderer).toBe('flat-light');
+    expect(first.getState().mapQuality).toBe('automatico');
+    expect(first.getState().autoProfile).toBe('equilibrado');
+    await first.getState().setMapQuality('essencial-2d-leve');
+    expect(first.getState().mapQuality).toBe('essencial-2d-leve');
+    expect((await launchApp()).getState().mapQuality).toBe('essencial-2d-leve');
   });
 
-  it('preferência do mapa corrompida no banco volta ao globo sem impedir a abertura', async () => {
+  it('o perfil a que o ajuste automático chegou persiste e a escolha manual não o apaga', async () => {
+    const { launchApp } = await device();
+    const first = await launchApp();
+    await first.getState().setAutoProfile('economico-3d');
+    await first.getState().setMapQuality('alto');
+    const second = await launchApp();
+    expect(second.getState().mapQuality).toBe('alto');
+    expect(second.getState().autoProfile).toBe('economico-3d');
+  });
+
+  it('migra a preferência antiga do mapa: globo→Automático, 2D→Essencial 2D, 2D leve→Essencial 2D leve', async () => {
+    const cases = [
+      ['globe', 'automatico'],
+      ['flat', 'essencial-2d'],
+      ['flat-light', 'essencial-2d-leve'],
+    ] as const;
+    for (const [legacy, expected] of cases) {
+      const { db, launchApp } = await device();
+      await setSetting(db, 'mapa_renderizador', legacy);
+      const app = await launchApp();
+      expect(app.getState().mapQuality).toBe(expected);
+      // a escolha migrada passa a viver na chave nova: a antiga não é mais consultada
+      await setSetting(db, 'mapa_renderizador', 'flat');
+      expect((await launchApp()).getState().mapQuality).toBe(expected);
+    }
+  });
+
+  it('preferência de qualidade corrompida no banco volta ao Automático sem impedir a abertura', async () => {
     const { db, launchApp } = await device();
-    await setSetting(db, 'mapa_renderizador', 'holograma');
-    expect((await launchApp()).getState().mapRenderer).toBe('globe');
+    await setSetting(db, 'mapa_qualidade', 'holograma');
+    await setSetting(db, 'mapa_qualidade_auto', 'essencial-2d');
+    const app = await launchApp();
+    expect(app.getState().mapQuality).toBe('automatico');
+    expect(app.getState().autoProfile).toBe('equilibrado');
   });
 
   it('erros de banco viram mensagem, sem derrubar o app', async () => {

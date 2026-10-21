@@ -1,14 +1,16 @@
 import { Canvas, useThree } from './r3f';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AutoQualityMachine } from './autoQuality';
 import { CAMERA } from './config';
 import { GlobeController } from './controller';
 import type { LabelInsets } from './GlobeLabels';
-import { GlobeScene, type SceneStats } from './GlobeScene';
+import { GlobeScene, type SceneFrame, type SceneStats } from './GlobeScene';
 import type { Rect } from './labels';
+import { budgetOf, DEFAULT_PROFILE_3D, type Profile3d } from './qualityProfiles';
 import { findUf, ufBySigla, type Uf } from './ufs';
 
 const BRASIL_VIEW = { lon: -52, lat: -14, altitude: 0.75 };
@@ -20,6 +22,17 @@ export interface GlobeApi {
   flyToUf: (sigla: string) => void;
   reset: () => void;
 }
+
+/** Perfil de qualidade 3D do globo (Configurações → Mapa). */
+export interface GlobeQuality {
+  /** Perfil cujos tetos (cache, LOD, nível, DPR) o globo obedece. Pode mudar com o globo montado. */
+  profile: Profile3d;
+  /** Escolha automática: o globo mede os quadros depois de aquecer e avisa por `onAutoProfile` quando troca de perfil. */
+  auto: boolean;
+  onAutoProfile?: (profile: Profile3d) => void;
+}
+
+const DEFAULT_QUALITY: GlobeQuality = { profile: DEFAULT_PROFILE_3D, auto: false };
 
 export interface GlobeViewProps {
   /** Cor de cada UF no mapa de calor (sigla → hex). */
@@ -40,6 +53,8 @@ export interface GlobeViewProps {
   labelInsets?: LabelInsets;
   /** Tamanho dos rótulos: `labelScale(textScale)`. Padrão 1. */
   labelScale?: number;
+  /** Perfil de qualidade; padrão: Equilibrado fixo (os tetos atuais do globo). */
+  quality?: GlobeQuality;
 }
 
 const NO_RECTS: readonly Rect[] = [];
@@ -63,6 +78,7 @@ export function GlobeView({
   reservedRects = NO_RECTS,
   labelInsets,
   labelScale = 1,
+  quality = DEFAULT_QUALITY,
 }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   const insets = useSafeAreaInsets();
@@ -91,6 +107,32 @@ export function GlobeView({
     // só na montagem: o controlador não muda
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controller]);
+  const budget = budgetOf(quality.profile);
+  // O Canvas nativo (expo-gl) fixa a razão de pixels do aparelho e nem tem a prop `dpr`; o teto do perfil vale na web.
+  const canvasDpr = Platform.OS === 'web' ? { dpr: [1, budget.dprCap] as [number, number] } : undefined;
+
+  // Ajuste automático: a máquina vive fora do React e só avisa quando troca de perfil (nunca `setState` por quadro).
+  // Os valores mais recentes entram por refs; o efeito de atribuição vem antes do que cria a máquina.
+  const latest = useRef(quality);
+  useEffect(() => {
+    latest.current = quality;
+  });
+  const machine = useRef<AutoQualityMachine | null>(null);
+  const autoOn = quality.auto;
+  useEffect(() => {
+    machine.current = autoOn ? new AutoQualityMachine(latest.current.profile) : null;
+    return () => {
+      machine.current = null;
+    };
+  }, [autoOn]);
+  useEffect(() => {
+    if (paused) machine.current?.interrupt(); // o intervalo depois de uma pausa não mede desempenho
+  }, [paused]);
+  const onFrame = useCallback((frame: SceneFrame) => {
+    const change = machine.current?.feed(frame);
+    if (change) latest.current.onAutoProfile?.(change.to);
+  }, []);
+
   const [stats, setStats] = useState<SceneStats | null>(null);
   const container = useRef<ViewInstance>(null);
 
@@ -145,6 +187,7 @@ export function GlobeView({
           <View style={styles.canvas} pointerEvents={Platform.OS === 'web' ? 'auto' : 'none'}>
             <Canvas
               frameloop={paused ? 'never' : 'demand'}
+              {...canvasDpr}
               flat
               linear
               camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}>
@@ -157,6 +200,8 @@ export function GlobeView({
                 reservedRects={reservedRects}
                 labelInsets={sceneInsets}
                 labelScale={labelScale}
+                budget={budget}
+                onFrame={autoOn ? onFrame : undefined}
               />
             </Canvas>
           </View>

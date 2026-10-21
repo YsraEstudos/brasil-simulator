@@ -3,8 +3,11 @@ import { Platform } from 'react-native';
 import * as THREE from 'three';
 
 import { blockOf, pickEvictions } from './cache';
-import { MAX_CONCURRENT_LOADS, TILE_CACHE_BLOCKS } from './config';
 import { BLOCK_ASSETS, TILE_MAX_HEIGHT } from './data/tileIndex';
+import { budgetOf, DEFAULT_PROFILE_3D } from './qualityProfiles';
+
+/** Os tetos do perfil de qualidade que o cache obedece (o restante do orçamento é lido pelo LOD e pelo Canvas). */
+export type TileStoreBudget = { tileCacheBlocks: number; maxConcurrentLoads: number };
 
 type Block = { color: THREE.Texture; height: THREE.Texture; lastUsed: number };
 
@@ -21,13 +24,16 @@ export function loadTexture(mod: number): Promise<THREE.Texture> {
 
 /**
  * Carrega os blocos (atlas de tiles) sob demanda, com limite de concorrência e descarte LRU.
- * O bloco raiz nunca é descartado.
+ * O bloco raiz nunca é descartado. Os tetos (blocos em cache e downloads simultâneos) vêm do perfil de qualidade e
+ * podem mudar com o globo montado (`setBudget`): ao encolher, os blocos fora de uso saem na hora e o resto sai
+ * assim que deixar de ser usado.
  */
 export class TileStore {
   private blocks = new Map<string, Block>();
   private loading = new Set<string>();
   private queue: string[] = [];
   private frame = 0;
+  private budget: TileStoreBudget = budgetOf(DEFAULT_PROFILE_3D);
 
   constructor(
     private onChange: () => void,
@@ -52,10 +58,24 @@ export class TileStore {
       const block = this.blocks.get(blockOf(id).key);
       if (block) block.lastUsed = this.frame;
     }
+    // Depois de marcar o que o quadro usa, o que passou do teto (cache encolhido) já pode sair.
+    if (this.blocks.size > this.budget.tileCacheBlocks) this.evict();
   }
 
   get size() {
     return this.blocks.size;
+  }
+
+  /** Há bloco baixando ou na fila: o globo ainda está carregando detalhe. */
+  get busy() {
+    return this.loading.size > 0 || this.queue.length > 0;
+  }
+
+  /** Troca os tetos; vale já no próximo pedido. Encolher o cache libera as texturas fora de uso imediatamente. */
+  setBudget(budget: TileStoreBudget) {
+    this.budget = { tileCacheBlocks: budget.tileCacheBlocks, maxConcurrentLoads: budget.maxConcurrentLoads };
+    this.evict();
+    this.pump();
   }
 
   /** Substitui a fila pelos pedidos atuais (os mais grosseiros primeiro). */
@@ -70,7 +90,7 @@ export class TileStore {
   }
 
   private pump() {
-    while (this.loading.size < MAX_CONCURRENT_LOADS && this.queue.length > 0) {
+    while (this.loading.size < this.budget.maxConcurrentLoads && this.queue.length > 0) {
       // load() trata os próprios erros e nunca rejeita.
       void this.load(this.queue.shift()!);
     }
@@ -105,7 +125,7 @@ export class TileStore {
 
   private evict() {
     const lastUsed = new Map([...this.blocks].map(([key, b]) => [key, b.lastUsed]));
-    for (const key of pickEvictions(lastUsed, this.frame, TILE_CACHE_BLOCKS)) {
+    for (const key of pickEvictions(lastUsed, this.frame, this.budget.tileCacheBlocks)) {
       const b = this.blocks.get(key)!;
       b.color.dispose();
       b.height.dispose();

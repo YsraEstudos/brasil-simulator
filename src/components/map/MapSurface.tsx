@@ -1,10 +1,10 @@
 import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import type { GlobeApi, GlobeViewProps } from '@/globe/GlobeView';
+import type { GlobeApi, GlobeQuality, GlobeViewProps } from '@/globe/GlobeView';
 import { labelScale, type LabelViewport, type Rect } from '@/globe/labels';
+import type { ProfileRenderer } from '@/globe/qualityProfiles';
 import { useGame } from '@/store';
-import type { MapRendererPref } from '@/store/mapRenderer';
 
 import { FlatBrazilMap } from './FlatBrazilMap';
 import type { RegionalMapViewModel } from './regionalMapViewModel';
@@ -15,7 +15,7 @@ import type { RegionalMapViewModel } from './regionalMapViewModel';
  */
 
 /** `globe`: 3D. `flat`: mapa 2D completo (siglas). `flat-light`: 2D leve (só polígonos e seleção). */
-export type MapRenderer = MapRendererPref;
+export type MapRenderer = ProfileRenderer;
 
 export interface MapSurfaceProps {
   renderer: MapRenderer;
@@ -32,6 +32,8 @@ export interface MapSurfaceProps {
   reservedRects?: readonly Rect[];
   /** Faixas onde um rótulo não cabe por inteiro (área segura + barras do HUD). */
   labelInsets?: LabelViewport['insets'];
+  /** Perfil de qualidade do globo (tetos e ajuste automático); sem efeito no mapa 2D. */
+  quality?: GlobeQuality;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -118,6 +120,7 @@ export function MapSurface({
   onGlobeFailure,
   reservedRects,
   labelInsets,
+  quality,
   style,
 }: MapSurfaceProps) {
   // O mesmo ajuste de texto do aplicativo vale para as siglas do globo e do mapa 2D.
@@ -138,6 +141,7 @@ export function MapSurface({
         reservedRects={reservedRects}
         labelInsets={labelInsets}
         labelScale={scale}
+        quality={quality}
       />
     </GlobeBoundary>
   );

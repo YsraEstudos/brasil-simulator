@@ -31,6 +31,11 @@ export function terrainExaggeration(altitude: number): number {
   return Math.min(32, Math.max(6, 6 + 26 * Math.sqrt(altitude)));
 }
 
+/*
+ * Os três valores abaixo (LOD, cache e downloads), junto com MAX_LEVEL, são o perfil Equilibrado: os perfis de
+ * qualidade (`qualityProfiles.ts`) partem deles e o globo lê o orçamento do perfil ativo, não estas constantes.
+ */
+
 /** Px de tela por texel acima do qual um tile é subdividido. */
 export const LOD_TEXEL_THRESHOLD = 1.0;
 /** Máximo de blocos na GPU (atlas de até 4x4 tiles: ~5,6 MB de cor com mipmaps). */

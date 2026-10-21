@@ -10,6 +10,7 @@ import { lonLatToVec3, raySphere, tileBounds, vec3ToLonLat, type Vec3 } from './
 import { GlobeLabels, type LabelInsets, type LabelsUpdater } from './GlobeLabels';
 import type { Rect } from './labels';
 import { selectTiles } from './lod';
+import type { GlobeBudget } from './qualityProfiles';
 import {
   atmosphereFragmentShader,
   atmosphereVertexShader,
@@ -23,6 +24,9 @@ import {
 import { loadTexture, TileStore } from './tileStore';
 
 const DEG = Math.PI / 180;
+
+/** Um quadro desenhado, para medir desempenho sem `setState`. */
+export type SceneFrame = { atMs: number; moving: boolean; tilesBusy: boolean };
 
 export type SceneStats = { tiles: number; cached: number; maxLevel: number };
 
@@ -159,9 +163,23 @@ type Props = {
   labelInsets: LabelInsets;
   /** `labelScale(textScale)`. */
   labelScale: number;
+  /** Tetos do perfil de qualidade ativo (cache, downloads, LOD). Pode mudar com a cena montada. */
+  budget: GlobeBudget;
+  /** Chamado a cada quadro desenhado (amostragem do ajuste automático); `undefined` = ninguém amostra. */
+  onFrame?: (frame: SceneFrame) => void;
 };
 
-export function GlobeScene({ controller, selectedUf, fills, onStats, reservedRects, labelInsets, labelScale }: Props) {
+export function GlobeScene({
+  controller,
+  selectedUf,
+  fills,
+  onStats,
+  reservedRects,
+  labelInsets,
+  labelScale,
+  budget,
+  onFrame,
+}: Props) {
   'use no memo'; // objetos three.js são mutados a cada quadro; fora do React Compiler
   const { camera, gl, size, invalidate } = useThree();
   const group = useRef<THREE.Group>(null);
@@ -197,6 +215,16 @@ export function GlobeScene({ controller, selectedUf, fills, onStats, reservedRec
   const sphere = useMemo(() => new THREE.Sphere(), []);
   const last = useRef({ time: 0, stats: '' });
   const labelsUpdate = useRef<LabelsUpdater | null>(null);
+  // O quadro lê o orçamento por aqui: mudar de perfil não recria a cena nem reinicia o laço.
+  const budgetRef = useRef(budget);
+  const frameEvent = useRef<SceneFrame>({ atMs: 0, moving: false, tilesBusy: false });
+  const lastCamera = useRef({ lon: NaN, lat: NaN, altitude: NaN });
+
+  useEffect(() => {
+    budgetRef.current = budget;
+    store.setBudget(budget);
+    invalidate(); // o LOD e o cache precisam de um quadro para refletir os novos tetos
+  }, [budget, store, invalidate]);
 
   useEffect(() => {
     let alive = true;
@@ -309,6 +337,8 @@ export function GlobeScene({ controller, selectedUf, fills, onStats, reservedRec
       exists: store.exists,
       isLoaded: store.isLoaded,
       maxHeight: (id) => store.maxHeightMeters(id) * heightScale,
+      texelThreshold: budgetRef.current.lodTexelThreshold,
+      maxLevel: budgetRef.current.maxLevel,
     });
     store.request(request);
     store.touch(used);
@@ -367,6 +397,19 @@ export function GlobeScene({ controller, selectedUf, fills, onStats, reservedRec
         last.current.stats = key;
         onStats(stats);
       }
+    }
+    if (onFrame) {
+      // Arrastar com o dedo não passa por `controller.step` (cada gesto pede o próprio quadro): vale também a câmera ter andado.
+      const c = lastCamera.current;
+      const cameraMoved = s.lon !== c.lon || s.lat !== c.lat || s.altitude !== c.altitude;
+      c.lon = s.lon;
+      c.lat = s.lat;
+      c.altitude = s.altitude;
+      const e = frameEvent.current;
+      e.atMs = performance.now();
+      e.moving = moving || cameraMoved;
+      e.tilesBusy = store.busy;
+      onFrame(e);
     }
     if (moving) invalidate();
   });
