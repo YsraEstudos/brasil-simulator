@@ -17,6 +17,7 @@ import {
   createCampaign,
   deleteCampaign,
   listCampaigns,
+  loadElectionResults,
   loadIndicatorHistory,
   loadLatestState,
   loadProfileHistory,
@@ -101,7 +102,7 @@ describe('migrações', () => {
     const db = openNodeDatabase();
     await migrate(db, MIGRATIONS.slice(0, 2));
     await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
-    expect(await migrate(db)).toEqual([3, 4, 5]);
+    expect(await migrate(db)).toEqual([3, 4, 5, 6]);
     expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
     expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Antiga']);
   });
@@ -300,7 +301,7 @@ describe('campanhas', () => {
       'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
       ['c1', 0, state.schemaVersion, JSON.stringify(state)],
     );
-    expect(await migrate(old)).toEqual([4, 5]);
+    expect(await migrate(old)).toEqual([4, 5, 6]);
     const [point] = await loadIndicatorHistory(old, 'c1');
     expect(point?.indicators).toEqual(state.indicators);
     expect(point?.selic).toBe(state.economy.selic);
@@ -492,7 +493,7 @@ describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
     await put(1, s1);
     await put(2, semRegioes); // snapshot de formato sem o bloco regional
 
-    expect(await migrate(old)).toEqual([5]);
+    expect(await migrate(old)).toEqual([5, 6]);
     const history = await loadRegionalHistory(old, 'c1');
     expect(history.map((p) => p.monthIndex)).toEqual([1]);
     for (const uf of s1.regions.ufs) {
@@ -576,5 +577,91 @@ describe('rastro do perfil do governo (PLANO_GLOBO.md §5.2, PR 4)', () => {
     expect(trail).toHaveLength(3);
     expect(moves).toEqual([]);
     expect(await loadProfileHistory(db, 'inexistente')).toEqual({ trail: [], moves: [] });
+  });
+});
+
+describe('resultado eleitoral por UF (PLANO_GLOBO.md §5.3, PR 12)', () => {
+  const real = loadContent(DEFAULT_SCENARIO_ID);
+  const electionMonth = real.scenario.elections!.mesEleicaoGeral;
+  let db: SqlDatabase;
+  beforeEach(async () => {
+    db = openNodeDatabase();
+    await migrate(db);
+  });
+
+  /** Joga e grava a campanha até o mês anterior ao da eleição geral; devolve o estado dele. */
+  async function playUntilElection(seed = 5): Promise<GameState> {
+    let state = createInitialState({ content: real, difficulty: 'estrategica', seed });
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    while (state.monthIndex < electionMonth) {
+      const r = advanceMonth(state, { decisions: [] }, real);
+      await recordMonth(db, 'c1', r);
+      state = r.state;
+    }
+    return state;
+  }
+
+  it('a migração 6 cria a tabela, vazia', async () => {
+    expect(await tables(db)).toContain('election_results');
+    expect(await loadElectionResults(db, 'c1')).toEqual([]);
+  });
+
+  it('a eleição geral grava a fotografia no mês do pleito, que fecha com o nacional (teste 8 do plano)', async () => {
+    const before = await playUntilElection();
+    // Antes do pleito não existe resultado algum: a interface nunca mostra "resultado" antes de ele existir.
+    expect(await loadElectionResults(db, 'c1')).toEqual([]);
+
+    const month = advanceMonth(before, { decisions: [] }, real);
+    await recordMonth(db, 'c1', month);
+
+    const saved = await loadElectionResults(db, 'c1');
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toEqual(month.report.electionResult);
+    expect(saved[0].monthIndex).toBe(electionMonth);
+    for (const round of saved[0].rounds) {
+      const sum = Object.entries(round.ufs).reduce((s, [id, share]) => s + saved[0].weights[id] * share, 0);
+      expect(Math.abs(sum - round.national)).toBeLessThan(1e-9);
+    }
+    expect(saved[0].governmentWon).toBe(month.state.politics?.eleicao_geral?.venceu);
+  });
+
+  it('a fotografia sobrevive à retenção dos relatórios e dos snapshots', async () => {
+    const before = await playUntilElection(6);
+    let state = before;
+    for (let m = 0; m < REPORT_RETENTION_MONTHS + 2; m++) {
+      const r = advanceMonth(state, { decisions: [] }, real);
+      await recordMonth(db, 'c1', r);
+      state = r.state;
+    }
+    expect(await loadReport(db, 'c1', electionMonth)).toBeNull();
+    expect(await loadElectionResults(db, 'c1')).toHaveLength(1);
+  });
+
+  it('é gravada na mesma transação do mês (falhou, nada fica)', async () => {
+    const before = await playUntilElection(7);
+    await db.run('INSERT INTO election_results (campaign_id, month_index, result_json) VALUES (?, ?, ?)', [
+      'c1',
+      electionMonth,
+      '{}',
+    ]);
+    await expect(recordMonth(db, 'c1', advanceMonth(before, { decisions: [] }, real))).rejects.toThrow();
+    expect((await listCampaigns(db))[0].currentMonth).toBe(electionMonth);
+    expect(await loadReport(db, 'c1', electionMonth)).toBeNull();
+  });
+
+  it('meses sem eleição não gravam linha, e apagar a campanha remove as fotografias', async () => {
+    let state = createInitialState({ content: real, difficulty: 'estrategica', seed: 3 });
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    const r = advanceMonth(state, { decisions: [] }, real);
+    state = r.state;
+    await recordMonth(db, 'c1', r);
+    expect(await loadElectionResults(db, 'c1')).toEqual([]);
+    await db.run('INSERT INTO election_results (campaign_id, month_index, result_json) VALUES (?, ?, ?)', [
+      'c1',
+      45,
+      '{}',
+    ]);
+    await deleteCampaign(db, 'c1');
+    expect(await db.first<{ n: number }>('SELECT COUNT(*) AS n FROM election_results')).toEqual({ n: 0 });
   });
 });

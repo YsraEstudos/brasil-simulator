@@ -41,6 +41,14 @@ function initialPolitics(c: Calibration): PoliticsState {
 }
 
 /**
+ * Intenção de voto atual na candidatura do governo: a do estado ou, antes do primeiro mês processado (o
+ * `electionsStep` ainda não criou `politics`), a inicial. Usada pelo mapa eleitoral (PLANO_GLOBO.md §5.3).
+ */
+export function votingIntentionOf(state: Readonly<GameState>, c: Calibration): number {
+  return (state.politics ?? initialPolitics(c)).votingIntention;
+}
+
+/**
  * Clima do eleitor no mês (−`mood_max`…`mood_max`): desvios *em nível*, em p.p., da inflação 12m contra a meta,
  * do desemprego contra o natural e do crescimento contra o potencial. Clima neutro = 0.
  */
@@ -140,6 +148,7 @@ function generalElectionMonth(
   const vote1 = governmentVote + c.eleicao_ruido_primeiro_turno * ctx.rng.normal();
   let turno2 = false;
   let venceu = vote1 > c.eleicao_vitoria_primeiro_turno;
+  let secondRound: { vote2: number; opponent: number } | null = null;
   if (!venceu) {
     turno2 = true;
     const opponent = clamp(
@@ -154,7 +163,10 @@ function generalElectionMonth(
       c.turno2_peso_relacao * (meanCongressRelation(state, ctx.content) / RELACAO_ESCALA) +
       c.turno2_ruido * ctx.rng.normal();
     venceu = vote2 > opponent;
+    secondRound = { vote2, opponent };
   }
+  // A votação sorteada vai para o relatório: é a entrada do resultado simulado por UF (`electionResultStep`).
+  ctx.draft.electionVote = { vote1, ...secondRound, venceu };
 
   // Renovação do Congresso: relações deslocadas por bloco (as cadeiras por bloco continuam as do cenário).
   let blocs = allRelations(state, ctx.content);
@@ -264,17 +276,13 @@ export const governorTurnoverStep: MonthStep = (state, ctx) => {
   if (!elections || monthOfTerm(state.monthIndex) !== elections.mesEleicaoGeral) return { state, contributions: [] };
   if (regionsOf(ctx.content).length === 0) return { state, contributions: [] };
   const c = ctx.content.calibration;
-  return {
-    state: {
-      ...state,
-      regions: {
-        ufs: currentUfs(state, ctx.content).map((uf) =>
-          ctx.rng.chance(governorTurnoverChance(uf.governorRelation, c))
-            ? { ...uf, governorRelation: c.governador_nova_relacao }
-            : { ...uf },
-        ),
-      },
-    },
-    contributions: [],
-  };
+  // As UFs que trocaram de dono vão para o relatório (o resultado por UF as mostra à parte do voto presidencial).
+  const changed: string[] = [];
+  const ufs = currentUfs(state, ctx.content).map((uf) => {
+    if (!ctx.rng.chance(governorTurnoverChance(uf.governorRelation, c))) return { ...uf };
+    changed.push(uf.id);
+    return { ...uf, governorRelation: c.governador_nova_relacao };
+  });
+  ctx.draft.governorChanges = changed;
+  return { state: { ...state, regions: { ufs } }, contributions: [] };
 };

@@ -6,6 +6,7 @@ import {
   deleteCampaign,
   finishCampaign,
   listCampaigns,
+  loadElectionResults,
   loadIndicatorHistory,
   loadLatestState,
   loadProfileHistory,
@@ -28,6 +29,7 @@ import {
   campaignOutcome,
   createInitialState,
   type Decision,
+  type ElectionResult,
   type GameState,
   type Indicators,
   type MonthInput,
@@ -118,6 +120,8 @@ export interface GameStoreState {
   history(): Promise<IndicatorPoint[]>;
   /** Série por UF da partida (posse e cada mês gravado); vazia sem partida ou leitura falha. Pode ter lacunas. */
   regionalHistory(): Promise<RegionalPoint[]>;
+  /** Fotografias das eleições gerais por UF, da mais antiga à mais recente; vazia antes da primeira eleição, sem partida ou com leitura falha. */
+  electionResults(): Promise<ElectionResult[]>;
   /** Rastro do perfil do governo e decisões que o moveram nos últimos meses (folha Perfil); vazio sem partida ou leitura falha. */
   profileHistory(): Promise<ProfileHistory>;
   /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
@@ -363,6 +367,17 @@ export function createGameStore(deps: GameStoreDeps) {
         // Como `history`: leitura para o cartão do estado, sem `busy` e sem erro na tela.
         try {
           return await loadRegionalHistory(db, active.id);
+        } catch {
+          return [];
+        }
+      },
+
+      async electionResults() {
+        const active = get().active;
+        if (!active || !db) return [];
+        // Como `history`: leitura para a camada Resultado do mapa, sem `busy` e sem erro na tela.
+        try {
+          return await loadElectionResults(db, active.id);
         } catch {
           return [];
         }

@@ -19,6 +19,7 @@ import {
   regionsView,
   REGION_NAMES,
   TECHNICAL_OCCUPANT,
+  type ElectionResult,
   type GameContent,
   type GameState,
   type Indicators,
@@ -401,13 +402,15 @@ function buildSeries(history: readonly IndicatorPoint[] | null): HudSeriesPoint[
 
 /**
  * Tela do Painel com a partida em andamento (GAME_DESIGN.md §4.2–§4.5). `mapIndicator` escolhe a camada do
- * mapa de calor do globo; `null` (padrão) deixa só a imagem de satélite.
+ * mapa de calor do globo; `null` (padrão) deixa só a imagem de satélite. `election` é a última fotografia da eleição
+ * geral (banco), usada só pela camada Resultado.
  */
 export function hudFromCampaign(
   campaign: ActiveCampaign,
   content: GameContent,
   history: readonly IndicatorPoint[] | null,
   mapIndicator: MapIndicator | null = null,
+  election: ElectionResult | null = null,
 ): HudData {
   const state = campaign.state;
   const ufs = regionsOf(content);
@@ -436,7 +439,7 @@ export function hudFromCampaign(
     regions: buildRegions(content, ufStates.length > 0 ? ufStates.map((uf) => uf.share) : null),
     goal: buildGoal(state.indicators, content.calibration),
     series: buildSeries(history),
-    fills: mapIndicator && content.scenario.regions ? mapFills(mapRows(mapIndicator, state, content)) : null,
+    fills: mapIndicator && content.scenario.regions ? mapFills(mapRows(mapIndicator, state, content, election)) : null,
   };
 }
 

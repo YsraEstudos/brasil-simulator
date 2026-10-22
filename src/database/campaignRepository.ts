@@ -4,6 +4,7 @@ import {
   type Decision,
   type DecisionRejection,
   type Difficulty,
+  type ElectionResult,
   type GameState,
   type IdeologyPoint,
   type Indicators,
@@ -168,6 +169,14 @@ export async function recordMonth(
         ],
       );
     }
+    // Fotografia da eleição geral por UF (só no mês do pleito): na mesma transação do mês, como a série regional.
+    if (report.electionResult) {
+      await db.run('INSERT INTO election_results (campaign_id, month_index, result_json) VALUES (?, ?, ?)', [
+        campaignId,
+        report.electionResult.monthIndex,
+        JSON.stringify(report.electionResult),
+      ]);
+    }
     await db.run('DELETE FROM month_reports WHERE campaign_id = ? AND month_index < ?', [
       campaignId,
       report.monthIndex - (REPORT_RETENTION_MONTHS - 1),
@@ -217,6 +226,18 @@ export async function loadRegionalHistory(db: SqlDatabase, campaignId: string): 
     }
     return { monthIndex: r.month_index, ufs };
   });
+}
+
+/**
+ * Fotografias das eleições gerais da campanha (resultado simulado por UF), da mais antiga para a mais recente. Vazio
+ * até a primeira eleição geral; nada é reconstruído para saves anteriores (PLANO_GLOBO.md §5.3).
+ */
+export async function loadElectionResults(db: SqlDatabase, campaignId: string): Promise<ElectionResult[]> {
+  const rows = await db.all<{ result_json: string }>(
+    'SELECT result_json FROM election_results WHERE campaign_id = ? ORDER BY month_index',
+    [campaignId],
+  );
+  return rows.map((r) => JSON.parse(r.result_json) as ElectionResult);
 }
 
 /** Quantos meses o rastro do perfil ideológico e a lista de decisões da folha "Perfil do governo" mostram. */

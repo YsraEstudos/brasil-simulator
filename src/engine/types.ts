@@ -545,6 +545,52 @@ export interface PresidentialElection {
 }
 
 /**
+ * Votação nacional da candidatura do governo numa eleição geral, como o `electionsStep` a sorteou (POLITICAL_RULES.md
+ * §11.3). Sai só no relatório do mês (não vive no estado): é a entrada do resultado simulado por UF
+ * (PLANO_GLOBO.md §5.3). Valores crus do sorteio, sem limitar a [0, 1].
+ */
+export interface NationalElectionVote {
+  /** Votação do governo no 1º turno (maioria absoluta = vitória). */
+  vote1: number;
+  /** Votação do governo no 2º turno e votação da oposição; ausentes se o 1º turno decidiu. */
+  vote2?: number;
+  opponent?: number;
+  /** Candidatura do governo venceu. */
+  venceu: boolean;
+}
+
+/** Um turno do resultado simulado por UF: a votação do governo em cada UF fecha com a nacional do turno. */
+export interface ElectionRoundResult {
+  round: 1 | 2;
+  /**
+   * Fração dos votos válidos da candidatura do governo no turno, limitada a ]0, 1[ (no 2º turno, governo ÷ (governo +
+   * oposição), que passa de 0,5 exatamente quando o governo vence).
+   */
+  national: number;
+  /** Deslocamento comum, em logit, somado ao logit da aprovação de cada UF (achado por bissecção). */
+  shift: number;
+  /** Votação do governo por UF (sigla → fração). */
+  ufs: Record<string, number>;
+}
+
+/**
+ * Resultado simulado por UF de uma eleição geral (PLANO_GLOBO.md §5.3; POLITICAL_RULES.md §11.4): fotografia gravada
+ * no banco (`election_results`) na mesma transação do mês. Determinística: nenhum sorteio novo.
+ */
+export interface ElectionResult {
+  /** Mês da eleição (o do relatório). */
+  monthIndex: number;
+  /** A candidatura do governo venceu. */
+  governmentWon: boolean;
+  /** Peso de cada UF na soma que fecha com o nacional (PROVISORIO: população; o cenário não tem eleitorado por UF). */
+  weights: Record<string, number>;
+  /** O 1º turno e, se houve, o 2º. O último é o que decide. */
+  rounds: ElectionRoundResult[];
+  /** UFs cujo governo estadual trocou de dono na eleição (posse no mesmo mês do motor), separado do resultado. */
+  governorChanges: string[];
+}
+
+/**
  * Estado eleitoral (FASE_08.md): só existe quando o cenário tem o bloco `elections`. A migração não o cria; o
  * `electionsStep` cria no primeiro mês processado com um cenário de eleições e de lá em diante mantém.
  */
@@ -736,6 +782,8 @@ export interface MonthReport {
    * `PROFILE_PARAMS.movimentos_por_mes`). Ausente em relatórios anteriores à v10.
    */
   profileMoves?: ProfileMove[];
+  /** Resultado simulado por UF, só no mês da eleição geral (PLANO_GLOBO.md §5.3); ausente nos demais meses. */
+  electionResult?: ElectionResult;
 }
 
 export interface MonthResult {
@@ -764,6 +812,12 @@ export type ReportDraft = Pick<
   copom: CopomDecision | null;
   regional: UfExplanation[] | null;
   profileMoves?: ProfileMove[];
+  /** Votação nacional sorteada na eleição geral do mês (preenchida por `electionsStep`). */
+  electionVote?: NationalElectionVote;
+  /** UFs cujo governo estadual trocou de dono no mês (preenchida por `governorTurnoverStep`). */
+  governorChanges?: string[];
+  /** Resultado simulado por UF (preenchido por `electionResultStep`, depois da posse dos governadores). */
+  electionResult?: ElectionResult;
 };
 
 export interface StepContext {

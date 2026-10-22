@@ -150,6 +150,23 @@ export const MIGRATIONS: readonly Migration[] = [
       WHERE COALESCE(json_array_length(s.state_json, '$.regions.ufs'), 0) > 0;
     `,
   },
+  {
+    version: 6,
+    name: 'resultado_eleitoral',
+    sql: `
+      -- Fotografia da eleição geral por UF (PLANO_GLOBO.md §5.3, PR 12): uma linha por campanha e eleição, com o
+      -- ElectionResult em JSON (votação nacional e por UF de cada turno, pesos do eleitorado, trocas de governador).
+      -- Gravada na mesma transação do recordMonth do mês da eleição. Fica a campanha inteira (o relatório do mês é
+      -- descartado depois de 12 meses). Não há preenchimento retroativo: o motor não guardava a votação sorteada, e
+      -- uma fotografia reconstruída seria inventada — saves anteriores só ganham a linha na próxima eleição geral.
+      CREATE TABLE election_results (
+        campaign_id TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+        month_index INTEGER NOT NULL CHECK (month_index >= 0),
+        result_json TEXT NOT NULL,
+        PRIMARY KEY (campaign_id, month_index)
+      );
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
