@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ForceHudTheme } from '@/theme/ThemeProvider';
+import { useGame } from '@/store';
 
 import { HudPanel } from './HudBits';
 import { Hud } from './hudTheme';
@@ -15,23 +16,28 @@ import { Hud } from './hudTheme';
  */
 export function InfoSheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const { height } = useWindowDimensions();
+  const reduceMotion = useGame((s) => s.reduceMotion);
   // `useState` com inicializador: o valor animado é estável como um ref, mas pode ser lido no render (regras do lint).
   const [anim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.timing(anim, {
       toValue: 1,
-      duration: 260,
+      duration: reduceMotion ? 0 : 260,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, [anim]);
+  }, [anim, reduceMotion]);
 
   // A saída começa uma vez só: toques repetidos no ✕ ou no fundo durante a animação não a reiniciam.
   const closing = useRef(false);
   const close = () => {
     if (closing.current) return;
     closing.current = true;
+    if (reduceMotion) {
+      onClose();
+      return;
+    }
     Animated.timing(anim, { toValue: 0, duration: 190, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(
       ({ finished }) => {
         if (finished) onClose();
