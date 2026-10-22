@@ -18,6 +18,7 @@ import { PULSE_DURATION_MS, PULSE_ITERATIONS } from '@/globe/markerPulse';
 import { MARKER_COLORS, MARKER_HIT_PADDING_PX, markerColor, markerCountKey } from '@/globe/markers';
 import { findUf } from '@/globe/ufs';
 import type { SunState } from '@/globe/visualClock';
+import { useGame } from '@/store';
 
 import { layoutFlatLabels, type FlatLabelItem } from './flatLabels';
 import {
@@ -89,10 +90,34 @@ const CLOUD_ICON_STROKE = '#10141c';
 interface UfPathProps {
   uf: FlatUf;
   fill: string;
+  description?: string;
+  onSelect: (sigla: string) => void;
 }
 
 /** Um estado: memoizado, só repinta quando a cor muda. O toque é tratado uma vez no mapa inteiro (`FlatBrazilMap`). */
-const UfPath = memo(function UfPath({ uf, fill }: UfPathProps) {
+const UfPath = memo(function UfPath({ uf, fill, description, onSelect }: UfPathProps) {
+  // RN Web troca a tag SVG por <button> quando `role="button"` passa pelo adaptador de react-native-svg.
+  // No DOM usamos o elemento SVG diretamente para preservar o desenho e a navegação por teclado.
+  if (Platform.OS === 'web')
+    return (
+      <path
+        d={uf.d}
+        fill={fill}
+        stroke={BORDER}
+        strokeWidth={BORDER_WIDTH}
+        strokeLinejoin="round"
+        pointerEvents="none"
+        role="button"
+        aria-label={description ?? uf.nome}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect(uf.sigla);
+          }
+        }}
+      />
+    );
   return (
     <Path
       d={uf.d}
@@ -100,8 +125,12 @@ const UfPath = memo(function UfPath({ uf, fill }: UfPathProps) {
       stroke={BORDER}
       strokeWidth={BORDER_WIDTH}
       strokeLinejoin="round"
-      pointerEvents="none"
-      {...(Platform.OS === 'web' ? { 'aria-label': uf.nome } : { accessibilityLabel: uf.nome })}
+      accessible
+      accessibilityLabel={description ?? uf.nome}
+      onPress={(event) => {
+        event.stopPropagation();
+        onSelect(uf.sigla);
+      }}
     />
   );
 });
@@ -306,6 +335,7 @@ export function FlatBrazilMap({
   onMarkerPress,
   style,
 }: FlatBrazilMapProps) {
+  const reduceMotion = useGame((s) => s.reduceMotion);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const onSelectRef = useRef(onSelect);
   const onMarkerPressRef = useRef(onMarkerPress);
@@ -337,7 +367,7 @@ export function FlatBrazilMap({
         : [],
     [variant, size.width, size.height, labelScale, reservedRects, labelInsets, markers],
   );
-  const pulseKey = markerPulseKey(markers);
+  const pulseKey = reduceMotion ? '' : markerPulseKey(markers);
 
   const selected = viewModel.selectedId ? FLAT.ufs.find((u) => u.sigla === viewModel.selectedId) : undefined;
 
@@ -379,7 +409,13 @@ export function FlatBrazilMap({
       }}>
       <Svg width="100%" height="100%" viewBox={VIEWBOX} preserveAspectRatio="xMidYMid meet">
         {FLAT.ufs.map((uf) => (
-          <UfPath key={uf.sigla} uf={uf} fill={viewModel.fills[uf.sigla] ?? LAND} />
+          <UfPath
+            key={uf.sigla}
+            uf={uf}
+            fill={viewModel.fills[uf.sigla] ?? LAND}
+            description={viewModel.descriptions?.[uf.sigla]}
+            onSelect={select}
+          />
         ))}
         {hatched.length > 0 && (
           <G pointerEvents="none">
@@ -433,7 +469,11 @@ export function FlatBrazilMap({
         {cloudIcons.length > 0 && (
           <G pointerEvents="none">
             {cloudIcons.map((icon) => (
-              <G key={icon.sigla} transform={`translate(${icon.x} ${icon.y}) scale(${icon.scale})`}>
+              <G
+                key={icon.sigla}
+                transform={`translate(${icon.x} ${icon.y}) scale(${icon.scale})`}
+                accessible={Platform.OS === 'web' ? undefined : true}
+                accessibilityLabel={`${viewModel.descriptions?.[icon.sigla] ?? icon.sigla}, ícone de chuva acima do normal`}>
                 <Path
                   d={CLOUD_ICON_PATH}
                   fill={CLOUD_ICON_FILL}
