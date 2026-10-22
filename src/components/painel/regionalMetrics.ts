@@ -413,7 +413,9 @@ export function explanationFor(id: MapIndicator, explanation: UfExplanation | un
         : id === 'chuva'
           ? explanation.approval.filter((p) => p.cause === CLIMATE_CAUSES.rainMood)
           : id === 'seca'
-            ? explanation.activity.filter((p) => p.cause === CLIMATE_CAUSES.drought)
+            ? explanation.activity.filter(
+                (p) => p.cause === CLIMATE_CAUSES.drought || p.cause === CLIMATE_CAUSES.droughtPrevention,
+              )
             : explanation.activity;
   const sorted = [...pieces].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
   const top = sorted.slice(0, MAX_PIECES - 1).filter((p) => Math.abs(p.delta) >= MIN_SHOWN);

@@ -1083,7 +1083,10 @@
     "projeto_conectividade_publica",
     "projeto_armazenagem_agropecuaria",
     "projeto_mobilidade_urbana",
-    "projeto_requalificacao_portuaria"
+    "projeto_requalificacao_portuaria",
+    "projeto_seguranca_hidrica",
+    "projeto_drenagem_contencao",
+    "rotina_defesa_civil"
   ],
   "characters": [
     {

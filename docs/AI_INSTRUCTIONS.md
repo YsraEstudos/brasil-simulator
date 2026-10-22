@@ -113,6 +113,7 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 | Anomalia de chuva (fração da normal do mês) / seca acumulada (0–1) | `rain` / `dryness` |
 | Normal de chuva (mm por UF e mês) / teleconexão ENSO (macrorregião × estação) | `rainfallNormal` / `ensoTeleconnection` (`Climatology`) |
 | Resultado simulado por UF da eleição geral (fotografia gravada no banco, sem sorteio novo) / intenção de voto estimada por UF | `ElectionResult` (`MonthReport.electionResult`, tabela `election_results`) / `regionalVoteIntention` |
+| Prevenção climática (força do programa em `Policy.prevention`; proteção = fração do dano evitada por UF; nunca muda a chuva) / visita e obra no mapa | `prevention` / `preventionOf` (`ImpulseTarget` `clima.prevencao_seca`, `clima.prevencao_cheia`) / marcadores `visit` e `work` (`projectUfs`) |
 
 ---
 

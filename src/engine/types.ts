@@ -175,6 +175,8 @@ export interface EconomyState {
  * | `regiao.atividade` | desvio da atividade (log) das UFs do escopo enquanto ativo; não muda o total nacional | regiões |
  * | `regiao.aprovacao` | desvio da aprovação (fração) nas UFs do escopo enquanto ativo; a média segue a nacional | regiões |
  * | `governadores.relacao` | variação da relação dos governadores do escopo em cada mês ativo (−100…100) | regiões |
+ * | `clima.prevencao_seca` | força da prevenção contra a seca nas UFs do escopo enquanto ativo (0–1 por programa; soma por UF, saturada em `prevencao_teto`); não mexe na chuva nem na seca, só no dano | clima |
+ * | `clima.prevencao_cheia` | idem, contra o dano das cheias e da chuva excessiva | clima |
  */
 export type ImpulseTarget =
   | 'gasto.investimento'
@@ -202,7 +204,9 @@ export type ImpulseTarget =
   | 'relacao_congresso'
   | 'regiao.atividade'
   | 'regiao.aprovacao'
-  | 'governadores.relacao';
+  | 'governadores.relacao'
+  | 'clima.prevencao_seca'
+  | 'clima.prevencao_cheia';
 
 /**
  * Incidência regional de um impulso (ECONOMIC_MODEL.md §5.15): como o efeito se reparte entre as UFs. Sem ela,

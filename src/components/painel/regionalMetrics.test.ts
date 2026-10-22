@@ -233,6 +233,15 @@ describe('camadas Chuva e Seca (PLANO_GLOBO.md §4.2)', () => {
     };
     expect(explanationFor('chuva', x).map((p) => p.cause)).toEqual(['clima_chuvas_humor']);
     expect(explanationFor('seca', x).map((p) => p.cause)).toEqual(['clima_seca']);
+    // A prevenção (PR 13) é parte da explicação da seca: o dano evitado aparece ao lado do dano.
+    const protectedUf: UfExplanation = {
+      ...x,
+      activity: [
+        ...x.activity,
+        { cause: 'clima_seca_prevencao', label: 'Prevenção reduziu o dano da seca', delta: 0.002 },
+      ],
+    };
+    expect(explanationFor('seca', protectedUf).map((p) => p.cause)).toEqual(['clima_seca', 'clima_seca_prevencao']);
     expect(formatPiece('chuva', -0.003)).toBe('−0,3 p.p.');
     expect(formatPiece('seca', -0.004)).toBe('−0,4%');
   });

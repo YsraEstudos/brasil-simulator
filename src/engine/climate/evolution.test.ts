@@ -606,9 +606,11 @@ describe('calibração do clima: nenhum parâmetro sem uso', () => {
     const { readFileSync } = await import('node:fs');
     const { join } = await import('node:path');
     const dir = join(process.cwd(), 'src', 'engine', 'climate');
-    const sources = ['evolution.ts', 'effects.ts', 'climate.ts']
-      .map((f) => readFileSync(join(dir, f), 'utf8'))
-      .join('\n');
+    const sources = [
+      ...['evolution.ts', 'effects.ts', 'climate.ts'].map((f) => readFileSync(join(dir, f), 'utf8')),
+      // A fração da obra em andamento é lida pela carteira de projetos (PR 13).
+      readFileSync(join(process.cwd(), 'src', 'engine', 'publicPolicies', 'publicPolicies.ts'), 'utf8'),
+    ].join('\n');
     for (const name of Object.keys(CLIMATE_PARAMS)) {
       if (name.startsWith('intensidade_')) continue; // lidas por CLIMATE_INTENSITY_PARAM
       expect(sources, name).toContain(`'${name}'`);

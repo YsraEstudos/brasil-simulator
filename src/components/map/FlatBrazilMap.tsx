@@ -178,8 +178,12 @@ const UfLabels = memo(function UfLabels({ items }: UfLabelsProps) {
 /** Fonte (px, escala 1) do glifo do marcador e do número do selo. */
 const MARKER_GLYPH_FONT_PX = 12;
 const MARKER_BADGE_FONT_PX = 9;
-/** Um glifo para cada tipo: o "!" do evento e o "≡" (colunas de jornal) da notícia, como no atlas do globo. */
-const MARKER_GLYPHS = { event: '!', news: '≡' } as const;
+/**
+ * Um glifo para cada tipo, como no atlas do globo: o "!" do evento, o "≡" (colunas de jornal) da notícia, o "⚑" da visita
+ * presidencial e o "⚒" da obra. Os dois últimos levam o seletor de variação de texto (U+FE0E) para o sistema não os
+ * trocar por emoji colorido.
+ */
+const MARKER_GLYPHS = { event: '!', news: '≡', visit: '⚑︎', work: '⚒︎' } as const;
 
 interface FlatMarkersProps {
   items: readonly FlatLabelItem[];

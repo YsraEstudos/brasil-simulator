@@ -8,7 +8,8 @@ Saídas:
   src/globe/data/capitals.json   as 27 capitais: { sigla, capital, lon, lat }
   src/globe/data/labels.json     âncora interior, área, prioridade e retângulos do atlas por UF
   assets/globe/labels.png        atlas RGBA com 27 siglas + 27 nomes de capital + glifos dos marcadores (PR 11): "!" do
-                                 evento, "≡" da notícia e os números 2…9 e "9+" do selo de grupo (branco com contorno escuro)
+                                 evento, "≡" da notícia e os números 2…9 e "9+" do selo de grupo; PR 13: "⚑" da visita
+                                 presidencial e "⚒" da obra (branco com contorno escuro)
 
 Fontes e status (registrados em docs/DATA_SOURCES.md §3.2):
   - Coordenadas das capitais: sede municipal (IBGE, "localidades"/sedes municipais), status PROVISORIO — valores
@@ -59,8 +60,10 @@ TEXT_FILL = (255, 255, 255)  # branco
 TEXT_STROKE = (16, 20, 28)  # quase preto azulado: legível sobre qualquer cor de mapa
 # Marcadores de eventos e notícias (PLANO_GLOBO.md §7, PR 11): o disco é desenhado no shader; no atlas ficam só os
 # glifos. Cada glifo é centralizado numa tela de tamanho fixo (px lógicos), para o globo trocar o glifo do marcador
-# (evento × notícia, 2 … 9+) mudando só o u/v, sem mexer na geometria.
-MARKER_GLYPHS = {"event": "!", "news": "≡"}  # ≡ (U+2261) lembra colunas de jornal; a DejaVu Sans Bold tem os dois
+# (evento × notícia × visita × obra, 2 … 9+) mudando só o u/v, sem mexer na geometria.
+# ≡ (U+2261) lembra colunas de jornal; ⚑ (U+2691) é a bandeira da visita presidencial (PR 13); ⚒ (U+2692) é a obra (PR 13).
+# A DejaVu Sans Bold tem os quatro.
+MARKER_GLYPHS = {"event": "!", "news": "≡", "visit": "⚑", "work": "⚒"}
 MARKER_COUNTS = ["2", "3", "4", "5", "6", "7", "8", "9", "9+"]
 MARKER_GLYPH_FONT_PX = 13
 MARKER_GLYPH_CANVAS_PX = (16, 16)

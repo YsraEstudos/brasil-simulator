@@ -1,0 +1,33 @@
+{
+  "id": "projeto_drenagem_contencao",
+  "name": "Drenagem urbana e contenção de encostas",
+  "summary": "Galerias, bacias de contenção e obras em encostas nas cidades mais expostas, com obra, manutenção anual e votação no Congresso. Quando em operação, reduz o dano das cheias e da chuva excessiva (sem mudar a chuva) até o teto da prevenção; sem manutenção, perde força. Dados e custos PROVISORIO.",
+  "area": "cidades",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 7000, "disbursementProfile": [0.3, 0.4, 0.3] },
+  "fundingSources": ["credito_adicional"],
+  "timeline": { "planningMonths": 3, "expectedLegislativeMonths": 5, "executionMonths": 36, "maturationMonths": 12 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 7000, "lagMonths": 6 },
+    { "channel": "aprovacao", "magnitude": 0.006, "lagMonths": 6 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.3 },
+    { "kind": "sobrecusto", "probability": 0.25 }
+  ],
+  "affected": {
+    "groups": ["moradores_urbanos", "baixa_renda"],
+    "sectors": ["construcao", "servicos"],
+    "regions": ["nacional"]
+  },
+  "regional": { "key": "pobreza", "scope": [], "boost": {} },
+  "position": { "economic": -0.1, "social": -0.1 },
+  "salience": 0.5,
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 10, "procurementMonths": 6, "efficiency": 0.75, "annualMaintenanceRate": 0.05 },
+  "prevention": { "flood": 0.7 }
+}

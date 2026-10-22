@@ -145,6 +145,8 @@ Conteúdo **compartilhado** por todos os cenários (`src/data/climate/climatolog
 
 O script **valida** antes de gravar (falha se alguma checagem quebrar): 27 UFs × 12 meses, todos positivos; total anual dentro de uma faixa plausível por macrorregião (Norte 1.500–3.000 mm, Nordeste 700–1.700, Centro-Oeste 1.200–1.900, Sudeste 1.100–1.600, Sul 1.400–1.900); regimes (Amazônia chuvosa de dez a mai, semiárido do Nordeste seco de set a nov, Brasil Central chuvoso no verão e seco no inverno, Sul sem estação seca, Roraima com chuvas de mai a ago); sinais mínimos da teleconexão (El Niño seca Norte e Nordeste no outono e molha o Sul na primavera). Determinístico. **Pendente:** importar as Normais do INMET (e conferir as magnitudes de teleconexão com a literatura) pelo pipeline, em nova versão da climatologia com status `ESTIMADO`.
 
+**Território das obras de prevenção (PR 13).** O `regional.scope` do projeto `projeto_seguranca_hidrica` lista os nove estados com municípios no Semiárido brasileiro (PI, CE, RN, PB, PE, AL, SE, BA e o norte de MG), a delimitação oficial da Sudene/Ministério da Integração (Resolução CONDEL 150/2021 e anteriores) em nível de **UF** — o jogo não distribui nada abaixo da UF, então MG e BA entram inteiras no escopo da obra mesmo que só parte do território seja semiárido. `PROVISORIO`; **conferir a lista contra a resolução vigente** antes de publicar o cenário. Forças, custos e prazos dos três programas de prevenção (`prevention` em `src/data/policies/`) são `PROVISORIO` (critério de jogo; custos por ordem de grandeza de obras hídricas e de drenagem recentes) e estão em [CALIBRATION.md](CALIBRATION.md).
+
 ---
 
 ## 5. Pipeline de dados
@@ -215,6 +217,7 @@ partir do estado (GAME_DESIGN.md §11.3.1).
 | 17/10/2026 | Cenário `brasil_2027_01_v070`: participação no PIB das UFs recalibrada | PIB per capita por UF (Contas Regionais do IBGE) ponderado pela população do Censo 2022 do cenário | `PROVISORIO`; substitui as ordens de grandeza arredondadas da v0.4.0 — o ranking por renda segue o IBGE (DF 2,4× a MA 0,4× a média, mesmo per capita relativo = Brasil 1). Demais campos inalterados; saves em andamento mantêm as participações antigas, novas partidas usam a série recalibrada | OpenCode |
 
 | 21/10/2026 | Climatologia compartilhada `climatologia_br` v0.1.0 (PR 7 do PLANO_GLOBO) | — | Entram as normais de chuva por UF × mês e a teleconexão ENSO por macrorregião × estação (§4.3), `PROVISORIO`, digitadas a partir do conhecimento público (INMET e CPTEC/NOAA como alvo de referência, sem importação). Nenhum cenário foi alterado; nenhum resultado de simulação muda (o motor ainda não lê o clima) | Claude |
+| 22/10/2026 | Cenário `brasil_2027_01_v080`: políticas de prevenção (PR 13 do PLANO_GLOBO) | — | Entram `projeto_seguranca_hidrica`, `projeto_drenagem_contencao` e `rotina_defesa_civil` na lista de políticas **só do v0.8.0** (os cenários publicados não mudam; verificado por teste). Valores `PROVISORIO`; território do projeto hídrico em nível de UF (ver §4.3). Nenhuma outra parte do cenário muda | Claude |
 
 Itens marcados com ⚠ em [POLITICAL_RULES.md](POLITICAL_RULES.md) devem ser registrados aqui quando verificados.
 
