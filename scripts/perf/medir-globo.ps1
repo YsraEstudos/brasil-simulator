@@ -161,8 +161,10 @@ $cpuSamples = New-Object System.Collections.Generic.List[double]
 $files = New-Object System.Collections.Generic.List[string]
 $sw = [Diagnostics.Stopwatch]::StartNew()
 $i = 0
-$nextCpu = 5.0
 $falhas = 0
+# CPU só antes e depois da janela: cada leitura leva ~1 s e, no meio do laço, faria a consulta ao SurfaceFlinger
+# demorar o bastante para o buffer de 128 quadros (~2 s) perder quadros, o que parece jank que não existe.
+if (-not $SkipCpu) { $c = Get-CpuPct; if ($null -ne $c) { $cpuSamples.Add($c) } }
 while ($sw.Elapsed.TotalSeconds -lt $Seconds) {
   $txt = Invoke-Adb "dumpsys SurfaceFlinger --latency '$layerName'"
   if (($txt -split "`n").Count -lt 2) {
@@ -175,16 +177,11 @@ while ($sw.Elapsed.TotalSeconds -lt $Seconds) {
     Set-Content -Path $f -Value $txt -Encoding utf8
     $files.Add($f)
   }
-  if (-not $SkipCpu -and $sw.Elapsed.TotalSeconds -ge $nextCpu) {
-    $c = Get-CpuPct
-    if ($null -ne $c) { $cpuSamples.Add($c) }
-    $nextCpu += [math]::Max(10.0, $Seconds / 4.0)
-  }
   Start-Sleep -Milliseconds ([int]($PollSeconds * 1000))
   Write-Progress -Activity "Medindo $Scenario" -Status ('{0:N0}/{1} s' -f $sw.Elapsed.TotalSeconds, $Seconds) -PercentComplete ([math]::Min(100, 100 * $sw.Elapsed.TotalSeconds / $Seconds))
 }
 Write-Progress -Activity "Medindo $Scenario" -Completed
-if (-not $SkipCpu -and $cpuSamples.Count -eq 0) { $c = Get-CpuPct; if ($null -ne $c) { $cpuSamples.Add($c) } }
+if (-not $SkipCpu) { $c = Get-CpuPct; if ($null -ne $c) { $cpuSamples.Add($c) } }
 
 # --- fim ---
 $batFim = Get-Bateria
@@ -197,7 +194,10 @@ $stamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
 $slug = ($Scenario -replace '[^\w\-]+', '_')
 $csv = Join-Path $Out "$stamp`_$slug.csv"
 if ($files.Count -eq 0) { Stop-Com 'Nenhuma consulta ao SurfaceFlinger retornou dados.' }
-$json = & node $parser --csv $csv @($files)
+# Lista em arquivo, não na linha de comando: uma sessão de 30 min tem ~1.200 consultas e estoura o limite do Windows.
+$lista = Join-Path $tmpDir 'arquivos.txt'
+Set-Content -Path $lista -Value $files -Encoding utf8
+$json = & node $parser --csv $csv --lista $lista
 if ($LASTEXITCODE -ne 0) { Stop-Com "Falha no parser: $json" }
 $s = $json | ConvertFrom-Json
 Write-Host ("RAW_DIR: " + $tmpDir)
