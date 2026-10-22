@@ -36,8 +36,12 @@ export function terrainExaggeration(altitude: number): number {
  * qualidade (`qualityProfiles.ts`) partem deles e o globo lê o orçamento do perfil ativo, não estas constantes.
  */
 
-/** Px de tela por texel acima do qual um tile é subdividido. */
-export const LOD_TEXEL_THRESHOLD = 1.0;
+/**
+ * Px **físicos** da tela por texel acima do qual um tile é subdividido (a conta já multiplica pela densidade da tela:
+ * `lodPixelsPerRadian`). Um pouco acima de 1: com filtro linear e mipmaps fica nítido sem carregar o nível seguinte
+ * cedo demais numa tela de densidade 2–3.
+ */
+export const LOD_TEXEL_THRESHOLD = 1.25;
 /** Máximo de blocos na GPU (atlas de até 4x4 tiles: ~5,6 MB de cor com mipmaps). */
 export const TILE_CACHE_BLOCKS = 20;
 export const MAX_CONCURRENT_LOADS = 4;

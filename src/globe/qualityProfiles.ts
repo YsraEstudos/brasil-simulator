@@ -73,19 +73,22 @@ const DPR_CAP_ECONOMIC = 1.25;
 const ECONOMIC_CACHE_BLOCKS = 12;
 /** Econômico: 2 downloads/decodificações simultâneas, para o pico de CPU e memória na chegada dos tiles ser menor. */
 const ECONOMIC_CONCURRENT_LOADS = 2;
-/** Econômico: um texel pode ocupar até 1,5 px antes de dividir o tile (um pouco mais macio, bem menos tiles). */
-const ECONOMIC_LOD_THRESHOLD = 1.5;
+/**
+ * Econômico: um texel pode ocupar até 2 px físicos antes de dividir o tile — o que todos os perfis desenhavam numa tela
+ * de densidade 2 antes de o LOD contar pixels físicos: mais macio, bem menos tiles.
+ */
+const ECONOMIC_LOD_THRESHOLD = 2;
 /** Econômico: para um nível antes do máximo (o último nível quadruplica os tiles e só aparece em zoom muito próximo). */
 const ECONOMIC_MAX_LEVEL = MAX_LEVEL - 1;
 
 /** Alto: 8 blocos a mais que o atual (~40%): cabe o Brasil inteiro em nível médio mais um estado em detalhe. */
 const HIGH_CACHE_BLOCKS = TILE_CACHE_BLOCKS + 8;
-/** Alto: subdivide um pouco antes (0,75 px por texel). Só vale se a medição sustentar (o ajuste automático desce se não). */
-const HIGH_LOD_THRESHOLD = 0.75;
+/** Alto: subdivide com menos de 1 px físico por texel (0,9). Só vale se a medição sustentar (o ajuste automático desce se não). */
+const HIGH_LOD_THRESHOLD = 0.9;
 
 /**
- * Orçamento de cada perfil 3D. O Equilibrado reaproveita as constantes de `config.ts` (sem número novo: nenhuma
- * mudança de comportamento). O Alto sobe só onde é seguro: o cache e o LOD (o nível máximo e a razão de pixels já
+ * Orçamento de cada perfil 3D. O Equilibrado reaproveita as constantes de `config.ts`; os limiares de LOD são em pixels
+ * físicos (`lodPixelsPerRadian`). O Alto sobe só onde é seguro: o cache e o LOD (o nível máximo e a razão de pixels já
  * estão no teto dos assets e do expo-gl).
  */
 export const GLOBE_BUDGETS: Readonly<Record<Profile3d, GlobeBudget>> = {

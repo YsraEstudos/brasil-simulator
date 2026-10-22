@@ -22,7 +22,7 @@ import { ufFillGeometries } from './fills';
 import { lonLatToVec3, raySphere, tileBounds, vec3ToLonLat, type Vec3 } from './geo';
 import { GlobeLabels, type LabelInsets, type LabelsUpdater } from './GlobeLabels';
 import type { Rect } from './labels';
-import { selectTiles } from './lod';
+import { lodPixelsPerRadian, selectTiles } from './lod';
 import type { GlobeBudget } from './qualityProfiles';
 import {
   atmosphereFragmentShader,
@@ -633,7 +633,7 @@ export function GlobeScene({
     frustum.setFromProjectionMatrix(projScreen);
     const exag = terrainExaggeration(s.altitude);
     const heightScale = exag / EARTH_RADIUS_M;
-    const pixelsPerRadian = size.height / (2 * Math.tan((fov * DEG) / 2));
+    const pixelsPerRadian = lodPixelsPerRadian(size.height, fov, gl.getPixelRatio());
     const { draw, request, used } = selectTiles({
       cameraPosition: pose.position,
       pixelsPerRadian,
