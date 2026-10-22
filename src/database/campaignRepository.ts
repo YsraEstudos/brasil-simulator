@@ -1,4 +1,9 @@
 import {
+  alignmentView,
+  populationShares,
+  regionalVoteIntention,
+  regionsOf,
+  type GameContent,
   SaveTooNewError,
   upgradeGameState,
   type Decision,
@@ -51,6 +56,16 @@ export type RegionalUfValues = Record<RegionalField, number>;
 export interface RegionalPoint {
   monthIndex: number;
   ufs: Record<string, RegionalUfValues>;
+  /** Valores absolutos do PR 14; ausentes em meses antigos. */
+  observations?: Record<
+    string,
+    Partial<
+      Record<
+        'crescimento' | 'desemprego' | 'aprovacao' | 'renda' | 'chuva' | 'seca' | 'alinhamento' | 'intencao',
+        number
+      >
+    >
+  >;
 }
 
 export interface CampaignSummary {
@@ -79,7 +94,7 @@ export class CampaignNotFoundError extends Error {
 /** Cria a campanha e grava o estado inicial (mês 0). */
 export async function createCampaign(
   db: SqlDatabase,
-  c: { id: string; name: string; scenarioVersion: string; state: GameState },
+  c: { id: string; name: string; scenarioVersion: string; state: GameState; content?: GameContent },
 ): Promise<void> {
   const s = c.state;
   await db.transaction(async () => {
@@ -88,7 +103,7 @@ export async function createCampaign(
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [c.id, c.name, s.scenarioId, c.scenarioVersion, s.difficulty, s.seed, s.engineVersion, s.monthIndex],
     );
-    await insertSnapshot(db, c.id, s);
+    await insertSnapshot(db, c.id, s, c.content);
   });
 }
 
@@ -102,7 +117,7 @@ export async function recordMonth(
   db: SqlDatabase,
   campaignId: string,
   result: MonthResult,
-  options: { finish?: boolean } = {},
+  options: { finish?: boolean; content?: GameContent } = {},
 ): Promise<void> {
   const { report, state } = result;
   const rows: { decision: Decision; accepted: boolean; reason: string | null }[] = [
@@ -181,7 +196,7 @@ export async function recordMonth(
       campaignId,
       report.monthIndex - (REPORT_RETENTION_MONTHS - 1),
     ]);
-    await insertSnapshot(db, campaignId, state);
+    await insertSnapshot(db, campaignId, state, options.content);
     await db.run('DELETE FROM snapshots WHERE campaign_id = ? AND month_index < ?', [
       campaignId,
       state.monthIndex - (SNAPSHOT_RETENTION_MONTHS - 1),
@@ -219,12 +234,19 @@ export async function loadRegionalHistory(db: SqlDatabase, campaignId: string): 
     [campaignId],
   );
   return rows.map((r) => {
-    const raw = JSON.parse(r.point_json) as Record<string, readonly number[]>;
+    const raw = JSON.parse(r.point_json) as Record<string, readonly (number | null)[]>;
     const ufs: Record<string, RegionalUfValues> = {};
+    const observations: NonNullable<RegionalPoint['observations']> = {};
     for (const [id, values] of Object.entries(raw)) {
       ufs[id] = Object.fromEntries(REGIONAL_FIELDS.map((f, i) => [f, values[i]])) as RegionalUfValues;
+      observations[id] = Object.fromEntries(
+        OBSERVATION_FIELDS.flatMap((f, i) => {
+          const v = values[REGIONAL_FIELDS.length + i];
+          return typeof v === 'number' && Number.isFinite(v) ? [[f, v]] : [];
+        }),
+      );
     }
-    return { monthIndex: r.month_index, ufs };
+    return { monthIndex: r.month_index, ufs, observations };
   });
 }
 
@@ -389,7 +411,18 @@ export async function deleteCampaign(db: SqlDatabase, campaignId: string): Promi
 }
 
 /** Grava o estado completo do mês e os pontos das séries de longo prazo, nacional e regional (na transação de quem chama). */
-async function insertSnapshot(db: SqlDatabase, campaignId: string, state: GameState) {
+const OBSERVATION_FIELDS = [
+  'crescimento',
+  'desemprego',
+  'aprovacao',
+  'renda',
+  'chuva',
+  'seca',
+  'alinhamento',
+  'intencao',
+] as const;
+
+async function insertSnapshot(db: SqlDatabase, campaignId: string, state: GameState, content?: GameContent) {
   await db.run(
     'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
     [campaignId, state.monthIndex, state.schemaVersion, JSON.stringify(state)],
@@ -410,8 +443,26 @@ async function insertSnapshot(db: SqlDatabase, campaignId: string, state: GameSt
   ]);
   // Estado sem UFs processadas (save antigo ainda no mês da atualização) não gera linha: lacuna honesta.
   if (state.regions.ufs.length > 0) {
-    const regional: Record<string, number[]> = {};
-    for (const uf of state.regions.ufs) regional[uf.id] = REGIONAL_FIELDS.map((f) => uf[f]);
+    const regional: Record<string, (number | null)[]> = {};
+    const pop = content ? populationShares(regionsOf(content)) : [];
+    const alignment = new Map(
+      content ? alignmentView(state, content)?.ufs.map((u) => [u.id, u.approvalDeviation]) : [],
+    );
+    const intention = content ? regionalVoteIntention(state, content)?.ufs : undefined;
+    for (const [i, uf] of state.regions.ufs.entries()) {
+      const climate = state.climate.ufs.find((c) => c.id === uf.id);
+      regional[uf.id] = [
+        ...REGIONAL_FIELDS.map((f) => uf[f]),
+        state.indicators.gdpGrowth12m + uf.growthGap12m,
+        uf.unemployment,
+        uf.approval,
+        pop[i] ? uf.share / pop[i] : null,
+        climate?.rain ?? null,
+        climate?.dryness ?? null,
+        alignment.get(uf.id) ?? null,
+        intention?.[uf.id] ?? null,
+      ];
+    }
     await db.run('INSERT INTO regional_indicator_history (campaign_id, month_index, point_json) VALUES (?, ?, ?)', [
       campaignId,
       state.monthIndex,
