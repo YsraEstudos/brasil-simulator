@@ -22,6 +22,7 @@ import { ufFillGeometries } from './fills';
 import { lonLatToVec3, raySphere, tileBounds, vec3ToLonLat, type Vec3 } from './geo';
 import { GlobeLabels, type LabelInsets, type LabelsUpdater } from './GlobeLabels';
 import type { Rect } from './labels';
+import type { GlobeMarker } from './markers';
 import { lodPixelsPerRadian, selectTiles } from './lod';
 import type { GlobeBudget } from './qualityProfiles';
 import {
@@ -231,8 +232,12 @@ type Props = {
   climate: ClimateMapData | null;
   /** "Nuvens" de Configurações. O perfil de qualidade ainda manda (`budget.effects.clouds`). */
   clouds: boolean;
-  /** O globo está desenhando (não pausado): é a condição do laço das nuvens animadas. */
+  /** O globo está desenhando (não pausado): é a condição do laço das nuvens animadas e do pulso dos marcadores. */
   drawing: boolean;
+  /** Marcadores de eventos e notícias (um por UF), desenhados com os rótulos. */
+  markers: readonly GlobeMarker[];
+  /** Muda quando há marcador novo e crítico para pulsar; vazio = nenhum. */
+  pulseKey: string;
 };
 
 export function GlobeScene({
@@ -249,6 +254,8 @@ export function GlobeScene({
   climate,
   clouds: cloudsSetting,
   drawing,
+  markers,
+  pulseKey,
 }: Props) {
   'use no memo'; // objetos three.js são mutados a cada quadro; fora do React Compiler
   const { camera, gl, size, invalidate } = useThree();
@@ -754,7 +761,16 @@ export function GlobeScene({
       <primitive object={cloudMesh} />
       <primitive object={lights} />
       {highlight && <primitive object={highlight} />}
-      <GlobeLabels updateRef={labelsUpdate} reservedRects={reservedRects} insets={labelInsets} scale={labelScale} />
+      <GlobeLabels
+        updateRef={labelsUpdate}
+        reservedRects={reservedRects}
+        insets={labelInsets}
+        scale={labelScale}
+        markers={markers}
+        pulseKey={pulseKey}
+        drawing={drawing}
+        controller={controller}
+      />
       <Atmosphere />
     </>
   );

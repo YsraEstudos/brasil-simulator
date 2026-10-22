@@ -11,6 +11,7 @@ import { GlobeController } from './controller';
 import type { LabelInsets } from './GlobeLabels';
 import { GlobeScene, type SceneFrame, type SceneStats } from './GlobeScene';
 import type { Rect } from './labels';
+import type { GlobeMarker } from './markers';
 import { budgetOf, DEFAULT_PROFILE_3D, type Profile3d } from './qualityProfiles';
 import { findUf, ufBySigla, type Uf } from './ufs';
 import { DEFAULT_DAY_TIME, type SkyInput } from './visualClock';
@@ -63,9 +64,16 @@ export interface GlobeViewProps {
   climate?: ClimateMapData | null;
   /** "Nuvens" de Configurações (padrão: ligadas); o perfil de qualidade pode não as permitir (Econômico). */
   clouds?: boolean;
+  /** Marcadores de eventos e notícias (um por UF), no mesmo atlas e na mesma chamada de desenho dos rótulos. */
+  markers?: readonly GlobeMarker[];
+  /** Muda quando há marcador novo e crítico para pulsar (pulso breve que para sozinho); vazio = nenhum. */
+  pulseKey?: string;
+  /** Toque num marcador (a sigla da UF dele): tem prioridade sobre a seleção da UF. */
+  onMarkerPress?: (sigla: string) => void;
 }
 
 const NO_RECTS: readonly Rect[] = [];
+const NO_MARKERS: readonly GlobeMarker[] = [];
 
 /** Sem `sky`: hora fixa padrão (tarde) em janeiro. */
 const DEFAULT_SKY: SkyInput = { setting: DEFAULT_DAY_TIME, month: 1 };
@@ -93,6 +101,9 @@ export function GlobeView({
   sky = DEFAULT_SKY,
   climate = null,
   clouds = true,
+  markers = NO_MARKERS,
+  pulseKey = '',
+  onMarkerPress,
 }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   const insets = useSafeAreaInsets();
@@ -147,6 +158,14 @@ export function GlobeView({
     if (change) latest.current.onAutoProfile?.(change.to);
   }, []);
 
+  // Último toque num marcador (a sigla da UF; o contador distingue dois toques seguidos no mesmo).
+  const [markerTap, setMarkerTap] = useState<{ sigla: string | null; n: number }>({ sigla: null, n: 0 });
+  useEffect(() => {
+    if (markerTap.sigla !== null) onMarkerPress?.(markerTap.sigla);
+    // só reage ao toque, não a uma nova função `onMarkerPress`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [markerTap]);
+
   const [stats, setStats] = useState<SceneStats | null>(null);
   const container = useRef<ViewInstance>(null);
 
@@ -164,6 +183,12 @@ export function GlobeView({
     const tap = Gesture.Tap()
       .runOnJS(true)
       .onEnd((e) => {
+        // Marcador primeiro: tocar nele abre o alerta/jornal e não seleciona a UF.
+        const marker = controller.pickMarker(e.x, e.y);
+        if (marker) {
+          setMarkerTap((t) => ({ sigla: marker, n: t.n + 1 }));
+          return;
+        }
         const p = controller.pick(e.x, e.y);
         const uf = p ? findUf(p.lon, p.lat) : null;
         setTap((t) => ({ uf, n: t.n + 1 }));
@@ -220,6 +245,8 @@ export function GlobeView({
                 climate={climate}
                 clouds={clouds}
                 drawing={!paused}
+                markers={markers}
+                pulseKey={pulseKey}
               />
             </Canvas>
           </View>

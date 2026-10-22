@@ -20,6 +20,7 @@ import { useTheme } from '@/hooks/use-theme';
 import type { NewsItem } from '@/engine';
 
 import {
+  editionIndexOf,
   editionPage,
   leadFontSize,
   mastheadFontSize,
@@ -61,6 +62,8 @@ export interface NewspaperProps {
   pressureLabel: PressureBand;
   marks: readonly ActiveMark[];
   pending: readonly { key: string; title: string; monthIndex: number }[];
+  /** Notícia aberta pelo marcador do mapa: o jornal abre na edição dela e a traz como manchete. */
+  focusNewsId?: string;
 }
 
 /**
@@ -77,10 +80,18 @@ export function Newspaper({
   pressureLabel,
   marks,
   pending,
+  focusNewsId,
 }: NewspaperProps) {
   const styles = useScaledStyles(baseStyles);
   const [filter, setFilter] = useState<NewsFilter>('todas');
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => editionIndexOf(editions, focusNewsId));
+  // Outra notícia pedida pelo mapa com o jornal já aberto: vai para a edição dela, no caderno "Todas".
+  const [seenFocus, setSeenFocus] = useState(focusNewsId);
+  if (focusNewsId !== seenFocus) {
+    setSeenFocus(focusNewsId);
+    setIndex(editionIndexOf(editions, focusNewsId));
+    setFilter('todas');
+  }
   // As telas empilhadas ficam montadas: se um mês foi encerrado em outra tela, a edição nova entra na posição 0 e o jornal
   // volta para ela (senão a posição guardada passaria a mostrar outra edição, ou nenhuma, se a mais antiga saiu).
   const latestMonth = editions[0]?.monthIndex;
@@ -104,7 +115,7 @@ export function Newspaper({
   );
 
   const edition = editions[index];
-  const page = editionPage(edition, filter);
+  const page = editionPage(edition, filter, focusNewsId);
   const columns = newspaperColumns(width);
   const pad = width < 420 ? 14 : 22;
   const inner = width - pad * 2;

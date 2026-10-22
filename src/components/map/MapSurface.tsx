@@ -10,6 +10,7 @@ import { computeSun, type SkyInput, type SunState } from '@/globe/visualClock';
 import { useGame } from '@/store';
 
 import { FlatBrazilMap } from './FlatBrazilMap';
+import { markerPulseKey, type MapMarker } from './markersView';
 import type { RegionalMapViewModel } from './regionalMapViewModel';
 
 /**
@@ -25,6 +26,11 @@ export interface MapSurfaceProps {
   viewModel: RegionalMapViewModel;
   /** Toque numa UF (sigla) ou no fundo/oceano (`null`). */
   onSelect: (sigla: string | null) => void;
+  /**
+   * Toque num marcador de eventos e notícias (`viewModel.markers`): o globo e o mapa 2D chamam o mesmo tratador. O 2D
+   * leve não desenha marcadores (eles seguem nos Alertas e nas Notícias).
+   */
+  onMarkerPress?: (marker: MapMarker) => void;
   /** Comandos de câmera; no 2D os comandos não fazem nada (o mapa já mostra o Brasil inteiro). */
   onReady?: (api: GlobeApi) => void;
   /** Pausa o desenho do globo (a tela perdeu o foco). No 2D não há laço de quadros, então não muda nada. */
@@ -59,6 +65,7 @@ export const FLAT_MAP_API: GlobeApi = { flyToUf: () => undefined, reset: () => u
 function FlatMap({
   viewModel,
   onSelect,
+  onMarkerPress,
   onReady,
   light,
   sun,
@@ -67,6 +74,7 @@ function FlatMap({
 }: {
   viewModel: RegionalMapViewModel;
   onSelect: (sigla: string | null) => void;
+  onMarkerPress?: (marker: MapMarker) => void;
   onReady?: (api: GlobeApi) => void;
   light: boolean;
   sun: SunState | null;
@@ -82,6 +90,7 @@ function FlatMap({
     <FlatBrazilMap
       viewModel={viewModel}
       onSelect={onSelect}
+      onMarkerPress={onMarkerPress}
       variant={light ? 'light' : 'full'}
       reservedRects={labels.reservedRects}
       labelInsets={labels.labelInsets}
@@ -130,6 +139,7 @@ export function MapSurface({
   renderer,
   viewModel,
   onSelect,
+  onMarkerPress,
   onReady,
   paused,
   onGlobeFailure,
@@ -154,6 +164,7 @@ export function MapSurface({
     <FlatMap
       viewModel={viewModel}
       onSelect={onSelect}
+      onMarkerPress={onMarkerPress}
       onReady={onReady}
       light={light}
       sun={flatSun}
@@ -162,6 +173,11 @@ export function MapSurface({
     />
   );
   if (renderer !== 'globe') return flat(renderer === 'flat-light');
+  // O globo devolve a sigla da UF do marcador tocado; o modelo tem um marcador por UF.
+  const markerPressed = (sigla: string) => {
+    const marker = viewModel.markers.find((m) => m.sigla === sigla);
+    if (marker) onMarkerPress?.(marker);
+  };
   return (
     <GlobeBoundary onFailure={onGlobeFailure} fallback={flat(false)}>
       <LazyGlobe
@@ -177,6 +193,9 @@ export function MapSurface({
         sky={sky}
         climate={climate}
         clouds={clouds}
+        markers={viewModel.markers}
+        pulseKey={markerPulseKey(viewModel.markers)}
+        onMarkerPress={markerPressed}
       />
     </GlobeBoundary>
   );

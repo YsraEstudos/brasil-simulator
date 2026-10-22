@@ -1,6 +1,7 @@
 import { HEIGHT_OFFSET, HEIGHT_SCALE, ROOT, TILE_GRID } from './config';
 import { LABEL_MIN_FACING } from './labelLayout';
 import { QuadKind } from './labelQuads';
+import { MARKER_DISC_FRACTION } from './markers';
 import { LIGHTS_FULL_BELOW, LIGHTS_OFF_ABOVE, NIGHT_FLOOR, TERMINATOR_FROM, TERMINATOR_TO } from './visualClock';
 
 const f = (n: number) => n.toFixed(6);
@@ -259,7 +260,8 @@ void main() {
  * Rótulos do globo (siglas, pins, capitais): uma malha só. Cada quadrilátero repete a direção do ponto na esfera
  * (`position`) e o canto em px lógicos (`aCorner`): o ponto é projetado e o canto somado já em tela, então o tamanho
  * não depende da distância. O centro+canto é arredondado ao pixel do aparelho (texto nítido). Some o que está no
- * hemisfério oculto (`facing`) ou foi recusado pelo layout na CPU (`aVisible`).
+ * hemisfério oculto (`facing`) ou foi recusado pelo layout na CPU (`aVisible`). Os marcadores de eventos e notícias
+ * (PR 11) usam a mesma malha: `aTint` é a cor do disco e `aPulse` liga o anel do pulso.
  */
 export const labelVertexShader = /* glsl */ `
 precision highp float;
@@ -271,11 +273,17 @@ attribute vec2 aCorner;
 attribute vec2 aUv;
 attribute float aKind;
 attribute float aVisible;
+attribute vec3 aTint;
+attribute float aPulse;
 varying vec2 vUv;
 varying float vKind;
+varying vec3 vTint;
+varying float vPulse;
 void main() {
   vUv = vec2(aUv.x, 1.0 - aUv.y); // o atlas tem origem no topo; a textura sobe com flipY
   vKind = aKind;
+  vTint = aTint;
+  vPulse = aPulse;
   vec3 dir = normalize(position);
   vec3 p = dir * uRadius;
   float facing = dot(dir, normalize(cameraPosition - p));
@@ -289,20 +297,44 @@ void main() {
   gl_Position = vec4(px * 2.0 / uViewport, 0.0, 1.0);
 }`;
 
-/** Texto do atlas (alfa reto) ou círculo com contorno (pin e ponto da capital), sem textura. */
+/**
+ * Texto do atlas (alfa reto), círculo com contorno (pin e ponto da capital) ou disco colorido (marcador e selo), sem
+ * textura. O disco do marcador ocupa `MARKER_DISC_FRACTION` da caixa; o resto é o anel do pulso (`uPulse`, 0 → 1 em cada
+ * volta: o anel cresce e some). Sem pulso (`aPulse` = 0) nada é desenhado fora do disco.
+ */
 export const labelFragmentShader = /* glsl */ `
 precision highp float;
 uniform sampler2D uAtlas;
+uniform float uPulse;
 varying vec2 vUv;
 varying float vKind;
+varying vec3 vTint;
+varying float vPulse;
 void main() {
   if (vKind < ${f(QuadKind.Pin - 0.5)}) {
     gl_FragColor = texture2D(uAtlas, vUv);
     return;
   }
-  // Círculo: d = 0 no centro, 1 na borda; contorno escuro por fora, miolo branco (igual ao texto do atlas).
+  // Círculo: d = 0 no centro, 1 na borda da caixa.
   float d = length(vUv - 0.5) * 2.0;
   float aa = max(fwidth(d), 0.02);
+  if (vKind > ${f(QuadKind.Dot + 0.5)}) {
+    // Marcador (a caixa tem o disco no meio e folga para o anel) e selo (o disco é a caixa inteira).
+    float disc = vKind > ${f(QuadKind.Marker + 0.5)} ? 1.0 : ${f(MARKER_DISC_FRACTION)};
+    float x = d / disc;
+    float ax = aa / disc;
+    float alpha = 1.0 - smoothstep(1.0 - ax, 1.0, x);
+    float rim = smoothstep(0.7 - ax, 0.7, x); // 0 no miolo colorido, 1 no anel branco
+    vec3 color = mix(vTint, vec3(1.0), rim);
+    float ringA = 0.0;
+    if (vPulse > 0.5) {
+      float radius = mix(${f(MARKER_DISC_FRACTION)}, 1.0, uPulse);
+      ringA = (1.0 - smoothstep(0.0, 0.08, abs(d - radius))) * (1.0 - uPulse) * 0.9;
+    }
+    float outA = alpha + ringA * (1.0 - alpha);
+    gl_FragColor = vec4((color * alpha + vTint * ringA * (1.0 - alpha)) / max(outA, 0.0001), outA);
+    return;
+  }
   float inner = vKind > ${f(QuadKind.Pin + 0.5)} ? 0.52 : 0.6;
   float alpha = 1.0 - smoothstep(1.0 - aa, 1.0, d);
   float fill = 1.0 - smoothstep(inner - aa, inner, d);
