@@ -1,4 +1,4 @@
-import { binColor, indicatorSpec, legendLabels, type MapIndicator } from '@/components/painel/regionalMetrics';
+import { binColor, indicatorSpec, numericLegendLabels, type MapIndicator } from '@/components/painel/regionalMetrics';
 import type { ElectionResult } from '@/engine';
 
 import { NO_CLIMATE_OVERLAY, type ClimateOverlay } from './climateView';
@@ -40,6 +40,7 @@ export interface RegionalMapViewModel {
   /** Cor de cada UF (sigla → hex). Vazio: o renderizador usa a cor neutra de terra. */
   fills: Readonly<Record<string, string>>;
   selectedId: string | null;
+  descriptions?: Readonly<Record<string, string>>;
   legend: MapLegend | null;
   labels: readonly MapLabel[];
   /** Marcadores de eventos e notícias, um por UF (`markersView`); vazio sem partida ou sem evento com local. */
@@ -79,7 +80,7 @@ export function indicatorLegend(id: MapIndicator, election: ElectionResult | nul
   const badge = badgeText(id, election);
   return {
     title: spec.legend,
-    entries: legendLabels(spec).map((label, i) => ({ color: binColor(spec, i), label })),
+    entries: numericLegendLabels(spec).map((label, i) => ({ color: binColor(spec, i), label })),
     ...(badge ? { badge } : {}),
   };
 }

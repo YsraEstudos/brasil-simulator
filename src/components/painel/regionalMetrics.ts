@@ -87,7 +87,7 @@ export const LEAN_PALETTE = ['#7b52c9', '#b49be0', '#9a9893', '#e3b96a', '#c9852
  * claro (muito voto). É a fatia do governo nos votos válidos, não "governo × oposição" de dois lados, porque o 1º turno
  * tem vários candidatos.
  */
-export const VOTE_PALETTE = ['#17433f', '#1f6f66', '#2a9d8f', '#7fcbc0', '#cdeee9'] as const;
+export const VOTE_PALETTE = ['#347f75', '#499d91', '#68b8ab', '#97d2c7', '#cdeee9'] as const;
 /** Faixas do voto no governo: < 30%, 30–40%, 40–50%, 50–60% (maioria absoluta começa na quarta) e ≥ 60%. */
 export const VOTE_EDGES = [0.3, 0.4, 0.5, 0.6] as const;
 
@@ -313,6 +313,30 @@ export function legendLabels(spec: MapIndicatorSpec): string[] {
 }
 
 /** Texto do valor na lista e no cartão. */
+export function numericLegendLabels(spec: MapIndicatorSpec): string[] {
+  if (spec.scale === 'sequential') {
+    const edges = spec.edges ?? RENT_EDGES;
+    const show = (v: number) => formatValue(spec.id, v);
+    return [
+      `< ${show(edges[0])}`,
+      ...edges.slice(0, -1).map((v, i) => `${show(v)} a < ${show(edges[i + 1])}`),
+      `≥ ${show(edges[3])}`,
+    ];
+  }
+  const step = spec.step;
+  const show = (v: number) => formatValue(spec.id, v);
+  const numeric = [
+    `≤ ${show(-3 * step)}`,
+    `(${show(-3 * step)}, ${show(-step)}]`,
+    `(${show(-step)}, ${show(step)})`,
+    `[${show(step)}, ${show(3 * step)})`,
+    `≥ ${show(3 * step)}`,
+  ];
+  // As duas faixas externas do bin são inclusivas em ±3 passos.
+  numeric[0] = `≤ ${show(-3 * step)}`;
+  return spec.goodWhen === 'down' ? numeric.reverse() : numeric;
+}
+
 export function formatValue(id: MapIndicator, value: number): string {
   switch (id) {
     case 'crescimento':

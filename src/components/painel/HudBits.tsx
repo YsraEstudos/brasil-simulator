@@ -1,7 +1,7 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { ActivityIndicator, Pressable, type StyleProp, View, type ViewStyle } from 'react-native';
 
-import { binColor, legendLabels, type LayerBadgeInfo, type MapIndicatorSpec } from './regionalMetrics';
+import { binColor, numericLegendLabels, type LayerBadgeInfo, type MapIndicatorSpec } from './regionalMetrics';
 import { Text } from '@/components/ui';
 import { Radius } from '@/constants/theme';
 
@@ -432,6 +432,7 @@ export function MapLayerRow({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityState={{ selected: active, disabled }}
+      accessibilityLabel={[label, hint, badge?.text].filter(Boolean).join('. ')}
       style={({ pressed }) => [
         styles.layerRow,
         active && styles.layerRowActive,
@@ -466,7 +467,7 @@ export function MapLayerLegend({ spec, badge }: { spec: MapIndicatorSpec; badge?
   return (
     <View style={styles.layerLegend}>
       {badge ? <LayerBadge badge={badge} /> : null}
-      {legendLabels(spec).map((label, i) => (
+      {numericLegendLabels(spec).map((label, i) => (
         <View key={label} style={styles.layerLegendItem}>
           <View style={[styles.layerSwatch, { backgroundColor: binColor(spec, i) }]} />
           <Text style={styles.layerLegendLabel}>{label}</Text>
