@@ -28,7 +28,28 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 7. Executar `npm run check` (tipos, lint e testes) antes de concluir uma tarefa.
 8. Registrar ao final: o que foi implementado, o que não foi e quais limitações permanecem.
 9. Usar branches e pull requests para alterações importantes.
-10. **Preservar saves existentes**: toda mudança de estrutura persistida exige migração + teste.
+10. **Saves antigos: só depois do lançamento.** Enquanto o jogo não for lançado, não existe save de jogador a
+    preservar; não gaste esforço com compatibilidade de saves anteriores (ver §2.1).
+
+### 2.1 Compatibilidade de saves (antes e depois do lançamento)
+
+**Situação atual (22/10/2026): jogo NÃO lançado.** Decisão do autor: ninguém terá um save anterior à versão
+lançada, então manter compatibilidade com saves de desenvolvimento só gasta tempo e tokens.
+
+Enquanto o jogo não for lançado:
+- Mudou o formato do `GameState`? Suba `STATE_SCHEMA_VERSION`, mas **não** escreva função de atualização da versão
+  anterior nem teste com save antigo. Um save mais velho pode ser recusado com uma mensagem clara ("comece um novo
+  jogo"); não é bug.
+- Banco SQLite: tabela ou coluna nova continua entrando por migração numerada (é assim que o banco é criado), mas sem
+  converter nem preencher dados antigos.
+- Conteúdo (eventos, políticas, cenários) pode ser editado no próprio arquivo; não é preciso criar uma versão nova
+  só para não mexer na anterior.
+- As funções de atualização e os testes que já existem podem ficar; não precisam ser removidos nem estendidos.
+
+**Quando o jogo for lançado** (o autor atualiza esta seção com a data e a versão), a regra se inverte:
+toda mudança de estrutura persistida exige função de atualização + teste que carrega um save da versão anterior,
+dados de conteúdo publicados ganham nova versão em vez de edição, e só saves de versão **mais nova** que o app são
+recusados.
 
 ---
 
@@ -55,7 +76,7 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 - **Realimentações saturam.** Todo laço de realimentação usa saturação (`tanh`, logística ou limite explícito). Crise só acontece com causa registrada ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §1.8).
 - **Defasagens pela fila.** Efeitos futuros são agendados como `ScheduledImpulse` ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.11), não calculados com `if/else` sobre o histórico.
 - **Estado enxuto.** Séries históricas não vivem no `GameState`; ficam no banco ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §11).
-- **Saves antigos são atualizados, não recusados.** Mudou o formato do `GameState`? Suba `STATE_SCHEMA_VERSION` e escreva a função de atualização da versão anterior (ou um valor padrão no esquema Zod), com teste que carrega um save da versão anterior. Só saves de versão **mais nova** que o app são recusados.
+- **Saves antigos: regra do §2.1.** Antes do lançamento, basta subir `STATE_SCHEMA_VERSION`, sem função de atualização. Depois do lançamento, saves antigos são atualizados, não recusados: função de atualização da versão anterior (ou valor padrão no esquema Zod) com teste que carrega um save da versão anterior; só saves de versão **mais nova** que o app são recusados.
 
 ---
 
@@ -115,7 +136,7 @@ Este arquivo vale para qualquer assistente de programação (Claude Code, Codex 
 - **Invariantes:** ver [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §7. Obrigatórios em toda simulação de teste.
 - **Determinismo:** mesma semente → mesmo estado final.
 - **Campanhas automáticas:** estratégias-robô × várias sementes.
-- **Migrações:** carregar saves de versões anteriores (fixtures) e verificar integridade.
+- **Migrações:** só depois do lançamento (§2.1): carregar saves de versões anteriores (fixtures) e verificar integridade.
 - **Interface:** Maestro (a partir da Fase 01/02).
 - Proibido ajustar valores esperados de um teste apenas para fazê-lo passar sem explicar o motivo no PR.
 
