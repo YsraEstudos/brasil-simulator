@@ -48,7 +48,16 @@ const DEG = Math.PI / 180;
 /** Um quadro desenhado, para medir desempenho sem `setState`. */
 export type SceneFrame = { atMs: number; moving: boolean; tilesBusy: boolean };
 
-export type SceneStats = { tiles: number; cached: number; maxLevel: number };
+export type SceneStats = {
+  tiles: number;
+  cached: number;
+  maxLevel: number;
+  calls: number;
+  triangles: number;
+  programs: number;
+  textures: number;
+  geometries: number;
+};
 
 /** Malha única compartilhada por todos os tiles: grade (u, v) + saias nas bordas (z = 1). */
 function createTileGeometry(n = TILE_GRID): THREE.BufferGeometry {
@@ -372,7 +381,7 @@ export function GlobeScene({
   const frustum = useMemo(() => new THREE.Frustum(), []);
   const projScreen = useMemo(() => new THREE.Matrix4(), []);
   const sphere = useMemo(() => new THREE.Sphere(), []);
-  const last = useRef({ time: 0, stats: '' });
+  const last = useRef({ time: 0, stats: '', statsAt: -Infinity });
   const labelsUpdate = useRef<LabelsUpdater | null>(null);
   // O quadro lê o orçamento por aqui: mudar de perfil não recria a cena nem reinicia o laço.
   const budgetRef = useRef(budget);
@@ -753,8 +762,19 @@ export function GlobeScene({
       (u.uDrift.value as THREE.Vector2).set(cs.offset[0] + drift, cs.offset[1] + drift * 0.4);
     }
 
-    if (onStats) {
-      const stats = { tiles: draw.length, cached: store.size, maxLevel };
+    if (onStats && now - last.current.statsAt >= 0.5) {
+      last.current.statsAt = now;
+      // renderer.info descreve o quadro anterior; contagens não representam bytes de VRAM.
+      const stats = {
+        tiles: draw.length,
+        cached: store.size,
+        maxLevel,
+        calls: gl.info.render.calls,
+        triangles: gl.info.render.triangles,
+        programs: gl.info.programs?.length ?? 0,
+        textures: gl.info.memory.textures,
+        geometries: gl.info.memory.geometries,
+      };
       const key = JSON.stringify(stats);
       if (key !== last.current.stats) {
         last.current.stats = key;

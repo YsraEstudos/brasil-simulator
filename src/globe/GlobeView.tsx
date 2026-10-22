@@ -5,8 +5,10 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AutoQualityMachine } from './autoQuality';
+import { FrameStats } from './frameStats';
+import { GlFailureWatcher, type GlFailureHandler } from './diagnostics';
 import type { ClimateMapData } from './climateTexture';
-import { CAMERA } from './config';
+import { CAMERA, GLOBE_STATS_ENABLED } from './config';
 import { GlobeController } from './controller';
 import type { LabelInsets } from './GlobeLabels';
 import { GlobeScene, type SceneFrame, type SceneStats } from './GlobeScene';
@@ -71,6 +73,7 @@ export interface GlobeViewProps {
   /** Toque num marcador (a sigla da UF dele): tem prioridade sobre a seleção da UF. */
   onMarkerPress?: (sigla: string) => void;
   reduceMotion?: boolean;
+  onGlFailure?: GlFailureHandler;
 }
 
 const NO_RECTS: readonly Rect[] = [];
@@ -106,6 +109,7 @@ export function GlobeView({
   pulseKey = '',
   onMarkerPress,
   reduceMotion = false,
+  onGlFailure,
 }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   useEffect(() => controller.setReduceMotion(reduceMotion), [controller, reduceMotion]);
@@ -146,6 +150,9 @@ export function GlobeView({
     latest.current = quality;
   });
   const machine = useRef<AutoQualityMachine | null>(null);
+  const frames = useRef(new FrameStats());
+  const [perf, setPerf] = useState<ReturnType<FrameStats['summary']> | null>(null);
+  const publishAt = useRef(0);
   const autoOn = quality.auto;
   useEffect(() => {
     machine.current = autoOn ? new AutoQualityMachine(latest.current.profile) : null;
@@ -154,11 +161,19 @@ export function GlobeView({
     };
   }, [autoOn]);
   useEffect(() => {
-    if (paused) machine.current?.interrupt(); // o intervalo depois de uma pausa não mede desempenho
+    if (paused) {
+      machine.current?.interrupt();
+      frames.current.interrupt();
+    }
   }, [paused]);
   const onFrame = useCallback((frame: SceneFrame) => {
-    const change = machine.current?.feed(frame);
+    const sample = frames.current.push(frame);
+    const change = machine.current?.feedSample(frame, sample);
     if (change) latest.current.onAutoProfile?.(change.to);
+    if (GLOBE_STATS_ENABLED && frame.atMs - publishAt.current >= 500) {
+      publishAt.current = frame.atMs;
+      setPerf(frames.current.summary());
+    }
   }, []);
 
   // Último toque num marcador (a sigla da UF; o contador distingue dois toques seguidos no mesmo).
@@ -234,16 +249,17 @@ export function GlobeView({
               linear
               camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}>
               <ResumeOnUnpause paused={paused} />
+              <GlFailureWatcher onFailure={onGlFailure} />
               <GlobeScene
                 controller={controller}
                 selectedUf={selected}
                 fills={fills}
-                onStats={__DEV__ ? setStats : undefined}
+                onStats={GLOBE_STATS_ENABLED ? setStats : undefined}
                 reservedRects={reservedRects}
                 labelInsets={sceneInsets}
                 labelScale={labelScale}
                 budget={budget}
-                onFrame={autoOn ? onFrame : undefined}
+                onFrame={onFrame}
                 sky={sky}
                 climate={climate}
                 clouds={clouds}
@@ -260,6 +276,10 @@ export function GlobeView({
       {stats && (
         <Text style={[styles.stats, { top: insets.top + 52, left: 16 + insets.left }]} pointerEvents="none">
           tiles {stats.tiles} · cache {stats.cached} · nível {stats.maxLevel}
+          {` · calls ${stats.calls} · tri ${stats.triangles} · prog ${stats.programs} · tex ${stats.textures} · geo ${stats.geometries}`}
+          {perf
+            ? ` · ${perf.fps.toFixed(1)} qps · p50 ${perf.p50.toFixed(1)} / p95 ${perf.p95.toFixed(1)} / p99 ${perf.p99.toFixed(1)} ms · >100ms ${perf.longFrames}`
+            : ''}
         </Text>
       )}
     </View>

@@ -45,6 +45,9 @@ export const LOD_TEXEL_THRESHOLD = 1.25;
 /** Máximo de blocos na GPU (atlas de até 4x4 tiles: ~5,6 MB de cor com mipmaps). */
 export const TILE_CACHE_BLOCKS = 20;
 export const MAX_CONCURRENT_LOADS = 4;
+/** Instrumentação opt-in também na build EAS preview, sem laço de render adicional. */
+export const GLOBE_STATS_ENABLED =
+  (typeof __DEV__ !== 'undefined' && __DEV__) || process.env.EXPO_PUBLIC_GLOBE_STATS === '1';
 
 /** Tiles por lado de cada bloco (atlas) no nível z. Deve coincidir com build_globe.py. */
 export function blockSide(z: number): number {
