@@ -83,7 +83,9 @@ import {
 } from './mesaNav';
 import { ProfileSheet } from './ProfileSheet';
 import { availableIndicators, indicatorSpec, layerBadge, mapRows, type MapIndicator } from './regionalMetrics';
-import { UfDetail, UfList } from './StateDetail';
+import { UfDetail } from './StateDetail';
+import { ReadingList } from './MapReadingPanel';
+import { DIMMED_UF, rankUfs, ufDescription } from './mapReading';
 
 const logo = require('../../../assets/images/logo-brasil.png');
 
@@ -187,6 +189,7 @@ export function PainelScreen() {
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
+  const [mapRegion, setMapRegion] = useState<string | null>(null);
   const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
   // Evento aberto por um marcador do mapa: a folha Alertas o põe no topo e o destaca. Limpo ao fechar a folha.
   const [focusInstance, setFocusInstance] = useState<string | null>(null);
@@ -305,7 +308,7 @@ export function PainelScreen() {
   );
   // Marcadores de eventos e notícias com local (um por UF); o pulso dos críticos novos vem marcado em cada um.
   const markers = useMapMarkers(active, content);
-  const mapModel = useMemo(
+  const baseMapModel = useMemo(
     () =>
       buildRegionalMapViewModel({
         indicator: layer,
@@ -326,6 +329,35 @@ export function PainelScreen() {
     [active, content, listIndicator, election],
   );
   const selectedRow = selectedUf ? (ufRows.find((r) => r.uf.id === selectedUf) ?? null) : null;
+  const mapModel = useMemo(
+    () => ({
+      ...baseMapModel,
+      fills: mapRegion
+        ? Object.fromEntries(
+            ufRows.map((r) => [
+              r.uf.id,
+              r.region === mapRegion ? (baseMapModel.fills[r.uf.id] ?? '#1f2a40') : DIMMED_UF,
+            ]),
+          )
+        : baseMapModel.fills,
+      descriptions: active
+        ? Object.fromEntries(
+            rankUfs(listIndicator, ufRows).map((r) => [
+              r.uf.id,
+              ufDescription(
+                listIndicator,
+                r,
+                r.rank,
+                ufRows.length,
+                active.state,
+                layerBadge(listIndicator, election)?.text,
+              ),
+            ]),
+          )
+        : {},
+    }),
+    [baseMapModel, mapRegion, ufRows, active, listIndicator, election],
+  );
   // No mês da posse ainda não há relatório: a explicação inicial vem da própria distribuição.
   const explanations = useMemo(
     () =>
@@ -636,8 +668,11 @@ export function PainelScreen() {
               Participação de cada região no produto nacional.
             </Text>
             {active ? (
-              <UfList
+              <ReadingList
                 rows={ufRows}
+                state={active.state}
+                region={mapRegion}
+                onRegion={setMapRegion}
                 indicator={listIndicator}
                 badge={layerBadge(listIndicator, election)}
                 onChoose={chooseState}

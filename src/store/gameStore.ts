@@ -289,7 +289,13 @@ export function createGameStore(deps: GameStoreDeps) {
               seed,
               profile: profileId,
             });
-            await createCampaign(d, { id, name, scenarioVersion: scenario.version, state });
+            await createCampaign(d, {
+              id,
+              name,
+              scenarioVersion: scenario.version,
+              state,
+              content: loadContent(scenario.id),
+            });
             created = { id, name, state, baseline: state, finished: false };
           } catch (e) {
             // Nada foi gravado (a transação desfaz tudo): a campanha anterior e o rascunho continuam como estavam. O
@@ -401,7 +407,7 @@ export function createGameStore(deps: GameStoreDeps) {
           const content = loadContent(active.state.scenarioId);
           const result = advanceMonth(active.state, input ?? draftInput(get().draft, content), content);
           const finished = isFinished(result.state);
-          await recordMonth(d, active.id, result, { finish: finished });
+          await recordMonth(d, active.id, result, { finish: finished, content });
           set({
             active: {
               ...active,
