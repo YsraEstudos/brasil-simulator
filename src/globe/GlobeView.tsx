@@ -70,6 +70,7 @@ export interface GlobeViewProps {
   pulseKey?: string;
   /** Toque num marcador (a sigla da UF dele): tem prioridade sobre a seleção da UF. */
   onMarkerPress?: (sigla: string) => void;
+  reduceMotion?: boolean;
 }
 
 const NO_RECTS: readonly Rect[] = [];
@@ -104,8 +105,10 @@ export function GlobeView({
   markers = NO_MARKERS,
   pulseKey = '',
   onMarkerPress,
+  reduceMotion = false,
 }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
+  useEffect(() => controller.setReduceMotion(reduceMotion), [controller, reduceMotion]);
   const insets = useSafeAreaInsets();
   const sceneInsets = useMemo<LabelInsets>(
     () => labelInsets ?? { top: insets.top, right: insets.right, bottom: insets.bottom, left: insets.left },
@@ -246,7 +249,8 @@ export function GlobeView({
                 clouds={clouds}
                 drawing={!paused}
                 markers={markers}
-                pulseKey={pulseKey}
+                pulseKey={reduceMotion ? '' : pulseKey}
+                reduceMotion={reduceMotion}
               />
             </Canvas>
           </View>

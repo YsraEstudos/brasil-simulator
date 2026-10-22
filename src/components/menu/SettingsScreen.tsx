@@ -26,6 +26,7 @@ import { enterAt, goBack, SetupHeader } from '../campaign/SetupBits';
  */
 export function SettingsScreen() {
   const { colors, textScale, setTextScale } = useTheme();
+  const reduceMotion = useGame((s) => s.reduceMotion);
   const insets = useSafeAreaInsets();
   const mapQuality = useGame((s) => s.mapQuality);
   const autoProfile = useGame((s) => s.autoProfile);
@@ -46,7 +47,16 @@ export function SettingsScreen() {
         ]}>
         <SetupHeader title="CONFIGURAÇÕES" subtitle="Ajustes do jogo neste aparelho" onBack={goBack} />
 
-        <Animated.View entering={enterAt(0)}>
+        <Animated.View entering={reduceMotion ? undefined : enterAt(0)}>
+          <Card title="Movimento" subtitle="Acessibilidade do mapa">
+            <Button
+              label={`Reduzir movimento: ${reduceMotion ? 'ligado' : 'desligado'}`}
+              onPress={() => void gameStore.getState().setReduceMotion(!reduceMotion)}
+            />
+            <Text variant="caption" color="textSecondary">
+              Desliga a transição do Sol, o pulso, a deriva das nuvens e a inércia do globo.
+            </Text>
+          </Card>
           <Card title="Tamanho do texto" subtitle="Vale para todas as telas do jogo">
             <View style={styles.row}>
               {TEXT_SCALES.map((s) => (

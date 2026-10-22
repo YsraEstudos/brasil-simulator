@@ -41,6 +41,7 @@ import {
 } from './shaders';
 import { loadTexture, TileStore } from './tileStore';
 import { computeSun, sunKey, type SkyInput } from './visualClock';
+import { sunTransition } from './motion';
 
 const DEG = Math.PI / 180;
 
@@ -238,6 +239,7 @@ type Props = {
   markers: readonly GlobeMarker[];
   /** Muda quando há marcador novo e crítico para pulsar; vazio = nenhum. */
   pulseKey: string;
+  reduceMotion: boolean;
 };
 
 export function GlobeScene({
@@ -256,6 +258,7 @@ export function GlobeScene({
   drawing,
   markers,
   pulseKey,
+  reduceMotion,
 }: Props) {
   'use no memo'; // objetos three.js são mutados a cada quadro; fora do React Compiler
   const { camera, gl, size, invalidate } = useThree();
@@ -379,6 +382,8 @@ export function GlobeScene({
   // mês, nunca pedem quadro sozinhos; "Hora real" regrava a cada quadro já desenhado (sem temporizador).
   const skyRef = useRef(sky);
   const lastSun = useRef({ key: '' });
+  const sunFlight = useRef<{ from: Vec3; to: Vec3; start: number } | null>(null);
+  const previousSky = useRef<SkyInput | null>(null);
   // Nuvens e seca: o quadro lê o estado por aqui (nada de `setState` por quadro).
   const cloudState = useRef({
     on: false, // perfil permite + opção ligada + textura de ruído pronta + clima gravado
@@ -395,15 +400,30 @@ export function GlobeScene({
   const droughtVisible = useMemo(() => (climate ? hasDrought(climate.values) : false), [climate]);
   // O perfil de qualidade decide se o aparelho desenha nuvens; a opção do jogador só desliga.
   const cloudsAllowed = cloudsSetting && budget.effects.clouds;
-  const cloudsAnimated = cloudsAllowed && budget.effects.animatedClouds;
+  const cloudsAnimated = cloudsAllowed && budget.effects.animatedClouds && !reduceMotion;
 
   useEffect(() => {
     skyRef.current = sky;
     const input = sky.setting.mode === 'real' ? { ...sky, utc: deviceUtc() } : sky;
-    writeSun(sunUniforms, input, lastSun.current);
+    const previous = previousSky.current;
+    const target = computeSun(input);
+    if (
+      !reduceMotion &&
+      previous?.setting.mode === 'fixa' &&
+      previous.month !== sky.month &&
+      sky.setting.mode === 'fixa' &&
+      target.enabled
+    ) {
+      const dir = sunUniforms.uSunDir.value;
+      sunFlight.current = { from: [dir.x, dir.y, dir.z], to: target.dir, start: performance.now() };
+    } else {
+      sunFlight.current = null;
+      writeSun(sunUniforms, input, lastSun.current);
+    }
+    previousSky.current = sky;
     lights.visible = sunUniforms.uSunOn.value > 0.5;
     invalidate();
-  }, [sky, sunUniforms, lights, invalidate]);
+  }, [sky, sunUniforms, lights, invalidate, reduceMotion]);
 
   useEffect(() => {
     budgetRef.current = budget;
@@ -614,6 +634,16 @@ export function GlobeScene({
     const dt = Math.min(0.05, Math.max(0, now - last.current.time));
     last.current.time = now;
     const moving = controller.step(dt);
+    const flight = sunFlight.current;
+    if (flight) {
+      const transition = sunTransition(flight.from, flight.to, performance.now() - flight.start, reduceMotion);
+      sunUniforms.uSunDir.value.set(...transition.dir);
+      if (transition.active) invalidate();
+      else {
+        sunFlight.current = null;
+        lastSun.current.key = '';
+      }
+    }
 
     // Sol em "Hora real": só aqui, num quadro que já vai ser desenhado.
     if (skyRef.current.setting.mode === 'real') {

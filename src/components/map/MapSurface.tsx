@@ -151,6 +151,7 @@ export function MapSurface({
   clouds,
   style,
 }: MapSurfaceProps) {
+  const reduceMotion = useGame((s) => s.reduceMotion);
   // O mesmo ajuste de texto do aplicativo vale para as siglas do globo e do mapa 2D.
   const scale = labelScale(useGame((s) => s.textScale));
   const labels: LabelProps = { reservedRects, labelInsets, labelScale: scale };
@@ -195,6 +196,7 @@ export function MapSurface({
         clouds={clouds}
         markers={viewModel.markers}
         pulseKey={markerPulseKey(viewModel.markers)}
+        reduceMotion={reduceMotion}
         onMarkerPress={markerPressed}
       />
     </GlobeBoundary>

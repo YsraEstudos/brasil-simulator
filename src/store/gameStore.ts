@@ -106,6 +106,7 @@ export interface GameStoreState {
   dayTime: DayTimeSetting;
   /** Nuvens do mapa (sim/não; Configurações; guardada em `settings`). Só visual; o perfil de qualidade pode não as permitir. */
   mapClouds: boolean;
+  reduceMotion: boolean;
   /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
   draft: AgendaDraft;
   /** Últimas dificuldade e cenário usados em NOVO JOGO (lidos uma vez no início, gravados após criar). */
@@ -143,6 +144,7 @@ export interface GameStoreState {
   setDayTime(setting: DayTimeSetting): Promise<boolean>;
   /** Liga ou desliga as nuvens do mapa; vale na hora e é gravada. */
   setMapClouds(on: boolean): Promise<boolean>;
+  setReduceMotion(on: boolean): Promise<boolean>;
 }
 
 export interface GameStoreDeps {
@@ -193,6 +195,7 @@ export function createGameStore(deps: GameStoreDeps) {
       campaigns: [],
       active: null,
       textScale: 1,
+      reduceMotion: false,
       mapQuality: DEFAULT_MAP_QUALITY,
       autoProfile: DEFAULT_PROFILE_3D,
       dayTime: DEFAULT_DAY_TIME,
@@ -241,8 +244,15 @@ export function createGameStore(deps: GameStoreDeps) {
           } catch {
             // segue com as nuvens ligadas
           }
+          let reduceMotion = false;
+          try {
+            reduceMotion = (await getSetting<unknown>(db, 'reduceMotion', false)) === true;
+          } catch {
+            /* Uma preferência ilegível não impede abrir a campanha. */
+          }
           set({
             textScale,
+            reduceMotion,
             mapQuality,
             autoProfile,
             dayTime,
@@ -469,6 +479,12 @@ export function createGameStore(deps: GameStoreDeps) {
         run(async (d) => {
           set({ mapClouds: on });
           await setSetting(d, MAP_CLOUDS_KEY, on);
+        }),
+
+      setReduceMotion: (on) =>
+        run(async (db) => {
+          await setSetting(db, 'reduceMotion', on);
+          set({ reduceMotion: on });
         }),
 
       async setAutoProfile(profile) {
