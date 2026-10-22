@@ -294,11 +294,12 @@ export const PARAMS = {
     basis: 'ECONOMIC_MODEL.md §5.4.1 (50 bp)',
   },
   custo_cred_pressao: {
-    value: 0.05,
-    min: 0.02,
-    max: 0.1,
+    value: 0.01,
+    min: 0.005,
+    max: 0.05,
     note: 'credibilidade perdida por pressão, × (1 + pressões nos 12 meses anteriores)',
-    basis: 'ECONOMIC_MODEL.md §5.4.1',
+    basis:
+      'ECONOMIC_MODEL.md §5.4.1; PR 14: perda de 1–4 p.p. por ato trimestral, validada em 240 meses (docs/RELEASE_GLOBO.md)',
   },
   custo_risco_pressao: {
     value: 0.002,

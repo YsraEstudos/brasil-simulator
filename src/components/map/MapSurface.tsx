@@ -1,4 +1,4 @@
-import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import type { GlobeApi, GlobeQuality, GlobeViewProps } from '@/globe/GlobeView';
@@ -151,6 +151,7 @@ export function MapSurface({
   clouds,
   style,
 }: MapSurfaceProps) {
+  const [graphicsFailed, setGraphicsFailed] = useState(false);
   const reduceMotion = useGame((s) => s.reduceMotion);
   // O mesmo ajuste de texto do aplicativo vale para as siglas do globo e do mapa 2D.
   const scale = labelScale(useGame((s) => s.textScale));
@@ -173,7 +174,7 @@ export function MapSurface({
       labels={labels}
     />
   );
-  if (renderer !== 'globe') return flat(renderer === 'flat-light');
+  if (renderer !== 'globe' || graphicsFailed) return flat(renderer === 'flat-light');
   // O globo devolve a sigla da UF do marcador tocado; o modelo tem um marcador por UF.
   const markerPressed = (sigla: string) => {
     const marker = viewModel.markers.find((m) => m.sigla === sigla);
@@ -197,6 +198,10 @@ export function MapSurface({
         markers={viewModel.markers}
         pulseKey={markerPulseKey(viewModel.markers)}
         reduceMotion={reduceMotion}
+        onGlFailure={(reason, detail) => {
+          setGraphicsFailed(true);
+          onGlobeFailure?.(new Error(`Falha gráfica: ${reason}${detail ? ` (${detail})` : ''}`));
+        }}
         onMarkerPress={markerPressed}
       />
     </GlobeBoundary>
