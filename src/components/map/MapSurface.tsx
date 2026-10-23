@@ -1,4 +1,4 @@
-import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import type { GlobeApi, GlobeViewProps } from '@/globe/GlobeView';
@@ -88,19 +88,41 @@ function LazyGlobe(props: GlobeViewProps) {
   return <GlobeView {...props} />;
 }
 
-export function MapSurface({ renderer, viewModel, onSelect, onReady, paused, onGlobeFailure, style }: MapSurfaceProps) {
+export function MapSurface(props: MapSurfaceProps) {
+  return <MapSurfaceRenderer key={props.renderer} {...props} />;
+}
+
+function MapSurfaceRenderer({
+  renderer,
+  viewModel,
+  onSelect,
+  onReady,
+  paused,
+  onGlobeFailure,
+  style,
+}: MapSurfaceProps) {
+  const [globeFailed, setGlobeFailed] = useState(false);
+  const reportGlobeFailure = useCallback(
+    (error: Error) => {
+      setGlobeFailed(true);
+      onGlobeFailure?.(error);
+    },
+    [onGlobeFailure],
+  );
+
   const flat = (light: boolean) => (
     <FlatMap viewModel={viewModel} onSelect={onSelect} onReady={onReady} light={light} style={style} />
   );
-  if (renderer !== 'globe') return flat(renderer === 'flat-light');
+  if (renderer !== 'globe' || globeFailed) return flat(renderer === 'flat-light');
   return (
-    <GlobeBoundary onFailure={onGlobeFailure} fallback={flat(false)}>
+    <GlobeBoundary onFailure={reportGlobeFailure} fallback={flat(false)}>
       <LazyGlobe
         fills={viewModel.fills}
         selectedId={viewModel.selectedId}
         onSelect={onSelect}
         onReady={onReady}
         paused={paused}
+        onGlobeFailure={reportGlobeFailure}
       />
     </GlobeBoundary>
   );

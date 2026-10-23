@@ -2,7 +2,7 @@ import type { RegionalKey } from '../../types/regions';
 import { legislativeInstrument } from '../congress/congress';
 import { isNovoBeneficio, vedacaoAtiva } from '../elections/vedacao';
 import { fiscalDirection } from '../policyChannels';
-import { reissueBarredPolicies } from '../proposals/proposals';
+import { hasRegionalDistributionChannel, reissueBarredPolicies } from '../proposals/proposals';
 import type { DecisionRejection, GameContent, GameState } from '../types';
 
 import { adhesionProbabilities, expectedAdhesion, regionsOf, regionsView, ufIncidence } from './regions';
@@ -56,7 +56,7 @@ export interface RegionalDecisionPreview {
   ufs: RegionalPreviewUf[];
   /** Adesão esperada (soma das probabilidades); `null` sem adesão (ou no Casual, em que todos aderem). */
   adhesion: { expectedStates: number; expectedPopulationShare: number } | null;
-  /** Defasagem, em meses, dos impactos da política; `null` se nenhum impacto tem magnitude. */
+  /** Defasagem adicional, em meses após o início da execução; `null` se nenhum impacto tem magnitude. */
   lagMonths: { earliest: number; longest: number } | null;
   /** Fatores que mantêm o resultado como estimativa. */
   uncertain: RegionalUncertainty[];
@@ -78,8 +78,9 @@ export function buildRegionalDecisionPreview(
   if (ufs.length === 0 || !policy) return null;
 
   const view = regionsView(state, content);
-  // Sem perfil, o gasto se reparte pela participação de tendência: nada diferente entre as UFs.
-  const regional = policy.regional ?? { key: 'pib' as const, scope: [], boost: {} };
+  const differential = policy.regional !== undefined && hasRegionalDistributionChannel(policy);
+  // Sem distribuição regional executável, o gasto se reparte pela participação de tendência.
+  const regional = differential ? policy.regional! : { key: 'pib' as const, scope: [], boost: {} };
   const incidence = ufIncidence(
     ufs,
     view.map((u) => u.structuralShare),
@@ -114,8 +115,8 @@ export function buildRegionalDecisionPreview(
 
   return {
     policyId,
-    differential: policy.regional !== undefined,
-    key: policy.regional?.key ?? null,
+    differential,
+    key: differential ? policy.regional!.key : null,
     direction: fiscalDirection(policy),
     ufs: preview,
     adhesion,

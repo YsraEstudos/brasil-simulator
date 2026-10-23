@@ -1,4 +1,5 @@
 import { Canvas, useThree } from './r3f';
+import { NativeGlobeCanvas } from './NativeGlobeCanvas';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -32,6 +33,8 @@ export interface GlobeViewProps {
    * deve gastar GPU. A câmera, a seleção e os tiles ficam como estão; ao despausar o globo desenha um quadro na hora.
    */
   paused?: boolean;
+  /** Falha ao criar o contexto GL no nativo; permite ao mapa mostrar o fallback 2D. */
+  onGlobeFailure?: (error: Error) => void;
 }
 
 /** Ao despausar o laço sob demanda não tem quadro pedido: invalida um para o globo reaparecer sem esperar um gesto. */
@@ -44,7 +47,7 @@ function ResumeOnUnpause({ paused }: { paused: boolean }) {
 }
 
 /** O globo da federação: câmera, toques e o mapa de calor; quem usa controla a seleção (`selectedId`/`onSelect`). */
-export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false }: GlobeViewProps) {
+export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false, onGlobeFailure }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   const insets = useSafeAreaInsets();
   // Último toque no globo (o contador distingue dois toques seguidos na mesma UF).
@@ -120,19 +123,36 @@ export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false
               os rouba do GestureDetector. Não usamos eventos de ponteiro do R3F (o pick é nosso), então
               o Canvas fica fora do hit-test e os toques chegam ao container. */}
           <View style={styles.canvas} pointerEvents={Platform.OS === 'web' ? 'auto' : 'none'}>
-            <Canvas
-              frameloop={paused ? 'never' : 'demand'}
-              flat
-              linear
-              camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}>
-              <ResumeOnUnpause paused={paused} />
-              <GlobeScene
-                controller={controller}
-                selectedUf={selected}
-                fills={fills}
-                onStats={__DEV__ ? setStats : undefined}
-              />
-            </Canvas>
+            {Platform.OS === 'web' ? (
+              <Canvas
+                frameloop={paused ? 'never' : 'demand'}
+                flat
+                linear
+                camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}>
+                <ResumeOnUnpause paused={paused} />
+                <GlobeScene
+                  controller={controller}
+                  selectedUf={selected}
+                  fills={fills}
+                  onStats={__DEV__ ? setStats : undefined}
+                />
+              </Canvas>
+            ) : (
+              <NativeGlobeCanvas
+                frameloop={paused ? 'never' : 'demand'}
+                flat
+                linear
+                camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}
+                onContextFailure={onGlobeFailure}>
+                <ResumeOnUnpause paused={paused} />
+                <GlobeScene
+                  controller={controller}
+                  selectedUf={selected}
+                  fills={fills}
+                  onStats={__DEV__ ? setStats : undefined}
+                />
+              </NativeGlobeCanvas>
+            )}
           </View>
         </View>
       </GestureDetector>
