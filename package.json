@@ -61,6 +61,7 @@
     "test:coverage": "vitest run --coverage",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "build:globe": "python scripts/data/build_globe.py",
+    "build:labels": "python scripts/data/build_labels.py",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "sim:balance": "vitest run --config vitest.balance.config.mts scripts/sim/balance.sim.ts",

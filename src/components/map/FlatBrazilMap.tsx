@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -11,8 +11,10 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import type { LabelViewport, Rect } from '@/globe/labels';
 import { findUf } from '@/globe/ufs';
 
+import { layoutFlatLabels } from './flatLabels';
 import { flatMap, type FlatUf } from './flatProjection';
 import type { RegionalMapViewModel } from './regionalMapViewModel';
 
@@ -32,11 +34,11 @@ const BORDER_WIDTH = 1.2;
 const SELECTED_STROKE = '#ffe27a';
 const SELECTED_STROKE_WIDTH = 3.2;
 // Na web o react-native-svg repassa as props ao DOM: nada de props só do RN nos `<Path>` (lá vai `aria-label`).
-/** Menor lado da caixa da UF, em pixels na tela, a partir do qual cabe a sigla; abaixo vira um ponto. */
-const LABEL_MIN_PX = 22;
-const LABEL_WIDTH = 30;
-const LABEL_HEIGHT = 14;
-const DOT_SIZE = 5;
+/** Contorno e miolo do pin e do ponto da capital (mesmas cores do atlas do globo). */
+const PIN_FILL = '#ffffff';
+const PIN_OUTLINE = '#10141c';
+/** Folga horizontal (px) da caixa de texto nativo: a fonte do sistema não tem a largura exata da do atlas. */
+const TEXT_SLACK_PX = 12;
 
 export interface FlatBrazilMapProps {
   viewModel: RegionalMapViewModel;
@@ -44,6 +46,12 @@ export interface FlatBrazilMapProps {
   onSelect: (sigla: string | null) => void;
   /** `full`: siglas e pontos sobre o mapa. `light`: só polígonos e seleção. */
   variant: 'full' | 'light';
+  /** Áreas do HUD (px do mapa) onde nenhuma sigla ou capital pode tocar. Só na variante `full`. */
+  reservedRects?: readonly Rect[];
+  /** Faixas onde um rótulo não cabe por inteiro (área segura e barras do HUD). */
+  labelInsets?: LabelViewport['insets'];
+  /** Tamanho dos rótulos: `labelScale(textScale)`. Padrão 1. */
+  labelScale?: number;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -70,29 +78,76 @@ const UfPath = memo(function UfPath({ uf, fill }: UfPathProps) {
 interface UfLabelsProps {
   width: number;
   height: number;
+  scale: number;
+  reserved: readonly Rect[] | undefined;
+  insets: LabelViewport['insets'] | undefined;
 }
 
-/** Siglas (UFs que cabem) e pontos (as pequenas: DF, SE, AL…) nas posições projetadas. Só muda ao redimensionar. */
-const UfLabels = memo(function UfLabels({ width, height }: UfLabelsProps) {
-  const { viewBox, ufs } = flatMap();
-  const scale = Math.min(width / viewBox.width, height / viewBox.height);
-  const offsetX = (width - viewBox.width * scale) / 2;
-  const offsetY = (height - viewBox.height * scale) / 2;
+/**
+ * Siglas, pins e capitais por cima do SVG, escolhidos por `layoutFlatLabels` (as regras do globo). Só refaz o layout
+ * ao redimensionar ou quando as áreas do HUD ou a escala do texto mudam.
+ */
+const UfLabels = memo(function UfLabels({ width, height, scale, reserved, insets }: UfLabelsProps) {
+  const items = useMemo(
+    () => layoutFlatLabels({ width, height, scale, reserved, insets }),
+    [width, height, scale, reserved, insets],
+  );
+  const textBox = (box: Rect) => ({
+    left: box.x - TEXT_SLACK_PX / 2,
+    top: box.y,
+    width: box.w + TEXT_SLACK_PX,
+    height: box.h,
+  });
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none" importantForAccessibility="no-hide-descendants">
-      {ufs.map((uf) => {
-        const x = offsetX + uf.centroid.x * scale;
-        const y = offsetY + uf.centroid.y * scale;
-        if (Math.min(uf.width, uf.height) * scale < LABEL_MIN_PX)
-          return <View key={uf.sigla} style={[styles.dot, { left: x - DOT_SIZE / 2, top: y - DOT_SIZE / 2 }]} />;
+      {items.map((item) => {
+        if (item.kind === 'pin')
+          return (
+            <View
+              key={item.id}
+              style={[
+                styles.pin,
+                {
+                  left: item.box.x,
+                  top: item.box.y,
+                  width: item.box.w,
+                  height: item.box.h,
+                  borderRadius: item.box.w / 2,
+                },
+              ]}
+            />
+          );
+        if (item.kind === 'sigla')
+          return (
+            <Text
+              key={item.id}
+              style={[styles.label, textBox(item.box), { fontSize: item.fontSize, lineHeight: item.box.h }]}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1}>
+              {item.text}
+            </Text>
+          );
         return (
-          <Text
-            key={uf.sigla}
-            style={[styles.label, { left: x - LABEL_WIDTH / 2, top: y - LABEL_HEIGHT / 2 }]}
-            numberOfLines={1}
-            maxFontSizeMultiplier={1}>
-            {uf.sigla}
-          </Text>
+          <View key={item.id} style={StyleSheet.absoluteFill}>
+            <View
+              style={[
+                styles.dot,
+                {
+                  left: item.dot.x,
+                  top: item.dot.y,
+                  width: item.dot.w,
+                  height: item.dot.h,
+                  borderRadius: item.dot.w / 2,
+                },
+              ]}
+            />
+            <Text
+              style={[styles.label, textBox(item.name), { fontSize: item.fontSize, lineHeight: item.name.h }]}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1}>
+              {item.text}
+            </Text>
+          </View>
         );
       })}
     </View>
@@ -100,7 +155,15 @@ const UfLabels = memo(function UfLabels({ width, height }: UfLabelsProps) {
 });
 
 /** O mapa plano dos 27 estados com cores, seleção e (na variante `full`) siglas. */
-export function FlatBrazilMap({ viewModel, onSelect, variant, style }: FlatBrazilMapProps) {
+export function FlatBrazilMap({
+  viewModel,
+  onSelect,
+  variant,
+  reservedRects,
+  labelInsets,
+  labelScale = 1,
+  style,
+}: FlatBrazilMapProps) {
   // Gere os paths SVG só quando o mapa 2D for realmente renderizado; o import do fallback não bloqueia o início do globo.
   const flat = flatMap();
   const viewBox = `0 0 ${flat.viewBox.width} ${flat.viewBox.height}`;
@@ -154,7 +217,15 @@ export function FlatBrazilMap({ viewModel, onSelect, variant, style }: FlatBrazi
           />
         )}
       </Svg>
-      {variant === 'full' && size.width > 0 && <UfLabels width={size.width} height={size.height} />}
+      {variant === 'full' && size.width > 0 && (
+        <UfLabels
+          width={size.width}
+          height={size.height}
+          scale={labelScale}
+          reserved={reservedRects}
+          insets={labelInsets}
+        />
+      )}
     </Pressable>
   );
 }
@@ -163,22 +234,23 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BACKGROUND },
   label: {
     position: 'absolute',
-    width: LABEL_WIDTH,
-    height: LABEL_HEIGHT,
     textAlign: 'center',
     color: '#ffffff',
-    fontSize: 10,
-    lineHeight: LABEL_HEIGHT,
     fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.85)',
+    textShadowColor: 'rgba(16,20,28,0.95)',
     textShadowRadius: 3,
     textShadowOffset: { width: 0, height: 0 },
   },
+  pin: {
+    position: 'absolute',
+    backgroundColor: PIN_FILL,
+    borderWidth: 1.5,
+    borderColor: PIN_OUTLINE,
+  },
   dot: {
     position: 'absolute',
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: PIN_FILL,
+    borderWidth: 1,
+    borderColor: PIN_OUTLINE,
   },
 });

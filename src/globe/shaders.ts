@@ -1,4 +1,6 @@
 import { HEIGHT_OFFSET, HEIGHT_SCALE, ROOT, TILE_GRID } from './config';
+import { LABEL_MIN_FACING } from './labelLayout';
+import { QuadKind } from './labelQuads';
 
 const f = (n: number) => n.toFixed(6);
 
@@ -113,4 +115,59 @@ varying float vFacing;
 void main() {
   if (vFacing < 0.0) discard;
   gl_FragColor = vec4(uColor, uOpacity);
+}`;
+
+/**
+ * Rótulos do globo (siglas, pins, capitais): uma malha só. Cada quadrilátero repete a direção do ponto na esfera
+ * (`position`) e o canto em px lógicos (`aCorner`): o ponto é projetado e o canto somado já em tela, então o tamanho
+ * não depende da distância. O centro+canto é arredondado ao pixel do aparelho (texto nítido). Some o que está no
+ * hemisfério oculto (`facing`) ou foi recusado pelo layout na CPU (`aVisible`).
+ */
+export const labelVertexShader = /* glsl */ `
+precision highp float;
+uniform vec2 uViewport; // tamanho da tela em px lógicos
+uniform float uRadius;  // raio em que os rótulos flutuam
+uniform float uScale;   // labelScale(textScale)
+uniform float uDpr;
+attribute vec2 aCorner;
+attribute vec2 aUv;
+attribute float aKind;
+attribute float aVisible;
+varying vec2 vUv;
+varying float vKind;
+void main() {
+  vUv = vec2(aUv.x, 1.0 - aUv.y); // o atlas tem origem no topo; a textura sobe com flipY
+  vKind = aKind;
+  vec3 dir = normalize(position);
+  vec3 p = dir * uRadius;
+  float facing = dot(dir, normalize(cameraPosition - p));
+  vec4 clip = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  if (aVisible < 0.5 || facing < ${f(LABEL_MIN_FACING)} || clip.w <= 0.0) {
+    gl_Position = vec4(2.0, 2.0, 2.0, 1.0); // fora do volume de recorte: o triângulo some
+    return;
+  }
+  vec2 px = clip.xy / clip.w * 0.5 * uViewport + vec2(aCorner.x, -aCorner.y) * uScale;
+  px = floor(px * uDpr + 0.5) / uDpr;
+  gl_Position = vec4(px * 2.0 / uViewport, 0.0, 1.0);
+}`;
+
+/** Texto do atlas (alfa reto) ou círculo com contorno (pin e ponto da capital), sem textura. */
+export const labelFragmentShader = /* glsl */ `
+precision highp float;
+uniform sampler2D uAtlas;
+varying vec2 vUv;
+varying float vKind;
+void main() {
+  if (vKind < ${f(QuadKind.Pin - 0.5)}) {
+    gl_FragColor = texture2D(uAtlas, vUv);
+    return;
+  }
+  // Círculo: d = 0 no centro, 1 na borda; contorno escuro por fora, miolo branco (igual ao texto do atlas).
+  float d = length(vUv - 0.5) * 2.0;
+  float aa = max(fwidth(d), 0.02);
+  float inner = vKind > ${f(QuadKind.Pin + 0.5)} ? 0.52 : 0.6;
+  float alpha = 1.0 - smoothstep(1.0 - aa, 1.0, d);
+  float fill = 1.0 - smoothstep(inner - aa, inner, d);
+  vec3 color = mix(vec3(0.063, 0.078, 0.110), vec3(1.0), fill);
+  gl_FragColor = vec4(color, alpha);
 }`;

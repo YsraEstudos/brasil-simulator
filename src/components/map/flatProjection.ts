@@ -48,6 +48,10 @@ export interface FlatMap {
   stats: { verticesBefore: number; verticesAfter: number };
   /** Inversa da projeção: ponto do viewBox → [lon, lat] (para achar a UF tocada com `findUf`). */
   unproject: (p: Point) => [number, number];
+  /** Projeção: lon/lat → ponto do viewBox (posição de siglas e capitais). */
+  project: (lon: number, lat: number) => Point;
+  /** Unidades do `viewBox` por grau de latitude (e de longitude equivalente): vezes a escala em px dá px por grau. */
+  unitsPerDegree: number;
 }
 
 type LonLat = readonly (readonly number[])[];
@@ -180,6 +184,8 @@ export function buildFlatMap(ufs: readonly Uf[], tolerance = SIMPLIFY_TOLERANCE)
     ufs: ordered,
     stats: { verticesBefore: before, verticesAfter: after },
     unproject,
+    project: (lon, lat) => project([lon, lat]),
+    unitsPerDegree: scale,
   };
 }
 
