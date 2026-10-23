@@ -1,9 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { insertLegacyCampaign } from '@/tests/legacyDb';
 import { TEST_BILL, TEST_DECREE, TEST_PEC, testContent, testState } from '@/tests/fixtures';
 
-import { advanceMonth, STATE_SCHEMA_VERSION, type GameState, type MonthResult, type MonthStep } from '../engine';
+import {
+  advanceMonth,
+  createInitialState,
+  STATE_SCHEMA_VERSION,
+  type GameState,
+  type MonthResult,
+  type MonthStep,
+} from '../engine';
 import {
   CampaignNotFoundError,
   createCampaign,
@@ -11,9 +19,11 @@ import {
   listCampaigns,
   loadIndicatorHistory,
   loadLatestState,
+  loadRegionalHistory,
   loadReport,
   loadStateAt,
   recordMonth,
+  REGIONAL_FIELDS,
   REPORT_RETENTION_MONTHS,
   SaveTooNewError,
   SNAPSHOT_RETENTION_MONTHS,
@@ -89,7 +99,7 @@ describe('migrações', () => {
     const db = openNodeDatabase();
     await migrate(db, MIGRATIONS.slice(0, 2));
     await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
-    expect(await migrate(db)).toEqual([3, 4]);
+    expect(await migrate(db)).toEqual([3, 4, 5]);
     expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
     expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Antiga']);
   });
@@ -276,7 +286,7 @@ describe('campanhas', () => {
       'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
       ['c1', 0, state.schemaVersion, JSON.stringify(state)],
     );
-    expect(await migrate(old)).toEqual([4]);
+    expect(await migrate(old)).toEqual([4, 5]);
     const [point] = await loadIndicatorHistory(old, 'c1');
     expect(point?.indicators).toEqual(state.indicators);
     expect(point?.selic).toBe(state.economy.selic);
@@ -359,5 +369,106 @@ describe('campanhas', () => {
     await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
     await db.run('UPDATE snapshots SET state_schema_version = 99');
     await expect(loadLatestState(db, 'c1')).rejects.toBeInstanceOf(SaveTooNewError);
+  });
+});
+
+describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
+  const real = loadContent(DEFAULT_SCENARIO_ID);
+  const regionalState = (seed = 3) => createInitialState({ content: real, difficulty: 'estrategica', seed });
+  let db: SqlDatabase;
+  beforeEach(async () => {
+    db = openNodeDatabase();
+    await migrate(db);
+  });
+
+  it('a migração 5 cria a tabela', async () => {
+    expect(await tables(db)).toContain('regional_indicator_history');
+  });
+
+  it('a campanha nasce com a posse (mês 0) e cada mês gravado entra na série', async () => {
+    let state = regionalState();
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    let history = await loadRegionalHistory(db, 'c1');
+    expect(history.map((p) => p.monthIndex)).toEqual([0]);
+    expect(Object.keys(history[0].ufs)).toHaveLength(27);
+    for (let m = 0; m < 3; m++) {
+      const r = advanceMonth(state, { decisions: [] }, real, []);
+      await recordMonth(db, 'c1', r);
+      state = r.state;
+    }
+    history = await loadRegionalHistory(db, 'c1');
+    expect(history.map((p) => p.monthIndex)).toEqual([0, 1, 2, 3]);
+    // Os valores gravados são os do estado, campo a campo.
+    for (const uf of state.regions.ufs) {
+      for (const f of REGIONAL_FIELDS) expect(history[3].ufs[uf.id][f]).toBe(uf[f]);
+    }
+  });
+
+  it('o mês regional é gravado na mesma transação do recordMonth (falhou, nada fica)', async () => {
+    const state = regionalState();
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    await db.run('INSERT INTO regional_indicator_history (campaign_id, month_index, point_json) VALUES (?, ?, ?)', [
+      'c1',
+      1,
+      '{}',
+    ]);
+    await expect(recordMonth(db, 'c1', advanceMonth(state, { decisions: [] }, real, []))).rejects.toThrow();
+    expect(await db.first<{ n: number }>('SELECT COUNT(*) AS n FROM month_reports')).toEqual({ n: 0 });
+    expect((await listCampaigns(db))[0].currentMonth).toBe(0);
+  });
+
+  it('depois do mês 13 a posse continua na série, mesmo sem o snapshot do mês 0', async () => {
+    let state = regionalState(4);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    const posse = state.regions.ufs.map((u) => u.approval);
+    for (let m = 0; m < 15; m++) {
+      const r = advanceMonth(state, { decisions: [] }, real, []);
+      await recordMonth(db, 'c1', r);
+      state = r.state;
+    }
+    expect(await loadStateAt(db, 'c1', 0)).toBeNull();
+    const history = await loadRegionalHistory(db, 'c1');
+    expect(history.map((p) => p.monthIndex)).toEqual(Array.from({ length: 16 }, (_, i) => i));
+    expect(Object.values(history[0].ufs).map((v) => v.approval)).toEqual(posse);
+  });
+
+  it('a migração 5 preenche a série com os snapshots que ainda existem; o que já se perdeu fica de fora', async () => {
+    const old = openNodeDatabase();
+    await migrate(old, MIGRATIONS.slice(0, 4));
+    const s0 = regionalState(5);
+    const s1 = advanceMonth(s0, { decisions: [] }, real, []).state;
+    const { regions: _omit, ...semRegioes } = s0;
+    await old.run(
+      `INSERT INTO campaigns (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month)
+       VALUES ('c1', 'x', ?, '0.1.0', 'estrategica', 5, '0.2.0', 1)`,
+      [s0.scenarioId],
+    );
+    const put = (month: number, json: unknown) =>
+      old.run(
+        'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
+        ['c1', month, s0.schemaVersion, JSON.stringify(json)],
+      );
+    await put(0, { ...s0, regions: { ufs: [] } }); // save que ainda não processara as UFs
+    await put(1, s1);
+    await put(2, semRegioes); // snapshot de formato sem o bloco regional
+
+    expect(await migrate(old)).toEqual([5]);
+    const history = await loadRegionalHistory(old, 'c1');
+    expect(history.map((p) => p.monthIndex)).toEqual([1]);
+    for (const uf of s1.regions.ufs) {
+      // json_extract/json_array pode arredondar um REAL em 1 ULP entre versões do SQLite.
+      for (const f of REGIONAL_FIELDS) expect(history[0].ufs[uf.id][f]).toBeCloseTo(uf[f], 14);
+    }
+  });
+
+  it('apagar a campanha remove a série regional', async () => {
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state: regionalState() });
+    await deleteCampaign(db, 'c1');
+    expect(await db.first<{ n: number }>('SELECT COUNT(*) AS n FROM regional_indicator_history')).toEqual({ n: 0 });
+  });
+
+  it('cenário sem dados regionais não grava linha (lacuna, não zeros)', async () => {
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state: newState() });
+    expect(await loadRegionalHistory(db, 'c1')).toEqual([]);
   });
 });

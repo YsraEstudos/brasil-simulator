@@ -114,6 +114,42 @@ export const MIGRATIONS: readonly Migration[] = [
       FROM snapshots;
     `,
   },
+  {
+    version: 5,
+    name: 'historico_regional',
+    sql: `
+      -- Série por UF para o cartão do estado (PLANO_GLOBO.md, PR 3): uma linha por campanha e mês, com as 27 UFs num
+      -- JSON compacto {"SP":[aprovação, desemprego, hiato de crescimento, participação no PIB, relação com o
+      -- governador], ...}. A ORDEM dos campos é parte do formato (REGIONAL_FIELDS em campaignRepository.ts): campos
+      -- novos só entram no fim. Fica a campanha inteira, como indicator_history, para a posse (mês 0) sobreviver à
+      -- retenção dos snapshots.
+      CREATE TABLE regional_indicator_history (
+        campaign_id TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+        month_index INTEGER NOT NULL CHECK (month_index >= 0),
+        point_json  TEXT NOT NULL,
+        PRIMARY KEY (campaign_id, month_index)
+      );
+
+      -- Preenche com os snapshots que ainda existem. Meses que a retenção já apagou não voltam (a interface mostra
+      -- "Sem dados anteriores"), e snapshots sem UFs processadas (saves antigos) não geram linha.
+      INSERT INTO regional_indicator_history (campaign_id, month_index, point_json)
+      SELECT s.campaign_id, s.month_index, (
+        SELECT json_group_object(
+          json_extract(u.value, '$.id'),
+          json_array(
+            json_extract(u.value, '$.approval'),
+            json_extract(u.value, '$.unemployment'),
+            json_extract(u.value, '$.growthGap12m'),
+            json_extract(u.value, '$.share'),
+            json_extract(u.value, '$.governorRelation')
+          )
+        )
+        FROM json_each(s.state_json, '$.regions.ufs') u
+      )
+      FROM snapshots s
+      WHERE COALESCE(json_array_length(s.state_json, '$.regions.ufs'), 0) > 0;
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

@@ -12,7 +12,7 @@ export function useGame<T>(selector: (s: GameStoreState) => T): T {
 }
 
 export type { ActiveCampaign, GameStoreState } from './gameStore';
-export type { IndicatorPoint } from '@/database/campaignRepository';
+export type { IndicatorPoint, RegionalPoint, RegionalUfValues } from '@/database/campaignRepository';
 export * from './agendaDraft';
 export type { NewCampaignResult } from './gameStore';
 export * from './campaignSetup';

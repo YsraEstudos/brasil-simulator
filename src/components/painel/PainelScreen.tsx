@@ -27,7 +27,7 @@ import { indicatorsFromScenario, initialRegions, SANCTION_ACTION_ID, type Decisi
 import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
-import { draftCost, gameStore, useGame } from '@/store';
+import { draftCost, gameStore, useGame, type RegionalPoint } from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
 import { GdpChart } from './GdpChart';
@@ -72,6 +72,9 @@ import { indicatorSpec, MAP_INDICATORS, mapRows, type MapIndicator } from './reg
 import { UfDetail, UfList } from './StateDetail';
 
 const logo = require('../../../assets/images/logo-brasil.png');
+
+/** Referência estável para "sem série regional ainda" (evita refazer o cartão a cada render). */
+const EMPTY_REGIONAL: readonly RegionalPoint[] = [];
 
 /** Segunda linha do topo (retrato), abaixo dos quatro principais; a base do Painel fica para a doca. */
 const SECOND_ROW_STATS: readonly HudStatId[] = ['capital', 'inflacao', 'desemprego'];
@@ -158,6 +161,8 @@ export function PainelScreen() {
   const insets = useSafeAreaInsets();
   const [series, setSeries] = useState<{ id: string; points: readonly IndicatorPoint[] } | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  // Série por UF do cartão do estado: mesma regra da série do PIB (par id + pontos, relida a cada mês gravado).
+  const [regional, setRegional] = useState<{ id: string; points: readonly RegionalPoint[] } | null>(null);
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
@@ -196,6 +201,21 @@ export function PainelScreen() {
     };
   }, [activeId, monthIndex]);
   const history = activeId !== undefined && series?.id === activeId ? series.points : null;
+
+  useEffect(() => {
+    if (activeId === undefined) return;
+    let live = true;
+    void gameStore
+      .getState()
+      .regionalHistory()
+      .then((points) => {
+        if (live) setRegional({ id: activeId, points });
+      });
+    return () => {
+      live = false;
+    };
+  }, [activeId, monthIndex]);
+  const regionalHistory = activeId !== undefined && regional?.id === activeId ? regional.points : EMPTY_REGIONAL;
 
   // Sem partida não há dado por UF: a camada escolhida só vale com campanha em andamento.
   const layer = active ? mapLayer : null;
@@ -520,6 +540,7 @@ export function PainelScreen() {
             state={active.state}
             content={content}
             explanation={explanations?.find((x) => x.id === selectedRow.uf.id)}
+            regionalHistory={regionalHistory}
             onFly={() => {
               globe.current?.flyToUf(selectedRow.uf.id);
               setSheet(null);
