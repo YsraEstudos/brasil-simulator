@@ -24,7 +24,9 @@ import { Spacing } from '@/constants/theme';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
 import { indicatorsFromScenario, initialRegions, SANCTION_ACTION_ID, type Decision, type IndicatorKey } from '@/engine';
-import { GlobeView, type GlobeApi } from '@/globe/GlobeView';
+import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
+import { MapSurface } from '@/components/map/MapSurface';
+import type { GlobeApi } from '@/globe/GlobeView';
 import { draftCost, gameStore, useGame } from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
@@ -168,6 +170,11 @@ export function PainelScreen() {
   // Há subtela por cima do Painel? Então o globo não desenha (a pilha mantém o Painel montado por baixo).
   const focused = useIsFocused();
   const globe = useRef<GlobeApi | null>(null);
+  // Preferência do mapa (Configurações). Se o globo falhar a superfície cai sozinha para o 2D só nesta sessão: nada é
+  // gravado, e o aviso aparece uma vez.
+  const mapRenderer = useGame((s) => s.mapRenderer);
+  const [globeFailed, setGlobeFailed] = useState(false);
+  const [globeNoticeClosed, setGlobeNoticeClosed] = useState(false);
 
   const scenarioId = active?.state.scenarioId ?? DEFAULT_SCENARIO_ID;
   const content = useMemo(() => loadContent(scenarioId), [scenarioId]);
@@ -198,6 +205,10 @@ export function PainelScreen() {
   const hud = useMemo(
     () => (active ? hudFromCampaign(active, content, history, layer) : hudFromScenario(content)),
     [active, content, history, layer],
+  );
+  const mapModel = useMemo(
+    () => buildRegionalMapViewModel({ indicator: layer, fills: hud.fills, selectedId: selectedUf }),
+    [layer, hud.fills, selectedUf],
   );
   const actionsLeft = hud.actionsMax - (active ? draftCost(draft, content) : 0);
 
@@ -561,11 +572,12 @@ export function PainelScreen() {
       {size.width > 0 && (
         <>
           {/* O mapa é a tela: tudo o mais são camadas por cima. O toque num estado abre o cartão dele. */}
-          <GlobeView
-            fills={hud.fills}
+          <MapSurface
+            renderer={mapRenderer}
+            viewModel={mapModel}
             paused={!focused}
-            selectedId={selectedUf}
             onSelect={selectState}
+            onGlobeFailure={() => setGlobeFailed(true)}
             onReady={(api) => {
               globe.current = api;
             }}
@@ -712,6 +724,27 @@ export function PainelScreen() {
                       gameStore.getState().clearError();
                     },
                   }}
+                />
+              </ForceHudTheme>
+            </View>
+          )}
+
+          {globeFailed && mapRenderer === 'globe' && !globeNoticeClosed && !error && !sheet && (
+            <View
+              style={[
+                styles.error,
+                {
+                  top: (compact ? TOP_INSET.compact : TOP_INSET.portrait) + insets.top,
+                  left: 64 + insets.left,
+                  right: 64 + insets.right,
+                },
+              ]}>
+              <ForceHudTheme>
+                <Alert
+                  tone="warning"
+                  title="O globo 3D não iniciou"
+                  message="Mostramos o mapa 2D nesta sessão. Para escolher o tipo de mapa, use Menu › Configurações."
+                  action={{ label: 'Entendi', onPress: () => setGlobeNoticeClosed(true) }}
                 />
               </ForceHudTheme>
             </View>

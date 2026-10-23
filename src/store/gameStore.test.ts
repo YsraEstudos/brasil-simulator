@@ -5,6 +5,7 @@ import { LATEST_DB_VERSION, MIGRATIONS } from '@/database/migrations';
 import { openNodeDatabase } from '@/database/nodeDatabase';
 import type { SqlDatabase } from '@/database/types';
 import { createCampaign } from '@/database/campaignRepository';
+import { setSetting } from '@/database/settingsRepository';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { campaignOutcome, createInitialState, DIRECTIVE_ACTION_ID } from '@/engine';
 
@@ -197,6 +198,21 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     const { launchApp } = await device();
     await (await launchApp()).getState().setTextScale(1.3);
     expect((await launchApp()).getState().textScale).toBe(1.3);
+  });
+
+  it('o renderizador do mapa começa no globo e a escolha persiste entre aberturas do app', async () => {
+    const { launchApp } = await device();
+    const first = await launchApp();
+    expect(first.getState().mapRenderer).toBe('globe');
+    await first.getState().setMapRenderer('flat-light');
+    expect(first.getState().mapRenderer).toBe('flat-light');
+    expect((await launchApp()).getState().mapRenderer).toBe('flat-light');
+  });
+
+  it('preferência do mapa corrompida no banco volta ao globo sem impedir a abertura', async () => {
+    const { db, launchApp } = await device();
+    await setSetting(db, 'mapa_renderizador', 'holograma');
+    expect((await launchApp()).getState().mapRenderer).toBe('globe');
   });
 
   it('erros de banco viram mensagem, sem derrubar o app', async () => {

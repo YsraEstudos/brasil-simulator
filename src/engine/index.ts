@@ -77,6 +77,8 @@ export { BC_BOARD_SIZE, boardShare } from './economy/monetary';
 export { activeImpulses, isActive, pruneImpulses, sumActive } from './impulses';
 export { checkInvariants } from './invariants';
 export {
+  adhesionProbabilities,
+  adhesionProbability,
   expectedAdhesion,
   initialRegions,
   inScope,
@@ -88,7 +90,14 @@ export {
   regionalIncidence,
   regionsOf,
   regionsView,
+  ufIncidence,
 } from './regions/regions';
+export {
+  buildRegionalDecisionPreview,
+  type RegionalDecisionPreview,
+  type RegionalPreviewUf,
+  type RegionalUncertainty,
+} from './regions/preview';
 export { createRng, seedRng, type Rng, type RngState } from './rng';
 export {
   AGENDA_ACTIONS_PER_MONTH,

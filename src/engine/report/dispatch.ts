@@ -10,6 +10,14 @@ import {
   type VotePrediction,
 } from '../congress/congress';
 import { blocRelation } from '../congress/relations';
+import {
+  firstLag,
+  fiscalDirection,
+  RELIEF_CHANNELS,
+  REVENUE_CHANNELS,
+  SPENDING_CHANNELS,
+  sumMagnitude,
+} from '../policyChannels';
 import { pautaOccupancy, pautaSlots } from '../proposals/proposals';
 import { expectedAdhesion, REGION_NAMES, regionalIncidence } from '../regions/regions';
 import { createRng, seedRng } from '../rng';
@@ -60,15 +68,6 @@ export interface DispatchAdvice {
   };
 }
 
-const SPENDING_CHANNELS: ReadonlySet<string> = new Set([
-  'investimento_publico',
-  'custeio',
-  'transferencia_baixa_renda',
-  'transferencia_alta_renda',
-  'despesa_obrigatoria',
-]);
-const RELIEF_CHANNELS: ReadonlySet<string> = new Set(['desoneracao_consumo', 'desoneracao_renda']);
-const REVENUE_CHANNELS: ReadonlySet<string> = new Set(['receita_tributaria', 'receita_renda', 'receita_consumo']);
 const APPROVAL_CHANNEL = 'aprovacao';
 const CREDIBILITY_CHANNEL = 'credibilidade_fiscal';
 const MINIMUM_WAGE_CHANNEL = 'salario_minimo_real';
@@ -94,16 +93,6 @@ function adviceSeed(state: Readonly<GameState>, policyId: string): number {
   h = Math.imul(h ^ state.monthIndex, HASH_PRIME) >>> 0;
   for (let i = 0; i < policyId.length; i++) h = Math.imul(h ^ policyId.charCodeAt(i), HASH_PRIME) >>> 0;
   return h;
-}
-
-function sumMagnitude(policy: Policy, channels: ReadonlySet<string>): number {
-  return policy.impacts.reduce((n, i) => (channels.has(i.channel) ? n + i.magnitude : n), 0);
-}
-
-/** Primeiro mês de efeito (defasagem) entre os impactos dos canais indicados; `null` se nenhum. */
-function firstLag(policy: Policy, channels: ReadonlySet<string>): number | null {
-  const lags = policy.impacts.filter((i) => channels.has(i.channel) && i.magnitude !== 0).map((i) => i.lagMonths);
-  return lags.length > 0 ? Math.min(...lags) : null;
 }
 
 /**
@@ -263,11 +252,7 @@ function regionalSentence(policy: Policy, content: GameContent): string | null {
   if (!profile) return null;
   const { regions, topUf } = regionalIncidence(content, profile);
   const high = regions.filter((r) => r.ratio >= ADVICE_PARAMS.regionHigh).sort((a, b) => b.ratio - a.ratio);
-  const benefit =
-    sumMagnitude(policy, SPENDING_CHANNELS) +
-      sumMagnitude(policy, RELIEF_CHANNELS) -
-      sumMagnitude(policy, REVENUE_CHANNELS) >=
-    0;
+  const benefit = fiscalDirection(policy) === 'benefit';
   const verb = benefit ? 'Favorece mais' : 'Pesa mais sobre';
   const uf =
     topUf && topUf.ratio >= ADVICE_PARAMS.ufHigh ? content.scenario.regions?.ufs.find((u) => u.id === topUf.id) : null;
