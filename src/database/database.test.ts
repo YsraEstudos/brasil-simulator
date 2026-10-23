@@ -456,7 +456,8 @@ describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
     const history = await loadRegionalHistory(old, 'c1');
     expect(history.map((p) => p.monthIndex)).toEqual([1]);
     for (const uf of s1.regions.ufs) {
-      for (const f of REGIONAL_FIELDS) expect(history[0].ufs[uf.id][f]).toBe(uf[f]);
+      // json_extract/json_array pode arredondar um REAL em 1 ULP entre versões do SQLite.
+      for (const f of REGIONAL_FIELDS) expect(history[0].ufs[uf.id][f]).toBeCloseTo(uf[f], 14);
     }
   });
 
