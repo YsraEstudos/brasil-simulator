@@ -79,7 +79,7 @@ Pipeline: `scripts/data/fetch_globe_data.py` (download para `data-raw/`) → `sc
 | Prioridade e área (`labels.json`) | Prioridade = posto de população por UF em `src/data/scenarios/brasil_2027_01_v070.json`; área aproximada do polígono | Quem vence uma colisão de rótulos | Derivado do cenário (população `ESTIMADO`) |
 | Atlas de texto (`assets/globe/labels.png`) | Fonte DejaVu Sans Bold (derivada da Bitstream Vera; licença livre, permite uso e incorporação), lida do pacote `matplotlib`; os glifos entram **rasterizados** no atlas e nenhuma fonte é baixada ou distribuída com o app | 27 siglas + 27 nomes de capital, branco com contorno escuro, desenhados em 2x o tamanho lógico | Gerado; sem restrição de uso |
 
-Pipeline: `npm run build:labels` (`scripts/data/build_labels.py`; lê `src/globe/data/ufs.json`, gerado antes por `build_globe.py`; requer `pip install matplotlib` pela fonte). Determinístico: duas execuções geram arquivos idênticos.
+Pipeline: `npm run build:labels` (`scripts/data/build_labels.py`; lê `src/globe/data/ufs.json`, gerado antes por `build_globe.py`). Dependências Python: `matplotlib` fornece a DejaVu Sans Bold; `Pillow` rasteriza os glifos e monta o atlas; `numpy` processa os canais de imagem; `scipy` calcula a transformada de distância usada no contorno do texto. Instale com `pip install matplotlib scipy Pillow numpy`. Determinístico: duas execuções geram arquivos idênticos.
 
 > **Códigos de séries:** serão levantados e conferidos na Fase 01/03. Nenhum código deve ser usado sem validação da resposta da API, porque séries são descontinuadas ou renumeradas.
 
