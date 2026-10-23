@@ -4,6 +4,7 @@ import { FALLBACK_ECONOMY, fiscalValues, initialEconomy } from './state';
 import { ENGINE_VERSION, STATE_SCHEMA_VERSION, type GameState } from './types';
 import { initialSocietyForGame } from './society/society';
 import { initialPublicPolicies } from './publicPolicies/types';
+import { initialClimate } from './climate/climate';
 
 /** O save foi gravado com uma estrutura de estado mais nova que a deste app. */
 export class SaveTooNewError extends Error {
@@ -34,7 +35,24 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   if (version < 8) state = v7ToV8(state);
   if (version < 9) state = v8ToV9(state);
   if (version < 10) state = v9ToV10(state);
+  if (version < 11) state = v10ToV11(state);
   return state as unknown as GameState;
+}
+
+/** Semente de reserva para um save sem `seed` numérico inteiro (não ocorre em saves reais: todo estado grava a semente). */
+const FALLBACK_SEED = 0;
+
+/**
+ * v10 → v11 (PR 7 do PLANO_GLOBO, D-G6): entra o clima (`climate`), **neutro** em todo save antigo: ENSO 0, chuva
+ * normal e sem seca nas 27 UFs. O PRNG do clima é derivado da **semente da campanha gravada no próprio save**
+ * (`seed`, presente em todo estado desde a v1) com o sal estável do clima (`initialClimate`): assim um save
+ * atualizado tem exatamente o mesmo clima de uma campanha nova da mesma semente, e a migração é determinística e
+ * não depende do cenário nem do PRNG principal (`rng` fica intacto). Sem `seed` inteiro (não ocorre em saves
+ * reais), usa-se 0. Nenhuma etapa lê o clima antes do PR 8, então a simulação do save é idêntica.
+ */
+function v10ToV11(s: Raw): Raw {
+  const seed = typeof s.seed === 'number' && Number.isInteger(s.seed) ? s.seed : FALLBACK_SEED;
+  return { ...s, schemaVersion: 11, engineVersion: ENGINE_VERSION, climate: initialClimate(seed) };
 }
 
 /**

@@ -322,6 +322,19 @@ O motor 0.7.0 acrescenta a pressão de impeachment e a memória de eventos (marc
 - **Memória (estado v7):** `EventsState` ganha `flags` (marca → mês em que foi gravada), `scheduled` (eventos encadeados), `characters` (prestígio, −100 a 100) e `news` (até 48 manchetes). Marca não é impulso: não altera indicadores por si, e o efeito econômico de um evento continua limitado a 24 meses pela fila de efeitos (§5.11). Pendências e contadores são preservados na atualização v6 → v7; a fixture é `src/tests/saves/state_v6_fase06.json`.
 - **Notícias:** geradas depois dos indicadores e do relatório do mês, sem sorteio e sem data; não alteram o estado econômico.
 
+### 5.18 Clima: contrato (PR 7 do PLANO_GLOBO)
+
+Só o **contrato**: estado, dados e leitores. Nenhuma etapa do mês lê ou altera o clima; a evolução (ENSO, anomalia, seca, cheia) e os efeitos regionais entram no PR 8 (PLANO_GLOBO.md §6.2). Por isso o PR 7 não muda nenhum resultado de simulação.
+
+- **Estado (v11):** `GameState.climate = { enso, ufs, rng }`. `enso` em [−1, 1] (+ = El Niño, − = La Niña). `ufs` tem as 27 UFs na ordem de `UF_IDS` (a do cenário), cada uma com `rain` (anomalia do mês, fração da normal; 0 = normal) e `dryness` (seca acumulada, 0–1). Estado inicial **neutro**: 0, 0 e 0.
+- **PRNG próprio:** `climate.rng` é semeado por `deriveSeed(semente da campanha, CLIMATE_SEED_SALT)` (sal `0x434c494d`, "CLIM", nunca muda). O PRNG principal (`GameState.rng`) não é consumido, então os sorteios dos sistemas existentes não mudam de ordem.
+- **Migração v10 → v11:** todo save ganha clima neutro; o `rng` do clima sai da `seed` gravada no próprio save (presente desde a v1; sem ela, usa-se 0), de modo que um save atualizado tem o mesmo clima de uma campanha nova da mesma semente. A migração não depende do cenário.
+- **Climatologia (conteúdo compartilhado, não de cenário):** normais de chuva por UF × mês em mm e teleconexão ENSO por macrorregião × estação valem para o país e não mudam com a versão do cenário; duplicar um cenário só para eles violaria "não alterar cenários publicados". Vive em `src/data/climate/climatologia.json` e entra no motor como `GameContent.climatology`. Valores `PROVISORIO` ([DATA_SOURCES.md](DATA_SOURCES.md) §4.3).
+- **Estações (hemisfério sul, meteorológicas):** verão = dez–fev, outono = mar–mai, inverno = jun–ago, primavera = set–nov (`seasonOf(mês 1–12)`).
+- **Teleconexão:** coeficiente = anomalia de chuva (fração da normal) para ENSO = +1. Anomalia = ENSO × coeficiente; La Niña inverte o sinal (resposta linear e simétrica, simplificação). Sinais: El Niño seca Norte e Nordeste na estação chuvosa (sobretudo o outono austral no Nordeste) e molha o Sul (máximo na primavera).
+- **Calibração:** `CLIMATE_PARAMS` em `src/engine/climate/calibration.ts` (resumo em [CALIBRATION.md](CALIBRATION.md)).
+- **Invariantes:** `checkClimate` (ENSO em [−1, 1], seca em [0, 1], anomalia > −100%, 27 UFs na ordem, PRNG válido) roda em `checkInvariants`.
+
 ## 6. Parâmetros
 
 Os valores, faixas, significados e justificativas estão em `src/engine/economy/calibration.ts`.

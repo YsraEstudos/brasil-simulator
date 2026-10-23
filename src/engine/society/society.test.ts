@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { CLIMATOLOGY } from '@/content/climate';
 import { EVENTS } from '@/content/events';
 import { POLICIES } from '@/content/policies';
 import { SCENARIOS } from '@/content/scenarios';
@@ -26,6 +27,7 @@ const content: GameContent = {
   policies: POLICIES,
   events: EVENTS,
   calibration: calibrationFromScenario(SCENARIOS.brasil_2027_01.parameters),
+  climatology: CLIMATOLOGY,
 };
 type GameWithSociety = GameState & { society: SocietyState };
 

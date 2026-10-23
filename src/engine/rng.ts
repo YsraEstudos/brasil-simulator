@@ -27,6 +27,27 @@ export interface Rng {
 
 const UINT32 = 0x1_0000_0000;
 
+/** Finalizador do MurmurHash3 (avalanche de 32 bits): cada bit da entrada muda cerca de metade dos bits da saída. */
+function mix32(value: number): number {
+  let h = value >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35) >>> 0;
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+/**
+ * Semente derivada de outra com um **sal** estável: `deriveSeed(seed, salt) = mix32(mix32(seed) ^ salt)`. Pura e
+ * de 32 bits (só `Math.imul` e deslocamentos: idêntica no Hermes e no V8). Serve para dar a um subsistema (ex.: o
+ * clima, PLANO_GLOBO.md §6.1) um PRNG próprio a partir da semente da campanha, sem consumir sorteios do PRNG
+ * principal: sementes diferentes dão derivadas diferentes, e o mesmo sal em sementes iguais dá sempre o mesmo
+ * resultado. Sais de sistemas diferentes devem ser constantes distintas e **nunca mudam** depois de publicadas
+ * (mudar o sal muda o clima de todas as campanhas existentes). Como em `seedRng`, só os 32 bits baixos da semente
+ * contam.
+ */
+export function deriveSeed(seed: number, salt: number): number {
+  return mix32(mix32(seed) ^ (salt >>> 0));
+}
+
 /** Espalha a semente nas quatro palavras de estado (splitmix32) e descarta os primeiros valores. */
 export function seedRng(seed: number): RngState {
   let s = seed >>> 0;

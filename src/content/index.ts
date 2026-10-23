@@ -1,9 +1,11 @@
 import { calibrationFromScenario, type GameContent } from '@/engine';
 
+import { CLIMATOLOGY } from './climate';
 import { EVENTS } from './events';
 import { POLICIES } from './policies';
 import { SCENARIOS } from './scenarios';
 
+export { CLIMATOLOGY } from './climate';
 export { EVENTS } from './events';
 export { POLICIES } from './policies';
 export {
@@ -32,6 +34,7 @@ export function loadContent(scenarioId: string): GameContent {
     policies: POLICIES,
     events: EVENTS,
     calibration: calibrationFromScenario(scenario.parameters),
+    climatology: CLIMATOLOGY,
   };
   cache.set(scenarioId, content);
   return content;

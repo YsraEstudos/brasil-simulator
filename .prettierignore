@@ -4,6 +4,8 @@ dist/
 data-raw/
 assets/
 src/globe/data/
+# Climatologia gerada por scripts/data/build_climatology.py (não editar à mão).
+src/data/climate/
 package-lock.json
 *.md
 # Site de explicações: páginas geradas por docs/explicacoes/build.mjs e dados gravados pela própria página.

@@ -13,6 +13,41 @@ export type RegionId = z.infer<typeof regionIdSchema>;
 /** Sigla da UF (ex.: `BA`): é também o id da UF no motor e no globo (`src/globe/data/ufs.json`). */
 export const ufIdSchema = z.string().regex(/^[A-Z]{2}$/, 'sigla da UF com duas letras maiúsculas');
 
+/**
+ * As 27 UFs, na ordem do cenário (norte, nordeste, sudeste, sul, centro-oeste). Lista estável do país, usada onde o
+ * motor precisa dos ids sem ler um cenário (ex.: estado climático criado ao atualizar um save). Os testes conferem
+ * que ela coincide com as UFs dos cenários com dados regionais e com a climatologia.
+ */
+export const UF_IDS = [
+  'RO',
+  'AC',
+  'AM',
+  'RR',
+  'PA',
+  'AP',
+  'TO',
+  'MA',
+  'PI',
+  'CE',
+  'RN',
+  'PB',
+  'PE',
+  'AL',
+  'SE',
+  'BA',
+  'MG',
+  'ES',
+  'RJ',
+  'SP',
+  'PR',
+  'SC',
+  'RS',
+  'MS',
+  'MT',
+  'GO',
+  'DF',
+] as const;
+
 /** Escopo regional de um efeito: uma grande região ou uma UF. */
 export const regionalScopeSchema = z.union([regionIdSchema, ufIdSchema]);
 export type RegionalScope = z.infer<typeof regionalScopeSchema>;
