@@ -8,10 +8,10 @@ import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 9;
+export const STATE_SCHEMA_VERSION = 10;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.8.1';
+export const ENGINE_VERSION = '0.9.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -528,6 +528,35 @@ export interface PoliticsState {
   eleicao_municipal?: { monthIndex: number };
 }
 
+/** Ponto nos dois eixos ideológicos: econômico −1 estado … 1 mercado; social −1 progressista … 1 conservador. */
+export interface IdeologyPoint {
+  economic: number;
+  social: number;
+}
+
+/**
+ * Governo e seu perfil ideológico (PLANO_GLOBO.md §5.1; POLITICAL_RULES.md §11.2). O perfil é a média móvel,
+ * com memória, das posições das decisões do jogador; começa no perfil escolhido no NOVO JOGO (padrão 0/0).
+ * Saves anteriores à v10 migram com perfil neutro.
+ */
+export interface GovernmentState {
+  profile: IdeologyPoint;
+}
+
+/** Como uma decisão moveu o perfil: sancionada/executada, enviada ao Congresso, vetada ou escolha de evento. */
+export type ProfileMoveKind = 'sancao' | 'proposta' | 'veto' | 'evento';
+
+/** Uma decisão que moveu o perfil no mês (as de maior efeito ficam no relatório). */
+export interface ProfileMove {
+  /** Política (`policyId`) ou evento (`eventId`) de origem. */
+  sourceId: string;
+  kind: ProfileMoveKind;
+  /** Nome da política ou título do evento. */
+  label: string;
+  /** Quanto o perfil andou em cada eixo por causa desta decisão (já com a memória aplicada). */
+  delta: IdeologyPoint;
+}
+
 export interface GameState {
   schemaVersion: typeof STATE_SCHEMA_VERSION;
   engineVersion: string;
@@ -550,6 +579,8 @@ export interface GameState {
   regions: RegionsState;
   society: SocietyState;
   publicPolicies: PublicPolicyState;
+  /** Perfil ideológico do governo (v10; PLANO_GLOBO.md §5.1). */
+  government: GovernmentState;
   /** Eleições e intenção de voto (Fase 08); cenários sem eleições e saves antigos ficam sem o campo. */
   politics?: PoliticsState;
 }
@@ -634,6 +665,11 @@ export interface MonthReport {
    * relatórios gravados antes da Fase 05 não têm o campo.
    */
   regional: UfExplanation[] | null;
+  /**
+   * Decisões que mais moveram o perfil ideológico no mês, da maior para a menor (limite em
+   * `PROFILE_PARAMS.movimentos_por_mes`). Ausente em relatórios anteriores à v10.
+   */
+  profileMoves?: ProfileMove[];
 }
 
 export interface MonthResult {
@@ -653,6 +689,7 @@ export interface GameContent {
 export type ReportDraft = Pick<MonthReport, 'proposalChanges' | 'eventsResolved' | 'eventsFired' | 'notes'> & {
   copom: CopomDecision | null;
   regional: UfExplanation[] | null;
+  profileMoves?: ProfileMove[];
 };
 
 export interface StepContext {

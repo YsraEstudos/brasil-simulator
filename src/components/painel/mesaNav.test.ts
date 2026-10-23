@@ -74,7 +74,7 @@ describe('Trilhos da mesa', () => {
   });
 
   it('direito: o país, sem o Congresso nem a evolução do PIB avulsa', () => {
-    expect(RIGHT_RAIL.map((b) => b.id)).toEqual(['camadas', 'regioes', 'indicadores', 'ministerios']);
+    expect(RIGHT_RAIL.map((b) => b.id)).toEqual(['camadas', 'regioes', 'indicadores', 'ministerios', 'perfil']);
   });
 
   it('nenhum botão se repete entre os trilhos', () => {

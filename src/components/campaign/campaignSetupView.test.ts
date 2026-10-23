@@ -7,8 +7,11 @@ import { campaignMonths, SCENARIOS } from '@/store/scenarios';
 import {
   difficultyView,
   durationLabel,
+  profilePresetView,
+  profilePresetViews,
   scenarioDataNote,
   scenarioFeatures,
+  scenarioHasLean,
   scenarioTitle,
   setupSummary,
   startLabel,
@@ -97,6 +100,37 @@ describe('apresentação dos cenários', () => {
     expect(prototipo).toContain('Economia simplificada');
     expect(prototipo).not.toContain('Eleições e reeleição');
     expect(prototipo).not.toContain('Ministérios e instituições');
+  });
+});
+
+describe('perfil do governo no NOVO JOGO (PLANO_GLOBO.md §5.1)', () => {
+  it('lista os seis perfis, Centro primeiro, cada um com a posição em palavras', () => {
+    const views = profilePresetViews();
+    expect(views.map((v) => v.id)).toEqual([
+      'centro',
+      'centro_esquerda',
+      'esquerda',
+      'centro_direita',
+      'liberal',
+      'conservador',
+    ]);
+    expect(profilePresetView(undefined).id).toBe('centro');
+    expect(profilePresetView('liberal').axes).toMatch(/Mercado/);
+    expect(profilePresetView('esquerda').axes).toMatch(/Estado/);
+  });
+
+  it('só o cenário com inclinação das UFs (v0.8.0) anuncia o efeito do perfil', () => {
+    expect(scenarioHasLean(SCENARIOS.brasil_2027_01_v080)).toBe(true);
+    expect(scenarioHasLean(SCENARIOS.brasil_2027_01_v070)).toBe(false);
+    expect(scenarioHasLean(undefined)).toBe(false);
+    expect(scenarioFeatures(SCENARIOS.brasil_2027_01_v080)).toContain('Inclinação política das UFs');
+    expect(scenarioFeatures(SCENARIOS.brasil_2027_01_v070)).not.toContain('Inclinação política das UFs');
+  });
+
+  it('o resumo mostra o perfil inicial (padrão Centro)', () => {
+    const form = { name: 'X', difficulty: 'casual' as const, scenarioId: 'brasil_2027_01_v080', seedText: '' };
+    expect(setupSummary(form).profile).toBe('Centro');
+    expect(setupSummary({ ...form, profileId: 'liberal' }).profile).toMatch(/^Liberal [(]/);
   });
 });
 

@@ -82,6 +82,22 @@ describe('novo jogo: criação e validação', () => {
     expect(rows[0]).toMatchObject({ id, scenario_id: DEFAULT_SCENARIO_ID });
   });
 
+  // PLANO_GLOBO.md §5.1 (D-G9): o perfil inicial escolhido no NOVO JOGO vai para o estado; padrão Centro (0/0).
+  it('o perfil inicial escolhido vai para o estado; sem escolha, Centro; perfil inválido não grava nada', async () => {
+    const { db, launchApp } = await device();
+    const app = await launchApp();
+    okId(await app.getState().newCampaign({ name: 'Padrão', difficulty: 'casual' }));
+    expect(app.getState().active!.state.government.profile).toEqual({ economic: 0, social: 0 });
+    okId(await app.getState().newCampaign({ name: 'Liberal', difficulty: 'casual', profileId: 'liberal' }));
+    expect(app.getState().active!.state.government.profile).toEqual({ economic: 0.7, social: -0.2 });
+    const before = (await campaignRows(db)).length;
+    const bad = await app
+      .getState()
+      .newCampaign({ name: 'Inválido', difficulty: 'casual', profileId: 'partido_real' as never });
+    expect(bad.ok).toBe(false);
+    expect(await campaignRows(db)).toHaveLength(before);
+  });
+
   it('usa o cenário informado explicitamente', async () => {
     const { db, launchApp } = await device();
     const app = await launchApp();

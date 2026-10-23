@@ -6,6 +6,7 @@ import {
   buildRegionalDecisionPreview,
   createInitialState,
   regionsOf,
+  type ProfilePushPreview,
   type RegionalDecisionPreview,
   type RegionalPreviewUf,
 } from '@/engine';
@@ -20,6 +21,9 @@ import {
   previewLegend,
   previewMapModel,
   previewModes,
+  PROFILE_NO_LEAN_TEXT,
+  PROFILE_NOTE,
+  profilePushView,
   ratioText,
   selectedUfText,
   topHeading,
@@ -195,5 +199,130 @@ describe('com o cenário real', () => {
     }
     expect(differential).toBeGreaterThan(0);
     expect(plain).toBeGreaterThan(0);
+  });
+});
+
+describe('empurrão no perfil na prévia (PLANO_GLOBO.md §5.2, PR 4)', () => {
+  const push = (overrides: Partial<ProfilePushPreview> = {}): ProfilePushPreview => ({
+    policyId: 'p',
+    position: { economic: 0.8, social: 0 },
+    before: { economic: 0, social: 0 },
+    after: { economic: 0.2, social: 0 },
+    shift: { economic: 0.2, social: 0 },
+    descriptionBefore: { economic: 'centro', social: 'centro', label: 'Centro' },
+    descriptionAfter: { economic: 'mercado', social: 'centro', label: 'Mercado · Centro' },
+    nationalTerm: { before: 0.005, after: 0.011, delta: 0.006 },
+    ufs: [],
+    gainers: ['SC', 'PR'],
+    losers: ['MA'],
+    estimate: true,
+    ...overrides,
+  });
+  const names = { SC: 'Santa Catarina', PR: 'Paraná', MA: 'Maranhão' };
+
+  it('mostra o perfil de antes e de depois, o rumo, o termo nacional e quem tende a ganhar ou perder', () => {
+    const view = profilePushView(fake({ profilePush: push() }), names);
+    expect(view?.headline).toBe('Perfil do governo: Centro → Mercado · Centro');
+    expect(view?.detail).toBe(
+      'A política fica em Mercado · Centro; se for sancionada, o perfil tende a se aproximar dela.',
+    );
+    expect(view?.nationalLine).toBe('Distância do eleitor médio: tende a ajudar (+0,6 p.p. na aprovação nacional)');
+    expect(view?.gainersLine).toBe('Tendem a ganhar aprovação relativa: Santa Catarina, Paraná');
+    expect(view?.losersLine).toBe('Tendem a perder aprovação relativa: Maranhão');
+    expect(view?.note).toBe(PROFILE_NOTE);
+    expect(view?.noLeanNote).toBeNull();
+  });
+
+  it('governo mais à direita que a política: fala da posição da política, não do passo para o Estado', () => {
+    const view = profilePushView(
+      fake({
+        profilePush: push({
+          position: { economic: 0.6, social: 0.2 },
+          before: { economic: 0.7, social: -0.2 },
+          after: { economic: 0.69, social: -0.15 },
+          shift: { economic: -0.01, social: 0.05 },
+        }),
+      }),
+      names,
+    );
+    expect(view?.detail).toContain('A política fica em Mercado');
+    expect(view?.detail).not.toContain('Estado');
+  });
+
+  it('piora a distância: "tende a pesar"; política que não move o perfil não promete nada', () => {
+    const worse = profilePushView(
+      fake({ profilePush: push({ nationalTerm: { before: 0.01, after: 0.002, delta: -0.008 } }) }),
+      names,
+    );
+    expect(worse?.nationalLine).toContain('tende a pesar');
+    expect(worse?.nationalLine).toContain('−0,8 p.p.');
+
+    const still = profilePushView(
+      fake({
+        profilePush: push({
+          shift: { economic: 0, social: 0 },
+          after: { economic: 0, social: 0 },
+          descriptionAfter: { economic: 'centro', social: 'centro', label: 'Centro' },
+          nationalTerm: { before: 0.005, after: 0.005, delta: 0 },
+          gainers: [],
+          losers: [],
+        }),
+      }),
+      names,
+    );
+    expect(still?.headline).toBe('Não muda o perfil do governo');
+    expect(still?.detail).toBe('');
+    expect(still?.nationalLine).toBe('Distância do eleitor médio: sem mudança relevante');
+    expect(still?.gainersLine).toBeNull();
+    expect(still?.losersLine).toBeNull();
+  });
+
+  it('o perfil muda de intensidade sem mudar de palavra: "segue em"', () => {
+    const view = profilePushView(
+      fake({
+        profilePush: push({
+          descriptionAfter: { economic: 'centro', social: 'centro', label: 'Centro' },
+        }),
+      }),
+      names,
+    );
+    expect(view?.headline).toBe('Perfil do governo: segue em Centro');
+  });
+
+  it('sem prévia de perfil, nada aparece', () => {
+    expect(profilePushView(fake({ profilePush: null }))).toBeNull();
+  });
+
+  it('com o cenário real: toda política tem texto de estimativa e nunca promete resultado', () => {
+    const content = loadContent(DEFAULT_SCENARIO_ID);
+    const state = createInitialState({ content, difficulty: 'estrategica', seed: 3, profile: 'liberal' });
+    const names = Object.fromEntries(regionsOf(content).map((u) => [u.id, u.name]));
+    let withGainers = 0;
+    for (const id of content.scenario.policies) {
+      const preview = buildRegionalDecisionPreview(state, content, id);
+      const view = preview ? profilePushView(preview, names) : null;
+      if (!view) continue;
+      expect(view.note).toContain('Estimativa');
+      for (const line of [view.detail, view.gainersLine, view.losersLine, view.nationalLine]) {
+        expect(line ?? '').not.toMatch(/garant|certamente|vai ganhar|vai perder/i);
+      }
+      if (view.gainersLine) {
+        withGainers++;
+        expect(view.gainersLine).toMatch(/^Tendem a ganhar/);
+      }
+    }
+    expect(withGainers).toBeGreaterThan(0);
+  });
+
+  it('cenário sem inclinação das UFs: só o perfil se move, com aviso', () => {
+    const antigo = loadContent('brasil_2027_01_v070');
+    const state = createInitialState({ content: antigo, difficulty: 'estrategica', seed: 3 });
+    const id =
+      antigo.scenario.policies.find((p) => antigo.policies[p]?.position.economic !== 0) ?? antigo.scenario.policies[0];
+    const preview = buildRegionalDecisionPreview(state, antigo, id);
+    const view = preview ? profilePushView(preview) : null;
+    expect(view?.nationalLine).toBeNull();
+    expect(view?.gainersLine).toBeNull();
+    expect(view?.noLeanNote).toBe(PROFILE_NO_LEAN_TEXT);
   });
 });

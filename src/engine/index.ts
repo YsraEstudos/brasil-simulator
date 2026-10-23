@@ -98,6 +98,44 @@ export {
   type RegionalPreviewUf,
   type RegionalUncertainty,
 } from './regions/preview';
+export {
+  centerByPopulation,
+  describeProfile,
+  hasLean,
+  medianVoterOf,
+  nationalTermOf,
+  normalizedDistance,
+  profileAlignment,
+  regionalAlignmentOf,
+  type AxisSide,
+  type ProfileDescription,
+  type RegionalAlignment,
+} from './politics/alignment';
+export {
+  DEFAULT_PROFILE_PRESET,
+  isProfilePresetId,
+  PROFILE_MAX_DISTANCE,
+  PROFILE_PARAMS,
+  PROFILE_PRESETS,
+  presetProfile,
+  profileParam,
+  type ProfileParamName,
+  type ProfilePreset,
+  type ProfilePresetId,
+} from './politics/calibration';
+export {
+  alignmentView,
+  governmentProfileLabel,
+  governmentProfileStep,
+  medianVoter,
+  movedProfile,
+  previewProfilePush,
+  topMoves,
+  type AlignmentView,
+  type ProfilePushPreview,
+  type UfAlignment,
+} from './politics/profile';
+export { ALIGNMENT_CAUSE } from './regions/regions';
 export { createRng, seedRng, type Rng, type RngState } from './rng';
 export {
   AGENDA_ACTIONS_PER_MONTH,

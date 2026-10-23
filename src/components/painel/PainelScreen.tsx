@@ -68,7 +68,8 @@ import {
   RIGHT_RAIL,
   type RailSheetId,
 } from './mesaNav';
-import { indicatorSpec, MAP_INDICATORS, mapRows, type MapIndicator } from './regionalMetrics';
+import { ProfileSheet } from './ProfileSheet';
+import { availableIndicators, indicatorSpec, mapRows, type MapIndicator } from './regionalMetrics';
 import { UfDetail, UfList } from './StateDetail';
 
 const logo = require('../../../assets/images/logo-brasil.png');
@@ -105,6 +106,7 @@ const RAIL_ICONS: Readonly<Record<RailSheetId, SymbolViewProps['name']>> = {
   regioes: { ios: 'map.fill', android: 'map', web: 'map' },
   indicadores: { ios: 'chart.bar.fill', android: 'bar_chart', web: 'bar_chart' },
   ministerios: { ios: 'building.columns.fill', android: 'account_balance', web: 'account_balance' },
+  perfil: { ios: 'slider.horizontal.3', android: 'tune', web: 'tune' },
 };
 
 const END_MONTH_ICON: SymbolViewProps['name'] = {
@@ -135,6 +137,7 @@ const SHEET_TITLES: Record<SheetId, string> = {
   regioes: 'Visão Regional',
   indicadores: 'Indicadores',
   ministerios: 'Ministérios',
+  perfil: 'Perfil do Governo',
   estado: 'Estado',
   menu: 'Menu',
 };
@@ -217,8 +220,10 @@ export function PainelScreen() {
   }, [activeId, monthIndex]);
   const regionalHistory = activeId !== undefined && regional?.id === activeId ? regional.points : EMPTY_REGIONAL;
 
-  // Sem partida não há dado por UF: a camada escolhida só vale com campanha em andamento.
-  const layer = active ? mapLayer : null;
+  // Camadas que o cenário permite (o Alinhamento precisa da inclinação das UFs).
+  const layers = useMemo(() => availableIndicators(content), [content]);
+  // Sem partida não há dado por UF: a camada escolhida só vale com campanha em andamento e se o cenário a oferece.
+  const layer = active && mapLayer && layers.some((l) => l.id === mapLayer) ? mapLayer : null;
   // Sem o rascunho: marcar uma decisão não recalcula o HUD nem recolore o mapa. O que depende do rascunho (ações
   // livres, selo dos alertas) é contado à parte, logo abaixo.
   const hud = useMemo(
@@ -549,6 +554,19 @@ export function PainelScreen() {
         ) : (
           <EmptyNote text="Toque num estado do mapa para ver os números e o porquê da diferença." />
         );
+      case 'perfil':
+        return active ? (
+          <ProfileSheet
+            state={active.state}
+            content={content}
+            onShowLayer={() => {
+              setMapLayer('alinhamento');
+              closeSheet();
+            }}
+          />
+        ) : (
+          <EmptyNote text="Inicie uma campanha para ver o perfil do governo." />
+        );
       case 'menu':
         return (
           <>
@@ -582,7 +600,7 @@ export function PainelScreen() {
               active={layer === null}
               onPress={() => setMapLayer(null)}
             />
-            {MAP_INDICATORS.map((spec) => (
+            {layers.map((spec) => (
               <MapLayerRow
                 key={spec.id}
                 label={spec.label}

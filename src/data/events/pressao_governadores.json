@@ -84,6 +84,12 @@
     }
   ],
   "defaultChoice": "recusar",
-  "onlyScenarios": ["brasil_2027_01", "brasil_2027_01_v050", "brasil_2027_01_v060", "brasil_2027_01_v070"],
+  "onlyScenarios": [
+    "brasil_2027_01",
+    "brasil_2027_01_v050",
+    "brasil_2027_01_v060",
+    "brasil_2027_01_v070",
+    "brasil_2027_01_v080"
+  ],
   "dataStatus": "FICTICIO"
 }

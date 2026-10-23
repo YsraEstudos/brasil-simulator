@@ -2,6 +2,7 @@ import type { RegionalKey } from '../../types/regions';
 import { legislativeInstrument } from '../congress/congress';
 import { isNovoBeneficio, vedacaoAtiva } from '../elections/vedacao';
 import { fiscalDirection } from '../policyChannels';
+import { previewProfilePush, type ProfilePushPreview } from '../politics/profile';
 import { hasRegionalDistributionChannel, reissueBarredPolicies } from '../proposals/proposals';
 import type { DecisionRejection, GameContent, GameState } from '../types';
 
@@ -60,6 +61,12 @@ export interface RegionalDecisionPreview {
   lagMonths: { earliest: number; longest: number } | null;
   /** Fatores que mantêm o resultado como estimativa. */
   uncertain: RegionalUncertainty[];
+  /**
+   * Para onde a política empurra o perfil ideológico do governo se for sancionada e quais UFs tendem a ganhar ou
+   * perder aprovação relativa pelo alinhamento (PLANO_GLOBO.md §5.2, PR 4). Estimativa; sem inclinações no
+   * cenário, `ufs` e `nationalTerm` ficam vazios/nulos (só o perfil se move).
+   */
+  profilePush: ProfilePushPreview | null;
   /** Impedimento para decidir agora (mesmos motivos do `screenInput`); `null` se nada impede. */
   barred: Extract<DecisionRejection, 'reedicao_vedada' | 'vedacao_eleitoral'> | null;
 }
@@ -122,6 +129,7 @@ export function buildRegionalDecisionPreview(
     adhesion,
     lagMonths,
     uncertain,
+    profilePush: previewProfilePush(state, content, policyId),
     barred,
   };
 }

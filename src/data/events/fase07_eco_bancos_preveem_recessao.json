@@ -2,7 +2,7 @@
   "id": "fase07_eco_bancos_preveem_recessao",
   "title": "Bancos preveem recessão",
   "description": "Relatórios de bancos e consultorias passam a prever recessão no ano seguinte, com o hiato do produto negativo e a confiança em queda. Pedem estímulo ou um ajuste mais claro, sem concordar entre si.",
-  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070", "brasil_2027_01_v080"],
   "trigger": {
     "monthsOfYear": [],
     "conditions": [

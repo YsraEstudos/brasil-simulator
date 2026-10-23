@@ -152,6 +152,14 @@ export const eventChoiceSchema = z
     /** Consequências posteriores (cadeias de eventos). */
     followUps: z.array(eventFollowUpSchema).optional(),
     characterEffects: z.array(characterEffectSchema).optional(),
+    /**
+     * Posição da escolha nos eixos do perfil ideológico do governo (PLANO_GLOBO.md §5.1; ex.: "privatizar" =
+     * econômico +0,6). Ausente = a escolha não move o perfil. Só escolhas do jogador contam, não a padrão.
+     */
+    position: z
+      .object({ economic: z.number().min(-1).max(1), social: z.number().min(-1).max(1) })
+      .strict()
+      .optional(),
   })
   .strict();
 export type EventChoiceDefinition = z.infer<typeof eventChoiceSchema>;

@@ -8,12 +8,14 @@ import {
   listCampaigns,
   loadIndicatorHistory,
   loadLatestState,
+  loadProfileHistory,
   loadRegionalHistory,
   loadReport,
   loadStateAt,
   recordMonth,
   type CampaignSummary,
   type IndicatorPoint,
+  type ProfileHistory,
   type RegionalPoint,
 } from '@/database/campaignRepository';
 import { getSetting, setSetting } from '@/database/settingsRepository';
@@ -97,6 +99,8 @@ export interface GameStoreState {
   history(): Promise<IndicatorPoint[]>;
   /** Série por UF da partida (posse e cada mês gravado); vazia sem partida ou leitura falha. Pode ter lacunas. */
   regionalHistory(): Promise<RegionalPoint[]>;
+  /** Rastro do perfil do governo e decisões que o moveram nos últimos meses (folha Perfil); vazio sem partida ou leitura falha. */
+  profileHistory(): Promise<ProfileHistory>;
   /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
   endMonth(input?: MonthInput): Promise<boolean>;
   /** Marca/desmarca no rascunho; ignorado enquanto o mês é gravado (`busy`) ou com a campanha encerrada. */
@@ -208,7 +212,7 @@ export function createGameStore(deps: GameStoreDeps) {
           return { ok: false, reason: 'falha', error: 'O banco de dados ainda não está pronto.' };
         }
         const d = db;
-        const { name, difficulty, scenarioId } = checked.input;
+        const { name, difficulty, scenarioId, profileId } = checked.input;
         set({ busy: true, error: undefined });
 
         // Um único `finally` devolve `busy` a falso: nenhuma exceção, prevista ou não, trava a store.
@@ -219,7 +223,12 @@ export function createGameStore(deps: GameStoreDeps) {
             const seed = checked.input.seed ?? Math.floor(deps.random() * 2 ** 31);
             // O id usa sorteios próprios: não depende da semente, que o jogador pode repetir em outra campanha.
             const id = `c_${Math.floor(deps.random() * 2 ** 31).toString(36)}_${Math.floor(deps.random() * 2 ** 31).toString(36)}`;
-            const state = createInitialState({ content: loadContent(scenario.id), difficulty, seed });
+            const state = createInitialState({
+              content: loadContent(scenario.id),
+              difficulty,
+              seed,
+              profile: profileId,
+            });
             await createCampaign(d, { id, name, scenarioVersion: scenario.version, state });
             created = { id, name, state, baseline: state, finished: false };
           } catch (e) {
@@ -300,6 +309,17 @@ export function createGameStore(deps: GameStoreDeps) {
           return await loadRegionalHistory(db, active.id);
         } catch {
           return [];
+        }
+      },
+
+      async profileHistory() {
+        const active = get().active;
+        if (!active || !db) return { trail: [], moves: [] };
+        // Como `history`: leitura para a folha do perfil, sem `busy` e sem erro na tela.
+        try {
+          return await loadProfileHistory(db, active.id);
+        } catch {
+          return { trail: [], moves: [] };
         }
       },
 
