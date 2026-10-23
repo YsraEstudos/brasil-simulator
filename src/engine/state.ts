@@ -2,6 +2,7 @@ import type { Scenario } from '../types/scenario';
 
 import type { Calibration } from './economy/calibration';
 import { initialFiscal, type FiscalValues } from './economy/fiscal';
+import { DEFAULT_PROFILE_PRESET, presetProfile, type ProfilePresetId } from './politics/calibration';
 import { initialRegions } from './regions/regions';
 import { seedRng } from './rng';
 import { initialSociety, initialSocietyForGame } from './society/society';
@@ -77,6 +78,11 @@ export interface NewCampaign {
   seed: number;
   /** Capital político inicial (padrão: `INITIAL_POLITICAL_CAPITAL`). */
   politicalCapital?: number;
+  /**
+   * Perfil ideológico inicial escolhido no NOVO JOGO (PLANO_GLOBO.md §5.1, D-G9); padrão Centro (0/0). Não sorteia
+   * nem muda regras: só o ponto de partida do perfil do governo.
+   */
+  profile?: ProfilePresetId;
 }
 
 export function createInitialState(c: NewCampaign): GameState {
@@ -107,6 +113,7 @@ export function createInitialState(c: NewCampaign): GameState {
     regions: { ufs: [] },
     society: initialSociety(),
     publicPolicies: initialPublicPolicies(),
+    government: { profile: presetProfile(c.profile ?? DEFAULT_PROFILE_PRESET) },
   };
   return { ...state, society: initialSocietyForGame(state), regions: { ufs: initialRegions(state, c.content).ufs } };
 }

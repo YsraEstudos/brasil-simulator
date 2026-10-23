@@ -290,7 +290,13 @@ describe('checkNewCampaignInput', () => {
   it('entrada válida devolve o nome normalizado, o padrão de cenário e semente nula', () => {
     expect(checkNewCampaignInput({ name: '  Campanha  ', difficulty: 'casual' })).toEqual({
       ok: true,
-      input: { name: 'Campanha', difficulty: 'casual', scenarioId: DEFAULT_SCENARIO_ID, seed: null },
+      input: {
+        name: 'Campanha',
+        difficulty: 'casual',
+        scenarioId: DEFAULT_SCENARIO_ID,
+        profileId: 'centro',
+        seed: null,
+      },
     });
   });
 
@@ -304,7 +310,13 @@ describe('checkNewCampaignInput', () => {
       }),
     ).toEqual({
       ok: true,
-      input: { name: 'Campanha', difficulty: 'realismo', scenarioId: 'prototipo_ficticio', seed: 7 },
+      input: {
+        name: 'Campanha',
+        difficulty: 'realismo',
+        scenarioId: 'prototipo_ficticio',
+        profileId: 'centro',
+        seed: 7,
+      },
     });
   });
 
@@ -322,6 +334,22 @@ describe('checkNewCampaignInput', () => {
 
     const seed = checkNewCampaignInput({ name: 'X', difficulty: 'casual', seed: SEED_MAX + 1 });
     expect(seed).toEqual({ ok: false, errors: { seed: SEED_ERRORS.range } });
+  });
+
+  // PLANO_GLOBO.md §5.1 (D-G9): perfil inicial escolhido no NOVO JOGO; padrão Centro; id desconhecido é erro.
+  it('perfil inicial: padrão Centro, valor informado é mantido e id desconhecido gera erro próprio', () => {
+    const explicit = checkNewCampaignInput({ name: 'X', difficulty: 'casual', profileId: 'liberal' });
+    expect(explicit.ok && explicit.input.profileId).toBe('liberal');
+    const unknown = checkNewCampaignInput({ name: 'X', difficulty: 'casual', profileId: 'partido_real' });
+    expect(unknown).toEqual({ ok: false, errors: { profile: expect.any(String) } });
+    const viaForm = checkSetupForm({
+      name: 'X',
+      difficulty: 'casual',
+      scenarioId: DEFAULT_SCENARIO_ID,
+      profileId: 'esquerda',
+      seedText: '',
+    });
+    expect(viaForm.ok && viaForm.input.profileId).toBe('esquerda');
   });
 
   it('vários erros são reportados de uma vez', () => {

@@ -1,5 +1,7 @@
 import { formatNumber, formatPercent, formatPointsDelta } from '@/components/ui/format';
 import {
+  alignmentView,
+  hasLean,
   populationShares,
   regionsOf,
   regionsView,
@@ -15,7 +17,7 @@ import {
  * valor por UF, faixa de cor, texto e a explicação "Por que esta UF está diferente da média?".
  */
 
-export type MapIndicator = 'crescimento' | 'desemprego' | 'aprovacao' | 'renda' | 'governador';
+export type MapIndicator = 'crescimento' | 'desemprego' | 'aprovacao' | 'renda' | 'governador' | 'alinhamento';
 
 export interface MapIndicatorSpec {
   id: MapIndicator;
@@ -70,7 +72,23 @@ export const MAP_INDICATORS: readonly MapIndicatorSpec[] = [
     step: 10,
     legend: 'Relação do governador com o governo (−100 a 100)',
   },
+  {
+    id: 'alinhamento',
+    label: 'Alinhamento',
+    scale: 'diverging',
+    goodWhen: 'up',
+    step: 0.005,
+    legend: 'Alinhamento do estado com o perfil do governo, em aprovação a mais ou a menos que a média (estimativa)',
+  },
 ];
+
+/**
+ * Camadas que o cenário permite: o Alinhamento precisa da inclinação política das UFs (cenários até a v0.7.0 não a
+ * têm) e some da lista nesse caso.
+ */
+export function availableIndicators(content: GameContent): readonly MapIndicatorSpec[] {
+  return hasLean(regionsOf(content)) ? MAP_INDICATORS : MAP_INDICATORS.filter((m) => m.id !== 'alinhamento');
+}
 
 /**
  * Cores das faixas, validadas para o fundo escuro do globo (skill dataviz): divergente vermelho ↔ azul com cinza
@@ -86,8 +104,17 @@ export function indicatorSpec(id: MapIndicator): MapIndicatorSpec {
   return spec;
 }
 
-/** Valor da UF no indicador (a comparação com a média já descontada nas escalas divergentes). */
-export function ufValue(id: MapIndicator, uf: UfState, state: GameState, populationShare: number): number {
+/**
+ * Valor da UF no indicador (a comparação com a média já descontada nas escalas divergentes). `alignmentDeviation` é
+ * o desvio de aprovação esperado pelo alinhamento (`alignmentView`), só usado na camada Alinhamento.
+ */
+export function ufValue(
+  id: MapIndicator,
+  uf: UfState,
+  state: GameState,
+  populationShare: number,
+  alignmentDeviation = 0,
+): number {
   switch (id) {
     case 'crescimento':
       return uf.growthGap12m;
@@ -99,6 +126,8 @@ export function ufValue(id: MapIndicator, uf: UfState, state: GameState, populat
       return uf.share / populationShare;
     case 'governador':
       return uf.governorRelation;
+    case 'alinhamento':
+      return alignmentDeviation;
   }
 }
 
@@ -125,6 +154,7 @@ export function legendLabels(spec: MapIndicatorSpec): string[] {
   const worse = spec.goodWhen === 'up' ? 'abaixo' : 'acima';
   const better = spec.goodWhen === 'up' ? 'acima' : 'abaixo';
   if (spec.id === 'governador') return ['hostil', 'distante', 'neutro', 'próximo', 'aliado'];
+  if (spec.id === 'alinhamento') return ['bem distante', 'distante', 'na média', 'alinhado', 'bem alinhado'];
   return [`bem ${worse}`, worse, 'na média', better, `bem ${better}`];
 }
 
@@ -134,6 +164,7 @@ export function formatValue(id: MapIndicator, value: number): string {
     case 'crescimento':
     case 'desemprego':
     case 'aprovacao':
+    case 'alinhamento':
       return formatPointsDelta(value);
     case 'renda':
       return formatNumber(value, 2);
@@ -156,8 +187,12 @@ export function mapRows(id: MapIndicator, state: GameState, content: GameContent
   const spec = indicatorSpec(id);
   const scenarioUfs = regionsOf(content);
   const pop = populationShares(scenarioUfs);
+  // Só a camada Alinhamento precisa do perfil; sem inclinação no cenário o desvio é 0 (a camada nem é oferecida).
+  const deviations = new Map<string, number>(
+    id === 'alinhamento' ? (alignmentView(state, content)?.ufs ?? []).map((a) => [a.id, a.approvalDeviation]) : [],
+  );
   return regionsView(state, content).map((uf, i) => {
-    const value = ufValue(id, uf, state, pop[i]);
+    const value = ufValue(id, uf, state, pop[i], deviations.get(uf.id) ?? 0);
     return {
       uf,
       name: scenarioUfs[i].name,
@@ -189,7 +224,7 @@ export function explanationFor(id: MapIndicator, explanation: UfExplanation | un
   const pieces =
     id === 'desemprego'
       ? explanation.unemployment
-      : id === 'aprovacao' || id === 'governador'
+      : id === 'aprovacao' || id === 'governador' || id === 'alinhamento'
         ? explanation.approval
         : explanation.activity;
   const sorted = [...pieces].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
@@ -201,6 +236,8 @@ export function explanationFor(id: MapIndicator, explanation: UfExplanation | un
 
 /** Texto de uma parcela: p.p. para desemprego e aprovação, % para a atividade. */
 export function formatPiece(id: MapIndicator, delta: number): string {
-  if (id === 'desemprego' || id === 'aprovacao' || id === 'governador') return formatPointsDelta(delta);
+  if (id === 'desemprego' || id === 'aprovacao' || id === 'governador' || id === 'alinhamento') {
+    return formatPointsDelta(delta);
+  }
   return `${delta > 0 ? '+' : ''}${formatPercent(delta)}`;
 }

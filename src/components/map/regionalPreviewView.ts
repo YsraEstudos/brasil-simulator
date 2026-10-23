@@ -1,6 +1,7 @@
+import { MOVE_EPSILON } from '@/components/painel/profileView';
 import { SEQUENTIAL } from '@/components/painel/regionalMetrics';
-import { formatNumber, formatPercent } from '@/components/ui/format';
-import type { RegionalDecisionPreview, RegionalUncertainty } from '@/engine';
+import { formatNumber, formatPercent, formatPointsDelta } from '@/components/ui/format';
+import { describeProfile, type RegionalDecisionPreview, type RegionalUncertainty } from '@/engine';
 
 import { buildRegionalMapViewModel, type MapLegend, type RegionalMapViewModel } from './regionalMapViewModel';
 
@@ -177,4 +178,67 @@ export function selectedUfText(
   const parts = mode === 'adhesion' ? [adhesion, impact] : [impact, adhesion];
   const shown = parts.filter((p): p is string => p !== null);
   return shown.length > 0 ? `${name}: ${shown.join(' · ')}` : `${name}: sem efeito regional diferente`;
+}
+
+export const PROFILE_NOTE = 'Estimativa: a política pode não ser aprovada, e o resto do governo também move o perfil.';
+export const PROFILE_NO_LEAN_TEXT = 'Este cenário não traz a inclinação dos estados: só o perfil do governo se move.';
+/** Mudança na aprovação nacional (fração) abaixo da qual o termo do eleitor mediano conta como "sem mudança". */
+export const NATIONAL_EPSILON = 0.0005;
+
+export interface ProfilePushView {
+  /** "Perfil do governo: Centro → Mercado · Conservador", ou "… segue em Centro". */
+  headline: string;
+  /**
+   * "A política fica em Mercado · Centro; se for sancionada, o perfil tende a se aproximar dela." Fala da posição da
+   * política, não do sentido do passo: com a média móvel, um governo Liberal que sanciona uma reforma de mercado mais
+   * moderada anda "para o Estado", e dizer isso confundiria. Vazio se a política não move o perfil.
+   */
+  detail: string;
+  /** Efeito da distância do eleitor médio; `null` sem inclinações no cenário. */
+  nationalLine: string | null;
+  /** UFs que tendem a ganhar / perder aprovação relativa pelo alinhamento; `null` quando não há nenhuma. */
+  gainersLine: string | null;
+  losersLine: string | null;
+  /** Aviso quando o cenário não tem inclinação das UFs. */
+  noLeanNote: string | null;
+  note: string;
+}
+
+const namesList = (ids: readonly string[], names: UfNames) => ids.map((id) => names[id] ?? id).join(', ');
+
+/**
+ * Para onde a política empurra o perfil ideológico do governo, o efeito no termo do eleitor médio e as UFs que tendem
+ * a ganhar ou perder aprovação relativa pelo alinhamento (PLANO_GLOBO.md §5.2). Sempre estimativa ("tende a"); `null`
+ * quando a prévia não traz o empurrão no perfil.
+ */
+export function profilePushView(preview: RegionalDecisionPreview, names: UfNames = {}): ProfilePushView | null {
+  const push = preview.profilePush;
+  if (!push) return null;
+  const moved = Math.hypot(push.shift.economic, push.shift.social) >= MOVE_EPSILON;
+  const before = push.descriptionBefore.label;
+  const after = push.descriptionAfter.label;
+  const headline = !moved
+    ? 'Não muda o perfil do governo'
+    : before === after
+      ? `Perfil do governo: segue em ${before}`
+      : `Perfil do governo: ${before} → ${after}`;
+  const detail = moved
+    ? `A política fica em ${describeProfile(push.position).label}; se for sancionada, o perfil tende a se aproximar dela.`
+    : '';
+  const national = push.nationalTerm;
+  const nationalLine = !national
+    ? null
+    : Math.abs(national.delta) < NATIONAL_EPSILON
+      ? 'Distância do eleitor médio: sem mudança relevante'
+      : `Distância do eleitor médio: ${national.delta > 0 ? 'tende a ajudar' : 'tende a pesar'} (${formatPointsDelta(national.delta)} na aprovação nacional)`;
+  return {
+    headline,
+    detail,
+    nationalLine,
+    gainersLine:
+      push.gainers.length > 0 ? `Tendem a ganhar aprovação relativa: ${namesList(push.gainers, names)}` : null,
+    losersLine: push.losers.length > 0 ? `Tendem a perder aprovação relativa: ${namesList(push.losers, names)}` : null,
+    noLeanNote: national ? null : PROFILE_NO_LEAN_TEXT,
+    note: PROFILE_NOTE,
+  };
 }

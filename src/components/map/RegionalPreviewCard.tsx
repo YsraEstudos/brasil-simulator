@@ -16,6 +16,7 @@ import {
   previewLegend,
   previewMapModel,
   previewModes,
+  profilePushView,
   selectedUfText,
   topHeading,
   topUfs,
@@ -57,6 +58,7 @@ export function RegionalPreviewCard({ state, content, policyId }: RegionalPrevie
   const lag = lagLine(preview);
   const chips = uncertaintyChips(preview);
   const barred = barredNote(preview);
+  const profile = profilePushView(preview, names);
   const detail = mode && selected ? selectedUfText(preview, selected, mode, names) : null;
 
   return (
@@ -127,6 +129,27 @@ export function RegionalPreviewCard({ state, content, policyId }: RegionalPrevie
               {uf.name}: {uf.text}
             </Text>
           ))}
+        </View>
+      )}
+
+      {profile && (
+        <View style={styles.block} accessibilityLabel="Efeito no perfil do governo">
+          <Text variant="caption" color="textSecondary">
+            Perfil ideológico (estimativa)
+          </Text>
+          <Text variant="body">{profile.headline}</Text>
+          {profile.detail !== '' && <Text variant="body">{profile.detail}</Text>}
+          {profile.nationalLine && <Text variant="body">{profile.nationalLine}</Text>}
+          {profile.gainersLine && <Text variant="body">{profile.gainersLine}</Text>}
+          {profile.losersLine && <Text variant="body">{profile.losersLine}</Text>}
+          {profile.noLeanNote && (
+            <Text variant="caption" color="textMuted">
+              {profile.noLeanNote}
+            </Text>
+          )}
+          <Text variant="caption" color="textMuted">
+            {profile.note}
+          </Text>
         </View>
       )}
 

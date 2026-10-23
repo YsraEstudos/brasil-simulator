@@ -1,6 +1,9 @@
 import { TERM_MONTHS } from '../calendar';
 import { activeImpulses } from '../impulses';
+import { populationShares, regionsOf } from '../regions/regions';
 import type { Contribution, GameState, MonthStep } from '../types';
+
+import { medianVoterOf, nationalTermOf } from './alignment';
 
 /** Limites da escala do capital político (GAME_DESIGN.md §5: 0–100). */
 const CAPITAL_MIN = 0;
@@ -59,6 +62,17 @@ export const opinionStep: MonthStep = (state, ctx) => {
       ),
     },
   ];
+
+  // Distância do perfil do governo ao eleitor mediano (PLANO_GLOBO.md §5.1, D-G10): termo pequeno e saturado.
+  // Não age em cenários sem inclinação das UFs. Entra como pressão sobre a aprovação, como os demais termos.
+  const ufs = regionsOf(ctx.content);
+  const medianTerm = nationalTermOf(state.government.profile, medianVoterOf(ufs, populationShares(ufs)));
+  candidates.push({
+    indicator: 'approval',
+    cause: 'eleitor_mediano',
+    label: 'Distância do eleitor médio',
+    delta: adj * medianTerm,
+  });
 
   for (const impulse of activeImpulses(state.impulses, t, ['aprovacao'])) {
     candidates.push({

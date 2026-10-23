@@ -53,8 +53,8 @@ describe('painelLabelReserve', () => {
     const [left, right] = r.rects;
     // 3 botões de 48 + 2 vãos de 10 = 164 (+ margem de 4 de cada lado)
     expect(left).toEqual({ x: RAIL_EDGE - 4, y: 318, w: 56, h: 172 });
-    // 4 botões de 48 + 3 vãos de 10 = 222
-    expect(right).toEqual({ x: 360 - RAIL_EDGE - 48 - 4, y: 289, w: 56, h: 230 });
+    // 5 botões de 48 + 4 vãos de 10 = 280
+    expect(right).toEqual({ x: 360 - RAIL_EDGE - 48 - 4, y: 260, w: 56, h: 288 });
   });
 
   it('os trilhos ficam centrados entre a barra do topo e a doca', () => {

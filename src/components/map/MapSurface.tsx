@@ -1,10 +1,12 @@
 import { Component, useCallback, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import type { GlobeApi, GlobeViewProps } from '@/globe/GlobeView';
+import type { GlobeApi, GlobeQuality, GlobeViewProps } from '@/globe/GlobeView';
 import { labelScale, type LabelViewport, type Rect } from '@/globe/labels';
+import { deviceUtc } from '@/globe/deviceClock';
+import type { ProfileRenderer } from '@/globe/qualityProfiles';
+import { computeSun, type SkyInput, type SunState } from '@/globe/visualClock';
 import { useGame } from '@/store';
-import type { MapRendererPref } from '@/store/mapRenderer';
 
 import { FlatBrazilMap } from './FlatBrazilMap';
 import type { RegionalMapViewModel } from './regionalMapViewModel';
@@ -15,7 +17,7 @@ import type { RegionalMapViewModel } from './regionalMapViewModel';
  */
 
 /** `globe`: 3D. `flat`: mapa 2D completo (siglas). `flat-light`: 2D leve (só polígonos e seleção). */
-export type MapRenderer = MapRendererPref;
+export type MapRenderer = ProfileRenderer;
 
 export interface MapSurfaceProps {
   renderer: MapRenderer;
@@ -32,6 +34,13 @@ export interface MapSurfaceProps {
   reservedRects?: readonly Rect[];
   /** Faixas onde um rótulo não cabe por inteiro (área segura + barras do HUD). */
   labelInsets?: LabelViewport['insets'];
+  /** Perfil de qualidade do globo (tetos e ajuste automático); sem efeito no mapa 2D. */
+  quality?: GlobeQuality;
+  /**
+   * Dia e noite (hora escolhida + mês do calendário do jogo): o globo ilumina e acende as luzes; o mapa 2D completo
+   * desenha a sombra do terminador e as luzes; o 2D leve não mostra nada. Padrão do globo: tarde, janeiro.
+   */
+  sky?: SkyInput;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -47,6 +56,7 @@ function FlatMap({
   onSelect,
   onReady,
   light,
+  sun,
   style,
   labels,
 }: {
@@ -54,6 +64,7 @@ function FlatMap({
   onSelect: (sigla: string | null) => void;
   onReady?: (api: GlobeApi) => void;
   light: boolean;
+  sun: SunState | null;
   style?: StyleProp<ViewStyle>;
   labels: LabelProps;
 }) {
@@ -70,6 +81,7 @@ function FlatMap({
       reservedRects={labels.reservedRects}
       labelInsets={labels.labelInsets}
       labelScale={labels.labelScale}
+      sun={sun}
       style={style}
     />
   );
@@ -122,6 +134,8 @@ function MapSurfaceRenderer({
   onGlobeFailure,
   reservedRects,
   labelInsets,
+  quality,
+  sky,
   style,
 }: MapSurfaceProps) {
   const [globeFailed, setGlobeFailed] = useState(false);
@@ -135,8 +149,22 @@ function MapSurfaceRenderer({
   // O mesmo ajuste de texto do aplicativo vale para as siglas do globo e do mapa 2D.
   const scale = labelScale(useGame((s) => s.textScale));
   const labels: LabelProps = { reservedRects, labelInsets, labelScale: scale };
+  // O mapa 2D não tem laço de quadros: o Sol é recalculado ao renderizar (na "Hora real", lê o relógio aqui; a sombra
+  // fica em cache enquanto a hora não muda). O 2D leve nem recebe o Sol.
+  const flatSun =
+    sky && renderer !== 'flat-light'
+      ? computeSun(sky.setting.mode === 'real' ? { ...sky, utc: deviceUtc() } : sky)
+      : null;
   const flat = (light: boolean) => (
-    <FlatMap viewModel={viewModel} onSelect={onSelect} onReady={onReady} light={light} style={style} labels={labels} />
+    <FlatMap
+      viewModel={viewModel}
+      onSelect={onSelect}
+      onReady={onReady}
+      light={light}
+      sun={flatSun}
+      style={style}
+      labels={labels}
+    />
   );
   if (renderer !== 'globe' || globeFailed) return flat(renderer === 'flat-light');
   return (
@@ -151,6 +179,8 @@ function MapSurfaceRenderer({
         reservedRects={reservedRects}
         labelInsets={labelInsets}
         labelScale={scale}
+        quality={quality}
+        sky={sky}
       />
     </GlobeBoundary>
   );

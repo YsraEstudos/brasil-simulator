@@ -8,16 +8,20 @@ import {
   listCampaigns,
   loadIndicatorHistory,
   loadLatestState,
+  loadProfileHistory,
   loadRegionalHistory,
   loadReport,
   loadStateAt,
   recordMonth,
   type CampaignSummary,
   type IndicatorPoint,
+  type ProfileHistory,
   type RegionalPoint,
 } from '@/database/campaignRepository';
 import { getSetting, setSetting } from '@/database/settingsRepository';
 import type { SqlDatabase } from '@/database/types';
+import { DEFAULT_PROFILE_3D, type Profile3d } from '@/globe/qualityProfiles';
+import { DEFAULT_DAY_TIME, type DayTimeSetting } from '@/globe/visualClock';
 import { campaignMonths, loadContent, SCENARIOS } from '@/content';
 import {
   advanceMonth,
@@ -41,7 +45,17 @@ import {
   type SetupErrors,
   type SetupPrefs,
 } from './campaignSetup';
-import { DEFAULT_MAP_RENDERER, MAP_RENDERER_KEY, resolveMapRenderer, type MapRendererPref } from './mapRenderer';
+import { MAP_DAY_TIME_KEY, resolveDayTime } from './mapDayTime';
+import {
+  DEFAULT_MAP_QUALITY,
+  LEGACY_MAP_RENDERER_KEY,
+  MAP_QUALITY_AUTO_KEY,
+  MAP_QUALITY_KEY,
+  isMapQualityChoice,
+  resolveAutoProfile,
+  resolveMapQuality,
+  type MapQualityChoice,
+} from './mapQuality';
 
 /** Campanha encerrada: prazo do cenário cumprido ou condenação por impeachment (FASE_07.md). */
 function isFinished(state: GameState): boolean {
@@ -81,8 +95,12 @@ export interface GameStoreState {
   campaigns: CampaignSummary[];
   active: ActiveCampaign | null;
   textScale: TextScale;
-  /** Renderizador do mapa regional (Configurações; guardado em `settings`, fora do `GameState`). */
-  mapRenderer: MapRendererPref;
+  /** Qualidade do mapa regional: Automático ou um perfil (Configurações; guardada em `settings`, fora do `GameState`). */
+  mapQuality: MapQualityChoice;
+  /** Último perfil 3D a que o ajuste automático chegou (guardado em `settings`; o próximo início já parte dele). */
+  autoProfile: Profile3d;
+  /** Hora do dia do mapa (fixa / sempre dia / real; Configurações; guardada em `settings`). Só visual. */
+  dayTime: DayTimeSetting;
   /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
   draft: AgendaDraft;
   /** Últimas dificuldade e cenário usados em NOVO JOGO (lidos uma vez no início, gravados após criar). */
@@ -97,6 +115,8 @@ export interface GameStoreState {
   history(): Promise<IndicatorPoint[]>;
   /** Série por UF da partida (posse e cada mês gravado); vazia sem partida ou leitura falha. Pode ter lacunas. */
   regionalHistory(): Promise<RegionalPoint[]>;
+  /** Rastro do perfil do governo e decisões que o moveram nos últimos meses (folha Perfil); vazio sem partida ou leitura falha. */
+  profileHistory(): Promise<ProfileHistory>;
   /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
   endMonth(input?: MonthInput): Promise<boolean>;
   /** Marca/desmarca no rascunho; ignorado enquanto o mês é gravado (`busy`) ou com a campanha encerrada. */
@@ -108,7 +128,12 @@ export interface GameStoreState {
   leaveCampaign(): Promise<boolean>;
   deleteCampaign(id: string): Promise<boolean>;
   setTextScale(scale: TextScale): Promise<boolean>;
-  setMapRenderer(renderer: MapRendererPref): Promise<boolean>;
+  /** Escolha manual (ou volta ao Automático). Um perfil fixo desliga o ajuste automático. */
+  setMapQuality(choice: MapQualityChoice): Promise<boolean>;
+  /** Resultado do ajuste automático: vale na hora e é gravado sem marcar `busy` (vem do laço de quadros do globo). */
+  setAutoProfile(profile: Profile3d): Promise<void>;
+  /** Escolha da hora do dia do mapa; vale na hora e é gravada. */
+  setDayTime(setting: DayTimeSetting): Promise<boolean>;
 }
 
 export interface GameStoreDeps {
@@ -159,7 +184,9 @@ export function createGameStore(deps: GameStoreDeps) {
       campaigns: [],
       active: null,
       textScale: 1,
-      mapRenderer: DEFAULT_MAP_RENDERER,
+      mapQuality: DEFAULT_MAP_QUALITY,
+      autoProfile: DEFAULT_PROFILE_3D,
+      dayTime: DEFAULT_DAY_TIME,
       draft: EMPTY_DRAFT,
       setupPrefs: DEFAULT_SETUP_PREFS,
 
@@ -180,13 +207,33 @@ export function createGameStore(deps: GameStoreDeps) {
           } catch {
             // segue com os padrões
           }
-          let mapRenderer = DEFAULT_MAP_RENDERER;
+          let mapQuality = DEFAULT_MAP_QUALITY;
+          let autoProfile = DEFAULT_PROFILE_3D;
           try {
-            mapRenderer = resolveMapRenderer(await getSetting<unknown>(db, MAP_RENDERER_KEY, null));
+            const saved = await getSetting<unknown>(db, MAP_QUALITY_KEY, null);
+            const legacy = await getSetting<unknown>(db, LEGACY_MAP_RENDERER_KEY, null);
+            mapQuality = resolveMapQuality(saved, legacy);
+            autoProfile = resolveAutoProfile(await getSetting<unknown>(db, MAP_QUALITY_AUTO_KEY, null));
+            // Migração única do valor antigo: a escolha migrada passa a viver na chave nova.
+            if (!isMapQualityChoice(saved) && legacy !== null) await setSetting(db, MAP_QUALITY_KEY, mapQuality);
           } catch {
-            // segue com o globo
+            // segue com o automático
           }
-          set({ textScale, mapRenderer, setupPrefs, campaigns: await listCampaigns(db), status: 'pronto' });
+          let dayTime = DEFAULT_DAY_TIME;
+          try {
+            dayTime = resolveDayTime(await getSetting<unknown>(db, MAP_DAY_TIME_KEY, null));
+          } catch {
+            // segue com a hora fixa da tarde
+          }
+          set({
+            textScale,
+            mapQuality,
+            autoProfile,
+            dayTime,
+            setupPrefs,
+            campaigns: await listCampaigns(db),
+            status: 'pronto',
+          });
         } catch (e) {
           set({ status: 'erro', error: e instanceof Error ? e.message : String(e) });
         }
@@ -208,7 +255,7 @@ export function createGameStore(deps: GameStoreDeps) {
           return { ok: false, reason: 'falha', error: 'O banco de dados ainda não está pronto.' };
         }
         const d = db;
-        const { name, difficulty, scenarioId } = checked.input;
+        const { name, difficulty, scenarioId, profileId } = checked.input;
         set({ busy: true, error: undefined });
 
         // Um único `finally` devolve `busy` a falso: nenhuma exceção, prevista ou não, trava a store.
@@ -219,7 +266,12 @@ export function createGameStore(deps: GameStoreDeps) {
             const seed = checked.input.seed ?? Math.floor(deps.random() * 2 ** 31);
             // O id usa sorteios próprios: não depende da semente, que o jogador pode repetir em outra campanha.
             const id = `c_${Math.floor(deps.random() * 2 ** 31).toString(36)}_${Math.floor(deps.random() * 2 ** 31).toString(36)}`;
-            const state = createInitialState({ content: loadContent(scenario.id), difficulty, seed });
+            const state = createInitialState({
+              content: loadContent(scenario.id),
+              difficulty,
+              seed,
+              profile: profileId,
+            });
             await createCampaign(d, { id, name, scenarioVersion: scenario.version, state });
             created = { id, name, state, baseline: state, finished: false };
           } catch (e) {
@@ -303,6 +355,17 @@ export function createGameStore(deps: GameStoreDeps) {
         }
       },
 
+      async profileHistory() {
+        const active = get().active;
+        if (!active || !db) return { trail: [], moves: [] };
+        // Como `history`: leitura para a folha do perfil, sem `busy` e sem erro na tela.
+        try {
+          return await loadProfileHistory(db, active.id);
+        } catch {
+          return { trail: [], moves: [] };
+        }
+      },
+
       endMonth: (input) =>
         run(async (d) => {
           const active = get().active;
@@ -356,11 +419,27 @@ export function createGameStore(deps: GameStoreDeps) {
           await setSetting(d, TEXT_SCALE_KEY, scale);
         }),
 
-      setMapRenderer: (renderer) =>
+      setMapQuality: (choice) =>
         run(async (d) => {
-          await setSetting(d, MAP_RENDERER_KEY, renderer);
-          set({ mapRenderer: renderer });
+          set({ mapQuality: choice });
+          await setSetting(d, MAP_QUALITY_KEY, choice);
         }),
+
+      setDayTime: (setting) =>
+        run(async (d) => {
+          set({ dayTime: setting });
+          await setSetting(d, MAP_DAY_TIME_KEY, setting);
+        }),
+
+      async setAutoProfile(profile) {
+        if (get().autoProfile === profile) return;
+        set({ autoProfile: profile });
+        try {
+          if (db) await setSetting(db, MAP_QUALITY_AUTO_KEY, profile);
+        } catch {
+          // não gravar o perfil medido só faz o próximo início partir do Equilibrado de novo
+        }
+      },
     };
   });
 }

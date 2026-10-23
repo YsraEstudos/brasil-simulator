@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { autoTiltDeg, cameraPose, clampCamera } from './camera';
-import { CAMERA, MAX_LEVEL, ROOT } from './config';
+import { CAMERA, LOD_TEXEL_THRESHOLD, MAX_LEVEL, ROOT } from './config';
 import { lonLatToVec3, pointInRing, raySphere, tileBounds, tileChildren, tileId, vec3ToLonLat, type Vec3 } from './geo';
 import { blockOf, pickEvictions } from './cache';
 import { selectTiles, type LodInput } from './lod';
@@ -126,6 +126,35 @@ describe('lod', () => {
         y = Math.floor(y / 2);
       }
     }
+  });
+
+  const maxZ = (ids: string[]) => Math.max(...ids.map((id) => Number(id.split('/')[0])));
+
+  it('sem parâmetros de perfil o resultado é o do Equilibrado (limiar e nível máximo da configuração)', () => {
+    const base = selectTiles(input(CAMERA.minAltitude, () => true));
+    const explicit = selectTiles({
+      ...input(CAMERA.minAltitude, () => true),
+      texelThreshold: LOD_TEXEL_THRESHOLD,
+      maxLevel: MAX_LEVEL,
+    });
+    expect(explicit).toEqual(base);
+  });
+
+  it('o nível máximo do perfil limita o detalhe desenhado, e nunca passa do nível dos assets', () => {
+    const capped = selectTiles({ ...input(CAMERA.minAltitude, () => true), maxLevel: MAX_LEVEL - 1 });
+    expect(maxZ(capped.draw)).toBe(MAX_LEVEL - 1);
+    const beyond = selectTiles({ ...input(CAMERA.minAltitude, () => true), maxLevel: MAX_LEVEL + 3 });
+    expect(maxZ(beyond.draw)).toBe(MAX_LEVEL);
+  });
+
+  it('um limiar de texel maior desenha menos detalhe; um menor, mais', () => {
+    const at = (texelThreshold: number) => selectTiles({ ...input(0.4, () => true), texelThreshold });
+    const coarse = at(4);
+    const normal = at(LOD_TEXEL_THRESHOLD);
+    const fine = at(0.25);
+    expect(maxZ(coarse.draw)).toBeLessThanOrEqual(maxZ(normal.draw));
+    expect(maxZ(normal.draw)).toBeLessThanOrEqual(maxZ(fine.draw));
+    expect(coarse.draw.length).toBeLessThan(fine.draw.length);
   });
 
   it('desenha o pai enquanto os filhos carregam', () => {

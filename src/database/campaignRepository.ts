@@ -5,9 +5,11 @@ import {
   type DecisionRejection,
   type Difficulty,
   type GameState,
+  type IdeologyPoint,
   type Indicators,
   type MonthReport,
   type MonthResult,
+  type ProfileMove,
 } from '../engine';
 import type { SqlDatabase } from './types';
 
@@ -210,6 +212,64 @@ export async function loadRegionalHistory(db: SqlDatabase, campaignId: string): 
   });
 }
 
+/** Quantos meses o rastro do perfil ideológico e a lista de decisões da folha "Perfil do governo" mostram. */
+export const PROFILE_HISTORY_MONTHS = 12;
+
+/** Perfil ideológico do governo ao fim de um mês (o estado já com o mês aplicado). */
+export interface ProfileTrailPoint {
+  monthIndex: number;
+  profile: IdeologyPoint;
+}
+
+/** Decisões que mais moveram o perfil num mês, como o relatório gravou. */
+export interface ProfileMovesMonth {
+  /** Mês jogado (o do relatório). */
+  monthIndex: number;
+  moves: ProfileMove[];
+}
+
+export interface ProfileHistory {
+  /** Do mais antigo ao mais recente. */
+  trail: ProfileTrailPoint[];
+  /** Do mais recente ao mais antigo; só meses em que alguma decisão moveu o perfil. */
+  moves: ProfileMovesMonth[];
+}
+
+/**
+ * Rastro do perfil do governo e decisões que o moveram nos últimos `PROFILE_HISTORY_MONTHS` meses, lidos direto dos
+ * snapshots e relatórios (nenhuma tabela nova). Snapshots anteriores à v10 não têm perfil e ficam de fora: nada é
+ * reconstruído (o `upgradeGameState` os leria como neutros e inventaria um rastro). Só lê o trecho `government` do
+ * JSON, sem atualizar o estado inteiro.
+ */
+export async function loadProfileHistory(
+  db: SqlDatabase,
+  campaignId: string,
+  months = PROFILE_HISTORY_MONTHS,
+): Promise<ProfileHistory> {
+  const states = await db.all<{ month_index: number; state_json: string }>(
+    `SELECT month_index, state_json FROM snapshots
+     WHERE campaign_id = ? AND state_schema_version >= 10 ORDER BY month_index DESC LIMIT ?`,
+    [campaignId, months],
+  );
+  const trail: ProfileTrailPoint[] = [];
+  for (const row of states) {
+    const profile = (JSON.parse(row.state_json) as { government?: { profile?: IdeologyPoint } }).government?.profile;
+    if (profile) trail.push({ monthIndex: row.month_index, profile });
+  }
+  trail.reverse();
+
+  const reports = await db.all<{ month_index: number; report_json: string }>(
+    'SELECT month_index, report_json FROM month_reports WHERE campaign_id = ? ORDER BY month_index DESC LIMIT ?',
+    [campaignId, months],
+  );
+  const moves: ProfileMovesMonth[] = [];
+  for (const row of reports) {
+    const found = (JSON.parse(row.report_json) as Partial<MonthReport>).profileMoves ?? [];
+    if (found.length > 0) moves.push({ monthIndex: row.month_index, moves: found });
+  }
+  return { trail, moves };
+}
+
 /** Motivo de recusa como gravado antes da v9. */
 const LEGACY_REJECTION_REASONS: Record<string, DecisionRejection> = {
   sem_pontos_de_agenda: 'sem_acoes_de_agenda',
@@ -217,7 +277,8 @@ const LEGACY_REJECTION_REASONS: Record<string, DecisionRejection> = {
 
 /**
  * Relatório mensal salvo (decomposição causal); `null` se o mês saiu da retenção ou não existe. Relatórios
- * gravados antes da Fase 05 não têm a explicação por UF: ela vem como `null`. A v9 renomeou um motivo de
+ * gravados antes da Fase 05 não têm a explicação por UF: ela vem como `null`; os anteriores à v10 não têm as
+ * decisões que moveram o perfil ideológico (`profileMoves` vem vazio). A v9 renomeou um motivo de
  * recusa ("pontos" → "ações"): relatórios antigos são traduzidos na leitura para o rótulo continuar aparecendo.
  */
 export async function loadReport(db: SqlDatabase, campaignId: string, monthIndex: number): Promise<MonthReport | null> {
@@ -231,7 +292,12 @@ export async function loadReport(db: SqlDatabase, campaignId: string, monthIndex
     ...r,
     reason: LEGACY_REJECTION_REASONS[r.reason] ?? r.reason,
   }));
-  return { ...report, rejected, regional: report.regional ?? null } as MonthReport;
+  return {
+    ...report,
+    rejected,
+    regional: report.regional ?? null,
+    profileMoves: report.profileMoves ?? [],
+  } as MonthReport;
 }
 
 /** Estado mais recente da campanha, pronto para continuar jogando. */

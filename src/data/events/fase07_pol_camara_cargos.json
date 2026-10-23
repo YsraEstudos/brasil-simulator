@@ -12,7 +12,7 @@
     "cooldownMonths": 12,
     "maxOccurrences": 3
   },
-  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070"],
+  "onlyScenarios": ["brasil_2027_01_v060", "brasil_2027_01_v070", "brasil_2027_01_v080"],
   "characterId": "pres_camara",
   "onFire": [{ "target": "relacao_congresso", "delta": -3, "lagMonths": 0, "durationMonths": 1 }],
   "choices": [

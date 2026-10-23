@@ -33,7 +33,22 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   if (version < 7) state = v6ToV7(state);
   if (version < 8) state = v7ToV8(state);
   if (version < 9) state = v8ToV9(state);
+  if (version < 10) state = v9ToV10(state);
   return state as unknown as GameState;
+}
+
+/**
+ * v9 → v10 (PR 4 do PLANO_GLOBO): entra o perfil ideológico do governo (`government.profile`), neutro (0/0) em
+ * todo save antigo. O perfil só age em cenários com inclinação das UFs; nos demais (e portanto em todo save
+ * anterior) a simulação continua idêntica. Nenhum campo é lido do cenário, e nenhum sorteio é feito.
+ */
+function v9ToV10(s: Raw): Raw {
+  return {
+    ...s,
+    schemaVersion: 10,
+    engineVersion: ENGINE_VERSION,
+    government: { profile: { economic: 0, social: 0 } },
+  };
 }
 
 /**

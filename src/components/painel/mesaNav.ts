@@ -9,7 +9,7 @@ import type { ScenarioElections } from '@/types/scenario';
 
 /** Folhas que um botão de trilho abre (as demais — estado, menu — abrem por outros caminhos). */
 export type RailSheetId =
-  'alertas' | 'meta' | 'relatorio' | 'eleicoes' | 'camadas' | 'regioes' | 'indicadores' | 'ministerios';
+  'alertas' | 'meta' | 'relatorio' | 'eleicoes' | 'camadas' | 'regioes' | 'indicadores' | 'ministerios' | 'perfil';
 
 export interface RailEntry {
   id: RailSheetId;
@@ -32,12 +32,16 @@ export function leftRail(showElections: boolean): readonly RailEntry[] {
   return showElections ? [...LEFT_RAIL, ELECTIONS_ENTRY] : LEFT_RAIL;
 }
 
-/** Trilho direito — "o país": o mapa e os números. O Congresso fica na doca, não aqui. */
+/**
+ * Trilho direito — "o país": o mapa, os números e o perfil ideológico do governo (PLANO_GLOBO.md §5.2). O Congresso
+ * fica na doca, não aqui.
+ */
 export const RIGHT_RAIL: readonly RailEntry[] = [
   { id: 'camadas', label: 'Camadas do mapa' },
   { id: 'regioes', label: 'Visão regional' },
   { id: 'indicadores', label: 'Indicadores' },
   { id: 'ministerios', label: 'Ministérios' },
+  { id: 'perfil', label: 'Perfil do governo' },
 ];
 
 /**

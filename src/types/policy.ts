@@ -163,6 +163,11 @@ export const policySchema = z
      * Econômico: −1 estado … 1 mercado. Social: −1 progressista … 1 conservador.
      */
     position: z.object({ economic: z.number().min(-1).max(1), social: z.number().min(-1).max(1) }).strict(),
+    /**
+     * Relevância da política para o perfil ideológico do governo (PLANO_GLOBO.md §5.1): multiplica o peso da
+     * decisão ao mover o perfil. Ausente = 1 (peso padrão); 0 = não move o perfil.
+     */
+    salience: z.number().min(0).max(3).optional(),
     /** Status dos números desta política (DATA_SOURCES.md §2.1). */
     dataStatus: dataStatusSchema,
     /** Entrega opcional da carteira da Fase 06; ausente conserva o fluxo legado. */

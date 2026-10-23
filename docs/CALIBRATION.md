@@ -230,3 +230,22 @@ Resultado: todos os extremos estáveis.
 | `meses_visita` | 3 | 1 – 6 | meses de efeito da visita na aprovação local | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (+0,0 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `relacao_visita` | 10 | 3 – 20 | pontos de relação ganhos com o governador do estado visitado | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (+0,0 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `max_eventos_mes` | 2 | 1 – 3 | eventos novos por mês, no máximo | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 213% → 214% (+0,5 p.p.); inflação média 3,2% → 3,2%; violações 0 |
+
+## Perfil ideológico do governo e alinhamento por UF (PR 4 do PLANO_GLOBO)
+
+Módulo `src/engine/politics/calibration.ts` (`PROFILE_PARAMS`, não sobrescritos pelo cenário). Valores `PROVISORIO`; revisão de calibração prevista no PLANO_GLOBO.md §10.
+
+| Parâmetro | Valor | Faixa | Significado |
+| --- | --- | --- | --- |
+| `memoria_decisao` | 0,12 | 0,05 – 0,25 | λ: fração do caminho até a posição de uma decisão sancionada ou executada |
+| `peso_proposta` | 0,25 | 0,1 – 0,5 | peso da proposta enviada, relativo à sanção |
+| `peso_veto` | 0,5 | 0,25 – 1 | peso do veto total (sentido oposto), relativo à sanção |
+| `peso_evento` | 0,75 | 0,25 – 1 | peso de escolha de evento com posição |
+| `memoria_maxima` | 0,5 | 0,3 – 0,8 | teto do λ efetivo (λ × peso × relevância) |
+| `movimentos_por_mes` | 3 | 1 – 6 | decisões que mais moveram o perfil guardadas no relatório |
+| `alinhamento_regional_max` | 0,04 | 0,02 – 0,08 | k: desvio máximo de aprovação da UF por alinhamento |
+| `alinhamento_regional_escala` | 0,12 | 0,06 – 0,25 | s: diferença de alinhamento que satura o desvio (tanh) |
+| `eleitor_mediano_teto` | 0,02 | 0,01 – 0,04 | efeito nacional máximo na aprovação (estado estacionário) |
+| `eleitor_mediano_distancia_neutra` | 0,2 | 0,1 – 0,35 | distância normalizada ao mediano em que o termo nacional é zero |
+| `eleitor_mediano_escala` | 0,15 | 0,08 – 0,3 | distância normalizada que satura o termo nacional |
+| `ufs_destacadas_previa`, `faixa_central` | 5; 0,2 | — | só interface (prévia e descrição em palavras) |

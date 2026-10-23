@@ -63,9 +63,12 @@ export const SERIES_METRICS: Record<'aprovacao' | 'desemprego' | 'crescimento' |
   },
 };
 
-/** Série do indicador do mapa; "renda" (derivada da participação no PIB) não tem série própria e usa a aprovação. */
+/**
+ * Série do indicador do mapa; "renda" (derivada da participação no PIB) e "alinhamento" (já contido na aprovação,
+ * que é o que o motor grava) não têm série própria e usam a aprovação.
+ */
 export function seriesMetricFor(indicator: MapIndicator): SeriesMetricSpec {
-  return indicator === 'renda' ? SERIES_METRICS.aprovacao : SERIES_METRICS[indicator];
+  return indicator === 'renda' || indicator === 'alinhamento' ? SERIES_METRICS.aprovacao : SERIES_METRICS[indicator];
 }
 
 export type ComparisonTone = 'positive' | 'negative' | 'neutral';

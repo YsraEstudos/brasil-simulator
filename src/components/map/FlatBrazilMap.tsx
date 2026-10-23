@@ -9,13 +9,15 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Defs, G, Path, RadialGradient, Stop } from 'react-native-svg';
 
 import type { LabelViewport, Rect } from '@/globe/labels';
 import { findUf } from '@/globe/ufs';
+import type { SunState } from '@/globe/visualClock';
 
 import { layoutFlatLabels } from './flatLabels';
 import { flatMap, type FlatUf } from './flatProjection';
+import { flatSunFor, LIGHT_COLOR, SHADOW_COLOR, SHADOW_OVER_FILL } from './flatSun';
 import type { RegionalMapViewModel } from './regionalMapViewModel';
 
 /**
@@ -52,8 +54,15 @@ export interface FlatBrazilMapProps {
   labelInsets?: LabelViewport['insets'];
   /** Tamanho dos rótulos: `labelScale(textScale)`. Padrão 1. */
   labelScale?: number;
+  /**
+   * Dia e noite (só na variante `full`): sombra do terminador e luzes das cidades do lado noturno. `null`/ausente =
+   * nada (também em "Sempre dia"). A sombra fica em cache enquanto a hora e o mês forem os mesmos.
+   */
+  sun?: SunState | null;
   style?: StyleProp<ViewStyle>;
 }
+
+const CITY_GLOW_ID = 'cityGlow';
 
 interface UfPathProps {
   uf: FlatUf;
@@ -162,6 +171,7 @@ export function FlatBrazilMap({
   reservedRects,
   labelInsets,
   labelScale = 1,
+  sun,
   style,
 }: FlatBrazilMapProps) {
   // Gere os paths SVG só quando o mapa 2D for realmente renderizado; o import do fallback não bloqueia o início do globo.
@@ -175,8 +185,11 @@ export function FlatBrazilMap({
   // Despachante estável: os manipuladores (e os `UfPath` memoizados) não mudam quando `onSelect` muda.
   const select = useCallback((sigla: string | null) => onSelectRef.current(sigla), []);
 
-  const selected = viewModel.selectedId ? flat.ufs.find((u) => u.sigla === viewModel.selectedId) : undefined;
+  // Sombra e luzes: refeitas só quando o Sol muda (hora fixa, mês, ou a tela renderizando na "Hora real").
+  const night = variant === 'full' && sun ? flatSunFor(sun) : null;
+  const shadowStrength = Object.keys(viewModel.fills).length > 0 ? SHADOW_OVER_FILL : 1;
 
+  const selected = viewModel.selectedId ? flat.ufs.find((u) => u.sigla === viewModel.selectedId) : undefined;
   // Um só toque para o mapa todo: o ponto volta para lon/lat e `findUf` acha a UF (o mesmo teste do globo). O
   // `onPress` por `<Path>` não funciona na web (o react-native-svg repassa os handlers de toque ao DOM).
   const onPress = (event: GestureResponderEvent) => {
@@ -206,6 +219,30 @@ export function FlatBrazilMap({
         {flat.ufs.map((uf) => (
           <UfPath key={uf.sigla} uf={uf} fill={viewModel.fills[uf.sigla] ?? LAND} />
         ))}
+        {night && (
+          <G pointerEvents="none">
+            {night.bands.map((band, i) => (
+              <Path key={i} d={band.d} fill={SHADOW_COLOR} fillOpacity={band.opacity * shadowStrength} />
+            ))}
+            <Defs>
+              <RadialGradient id={CITY_GLOW_ID}>
+                <Stop offset="0" stopColor={LIGHT_COLOR} stopOpacity="1" />
+                <Stop offset="0.35" stopColor={LIGHT_COLOR} stopOpacity="0.55" />
+                <Stop offset="1" stopColor={LIGHT_COLOR} stopOpacity="0" />
+              </RadialGradient>
+            </Defs>
+            {night.lights.map((light) => (
+              <Circle
+                key={light.name}
+                cx={light.x}
+                cy={light.y}
+                r={light.r}
+                fill={`url(#${CITY_GLOW_ID})`}
+                opacity={light.opacity}
+              />
+            ))}
+          </G>
+        )}
         {selected && (
           <Path
             d={selected.d}

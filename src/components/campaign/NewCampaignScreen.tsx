@@ -32,8 +32,10 @@ import {
   difficultyView,
   durationLabel,
   SCENARIO_KIND_LABEL,
+  profilePresetViews,
   scenarioDataNote,
   scenarioFeatures,
+  scenarioHasLean,
   scenarioTitle,
   setupSummary,
   startLabel,
@@ -52,6 +54,7 @@ import {
 } from './SetupBits';
 
 const SCENARIOS = scenarioOptions();
+const PROFILES = profilePresetViews();
 
 /**
  * NOVO JOGO (rota `/novo-jogo`): nome, dificuldade, cenário, semente opcional e resumo, numa única rolagem. O
@@ -92,7 +95,7 @@ export function NewCampaignScreen() {
 }
 
 function initialForm(prefs: SetupPrefs): CampaignSetupForm {
-  return { name: '', difficulty: prefs.difficulty, scenarioId: prefs.scenarioId, seedText: '' };
+  return { name: '', difficulty: prefs.difficulty, scenarioId: prefs.scenarioId, profileId: 'centro', seedText: '' };
 }
 
 function NewCampaignForm({
@@ -154,6 +157,7 @@ function NewCampaignForm({
   const errors = check.ok ? {} : check.errors;
   const summary = useMemo(() => setupSummary(form), [form]);
   const difficulty = difficultyView(form.difficulty);
+  const selectedScenario = SCENARIOS.find((o) => o.id === form.scenarioId)?.scenario;
   const current = SCENARIOS.filter((o) => o.kind === 'atual');
   const older = SCENARIOS.filter((o) => o.kind !== 'atual');
   const nameError = (nameTouched || attempted) && errors.name ? errors.name : null;
@@ -327,6 +331,38 @@ function NewCampaignForm({
           </Animated.View>
 
           <Animated.View entering={enterAt(2)} layout={LAYOUT}>
+            <Card
+              title="Perfil do governo"
+              subtitle="Onde o governo começa nos eixos Estado ↔ mercado e progressista ↔ conservador">
+              <View style={styles.options} accessibilityRole="radiogroup">
+                {PROFILES.map((p) => (
+                  <OptionCard
+                    key={p.id}
+                    selected={form.profileId === p.id}
+                    disabled={locked}
+                    onPress={() => update({ profileId: p.id })}
+                    accessibilityLabel={`${p.name}, ${p.axes}. ${p.description}`}>
+                    <View style={styles.optionTitle}>
+                      <Text variant="heading" style={styles.flex}>
+                        {p.name}
+                      </Text>
+                      <Badge label={p.axes} />
+                    </View>
+                    <Text variant="caption" color="textSecondary">
+                      {p.description}
+                    </Text>
+                  </OptionCard>
+                ))}
+              </View>
+              <Text variant="caption" color="textSecondary">
+                {scenarioHasLean(selectedScenario)
+                  ? 'O perfil muda com o que o governo decide e mexe na aprovação de cada estado e, pouco, na nacional. Nenhuma posição é premiada em si.'
+                  : 'Este cenário não traz a inclinação política dos estados: o perfil é registrado, mas não muda a aprovação.'}
+              </Text>
+            </Card>
+          </Animated.View>
+
+          <Animated.View entering={enterAt(3)} layout={LAYOUT}>
             <Card title="Cenário" subtitle="Ponto de partida e conteúdo disponível">
               <View style={styles.options} accessibilityRole="radiogroup">
                 {current.map((o) => (
@@ -365,7 +401,7 @@ function NewCampaignForm({
             </Card>
           </Animated.View>
 
-          <Animated.View entering={enterAt(3)} layout={LAYOUT}>
+          <Animated.View entering={enterAt(4)} layout={LAYOUT}>
             <Card>
               <Collapsible
                 title="OPÇÕES AVANÇADAS"
@@ -405,7 +441,7 @@ function NewCampaignForm({
             </Card>
           </Animated.View>
 
-          <Animated.View entering={enterAt(4)} layout={LAYOUT}>
+          <Animated.View entering={enterAt(5)} layout={LAYOUT}>
             <View style={[styles.summary, { backgroundColor: colors.surface, borderColor: colors.accent }]}>
               <Text variant="label" color="accent" style={styles.summaryTitle} accessibilityRole="header">
                 RESUMO DA CAMPANHA
@@ -414,6 +450,7 @@ function NewCampaignForm({
               <SummaryRow label="Nome" value={summary.name ?? 'Sem nome'} muted={summary.name === null} />
               <SummaryRow label="Dificuldade" value={summary.difficulty} />
               <SummaryRow label="Ações de agenda" value={`${summary.actionsPerMonth} por mês`} />
+              <SummaryRow label="Perfil inicial" value={summary.profile} />
               <SummaryRow label="Cenário" value={summary.scenario} />
               <SummaryRow label="Versão" value={summary.version} />
               <SummaryRow label="Duração máxima" value={summary.duration} />
@@ -427,7 +464,7 @@ function NewCampaignForm({
             </Animated.View>
           )}
 
-          <Animated.View entering={enterAt(5)} layout={LAYOUT} style={styles.actions}>
+          <Animated.View entering={enterAt(6)} layout={LAYOUT} style={styles.actions}>
             <PrimaryAction
               label={submitting ? 'TOMANDO POSSE…' : 'TOMAR POSSE'}
               onPress={onSubmit}

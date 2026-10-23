@@ -80,7 +80,35 @@ Documentos relacionados: [GAME_DESIGN.md](GAME_DESIGN.md) §4.5 · [ECONOMIC_MOD
 - **Escolha automática** só depois de aquecer (shaders compilados, tiles carregados): amostra de quadros em
   movimento e em repouso, com histerese para não ficar trocando. A escolha manual é guardada e desliga o ajuste.
 - Parâmetros por perfil: `TILE_CACHE_BLOCKS`, `MAX_CONCURRENT_LOADS`, `LOD_TEXEL_THRESHOLD`, DPR, `MAX_LEVEL`
-  (sem regerar assets).
+  (sem regerar assets). **Implementado no PR 5** em `src/globe/qualityProfiles.ts` (`GLOBE_BUDGETS`):
+
+| Parâmetro | Econômico 3D | Equilibrado (= `config.ts`) | Alto |
+| --- | --- | --- | --- |
+| Blocos de cor em cache (`tileCacheBlocks`) | 12 | 20 | 28 |
+| Downloads simultâneos (`maxConcurrentLoads`) | 2 | 4 | 4 |
+| Limiar de LOD, px por texel (`lodTexelThreshold`; maior = menos detalhe) | 1,5 | 1,0 | 0,75 |
+| Nível máximo desenhado (`maxLevel`; os assets vão até 5) | 4 | 5 | 5 |
+| Teto da razão de pixels (`dprCap`) | 1,25 | 2 | 2 |
+| Efeitos permitidos, **reservados** (`effects`: nuvens / nuvens animadas / textura de luzes) | não / não / não | sim / não / não | sim / sim / sim |
+
+  Os booleanos de efeitos ainda não são lidos por ninguém (entram nos PRs 6 e 10). **DPR:** o R3F nativo fixa a razão
+  de pixels do aparelho (expo-gl só desenha na resolução nativa); o teto vale na web e é preparado para um futuro
+  desenho em resolução reduzida no Android, a ser medido no moto g20.
+- **Troca de perfil em tempo de execução:** o globo lê o orçamento por `ref`, sem recriar a cena. O `TileStore`
+  recebe os novos tetos (`setBudget`): se o cache encolheu, os blocos fora de uso saem na hora (dispose das texturas) e o
+  resto sai assim que deixar de ser usado; o LOD usa o novo limiar/nível no quadro seguinte (o globo invalida um
+  quadro). Nada é reiniciado nem recarregado à força.
+- **Escolha em Configurações:** "Automático" (padrão) ou um perfil fixo, na tabela `settings` (`mapa_qualidade`; o último
+  perfil do automático em `mapa_qualidade_auto`). Migração do valor antigo `mapa_renderizador`: `globe` → Automático
+  (começa no Equilibrado, os mesmos tetos de antes), `flat` → Essencial 2D, `flat-light` → Essencial 2D leve.
+- **Ajuste automático** (`src/globe/autoQuality.ts`, máquina de estados pura): só depois de 30 quadros seguidos sem tile
+  carregando; janelas de ~60 amostras de intervalo entre quadros em movimento (gesto ou inércia) e de 20 em repouso
+  (rajadas, como a chegada de tiles). Janela de movimento **lenta** = mediana > 33,4 ms ou p95 > 50 ms; **rápida** =
+  mediana ≤ 18 ms e p95 ≤ 25 ms; o resto é neutra e zera as contagens. Descer exige 3 janelas lentas seguidas (ou 3
+  janelas de repouso com p95 > 100 ms); subir, 8 rápidas seguidas e nenhum repouso lento no meio. Um nível por vez, 20
+  quadros descartados após cada troca, nunca vai ao 2D (só a falha de GL faz isso) e, se uma subida é seguida de descida,
+  o perfil de onde se desceu fica vetado até fechar o app. A escolha manual desliga o ajuste; o resultado é gravado e o
+  próximo início parte dele.
 - Opções separadas: **Hora do dia** (fixa / sempre dia / real), **Nuvens** (sim/não), **Reduzir movimento**.
 
 ### 3.2 Regras de renderização
@@ -137,6 +165,10 @@ no moto g20 mostrar folga.
   pelo **mês do jogo** (declinação solar do `monthIndex`). Não afeta o motor.
 - `uSunDir` no globo base e nos tiles com a mesma convenção (sem emenda); piso noturno ~0,35 para o mapa seguir
   legível; mapa de calor, rótulos e marcadores não são iluminados.
+- **Convenção (PR 6):** o Sol é um vetor unitário no referencial do globo (`lonLatToVec3`: lon 0 em +x, polo norte em
+  +y, lon −90° em +z) apontando para o ponto subsolar: latitude = declinação do dia 15 do mês do calendário do jogo
+  (−23° em dezembro, +23° em junho), longitude = −15° × (hora UTC − 12). Horas fixas em Brasília (UTC−3): manhã 9h,
+  tarde 15h (padrão), entardecer 18h, noite 22h. Equação do tempo ignorada. Dia = `dot(normal, Sol) > 0`.
 - Transição de 1,5 s do Sol ao encerrar o mês — só se "Reduzir movimento" estiver desligado.
 
 ### 4.2 Nuvens (opcionais) e seca
@@ -274,7 +306,12 @@ Troca de governador aparece no mês da posse, separada do resultado presidencial
 | 14 | Leitura, acessibilidade e consolidação | Macrorregião, busca, comparação, 5 melhores/piores; campanhas de 48/96/240 meses estáveis; metas de release no moto g20. |
 
 Status: PR 0 e PR 1 implementados em 20/10/2026 (aguardando revisão e medição no moto g20).
+PR 5 (perfis de qualidade e orçamento) implementado em 20/10/2026: `qualityProfiles.ts` (orçamentos por perfil), `autoQuality.ts` (escolha automática com histerese), Configurações → "Qualidade do mapa", migração de `mapa_renderizador`. Pendente de medição no moto g20: limiares do ajuste automático, valores do Econômico/Alto e o efeito do DPR no Android (§3.1). Obs.: o contador de quadros do PR 0 (`frameStats`) vive em outro PR; o PR 5 traz o seu amostrador próprio e mínimo (`autoQuality.ts`), a unificar depois.
 PR 3 (série regional: migração 5 `regional_indicator_history`, cartão do estado com variação, 12 meses e ranking) implementado em 20/10/2026.
+
+PR 4 (motor) implementado em 20/10/2026: perfil do governo (`government.profile`, estado v10), escolha no Novo Jogo, movimento por decisão, inclinação das UFs no cenário v0.8.0 (`PROVISORIO`), efeito regional (`alinhamento_perfil`) e nacional (`eleitor_mediano`), `alignmentView` e `previewProfilePush`. Interface implementada em 20/10/2026: folha "Perfil do governo" (botão do trilho direito da mesa; plano de dois eixos, rastro de até 12 meses lido dos snapshots, UFs, eleitor mediano, termo nacional e decisões que mais moveram o perfil), camada "Alinhamento" (globo 3D, mapa 2D e lista, escondida em cenário sem inclinação) e o empurrão no perfil na prévia da decisão (`RegionalPreviewCard`, sempre como estimativa). Regras em [POLITICAL_RULES.md](POLITICAL_RULES.md) §11.2.
+
+PR 6 (dia e noite + luzes das cidades) implementado em 21/10/2026: `visualClock.ts` (puro; Sol pelo mês do jogo e pela hora, em hora fixa de Brasília — padrão **tarde, 15h** —, "Sempre dia" ou "Hora real" com o relógio UTC do aparelho), `uSunDir`/`uSunOn` compartilhados pelo globo base e por todos os tiles (mesma função `sunLight`, piso noturno 0,35, faixa do terminador `dot` −0,10…0,22; mapa de calor, contorno, rótulos e atmosfera não são iluminados), luzes das 150 maiores cidades (`cities.json`, um `Points`, brilho aditivo, só no lado noturno, em todos os perfis 3D), terminador e luzes no 2D completo (`flatSun.ts`: 5 faixas translúcidas empilhadas + círculos com degradê; só 25% da sombra sobre um mapa de calor; o 2D leve não mostra nada) e Configurações → "Hora do dia" (`mapa_hora`). Nenhum quadro periódico: hora fixa e "Sempre dia" só gravam o Sol ao mudar a escolha ou o mês; "Hora real" relê o relógio dentro do `useFrame` (e a tela 2D, ao renderizar). **Fora deste PR:** a transição de 1,5 s do Sol ao encerrar o mês (§4.1) — não existe a opção "Reduzir movimento" no app, então o Sol muda de estação de uma vez; entra junto com essa opção. A textura de luzes noturnas do perfil Alto (`cityLightsTexture`) segue reservada. Pendente de medição no moto g20: custo das luzes e do `varying` extra nos tiles.
 
 Versões do estado: o PR 4 sobe `STATE_SCHEMA_VERSION` (perfil do governo) e o PR 7 sobe de novo (clima); cada
 um com a sua função de atualização e teste com save da versão anterior.

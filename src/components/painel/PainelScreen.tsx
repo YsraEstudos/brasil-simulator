@@ -23,11 +23,19 @@ import { Alert, Indicator, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
-import { indicatorsFromScenario, initialRegions, SANCTION_ACTION_ID, type Decision, type IndicatorKey } from '@/engine';
+import {
+  indicatorsFromScenario,
+  initialRegions,
+  SANCTION_ACTION_ID,
+  toCalendar,
+  type Decision,
+  type IndicatorKey,
+} from '@/engine';
 import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
-import { draftCost, gameStore, useGame, type RegionalPoint } from '@/store';
+import type { Profile3d } from '@/globe/qualityProfiles';
+import { draftCost, gameStore, planMapQuality, useGame, type RegionalPoint } from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
 import { GdpChart } from './GdpChart';
@@ -68,7 +76,8 @@ import {
   RIGHT_RAIL,
   type RailSheetId,
 } from './mesaNav';
-import { indicatorSpec, MAP_INDICATORS, mapRows, type MapIndicator } from './regionalMetrics';
+import { ProfileSheet } from './ProfileSheet';
+import { availableIndicators, indicatorSpec, mapRows, type MapIndicator } from './regionalMetrics';
 import { UfDetail, UfList } from './StateDetail';
 
 const logo = require('../../../assets/images/logo-brasil.png');
@@ -105,6 +114,7 @@ const RAIL_ICONS: Readonly<Record<RailSheetId, SymbolViewProps['name']>> = {
   regioes: { ios: 'map.fill', android: 'map', web: 'map' },
   indicadores: { ios: 'chart.bar.fill', android: 'bar_chart', web: 'bar_chart' },
   ministerios: { ios: 'building.columns.fill', android: 'account_balance', web: 'account_balance' },
+  perfil: { ios: 'slider.horizontal.3', android: 'tune', web: 'tune' },
 };
 
 const END_MONTH_ICON: SymbolViewProps['name'] = {
@@ -135,6 +145,7 @@ const SHEET_TITLES: Record<SheetId, string> = {
   regioes: 'Visão Regional',
   indicadores: 'Indicadores',
   ministerios: 'Ministérios',
+  perfil: 'Perfil do Governo',
   estado: 'Estado',
   menu: 'Menu',
 };
@@ -174,9 +185,24 @@ export function PainelScreen() {
   // Há subtela por cima do Painel? Então o globo não desenha (a pilha mantém o Painel montado por baixo).
   const focused = useIsFocused();
   const globe = useRef<GlobeApi | null>(null);
-  // Preferência do mapa (Configurações). Se o globo falhar a superfície cai sozinha para o 2D só nesta sessão: nada é
-  // gravado, e o aviso aparece uma vez.
-  const mapRenderer = useGame((s) => s.mapRenderer);
+  // Qualidade do mapa (Configurações: Automático ou um perfil). Se o globo falhar a superfície cai sozinha para o 2D só
+  // nesta sessão: nada é gravado, e o aviso aparece uma vez.
+  const mapQuality = useGame((s) => s.mapQuality);
+  const autoProfile = useGame((s) => s.autoProfile);
+  const mapPlan = planMapQuality(mapQuality, autoProfile);
+  const mapRenderer = mapPlan.renderer;
+  const globeQuality = useMemo(
+    () => ({
+      profile: mapPlan.profile3d,
+      auto: mapPlan.auto,
+      onAutoProfile: (profile: Profile3d) => void gameStore.getState().setAutoProfile(profile),
+    }),
+    [mapPlan.profile3d, mapPlan.auto],
+  );
+  // Dia e noite (só visual): a hora escolhida em Configurações e o mês do calendário da campanha (estação do ano).
+  const dayTime = useGame((s) => s.dayTime);
+  const skyMonth = toCalendar(active?.state.monthIndex ?? 0).month;
+  const sky = useMemo(() => ({ setting: dayTime, month: skyMonth }), [dayTime, skyMonth]);
   const [globeFailed, setGlobeFailed] = useState(false);
   const [globeNoticeClosed, setGlobeNoticeClosed] = useState(false);
 
@@ -217,8 +243,10 @@ export function PainelScreen() {
   }, [activeId, monthIndex]);
   const regionalHistory = activeId !== undefined && regional?.id === activeId ? regional.points : EMPTY_REGIONAL;
 
-  // Sem partida não há dado por UF: a camada escolhida só vale com campanha em andamento.
-  const layer = active ? mapLayer : null;
+  // Camadas que o cenário permite (o Alinhamento precisa da inclinação das UFs).
+  const layers = useMemo(() => availableIndicators(content), [content]);
+  // Sem partida não há dado por UF: a camada escolhida só vale com campanha em andamento e se o cenário a oferece.
+  const layer = active && mapLayer && layers.some((l) => l.id === mapLayer) ? mapLayer : null;
   // Sem o rascunho: marcar uma decisão não recalcula o HUD nem recolore o mapa. O que depende do rascunho (ações
   // livres, selo dos alertas) é contado à parte, logo abaixo.
   const hud = useMemo(
@@ -549,6 +577,19 @@ export function PainelScreen() {
         ) : (
           <EmptyNote text="Toque num estado do mapa para ver os números e o porquê da diferença." />
         );
+      case 'perfil':
+        return active ? (
+          <ProfileSheet
+            state={active.state}
+            content={content}
+            onShowLayer={() => {
+              setMapLayer('alinhamento');
+              closeSheet();
+            }}
+          />
+        ) : (
+          <EmptyNote text="Inicie uma campanha para ver o perfil do governo." />
+        );
       case 'menu':
         return (
           <>
@@ -582,7 +623,7 @@ export function PainelScreen() {
               active={layer === null}
               onPress={() => setMapLayer(null)}
             />
-            {MAP_INDICATORS.map((spec) => (
+            {layers.map((spec) => (
               <MapLayerRow
                 key={spec.id}
                 label={spec.label}
@@ -610,6 +651,8 @@ export function PainelScreen() {
           {/* O mapa é a tela: tudo o mais são camadas por cima. O toque num estado abre o cartão dele. */}
           <MapSurface
             renderer={mapRenderer}
+            quality={globeQuality}
+            sky={sky}
             viewModel={mapModel}
             paused={!focused}
             reservedRects={labelReserve.rects}

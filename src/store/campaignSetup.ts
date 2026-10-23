@@ -1,5 +1,11 @@
 import { campaignMonths, DEFAULT_SCENARIO_ID, SCENARIOS } from '@/content/scenarios';
-import type { Difficulty } from '@/engine';
+import {
+  DEFAULT_PROFILE_PRESET,
+  isProfilePresetId,
+  PROFILE_PRESETS,
+  type Difficulty,
+  type ProfilePresetId,
+} from '@/engine';
 import type { Scenario } from '@/types/scenario';
 
 /**
@@ -18,6 +24,11 @@ export const SEED_MAX = 0xffff_ffff;
 export const DIFFICULTIES: readonly Difficulty[] = ['casual', 'estrategica', 'realismo'];
 
 export const DEFAULT_DIFFICULTY: Difficulty = 'estrategica';
+
+/** Perfis ideológicos iniciais na ordem de exibição (PLANO_GLOBO.md §5.1, D-G9); o padrão é Centro (0/0). */
+export const PROFILE_PRESET_IDS: readonly ProfilePresetId[] = PROFILE_PRESETS.map((p) => p.id);
+
+export const DEFAULT_PROFILE: ProfilePresetId = DEFAULT_PROFILE_PRESET;
 
 /** Chaves das últimas escolhas na tabela `settings`. */
 export const LAST_DIFFICULTY_KEY = 'lastDifficulty';
@@ -186,6 +197,8 @@ export interface CampaignSetupForm {
   name: string;
   difficulty: Difficulty;
   scenarioId: string;
+  /** Perfil ideológico inicial do governo; ausente = Centro. */
+  profileId?: ProfilePresetId;
   /** Texto do campo de semente (vazio = automática). */
   seedText: string;
 }
@@ -194,6 +207,8 @@ export interface NewCampaignInput {
   name: string;
   difficulty: Difficulty;
   scenarioId?: string;
+  /** Perfil ideológico inicial (PLANO_GLOBO.md §5.1); ausente = Centro. Não muda regras nem sorteios. */
+  profileId?: ProfilePresetId;
   /** Semente da simulação; ausente = sorteada pela store. */
   seed?: number;
 }
@@ -202,6 +217,7 @@ export interface SetupErrors {
   name?: string;
   difficulty?: string;
   scenario?: string;
+  profile?: string;
   seed?: string;
 }
 
@@ -217,6 +233,7 @@ export function checkNewCampaignInput(input: {
   name?: unknown;
   difficulty?: unknown;
   scenarioId?: unknown;
+  profileId?: unknown;
   seed?: unknown;
 }): SetupCheck {
   const name = validateCampaignName(input.name);
@@ -224,13 +241,15 @@ export function checkNewCampaignInput(input: {
   const scenarioId = input.scenarioId ?? DEFAULT_SCENARIO_ID;
   const seed = input.seed ?? null;
   const seedOk = seed === null || isValidSeed(seed);
-  if (name.ok && isDifficulty(difficulty) && isKnownScenario(scenarioId) && seedOk) {
-    return { ok: true, input: { name: name.value, difficulty, scenarioId, seed } };
+  const profileId = input.profileId ?? DEFAULT_PROFILE;
+  if (name.ok && isDifficulty(difficulty) && isKnownScenario(scenarioId) && isProfilePresetId(profileId) && seedOk) {
+    return { ok: true, input: { name: name.value, difficulty, scenarioId, profileId, seed } };
   }
   const errors: SetupErrors = {};
   if (!name.ok) errors.name = name.error;
   if (!isDifficulty(difficulty)) errors.difficulty = 'Escolha uma dificuldade válida.';
   if (!isKnownScenario(scenarioId)) errors.scenario = 'Escolha um cenário disponível.';
+  if (!isProfilePresetId(profileId)) errors.profile = 'Escolha um perfil inicial válido.';
   if (!seedOk) errors.seed = SEED_ERRORS.range;
   return { ok: false, errors };
 }
@@ -242,6 +261,7 @@ export function checkSetupForm(form: CampaignSetupForm): SetupCheck {
     name: form.name,
     difficulty: form.difficulty,
     scenarioId: form.scenarioId,
+    profileId: form.profileId,
     seed: seed.ok ? (seed.value ?? undefined) : undefined,
   });
   if (seed.ok) return base;
