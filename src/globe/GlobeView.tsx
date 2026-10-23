@@ -1,11 +1,19 @@
 import { Canvas, useThree } from './r3f';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { NativeGlobeCanvas } from './NativeGlobeCanvas';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CAMERA } from './config';
+import { CAMERA, GLOBE_STATS_ENABLED } from './config';
 import { GlobeController } from './controller';
+import {
+  GlFailureWatcher,
+  GlobePerfProbe,
+  type GlFailureHandler,
+  type GlFailureReason,
+  type GlobePerf,
+} from './diagnostics';
 import type { LabelInsets } from './GlobeLabels';
 import { GlobeScene, type SceneStats } from './GlobeScene';
 import type { Rect } from './labels';
@@ -34,6 +42,13 @@ export interface GlobeViewProps {
    * deve gastar GPU. A câmera, a seleção e os tiles ficam como estão; ao despausar o globo desenha um quadro na hora.
    */
   paused?: boolean;
+  /**
+   * Falha gráfica: `init-error` (shader não compilou) em qualquer plataforma; `context-lost` só na web (o expo-gl
+   * nativo não expõe perda de contexto). Não altera o desenho: quem usa decide cair no mapa 2D.
+   */
+  onGlFailure?: GlFailureHandler;
+  /** Falha ao criar o contexto GL no nativo; permite ao mapa mostrar o fallback 2D. */
+  onGlobeFailure?: (error: Error) => void;
   /** Áreas do HUD (px da tela) onde nenhuma sigla ou capital pode tocar: botões, doca, barra do topo. */
   reservedRects?: readonly Rect[];
   /** Faixas da tela onde um rótulo não cabe por inteiro (área segura + barras do HUD). Padrão: área segura. */
@@ -60,6 +75,8 @@ export function GlobeView({
   onSelect,
   onReady,
   paused = false,
+  onGlFailure,
+  onGlobeFailure,
   reservedRects = NO_RECTS,
   labelInsets,
   labelScale = 1,
@@ -92,7 +109,23 @@ export function GlobeView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controller]);
   const [stats, setStats] = useState<SceneStats | null>(null);
+  const [perf, setPerf] = useState<GlobePerf | null>(null);
   const container = useRef<ViewInstance>(null);
+  const reportGlFailure = useCallback(
+    (reason: GlFailureReason, detail?: string, error?: Error) => {
+      onGlFailure?.(reason, detail);
+      const message =
+        detail ?? (reason === 'context-lost' ? 'O contexto WebGL foi perdido.' : 'Falha gráfica ao iniciar o globo.');
+      onGlobeFailure?.(error ?? new Error(message));
+    },
+    [onGlFailure, onGlobeFailure],
+  );
+  const reportNativeGlFailure = useCallback(
+    (error: Error) => reportGlFailure('init-error', error.message, error),
+    [reportGlFailure],
+  );
+  const hasGlFailureCallback = !!onGlFailure || !!onGlobeFailure;
+  const watchGlFailures = GLOBE_STATS_ENABLED || hasGlFailureCallback;
 
   const gesture = useMemo(() => {
     const pan = Gesture.Pan()
@@ -143,22 +176,46 @@ export function GlobeView({
               os rouba do GestureDetector. Não usamos eventos de ponteiro do R3F (o pick é nosso), então
               o Canvas fica fora do hit-test e os toques chegam ao container. */}
           <View style={styles.canvas} pointerEvents={Platform.OS === 'web' ? 'auto' : 'none'}>
-            <Canvas
-              frameloop={paused ? 'never' : 'demand'}
-              flat
-              linear
-              camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}>
-              <ResumeOnUnpause paused={paused} />
-              <GlobeScene
-                controller={controller}
-                selectedUf={selected}
-                fills={fills}
-                onStats={__DEV__ ? setStats : undefined}
-                reservedRects={reservedRects}
-                labelInsets={sceneInsets}
-                labelScale={labelScale}
-              />
-            </Canvas>
+            {Platform.OS === 'web' ? (
+              <Canvas
+                frameloop={paused ? 'never' : 'demand'}
+                flat
+                linear
+                camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}>
+                <ResumeOnUnpause paused={paused} />
+                {watchGlFailures && <GlFailureWatcher onFailure={reportGlFailure} />}
+                {GLOBE_STATS_ENABLED && <GlobePerfProbe onPerf={setPerf} />}
+                <GlobeScene
+                  controller={controller}
+                  selectedUf={selected}
+                  fills={fills}
+                  onStats={GLOBE_STATS_ENABLED ? setStats : undefined}
+                  reservedRects={reservedRects}
+                  labelInsets={sceneInsets}
+                  labelScale={labelScale}
+                />
+              </Canvas>
+            ) : (
+              <NativeGlobeCanvas
+                frameloop={paused ? 'never' : 'demand'}
+                flat
+                linear
+                camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}
+                onContextFailure={hasGlFailureCallback ? reportNativeGlFailure : undefined}>
+                <ResumeOnUnpause paused={paused} />
+                {watchGlFailures && <GlFailureWatcher onFailure={reportGlFailure} />}
+                {GLOBE_STATS_ENABLED && <GlobePerfProbe onPerf={setPerf} />}
+                <GlobeScene
+                  controller={controller}
+                  selectedUf={selected}
+                  fills={fills}
+                  onStats={GLOBE_STATS_ENABLED ? setStats : undefined}
+                  reservedRects={reservedRects}
+                  labelInsets={sceneInsets}
+                  labelScale={labelScale}
+                />
+              </NativeGlobeCanvas>
+            )}
           </View>
         </View>
       </GestureDetector>
@@ -166,6 +223,13 @@ export function GlobeView({
       {stats && (
         <Text style={[styles.stats, { top: insets.top + 52, left: 16 + insets.left }]} pointerEvents="none">
           tiles {stats.tiles} · cache {stats.cached} · nível {stats.maxLevel}
+          {perf &&
+            `
+ms p50 ${perf.p50} · p95 ${perf.p95} · p99 ${perf.p99} · ${perf.fps} qps · longos ${perf.longFrames}` +
+              `
+chamadas ${perf.calls} · tri ${perf.triangles} · progs ${perf.programs}` +
+              `
+texturas (contagem) ${perf.textures} · geometrias ${perf.geometries}`}
         </Text>
       )}
     </View>
