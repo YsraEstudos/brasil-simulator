@@ -7,6 +7,10 @@ import { MAX_CONCURRENT_LOADS, TILE_CACHE_BLOCKS } from './config';
 import { BLOCK_ASSETS, TILE_MAX_HEIGHT } from './data/tileIndex';
 
 type Block = { color: THREE.Texture; height: THREE.Texture; lastUsed: number };
+type RetryState = { failures: number; retryAt: number; timer: ReturnType<typeof setTimeout> | null };
+
+const RETRY_BASE_MS = 1_000;
+const RETRY_MAX_MS = 30_000;
 
 /** Texturas de um tile: o atlas do bloco e a célula do tile dentro dele. */
 export type TileTextures = { color: THREE.Texture; height: THREE.Texture; cellX: number; cellY: number; side: number };
@@ -27,16 +31,19 @@ export class TileStore {
   private blocks = new Map<string, Block>();
   private loading = new Set<string>();
   private queue: string[] = [];
+  private requestedKeys = new Set<string>();
+  private retries = new Map<string, RetryState>();
   private frame = 0;
+  private disposed = false;
 
   constructor(
     private onChange: () => void,
     private maxAnisotropy = 1,
   ) {}
 
-  exists = (id: string) => id in TILE_MAX_HEIGHT;
+  exists = (id: string) => Object.hasOwn(TILE_MAX_HEIGHT, id);
   isLoaded = (id: string) => this.blocks.has(blockOf(id).key);
-  maxHeightMeters = (id: string) => TILE_MAX_HEIGHT[id] ?? 0;
+  maxHeightMeters = (id: string) => (this.exists(id) ? TILE_MAX_HEIGHT[id] : 0);
 
   get(id: string): TileTextures | undefined {
     const b = blockOf(id);
@@ -60,17 +67,20 @@ export class TileStore {
 
   /** Substitui a fila pelos pedidos atuais (os mais grosseiros primeiro). */
   request(tileIds: string[]) {
+    if (this.disposed) return;
     this.frame++;
     const keys = new Set<string>();
     for (const id of tileIds) if (this.exists(id)) keys.add(blockOf(id).key);
+    this.requestedKeys = keys;
+    for (const key of this.retries.keys()) if (!keys.has(key)) this.clearRetry(key);
     this.queue = [...keys]
-      .filter((k) => !this.blocks.has(k) && !this.loading.has(k))
+      .filter((k) => !this.blocks.has(k) && !this.loading.has(k) && (this.retries.get(k)?.retryAt ?? 0) <= Date.now())
       .sort((a, b) => Number(a.split('/')[0]) - Number(b.split('/')[0]));
     this.pump();
   }
 
   private pump() {
-    while (this.loading.size < MAX_CONCURRENT_LOADS && this.queue.length > 0) {
+    while (!this.disposed && this.loading.size < MAX_CONCURRENT_LOADS && this.queue.length > 0) {
       // load() trata os próprios erros e nunca rejeita.
       void this.load(this.queue.shift()!);
     }
@@ -78,29 +88,79 @@ export class TileStore {
 
   private async load(key: string) {
     this.loading.add(key);
-    const assets = BLOCK_ASSETS[key];
+    let color: THREE.Texture | undefined;
+    let height: THREE.Texture | undefined;
+    let cached = false;
+    let failed = false;
     try {
-      const [color, height] = await Promise.all([loadTexture(assets.color), loadTexture(assets.height)]);
-      color.colorSpace = THREE.NoColorSpace;
-      color.anisotropy = this.maxAnisotropy;
-      color.minFilter = THREE.LinearMipmapLinearFilter;
-      color.magFilter = THREE.LinearFilter;
-      color.wrapS = color.wrapT = THREE.ClampToEdgeWrapping;
-      color.needsUpdate = true;
-      height.colorSpace = THREE.NoColorSpace;
-      height.minFilter = THREE.NearestFilter;
-      height.magFilter = THREE.NearestFilter;
-      height.generateMipmaps = false;
-      height.needsUpdate = true;
-      this.blocks.set(key, { color, height, lastUsed: this.frame });
+      const assets = BLOCK_ASSETS[key];
+      if (!assets) throw new Error(`bloco ${key} sem assets`);
+      const [colorResult, heightResult] = await Promise.allSettled([
+        loadTexture(assets.color),
+        loadTexture(assets.height),
+      ]);
+      if (colorResult.status === 'fulfilled') color = colorResult.value;
+      if (heightResult.status === 'fulfilled') height = heightResult.value;
+      if (colorResult.status === 'rejected') throw colorResult.reason;
+      if (heightResult.status === 'rejected') throw heightResult.reason;
+      const colorTexture = colorResult.value;
+      const heightTexture = heightResult.value;
+      if (this.disposed) return;
+
+      colorTexture.colorSpace = THREE.NoColorSpace;
+      colorTexture.anisotropy = this.maxAnisotropy;
+      colorTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      colorTexture.magFilter = THREE.LinearFilter;
+      colorTexture.wrapS = colorTexture.wrapT = THREE.ClampToEdgeWrapping;
+      colorTexture.needsUpdate = true;
+      heightTexture.colorSpace = THREE.NoColorSpace;
+      heightTexture.minFilter = THREE.NearestFilter;
+      heightTexture.magFilter = THREE.NearestFilter;
+      heightTexture.generateMipmaps = false;
+      heightTexture.needsUpdate = true;
+      this.blocks.set(key, { color: colorTexture, height: heightTexture, lastUsed: this.frame });
+      cached = true;
+      this.clearRetry(key);
       this.evict();
     } catch (e) {
+      failed = true;
+      if (!this.disposed && this.requestedKeys.has(key)) this.scheduleRetry(key);
       if (__DEV__) console.warn(`bloco ${key} falhou`, e);
     } finally {
+      if (!cached) {
+        color?.dispose();
+        height?.dispose();
+      }
       this.loading.delete(key);
-      this.onChange();
-      this.pump();
+      if (!this.disposed) {
+        if (!failed) this.onChange();
+        this.pump();
+      }
     }
+  }
+
+  private scheduleRetry(key: string) {
+    const previous = this.retries.get(key);
+    if (previous?.timer) clearTimeout(previous.timer);
+    const failures = (previous?.failures ?? 0) + 1;
+    const delay = Math.min(RETRY_BASE_MS * 2 ** Math.min(failures - 1, 5), RETRY_MAX_MS);
+    const retry: RetryState = { failures, retryAt: Date.now() + delay, timer: null };
+    retry.timer = setTimeout(() => {
+      retry.timer = null;
+      if (this.disposed) return;
+      if (!this.requestedKeys.has(key)) {
+        this.retries.delete(key);
+        return;
+      }
+      this.onChange();
+    }, delay);
+    this.retries.set(key, retry);
+  }
+
+  private clearRetry(key: string) {
+    const retry = this.retries.get(key);
+    if (retry?.timer) clearTimeout(retry.timer);
+    this.retries.delete(key);
   }
 
   private evict() {
@@ -114,6 +174,12 @@ export class TileStore {
   }
 
   dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
+    for (const retry of this.retries.values()) if (retry.timer) clearTimeout(retry.timer);
+    this.retries.clear();
+    this.requestedKeys.clear();
+    this.loading.clear();
     for (const b of this.blocks.values()) {
       b.color.dispose();
       b.height.dispose();

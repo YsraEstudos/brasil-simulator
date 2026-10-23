@@ -142,13 +142,14 @@ export function adhesionLine(preview: RegionalDecisionPreview): string | null {
 
 const months = (n: number) => `${n} ${n === 1 ? 'mês' : 'meses'}`;
 
-/** Quando o efeito aparece; `null` se tudo é imediato ou nenhum impacto tem magnitude. */
+/** Defasagem contada após o início da execução; `null` se tudo é imediato ou sem magnitude. */
 export function lagLine(preview: RegionalDecisionPreview): string | null {
   const lag = preview.lagMonths;
   if (!lag || lag.longest === 0) return null;
-  if (lag.earliest === 0) return `Parte do efeito começa já neste mês; o resto chega em até ${months(lag.longest)}`;
-  if (lag.earliest === lag.longest) return `Efeito começa em ${months(lag.earliest)}`;
-  return `Efeito começa em ${months(lag.earliest)} e chega por inteiro em até ${months(lag.longest)}`;
+  if (lag.earliest === 0)
+    return `Parte do efeito começa junto com a execução; o resto chega em até ${months(lag.longest)} depois`;
+  if (lag.earliest === lag.longest) return `Efeito começa ${months(lag.earliest)} depois do início da execução`;
+  return `Efeito começa ${months(lag.earliest)} depois do início da execução e chega por inteiro em até ${months(lag.longest)}`;
 }
 
 /** Fichas de incerteza em português, na ordem do motor. */

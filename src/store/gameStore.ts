@@ -358,8 +358,8 @@ export function createGameStore(deps: GameStoreDeps) {
 
       setMapRenderer: (renderer) =>
         run(async (d) => {
-          set({ mapRenderer: renderer });
           await setSetting(d, MAP_RENDERER_KEY, renderer);
+          set({ mapRenderer: renderer });
         }),
     };
   });

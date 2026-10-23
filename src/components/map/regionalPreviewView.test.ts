@@ -125,12 +125,18 @@ describe('textos', () => {
   it('linha de atraso: nada se for imediato; singular, plural e intervalo', () => {
     expect(lagLine(fake())).toBeNull();
     expect(lagLine(fake({ lagMonths: { earliest: 0, longest: 0 } }))).toBeNull();
-    expect(lagLine(fake({ lagMonths: { earliest: 1, longest: 1 } }))).toBe('Efeito começa em 1 mês');
-    expect(lagLine(fake({ lagMonths: { earliest: 3, longest: 3 } }))).toBe('Efeito começa em 3 meses');
-    expect(lagLine(fake({ lagMonths: { earliest: 2, longest: 6 } }))).toBe(
-      'Efeito começa em 2 meses e chega por inteiro em até 6 meses',
+    expect(lagLine(fake({ lagMonths: { earliest: 1, longest: 1 } }))).toBe(
+      'Efeito começa 1 mês depois do início da execução',
     );
-    expect(lagLine(fake({ lagMonths: { earliest: 0, longest: 3 } }))).toMatch(/começa já neste mês.*3 meses/);
+    expect(lagLine(fake({ lagMonths: { earliest: 3, longest: 3 } }))).toBe(
+      'Efeito começa 3 meses depois do início da execução',
+    );
+    expect(lagLine(fake({ lagMonths: { earliest: 2, longest: 6 } }))).toBe(
+      'Efeito começa 2 meses depois do início da execução e chega por inteiro em até 6 meses',
+    );
+    expect(lagLine(fake({ lagMonths: { earliest: 0, longest: 3 } }))).toMatch(
+      /começa junto com a execução.*3 meses depois/,
+    );
   });
 
   it('fichas de incerteza e aviso de impedimento em português', () => {
