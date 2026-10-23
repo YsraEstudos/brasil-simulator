@@ -133,7 +133,7 @@ export function GlobeView({ fills, selectedId, onSelect, onReady, paused = false
               linear
               camera={{ fov: CAMERA.fovDeg, near: 0.001, far: 120, position: [0, 0, 3] }}>
               <ResumeOnUnpause paused={paused} />
-              <GlFailureWatcher onFailure={onGlFailure} />
+              {(GLOBE_STATS_ENABLED || !!onGlFailure) && <GlFailureWatcher onFailure={onGlFailure} />}
               {GLOBE_STATS_ENABLED && <GlobePerfProbe onPerf={setPerf} />}
               <GlobeScene
                 controller={controller}
