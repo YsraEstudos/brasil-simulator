@@ -74,7 +74,7 @@ export function buildRegionalDecisionPreview(
   policyId: string,
 ): RegionalDecisionPreview | null {
   const ufs = regionsOf(content);
-  const policy = content.policies[policyId];
+  const policy = Object.hasOwn(content.policies, policyId) ? content.policies[policyId] : undefined;
   if (ufs.length === 0 || !policy) return null;
 
   const view = regionsView(state, content);

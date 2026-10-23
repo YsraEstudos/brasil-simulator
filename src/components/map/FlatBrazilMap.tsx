@@ -47,9 +47,6 @@ export interface FlatBrazilMapProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const FLAT = flatMap();
-const VIEWBOX = `0 0 ${FLAT.viewBox.width} ${FLAT.viewBox.height}`;
-
 interface UfPathProps {
   uf: FlatUf;
   fill: string;
@@ -77,7 +74,7 @@ interface UfLabelsProps {
 
 /** Siglas (UFs que cabem) e pontos (as pequenas: DF, SE, AL…) nas posições projetadas. Só muda ao redimensionar. */
 const UfLabels = memo(function UfLabels({ width, height }: UfLabelsProps) {
-  const { viewBox, ufs } = FLAT;
+  const { viewBox, ufs } = flatMap();
   const scale = Math.min(width / viewBox.width, height / viewBox.height);
   const offsetX = (width - viewBox.width * scale) / 2;
   const offsetY = (height - viewBox.height * scale) / 2;
@@ -104,6 +101,9 @@ const UfLabels = memo(function UfLabels({ width, height }: UfLabelsProps) {
 
 /** O mapa plano dos 27 estados com cores, seleção e (na variante `full`) siglas. */
 export function FlatBrazilMap({ viewModel, onSelect, variant, style }: FlatBrazilMapProps) {
+  // Gere os paths SVG só quando o mapa 2D for realmente renderizado; o import do fallback não bloqueia o início do globo.
+  const flat = flatMap();
+  const viewBox = `0 0 ${flat.viewBox.width} ${flat.viewBox.height}`;
   const [size, setSize] = useState({ width: 0, height: 0 });
   const onSelectRef = useRef(onSelect);
   useEffect(() => {
@@ -112,7 +112,7 @@ export function FlatBrazilMap({ viewModel, onSelect, variant, style }: FlatBrazi
   // Despachante estável: os manipuladores (e os `UfPath` memoizados) não mudam quando `onSelect` muda.
   const select = useCallback((sigla: string | null) => onSelectRef.current(sigla), []);
 
-  const selected = viewModel.selectedId ? FLAT.ufs.find((u) => u.sigla === viewModel.selectedId) : undefined;
+  const selected = viewModel.selectedId ? flat.ufs.find((u) => u.sigla === viewModel.selectedId) : undefined;
 
   // Um só toque para o mapa todo: o ponto volta para lon/lat e `findUf` acha a UF (o mesmo teste do globo). O
   // `onPress` por `<Path>` não funciona na web (o react-native-svg repassa os handlers de toque ao DOM).
@@ -123,10 +123,10 @@ export function FlatBrazilMap({ viewModel, onSelect, variant, style }: FlatBrazi
     const locationY = native.locationY ?? native.offsetY;
     const { width, height } = size;
     if (width === 0 || height === 0 || locationX === undefined || locationY === undefined) return select(null);
-    const scale = Math.min(width / FLAT.viewBox.width, height / FLAT.viewBox.height);
-    const x = (locationX - (width - FLAT.viewBox.width * scale) / 2) / scale;
-    const y = (locationY - (height - FLAT.viewBox.height * scale) / 2) / scale;
-    const [lon, lat] = FLAT.unproject({ x, y });
+    const scale = Math.min(width / flat.viewBox.width, height / flat.viewBox.height);
+    const x = (locationX - (width - flat.viewBox.width * scale) / 2) / scale;
+    const y = (locationY - (height - flat.viewBox.height * scale) / 2) / scale;
+    const [lon, lat] = flat.unproject({ x, y });
     select(findUf(lon, lat)?.sigla ?? null);
   };
 
@@ -139,8 +139,8 @@ export function FlatBrazilMap({ viewModel, onSelect, variant, style }: FlatBrazi
         const { width, height } = e.nativeEvent.layout;
         setSize((s) => (s.width === width && s.height === height ? s : { width, height }));
       }}>
-      <Svg width="100%" height="100%" viewBox={VIEWBOX} preserveAspectRatio="xMidYMid meet">
-        {FLAT.ufs.map((uf) => (
+      <Svg width="100%" height="100%" viewBox={viewBox} preserveAspectRatio="xMidYMid meet">
+        {flat.ufs.map((uf) => (
           <UfPath key={uf.sigla} uf={uf} fill={viewModel.fills[uf.sigla] ?? LAND} />
         ))}
         {selected && (
