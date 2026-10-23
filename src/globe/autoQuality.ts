@@ -77,6 +77,22 @@ export interface ProfileChange {
 
 type WindowClass = 'slow' | 'fast' | 'neutral';
 
+/** Limite em memória compartilhado pelas máquinas durante a sessão do app. */
+export class AutoQualitySession {
+  private ceiling = PROFILES_3D.length - 1;
+
+  get highestAllowed(): Profile3d {
+    return PROFILES_3D[this.ceiling];
+  }
+
+  banAbove(profile: Profile3d) {
+    this.ceiling = Math.min(this.ceiling, PROFILES_3D.indexOf(profile));
+  }
+}
+
+/** O mesmo teto é reutilizado quando o globo é desmontado e montado de novo. */
+export const appAutoQualitySession = new AutoQualitySession();
+
 /** Percentil por posto mais próximo; `sorted` crescente e não vazio. */
 export function percentile(sorted: readonly number[], p: number): number {
   const rank = Math.ceil((p / 100) * sorted.length);
@@ -131,6 +147,7 @@ class SampleWindow {
  */
 export class AutoQualityMachine {
   private current: Profile3d;
+  private readonly session: AutoQualitySession;
   private phasePrivate: AutoQualityPhase = 'warming';
   private quietFrames = 0;
   private settle = 0;
@@ -142,11 +159,9 @@ export class AutoQualityMachine {
   private fastStreak = 0;
   private restSlowStreak = 0;
   private lastChange: 'up' | 'down' | null = null;
-  /** Índice (em `PROFILES_3D`) do perfil mais alto permitido; desce ao ser vetado após uma subida. */
-  private ceiling = PROFILES_3D.length - 1;
-
-  constructor(initial: Profile3d) {
+  constructor(initial: Profile3d, session: AutoQualitySession = new AutoQualitySession()) {
     this.current = initial;
+    this.session = session;
   }
 
   get profile(): Profile3d {
@@ -159,7 +174,7 @@ export class AutoQualityMachine {
 
   /** Perfil mais alto que o ajuste ainda pode escolher nesta sessão. */
   get highestAllowed(): Profile3d {
-    return PROFILES_3D[this.ceiling];
+    return this.session.highestAllowed;
   }
 
   /** O laço de quadros parou (pausa, subtela): o próximo intervalo não é medida de desempenho. */
@@ -229,10 +244,10 @@ export class AutoQualityMachine {
     const to = neighborProfile(from, direction);
     this.resetWindows();
     if (to === from) return null; // já está na ponta: nada a trocar (e nada a fazer além de continuar medindo)
-    if (direction === 'up' && PROFILES_3D.indexOf(to) > this.ceiling) return null;
+    if (direction === 'up' && PROFILES_3D.indexOf(to) > PROFILES_3D.indexOf(this.session.highestAllowed)) return null;
     if (direction === 'down' && this.lastChange === 'up') {
       // A subida não se sustentou: o perfil de onde se desceu fica vetado até o app fechar.
-      this.ceiling = PROFILES_3D.indexOf(to);
+      this.session.banAbove(to);
     }
     this.current = to;
     this.lastChange = direction;

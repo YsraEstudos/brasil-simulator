@@ -59,6 +59,12 @@ describe('prévia regional da decisão (PLANO_GLOBO.md §5.2)', () => {
     expect(buildRegionalDecisionPreview(state, semUfs, 'transferencia_renda_ampliacao')).toBeNull();
   });
 
+  it('não trata propriedades herdadas do protótipo como políticas', () => {
+    for (const policyId of ['__proto__', 'constructor', 'toString']) {
+      expect(buildRegionalDecisionPreview(state, content, policyId)).toBeNull();
+    }
+  });
+
   it('uma entrada por UF na ordem do cenário, com pesos que somam 1 (ECONOMIC_MODEL.md §5.15)', () => {
     for (const policyId of Object.keys(content.policies)) {
       const p = preview(state, policyId);

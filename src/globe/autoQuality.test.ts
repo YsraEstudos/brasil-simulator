@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  AutoQualitySession,
   AutoQualityMachine,
   classifyMovingWindow,
   classifyRestWindow,
@@ -20,8 +21,8 @@ import {
 import type { Profile3d } from './qualityProfiles';
 
 /** Relógio simulado: alimenta quadros com intervalo fixo e junta as trocas de perfil. */
-function sim(initial: Profile3d) {
-  const machine = new AutoQualityMachine(initial);
+function sim(initial: Profile3d, session = new AutoQualitySession()) {
+  const machine = new AutoQualityMachine(initial, session);
   const state = { t: 10_000, changes: [] as ProfileChange[] };
   const frames = (n: number, dt: number, opts: { moving?: boolean; tilesBusy?: boolean } = {}) => {
     for (let i = 0; i < n; i++) {
@@ -36,7 +37,7 @@ function sim(initial: Profile3d) {
   const movingWindows = (windows: number, dt: number) => frames(windows * MOVING_WINDOW_SAMPLES, dt);
   /** Quadros descartados depois de uma troca de perfil. */
   const settle = () => frames(SETTLE_FRAMES, 16);
-  return { machine, state, frames, warmUp, movingWindows, settle };
+  return { machine, session, state, frames, warmUp, movingWindows, settle };
 }
 
 const FAST_DT = 16;
@@ -256,6 +257,25 @@ describe('sem oscilação', () => {
     s.settle();
     s.movingWindows(STEP_UP_WINDOWS * 3, FAST_DT);
     expect(s.machine.profile).toBe('economico-3d');
+  });
+
+  it('mantém o veto durante a sessão quando o globo é desmontado e montado de novo', () => {
+    const session = new AutoQualitySession();
+    const first = sim('equilibrado', session);
+    first.warmUp();
+    first.movingWindows(STEP_UP_WINDOWS, FAST_DT);
+    first.settle();
+    first.frames(50 * STEP_DOWN_WINDOWS, BAD_DT);
+
+    expect(first.machine.profile).toBe('equilibrado');
+    expect(session.highestAllowed).toBe('equilibrado');
+
+    const remounted = sim('equilibrado', session);
+    expect(remounted.machine.highestAllowed).toBe('equilibrado');
+    remounted.warmUp();
+    remounted.movingWindows(STEP_UP_WINDOWS * 5, FAST_DT);
+    expect(remounted.machine.profile).toBe('equilibrado');
+    expect(remounted.state.changes).toEqual([]);
   });
 
   it('descidas seguidas (sem subida no meio) não criam veto', () => {
