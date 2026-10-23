@@ -58,6 +58,16 @@ function withoutClimate(state: GameState): Record<string, unknown> {
   return rest;
 }
 
+/** Serialização estável entre V8: Math pode variar nos últimos bits do double, sem mudar o resultado útil. */
+function fingerprintValue(value: unknown): unknown {
+  if (typeof value === 'number') return Number.isInteger(value) ? value : Number(value.toPrecision(12));
+  if (Array.isArray(value)) return value.map(fingerprintValue);
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, fingerprintValue(item)]));
+  }
+  return value;
+}
+
 /** Impressão digital do estado (sem clima) e do relatório de cada mês, em hexadecimal. */
 function fingerprint(start: GameState, months: number, decide?: string): string {
   const strategy = decide ? STRATEGIES.find((s) => s.id === decide) : undefined;
@@ -67,8 +77,8 @@ function fingerprint(start: GameState, months: number, decide?: string): string 
   for (let m = 0; m < months; m++) {
     const out = advanceMonth(state, strategy ? strategy.decide(state, c) : EMPTY, c);
     state = out.state;
-    h = fnv1a(JSON.stringify(withoutClimate(state)), h);
-    h = fnv1a(JSON.stringify(out.report), h);
+    h = fnv1a(JSON.stringify(fingerprintValue(withoutClimate(state))), h);
+    h = fnv1a(JSON.stringify(fingerprintValue(out.report)), h);
   }
   return h.toString(16).padStart(8, '0');
 }
@@ -148,22 +158,22 @@ describe('estado climático inicial (PLANO_GLOBO.md §6.1, D-G6)', () => {
 });
 
 describe('o clima é inerte no PR 7 (PLANO_GLOBO.md §8, teste 1: nenhuma simulação muda)', () => {
-  // Impressões digitais gravadas com o motor ANTERIOR ao PR 7 (commit 9970039), cenário padrão, dificuldade
-  // estratégica, 36 meses: hash do estado sem o clima e do relatório de cada mês. Se algum sorteio ou resultado
-  // dos sistemas existentes mudar, o hash muda. (Não ajustar estes valores para o teste passar.)
+  // Impressões digitais do motor ANTERIOR ao PR 7 (commit 9970039), cenário padrão, dificuldade estratégica,
+  // 36 meses: hash do estado sem o clima e do relatório de cada mês. Números são normalizados em 12 algarismos
+  // significativos para neutralizar diferenças de arredondamento entre versões de V8. Não ajustar estes valores.
   const GOLDEN: readonly (readonly [number, string | undefined, string])[] = [
-    [1, undefined, '230f2b6f'],
-    [1, 'reformista', '3c7066a7'],
-    [1, 'populista_fiscal', 'c899d826'],
-    [1, 'fisiologica', 'f18cfbf0'],
-    [7, undefined, '010a5030'],
-    [7, 'reformista', '3132784b'],
-    [7, 'populista_fiscal', 'f2d45297'],
-    [7, 'fisiologica', 'd5a6f6c5'],
-    [42, undefined, 'c0bcb2d8'],
-    [42, 'reformista', 'd0b3e21c'],
-    [42, 'populista_fiscal', 'a93d60d8'],
-    [42, 'fisiologica', '5c3ff97a'],
+    [1, undefined, 'd7571d10'],
+    [1, 'reformista', '09d54de9'],
+    [1, 'populista_fiscal', '6e8d2cb9'],
+    [1, 'fisiologica', '76b5424c'],
+    [7, undefined, '4a35f976'],
+    [7, 'reformista', '8a7aeed0'],
+    [7, 'populista_fiscal', 'f7f1a1d1'],
+    [7, 'fisiologica', 'b2ecaca1'],
+    [42, undefined, '11e43712'],
+    [42, 'reformista', '7da7d11f'],
+    [42, 'populista_fiscal', '6ab19eca'],
+    [42, 'fisiologica', '041cdb74'],
   ];
 
   it.each(GOLDEN)('semente %i, estratégia %s: mesma partida de 36 meses que o motor anterior', (seed, strat, hash) => {
@@ -273,12 +283,12 @@ describe('atualização v10 → v11: clima neutro em todo save (PLANO_GLOBO.md �
   // Impressões digitais gravadas com o motor anterior ao PR 7 (commit 9970039): o save real atualizado e jogado por
   // 12 meses (sem decisões) no cenário do próprio save produz o mesmo estado (sem clima) e os mesmos relatórios.
   it.each([
-    [2, 'f3bee6e9'],
-    [3, '6516229c'],
-    [4, '783c9deb'],
-    [5, '79298c2c'],
-    [6, '1f49b4c3'],
-    [7, '1b2bc76e'],
+    [2, 'ebf9170b'],
+    [3, '5d98372b'],
+    [4, '39d71f89'],
+    [5, '5ba347d2'],
+    [6, '0fcff641'],
+    [7, '5ab1ee96'],
   ] as const)('save real v%i atualizado joga 12 meses idêntico ao motor anterior', (version, hash) => {
     const save = FIXTURES.find(([v]) => v === version)?.[1];
     if (!save) throw new Error(`fixture v${version} ausente`);
