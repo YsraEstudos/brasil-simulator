@@ -26,7 +26,8 @@ param(
   # Forca o nome da camada (de `adb shell dumpsys SurfaceFlinger --list`), se a deteccao automatica errar.
   [string]$Layer,
   # Intervalo entre consultas ao SurfaceFlinger (o buffer guarda 128 quadros ~ 2 s a 60 fps).
-  [double]$PollSeconds = 1.5
+  [double]$PollSeconds = 1.5,
+  [switch]$SkipCpu
 )
 
 $ErrorActionPreference = 'Stop'
@@ -174,7 +175,7 @@ while ($sw.Elapsed.TotalSeconds -lt $Seconds) {
     Set-Content -Path $f -Value $txt -Encoding utf8
     $files.Add($f)
   }
-  if ($sw.Elapsed.TotalSeconds -ge $nextCpu) {
+  if (-not $SkipCpu -and $sw.Elapsed.TotalSeconds -ge $nextCpu) {
     $c = Get-CpuPct
     if ($null -ne $c) { $cpuSamples.Add($c) }
     $nextCpu += [math]::Max(10.0, $Seconds / 4.0)
@@ -183,7 +184,7 @@ while ($sw.Elapsed.TotalSeconds -lt $Seconds) {
   Write-Progress -Activity "Medindo $Scenario" -Status ('{0:N0}/{1} s' -f $sw.Elapsed.TotalSeconds, $Seconds) -PercentComplete ([math]::Min(100, 100 * $sw.Elapsed.TotalSeconds / $Seconds))
 }
 Write-Progress -Activity "Medindo $Scenario" -Completed
-if ($cpuSamples.Count -eq 0) { $c = Get-CpuPct; if ($null -ne $c) { $cpuSamples.Add($c) } }
+if (-not $SkipCpu -and $cpuSamples.Count -eq 0) { $c = Get-CpuPct; if ($null -ne $c) { $cpuSamples.Add($c) } }
 
 # --- fim ---
 $batFim = Get-Bateria
@@ -199,7 +200,7 @@ if ($files.Count -eq 0) { Stop-Com 'Nenhuma consulta ao SurfaceFlinger retornou 
 $json = & node $parser --csv $csv @($files)
 if ($LASTEXITCODE -ne 0) { Stop-Com "Falha no parser: $json" }
 $s = $json | ConvertFrom-Json
-Remove-Item -Recurse -Force $tmpDir
+Write-Host ("RAW_DIR: " + $tmpDir)
 
 $cpuMed = if ($cpuSamples.Count) { ($cpuSamples | Measure-Object -Average).Average } else { $null }
 $memPss = if ($null -ne $memFim.PssMB) { $memFim.PssMB } else { $memIni.PssMB }

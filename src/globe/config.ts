@@ -42,10 +42,5 @@ export function blockSide(z: number): number {
   return Math.min(4, 2 ** z);
 }
 
-/**
- * Contador de desempenho do globo (PLANO_GLOBO §3.3; docs/MEDICAO_GLOBO.md). Sempre ligado em desenvolvimento;
- * em build de release liga com `EXPO_PUBLIC_GLOBE_STATS=1` (inlinado pelo Metro em tempo de build).
- * Jogadores não veem nada: o padrão do release é desligado.
- */
-export const GLOBE_STATS_ENABLED: boolean =
-  (typeof __DEV__ !== 'undefined' && __DEV__) || process.env.EXPO_PUBLIC_GLOBE_STATS === '1';
+/** Contador opcional: só liga com EXPO_PUBLIC_GLOBE_STATS=1, inclusive em desenvolvimento. */
+export const GLOBE_STATS_ENABLED: boolean = process.env.EXPO_PUBLIC_GLOBE_STATS === '1';

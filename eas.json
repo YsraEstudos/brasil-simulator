@@ -7,12 +7,24 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_GLOBE_STATS": "1" },
-      "android": { "buildType": "apk" }
+      "env": {
+        "EXPO_PUBLIC_GLOBE_STATS": "0"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "benchmark": {
+      "extends": "preview",
+      "env": {
+        "EXPO_PUBLIC_GLOBE_STATS": "1"
+      }
     }
   }
 }

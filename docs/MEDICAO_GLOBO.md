@@ -1,6 +1,6 @@
 # Medição do globo no moto g20 (PR 0 do Globo vivo)
 
-Referência: [PLANO_GLOBO.md](PLANO_GLOBO.md) §3.2, §3.3 e §7 (PR 0). Objetivo: registrar números de referência **antes** de qualquer mudança na GPU, para comparar antes/depois nos PRs seguintes.
+Objetivo: manter ferramentas opcionais para futuras comparações de desempenho. A campanha extensa de otimização está adiada até os principais fluxos do jogo estarem prontos.
 
 A medição é feita **principalmente pelo PC, via adb** (`scripts/perf/medir-globo.ps1`). O overlay dentro do app fica como apoio, só para o que o adb não enxerga (§5).
 
@@ -8,9 +8,9 @@ A medição é feita **principalmente pelo PC, via adb** (`scripts/perf/medir-gl
 
 O projeto **não** usa `expo-dev-client`; a medição é feita com o APK **preview** (build de release, JS minificado, sem Metro), que não precisa dele. O perfil `development` do `eas.json` só serve se o dev client for adicionado no futuro (não foi instalado neste PR). O Expo Go serve apenas de indicação, nunca de medida.
 
-1. `npm i -g eas-cli` e `eas login`.
-2. Primeira vez: `eas init` (feito **pelo autor**: grava `extra.eas.projectId` no `app.json`; não foi inventado aqui).
-3. `eas build --platform android --profile preview` (gera um APK; o perfil já define `EXPO_PUBLIC_GLOBE_STATS=1`, que liga o overlay).
+1. `npx eas-cli@latest login`.
+2. Primeira vez: `npx eas-cli@latest init` (feito **pelo autor**: grava `extra.eas.projectId` no `app.json`; não foi inventado aqui).
+3. `npx eas-cli@latest build --platform android --profile preview` (release com overlay desligado). Para uma build diagnóstica separada, use `--profile benchmark`, que define `EXPO_PUBLIC_GLOBE_STATS=1`.
 4. Baixe o APK pelo link/QR do EAS e instale no moto g20 (permitir "instalar apps desconhecidos"), ou `adb install -r app.apk`.
 
 ## 2. Preparar o adb
@@ -31,7 +31,9 @@ Da raiz do repositório, com o app aberto na tela do globo (Painel), aparelho ca
 pwsh scripts/perf/medir-globo.ps1 -Package <id.do.pacote> -Scenario arrastar -Seconds 60
 ```
 
-Parâmetros: `-Package`, `-Scenario` (obrigatório), `-Seconds` (60), `-Out` (`docs/medicoes/`), `-Adb`, `-Layer` (força a camada, se a detecção falhar), `-PollSeconds` (1,5).
+Parâmetros: `-Package`, `-Scenario` (obrigatório), `-Seconds` (60), `-Out` (`docs/medicoes/`), `-Adb`, `-Layer` (força a camada, se a detecção falhar), `-PollSeconds` (1,5) e `-SkipCpu` (omite as consultas bloqueantes a `top`). Para 60/90 Hz, use `-PollSeconds 0.2 -SkipCpu`, escolhendo a camada explicitamente com `-Layer`.
+
+Os arquivos brutos `lat*.txt` são preservados na pasta temporária indicada por `RAW_DIR`; copie-os junto ao relatório. Ausência de sobreposição entre buffers sucessivos exige investigar perda de amostras; um resumo numérico não aprova automaticamente a coleta.
 
 Cada execução grava `docs/medicoes/<data>_<cenario>.csv` (intervalo bruto entre quadros) e acrescenta uma linha a `docs/medicoes/resultados.md`.
 
@@ -39,15 +41,15 @@ Cada execução grava `docs/medicoes/<data>_<cenario>.csv` (intervalo bruto entr
 | --- | --- | --- |
 | Aquecimento | (sem medir) | Abrir o Painel e esperar os tiles carregarem (nível máximo estabilizar). |
 | Arrastar | `arrastar` (60 s) | Girar e dar zoom sem parar, do Brasil inteiro até uma UF e de volta. |
-| Repouso | `repouso` (60 s) | Não tocar. Esperado: **~0 quadros** (sem laço); qualquer quadro novo é problema. |
+| Repouso | `repouso` (60 s) | Não tocar. Após estabilizar, observar novas apresentações. Zero quadros é compatível com repouso, mas não prova consumo zero de GPU. |
 | Camadas/subtelas | `camadas` (60 s) | Trocar as camadas do mapa e entrar/sair das subtelas (Gabinete, Congresso, Economia). |
 | Sessão | `sessao-inicio`, `sessao-meio`, `sessao-fim` (60 s cada, em 0, ~15 e ~30 min) | Uso normal entre as medições; interessa a deriva de temperatura, bateria e PSS. |
 
-Para a sessão de 15–30 min, uma única chamada `-Seconds 1800` também funciona (o script consulta a cada 1,5 s e deduplica); nesse caso as estatísticas cobrem o período todo.
+Para sessões de 15–30 min, faça coletas de 60 segundos em pontos separados (início/meio/fim). Evite uma única chamada de 1.800 segundos: a lista de arquivos pode ultrapassar o limite de argumentos do Windows.
 
 ## 4. O que cada métrica significa (e seus limites)
 
-- **p50/p95/p99, fps, quadros > 100 ms:** vêm de `dumpsys SurfaceFlinger --latency "<camada da SurfaceView>"`, ou seja, **quadros realmente apresentados do globo**. O script acha a camada em `SurfaceFlinger --list` (nome com o pacote e `SurfaceView`), consulta a cada ~1,5 s (o buffer guarda só 128 quadros), junta as janelas sem repetir instantes e calcula os intervalos entre apresentações consecutivas. Linhas zeradas ou `9223372036854775807` são ignoradas. Pausas > 500 ms entre quadros (laço parado, renderização sob demanda) **não entram** nas estatísticas, mesma regra de `frameStats.ts`; o fps é quadros por segundo *de tempo ativo*, não média da janela inteira.
+- **p50/p95/p99, fps, quadros > 100 ms:** vêm de `dumpsys SurfaceFlinger --latency "<camada da SurfaceView>"`, ou seja, **apresentações da camada Android selecionada** (não necessariamente exclusivas do GL). O script acha a camada em `SurfaceFlinger --list` (nome com o pacote e `SurfaceView`), consulta a cada ~1,5 s (o buffer guarda só 128 quadros), junta as janelas sem repetir instantes e calcula os intervalos entre apresentações consecutivas. Linhas zeradas ou `9223372036854775807` são ignoradas. Pausas > 500 ms entre quadros (laço parado, renderização sob demanda) **não entram** nas estatísticas, mesma regra de `frameStats.ts`; o fps é quadros por segundo *de tempo ativo*, não média da janela inteira.
 - **Por que não `dumpsys gfxinfo ... framestats`:** ele mede os quadros da UI (HWUI/thread de UI), não os da `SurfaceView` do expo-gl onde o globo desenha. Serviria só para medir a UI React Native.
 - **Limites do SurfaceFlinger:** mede *apresentação* (o que chegou à tela), não o tempo de GPU nem de CPU por quadro; quadros em fila podem chegar em rajada. Em Android 12+ a camada pode vir com sufixo `(BLAST)`; no Android 11 é uma só. Se a camada for recriada, o script tenta reencontrá-la.
 - **PSS (MB):** `TOTAL PSS` de `dumpsys meminfo <pacote>`, memória total atribuída ao processo.
@@ -59,7 +61,7 @@ Para a sessão de 15–30 min, uma única chamada `-Seconds 1800` também funcio
 
 Só para o que o adb não vê: **chamadas de desenho, triângulos, programas, texturas/geometrias (contagem, não VRAM), tiles/cache/nível (LOD)**. Os tempos de quadro do overlay (p50/p95/p99, qps) servem de conferência, mas a referência é o adb.
 
-- Em desenvolvimento (`__DEV__`) o contador já vem ligado. Em release liga com `EXPO_PUBLIC_GLOBE_STATS=1` (`GLOBE_STATS_ENABLED` em `src/globe/config.ts`, inlinado no build). Sem a variável, o jogador não vê nada.
+- O contador fica desligado por padrão, inclusive em desenvolvimento. Liga explicitamente com `EXPO_PUBLIC_GLOBE_STATS=1` (`GLOBE_STATS_ENABLED` em `src/globe/config.ts`, inlinado no build). Sem a variável, o jogador não vê nada.
 - Fica no canto superior esquerdo do Painel. Publica no máximo 2×/s; chamadas e triângulos vêm do quadro anterior.
 
 ## 6. Registro
@@ -102,3 +104,13 @@ No Android 11 o Perfetto já vem no sistema (`adb shell perfetto --help` confere
 ## 10. Testes do cálculo
 
 `npx vitest run scripts/perf` testa `parseLatency.mjs` com amostra no formato do `--latency` (CRLF, linhas zeradas e INT64_MAX, janelas sobrepostas, pausas e quadros longos). O `.ps1` só foi verificado estaticamente (sintaxe) fora do aparelho.
+
+## Cuidados aprendidos nas medições reais
+
+- Identifique APK, commit, aparelho, perfil e taxa efetiva da tela (60/90 Hz); restaure qualquer configuração global alterada.
+- O FPS de uma sequência de comandos ADB inclui pausas entre gestos. Não o interprete como teto de renderização. Compare janelas de gesto contínuo equivalentes.
+- O parser separa pausas acima de 500 ms. Inspecione os brutos e esses intervalos antes de concluir que não houve travadas.
+- Consultas de CPU podem consumir o tempo disponível entre leituras do buffer de 128 quadros. Use SkipCpu para medir cadência, e CPU em uma coleta separada.
+- thermalservice pode listar valores em cache e atuais juntos; o máximo combinado não representa um único sensor atual.
+- O APK de benchmark anterior exigiu correções separadas de nomes de assets Android e regras R8 para GLView/GLContext. Essas correções não fazem parte desta integração de instrumentação; não se afirma que os perfis EAS deste PR já geram um APK instalável sem esses ajustes.
+- Use pacote de teste e assinatura compatível; não desinstale nem limpe dados para contornar incompatibilidade de assinatura.
