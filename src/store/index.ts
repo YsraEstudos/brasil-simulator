@@ -16,4 +16,4 @@ export type { IndicatorPoint, RegionalPoint, RegionalUfValues } from '@/database
 export * from './agendaDraft';
 export type { NewCampaignResult } from './gameStore';
 export * from './campaignSetup';
-export * from './mapRenderer';
+export * from './mapQuality';

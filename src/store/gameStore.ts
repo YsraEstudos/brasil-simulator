@@ -20,6 +20,7 @@ import {
 } from '@/database/campaignRepository';
 import { getSetting, setSetting } from '@/database/settingsRepository';
 import type { SqlDatabase } from '@/database/types';
+import { DEFAULT_PROFILE_3D, type Profile3d } from '@/globe/qualityProfiles';
 import { campaignMonths, loadContent, SCENARIOS } from '@/content';
 import {
   advanceMonth,
@@ -43,7 +44,16 @@ import {
   type SetupErrors,
   type SetupPrefs,
 } from './campaignSetup';
-import { DEFAULT_MAP_RENDERER, MAP_RENDERER_KEY, resolveMapRenderer, type MapRendererPref } from './mapRenderer';
+import {
+  DEFAULT_MAP_QUALITY,
+  LEGACY_MAP_RENDERER_KEY,
+  MAP_QUALITY_AUTO_KEY,
+  MAP_QUALITY_KEY,
+  isMapQualityChoice,
+  resolveAutoProfile,
+  resolveMapQuality,
+  type MapQualityChoice,
+} from './mapQuality';
 
 /** Campanha encerrada: prazo do cenário cumprido ou condenação por impeachment (FASE_07.md). */
 function isFinished(state: GameState): boolean {
@@ -83,8 +93,10 @@ export interface GameStoreState {
   campaigns: CampaignSummary[];
   active: ActiveCampaign | null;
   textScale: TextScale;
-  /** Renderizador do mapa regional (Configurações; guardado em `settings`, fora do `GameState`). */
-  mapRenderer: MapRendererPref;
+  /** Qualidade do mapa regional: Automático ou um perfil (Configurações; guardada em `settings`, fora do `GameState`). */
+  mapQuality: MapQualityChoice;
+  /** Último perfil 3D a que o ajuste automático chegou (guardado em `settings`; o próximo início já parte dele). */
+  autoProfile: Profile3d;
   /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
   draft: AgendaDraft;
   /** Últimas dificuldade e cenário usados em NOVO JOGO (lidos uma vez no início, gravados após criar). */
@@ -112,7 +124,10 @@ export interface GameStoreState {
   leaveCampaign(): Promise<boolean>;
   deleteCampaign(id: string): Promise<boolean>;
   setTextScale(scale: TextScale): Promise<boolean>;
-  setMapRenderer(renderer: MapRendererPref): Promise<boolean>;
+  /** Escolha manual (ou volta ao Automático). Um perfil fixo desliga o ajuste automático. */
+  setMapQuality(choice: MapQualityChoice): Promise<boolean>;
+  /** Resultado do ajuste automático: vale na hora e é gravado sem marcar `busy` (vem do laço de quadros do globo). */
+  setAutoProfile(profile: Profile3d): Promise<void>;
 }
 
 export interface GameStoreDeps {
@@ -163,7 +178,8 @@ export function createGameStore(deps: GameStoreDeps) {
       campaigns: [],
       active: null,
       textScale: 1,
-      mapRenderer: DEFAULT_MAP_RENDERER,
+      mapQuality: DEFAULT_MAP_QUALITY,
+      autoProfile: DEFAULT_PROFILE_3D,
       draft: EMPTY_DRAFT,
       setupPrefs: DEFAULT_SETUP_PREFS,
 
@@ -184,13 +200,19 @@ export function createGameStore(deps: GameStoreDeps) {
           } catch {
             // segue com os padrões
           }
-          let mapRenderer = DEFAULT_MAP_RENDERER;
+          let mapQuality = DEFAULT_MAP_QUALITY;
+          let autoProfile = DEFAULT_PROFILE_3D;
           try {
-            mapRenderer = resolveMapRenderer(await getSetting<unknown>(db, MAP_RENDERER_KEY, null));
+            const saved = await getSetting<unknown>(db, MAP_QUALITY_KEY, null);
+            const legacy = await getSetting<unknown>(db, LEGACY_MAP_RENDERER_KEY, null);
+            mapQuality = resolveMapQuality(saved, legacy);
+            autoProfile = resolveAutoProfile(await getSetting<unknown>(db, MAP_QUALITY_AUTO_KEY, null));
+            // Migração única do valor antigo: a escolha migrada passa a viver na chave nova.
+            if (!isMapQualityChoice(saved) && legacy !== null) await setSetting(db, MAP_QUALITY_KEY, mapQuality);
           } catch {
-            // segue com o globo
+            // segue com o automático
           }
-          set({ textScale, mapRenderer, setupPrefs, campaigns: await listCampaigns(db), status: 'pronto' });
+          set({ textScale, mapQuality, autoProfile, setupPrefs, campaigns: await listCampaigns(db), status: 'pronto' });
         } catch (e) {
           set({ status: 'erro', error: e instanceof Error ? e.message : String(e) });
         }
@@ -376,11 +398,21 @@ export function createGameStore(deps: GameStoreDeps) {
           await setSetting(d, TEXT_SCALE_KEY, scale);
         }),
 
-      setMapRenderer: (renderer) =>
+      setMapQuality: (choice) =>
         run(async (d) => {
-          await setSetting(d, MAP_RENDERER_KEY, renderer);
-          set({ mapRenderer: renderer });
+          set({ mapQuality: choice });
+          await setSetting(d, MAP_QUALITY_KEY, choice);
         }),
+
+      async setAutoProfile(profile) {
+        if (get().autoProfile === profile) return;
+        set({ autoProfile: profile });
+        try {
+          if (db) await setSetting(db, MAP_QUALITY_AUTO_KEY, profile);
+        } catch {
+          // não gravar o perfil medido só faz o próximo início partir do Equilibrado de novo
+        }
+      },
     };
   });
 }

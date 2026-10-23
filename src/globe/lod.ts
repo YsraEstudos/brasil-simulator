@@ -13,6 +13,10 @@ export type LodInput = {
   isLoaded: (id: string) => boolean;
   /** Altitude máxima do tile, já em raios terrestres e com exagero aplicado. */
   maxHeight: (id: string) => number;
+  /** Px por texel acima do qual o tile se divide. Padrão: `LOD_TEXEL_THRESHOLD` (perfil Equilibrado). */
+  texelThreshold?: number;
+  /** Nível máximo desenhado, no máximo `MAX_LEVEL` (os assets não vão além). Padrão: `MAX_LEVEL`. */
+  maxLevel?: number;
 };
 
 export type LodResult = {
@@ -31,12 +35,14 @@ const ROOT_SPAN_RAD = ((ROOT.east - ROOT.west) * Math.PI) / 180;
 
 /**
  * Seleção de nível de detalhe por erro em tela: subdivide enquanto um texel ocupa mais que
- * LOD_TEXEL_THRESHOLD pixels. Se os filhos não estiverem carregados, desenha o pai e pede os filhos.
+ * `texelThreshold` pixels (padrão `LOD_TEXEL_THRESHOLD`; o perfil de qualidade pode mudar o limiar e o nível máximo). Se os filhos não estiverem carregados, desenha o pai e pede os filhos.
  */
 export function selectTiles(input: LodInput): LodResult {
   const draw: string[] = [];
   const request: string[] = [];
   const used: string[] = [];
+  const texelThreshold = input.texelThreshold ?? LOD_TEXEL_THRESHOLD;
+  const maxLevel = Math.min(MAX_LEVEL, input.maxLevel ?? MAX_LEVEL);
   const cam = input.cameraPosition;
   const camDist = Math.hypot(cam[0], cam[1], cam[2]);
   // Ângulo do horizonte visto da câmera (esfera unitária)
@@ -63,9 +69,8 @@ export function selectTiles(input: LodInput): LodResult {
     const texelRad = ROOT_SPAN_RAD / 2 ** k.z / TILE_PIXELS;
     const texelPx = (texelRad / dist) * input.pixelsPerRadian;
 
-    const children = k.z < MAX_LEVEL ? tileChildren(k) : [];
-    const canSplit =
-      texelPx > LOD_TEXEL_THRESHOLD && children.length > 0 && children.every((c) => input.exists(tileId(c)));
+    const children = k.z < maxLevel ? tileChildren(k) : [];
+    const canSplit = texelPx > texelThreshold && children.length > 0 && children.every((c) => input.exists(tileId(c)));
     if (!canSplit) {
       draw.push(id);
       return;
