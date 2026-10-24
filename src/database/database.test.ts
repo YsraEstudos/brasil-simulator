@@ -439,9 +439,10 @@ describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
     }
     history = await loadRegionalHistory(db, 'c1');
     expect(history.map((p) => p.monthIndex)).toEqual([0, 1, 2, 3]);
-    // Os valores gravados são os do estado, campo a campo.
+    // Os valores gravados são os do estado, campo a campo. Tolerância de 1e-12: no CI (Node 22) o valor relido saiu
+    // 1 ulp diferente do estado (0,450731652775352 vs 0,4507316527753519); localmente (Node 26) a igualdade exata passa.
     for (const uf of state.regions.ufs) {
-      for (const f of REGIONAL_FIELDS) expect(history[3].ufs[uf.id][f]).toBe(uf[f]);
+      for (const f of REGIONAL_FIELDS) expect(history[3].ufs[uf.id][f]).toBeCloseTo(uf[f], 12);
     }
   });
 

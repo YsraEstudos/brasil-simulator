@@ -442,8 +442,9 @@ describe('dano de média zero em torno da normal (sem inflação permanente)', (
         expect(Math.abs(measured[key] - table[key]), `${difficulty}.${key}`).toBeLessThan(0.03);
       }
     }
-  });
+  }, 30_000);
 
+  // 4000 meses por dificuldade: passa do limite padrão de 5 s do Vitest em máquina carregada (CI).
   it('o dano médio é ~zero em cada dificuldade (clima ruim e clima bom se compensam)', () => {
     for (const difficulty of DIFFICULTIES) {
       let climate = initialClimate(17);
@@ -463,7 +464,7 @@ describe('dano de média zero em torno da normal (sem inflação permanente)', (
         expect(Math.abs(total / n), `${difficulty}.${key}`).toBeLessThan(0.05);
       }
     }
-  });
+  }, 30_000);
 
   it('clima favorável dá pressão negativa (boa safra, reservatórios bons) e clima adverso, positiva', () => {
     const start = createInitialState({ content, difficulty: 'estrategica', seed: 2 });
