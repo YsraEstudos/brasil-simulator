@@ -145,7 +145,8 @@ describe('migração do estado: perfil neutro (PLANO_GLOBO.md §8, teste 2)', ()
   it('save da v9 (sem government) vira v10 com perfil 0/0, sem mexer nos demais campos nem no original', () => {
     let state = start('liberal', contentV070, 5);
     for (let m = 0; m < 4; m++) state = advanceMonth(state, EMPTY, contentV070).state;
-    const { government: _government, ...rest } = state;
+    // Um save da v9 não tem governo nem clima (o clima entra na v11).
+    const { government: _government, climate: _climate, ...rest } = state;
     const raw: Record<string, unknown> = { ...rest, schemaVersion: 9, engineVersion: '0.8.1' };
     const original = structuredClone(raw);
     const migrated = upgradeGameState(9, raw);
@@ -162,9 +163,10 @@ describe('migração do estado: perfil neutro (PLANO_GLOBO.md §8, teste 2)', ()
   it('o save v9 migrado continua jogável sem violar invariantes e igual ao jogo sem perfil no cenário v0.7.0', () => {
     let state = start(undefined, contentV070, 5);
     for (let m = 0; m < 4; m++) state = advanceMonth(state, EMPTY, contentV070).state;
-    const { government: _government, ...rest } = state;
+    const { government: _government, climate: _climate, ...rest } = state;
     let migrated = upgradeGameState(9, { ...rest, schemaVersion: 9, engineVersion: '0.8.1' });
-    let reference = state;
+    // O save migrado ganha clima neutro (v11); a referência parte do mesmo clima para isolar o efeito do perfil.
+    let reference: GameState = { ...state, climate: migrated.climate };
     const errors: string[] = [];
     for (let m = 0; m < 12; m++) {
       const a = advanceMonth(migrated, EMPTY, contentV070);

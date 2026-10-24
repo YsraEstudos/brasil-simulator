@@ -557,7 +557,7 @@ export interface UfClimate {
 /**
  * Estado climático (v11; PLANO_GLOBO.md §6.1, D-G6). Vive no `GameState`, mas com PRNG **próprio**, derivado da
  * semente da campanha com sal estável (`deriveSeed`), para que os sorteios dos demais sistemas não mudem de ordem.
- * Saves anteriores à v11 migram com clima neutro; até o PR 8 nenhuma etapa o altera.
+ * Saves anteriores à v11 migram com clima neutro. `climateEvolutionStep` (PR 8) o evolui todo mês, antes da economia.
  */
 export interface ClimateState {
   /** Índice ENSO, −1 (La Niña forte) … 1 (El Niño forte); 0 = neutro. */

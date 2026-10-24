@@ -250,31 +250,52 @@ Módulo `src/engine/politics/calibration.ts` (`PROFILE_PARAMS`, não sobrescrito
 | `eleitor_mediano_escala` | 0,15 | 0,08 – 0,3 | distância normalizada que satura o termo nacional |
 | `ufs_destacadas_previa`, `faixa_central` | 5; 0,2 | — | só interface (prévia e descrição em palavras) |
 
-## Clima (PR 7 do PLANO_GLOBO)
+## Clima (PR 7 e PR 8 do PLANO_GLOBO)
 
-Módulo `src/engine/climate/calibration.ts` (`CLIMATE_PARAMS`, não sobrescritos pelo cenário). Valores `PROVISORIO`; **contrato do PR 7: nenhum código do motor os lê ainda** (só validadores e testes), de modo que não mudam nenhum resultado. Existem para o `climateEvolutionStep` e os efeitos regionais do PR 8, que os revisa e remove os que não usar. Faixa e justificativa de cada um no código; o teste confere valor dentro da faixa.
+Módulo `src/engine/climate/calibration.ts` (`CLIMATE_PARAMS`, não sobrescritos pelo cenário). Valores `PROVISORIO`, **todos lidos pelo motor desde o PR 8** (`climate/evolution.ts`: ENSO, chuva e seca; `climate/effects.ts`: cheia, danos nacionais e humor regional); um teste (`evolution.test.ts`) falha se algum parâmetro ficar sem uso. Faixa e justificativa de cada um no código; o teste confere valor dentro da faixa.
 
 | Parâmetro | Valor | Faixa | Significado |
 | --- | --- | --- | --- |
-| `enso_persistencia` | 0,92 | 0,85 – 0,97 | φ: coeficiente AR(1) mensal do ENSO latente (constante de tempo de ~1 ano) |
-| `enso_choque` | 0,18 | 0,1 – 0,3 | desvio do choque mensal sobre o ENSO latente (estacionário ≈ 0,46 antes da saturação) |
-| `enso_saturacao` | 1 | 0,7 – 1,5 | escala da saturação: ENSO = tanh(latente ÷ escala) |
+| `enso_persistencia` | 0,92 | 0,85 – 0,97 | φ: coeficiente AR(1) mensal do ENSO (constante de tempo de ~1 ano) |
+| `enso_choque` | 0,18 | 0,1 – 0,3 | desvio do choque mensal sobre o ENSO (estacionário ≈ 0,46 antes da saturação) |
+| `enso_saturacao` | 1 | 0,7 – 1,5 | escala da saturação: ENSO' = tanh((φ · ENSO + choque) ÷ escala) |
 | `chuva_persistencia` | 0,35 | 0,1 – 0,6 | fração da anomalia do mês anterior que a UF carrega |
 | `chuva_choque_regional` | 0,14 | 0,05 – 0,25 | desvio do choque mensal compartilhado pela macrorregião |
 | `chuva_choque_uf` | 0,16 | 0,05 – 0,3 | desvio do ruído mensal próprio da UF |
 | `chuva_anomalia_max` | 0,6 | 0,4 – 0,9 | anomalia máxima em módulo (tanh) |
-| `intensidade_casual` / `_estrategica` / `_realismo` | 0,7 / 1 / 1,2 | 0,5–1 / 0,8–1,2 / 1–1,5 | magnitude por dificuldade (nunca o lugar) |
+| `intensidade_casual` / `_estrategica` / `_realismo` | 0,7 / 1 / 1,2 | 0,5–1 / 0,8–1,2 / 1–1,5 | magnitude por dificuldade: multiplica os choques (e portanto o ENSO), nunca o lugar |
 | `seca_limiar_anomalia` | −0,1 | −0,3 – 0 | anomalia abaixo da qual o mês conta como déficit |
-| `seca_deficit_referencia_mm` | 60 | 30 – 120 | déficit/excesso em mm que satura ganho/recuperação da seca (distingue semiárido de região úmida) |
-| `seca_ganho` | 0,3 | 0,15 – 0,5 | aumento máximo mensal da seca |
+| `seca_deficit_referencia` | 0,25 | 0,1 – 0,5 | déficit/excesso em mm ÷ chuva mensal média da UF que satura (tanh) o ganho/recuperação da seca |
+| `seca_expoente_aridez` | 0,5 | 0,25 – 1 | expoente da vulnerabilidade hídrica (chuva média do país ÷ da UF): >1 no semiárido, <1 em região úmida |
+| `seca_ganho` | 0,25 | 0,15 – 0,5 | aumento máximo mensal da seca (antes da vulnerabilidade) |
 | `seca_memoria` | 0,85 | 0,7 – 0,95 | fração da seca que persiste de um mês para o outro |
-| `seca_recuperacao` | 0,25 | 0,1 – 0,5 | redução máxima mensal extra por chuva acima da normal |
+| `seca_recuperacao` | 0,25 | 0,1 – 0,5 | redução máxima mensal extra por chuva acima da normal (dividida pela vulnerabilidade) |
 | `cheia_limiar_anomalia` | 0,35 | 0,2 – 0,6 | anomalia positiva a partir da qual o risco de cheia sobe |
-| `cheia_peso_umidade` | 0,5 | 0,2 – 0,8 | peso da anomalia positiva do mês anterior (solo úmido) |
+| `cheia_absorcao_seca` | 0,5 | 0,2 – 0,8 | quanto a seca eleva o limiar da cheia (solo seco absorve; sem campo de umidade no estado) |
 | `cheia_escala` | 0,25 | 0,1 – 0,5 | excesso acima do limiar que satura o risco (tanh) |
-| `cheia_risco_max` | 0,6 | 0,3 – 0,9 | risco mensal máximo de cheia (nunca certeza) |
-| `dano_pib_seca_max` | 0,005 | 0,002 – 0,01 | perda máxima de nível do PIB por seca nacional extrema |
-| `dano_alimentos_seca_max` | 0,01 | 0,005 – 0,02 | pressão máxima da seca sobre a inflação de alimentos (12 meses) |
-| `aprovacao_clima_max` | 0,015 | 0,005 – 0,03 | desvio máximo de aprovação da UF por chuva/seca (redistribui, D7) |
+| `cheia_risco_max` | 0,6 | 0,3 – 0,9 | risco mensal máximo de cheia, antes da vulnerabilidade (nunca certeza) |
+| `cheia_vulnerabilidade_piso` | 0,4 | 0,2 – 0,7 | vulnerabilidade da UF menos exposta; proxy pela pobreza do cenário |
+| `dano_atividade_seca` | 0,1 | 0,05 – 0,2 | perda (log) de atividade da UF por seca 1 × agropecuária 100% do valor adicionado |
+| `dano_pib_seca_max` | 0,005 | 0,002 – 0,01 | teto da perda de nível do PIB por seca (tanh sobre a soma ponderada pelo PIB do dano das UFs) |
+| `dano_alimentos_seca_max` | 0,01 | 0,005 – 0,02 | teto da pressão da seca sobre a inflação de alimentos (12 meses) |
+| `dano_energia_seca_max` | 0,004 | 0,001 – 0,01 | teto da pressão da seca sobre a inflação via energia (seca média do Sudeste + Centro-Oeste) |
+| `seca_escala_nacional` | 0,4 | 0,2 – 0,8 | índice nacional de seca em que o dano chega a 76% do teto (tanh) |
+| `dano_pib_chuva_max` | 0,002 | 0,0005 – 0,005 | teto da perda de PIB por chuva excessiva (cheias) |
+| `dano_alimentos_chuva_max` | 0,004 | 0,001 – 0,01 | teto da pressão da chuva excessiva sobre os alimentos |
+| `cheia_escala_nacional` | 0,1 | 0,05 – 0,3 | risco médio de cheia (ponderado pelo PIB) em que o dano nacional chega a 76% do teto |
+| `aprovacao_clima_max` | 0,015 | 0,005 – 0,03 | desvio máximo de aprovação da UF, para cada um de: cheia e seca prolongada (redistribui, D7) |
+| `seca_humor_limiar` | 0,5 | 0,3 – 0,8 | seca acumulada a partir da qual ela pesa no humor ("prolongada") |
 
-Os três últimos (tetos de efeito) são só ordem de grandeza e serão calibrados no PR 8 com as suítes de sensibilidade; a força do humor pela chuva é uma das decisões de calibração em aberto (PLANO_GLOBO.md §10).
+**Dano de média zero (`CLIMATE_EXPECTED_DAMAGE`, fora de `CLIMATE_PARAMS`).** Cada termo de dano nacional (PIB e energia e alimentos pela seca, PIB e alimentos pela chuva excessiva) é `teto × (índice − esperado)`, em que o índice é a saída do `tanh` (0–1) e o esperado é a média desse índice sob o clima estacionário. Sem isso o dano seria só adverso e viraria inflação permanente (medido em 20 anos × 10 sementes: inflação média +0,6 p.p., Selic final +0,6 a +2,5 p.p., aprovação −1 p.p.). Tabela por dificuldade (a magnitude muda a distribuição do clima), medida no cenário padrão com 30 sementes × 2.880 meses após 120 de aquecimento:
+
+| Dificuldade | PIB (seca) | Alimentos (seca) | Energia (seca) | Chuva (cheia) |
+| --- | --- | --- | --- | --- |
+| `casual` | 0,0854 | 0,1673 | 0,1574 | 0,0028 |
+| `estrategica` | 0,1347 | 0,2597 | 0,2456 | 0,0278 |
+| `realismo` | 0,1599 | 0,3052 | 0,2887 | 0,0608 |
+
+Clima melhor que o esperado dá pressão negativa (boa safra, reservatórios em bom nível), no máximo `−teto × esperado`; a seca vale até `teto × (1 − esperado)`. **Refazer a tabela se qualquer parâmetro de evolução ou de dano mudar** (o teste "CLIMATE_EXPECTED_DAMAGE bate com uma medição nova" falha, tolerância 0,03). Vale para o cenário padrão (v0.8.0); outro cenário com pesos de PIB e agropecuária por UF diferentes teria esperados um pouco diferentes.
+
+**Mudanças do PR 8 em relação ao PR 7:** `seca_deficit_referencia_mm` (60 mm) virou `seca_deficit_referencia` (0,25, relativo à chuva mensal média da UF); `cheia_peso_umidade` virou `cheia_absorcao_seca`; `seca_ganho` 0,3 → 0,25. Entraram `seca_expoente_aridez`, `cheia_vulnerabilidade_piso`, `dano_atividade_seca`, `dano_energia_seca_max`, `seca_escala_nacional`, `dano_pib_chuva_max`, `dano_alimentos_chuva_max`, `cheia_escala_nacional` e `seca_humor_limiar`. Nenhum foi removido por falta de uso.
+
+Os valores são ordem de grandeza e foram conferidos só por simulação de sanidade (96 meses, 3 sementes: ENSO de −0,6 a +0,8; seca > 0,5 em 0,2–7% dos meses × UF conforme a dificuldade; perda máxima de PIB por seca ≈ 0,2% e de alimentos ≈ 0,6 p.p., antes de centrar; depois de centrar o dano vai de negativo a positivo e tem média ~0; humor regional de até ≈ 2 p.p.). A calibração fina e a força do humor pela chuva seguem como decisão em aberto (PLANO_GLOBO.md §10).

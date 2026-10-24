@@ -1,4 +1,5 @@
 import { VISIT_ACTION_ID } from '../actions';
+import { climateRegionalEffects } from '../climate/effects';
 import { blocRelation, RELACAO_ESCALA, RELACAO_MAX, RELACAO_MIN } from '../congress/relations';
 import type { Calibration } from '../economy/calibration';
 import { DEMAND_GAIN } from '../economy/demand';
@@ -208,6 +209,15 @@ function distribute(
       });
     });
   }
+
+  // Clima (PLANO_GLOBO.md §6.2): seca × participação da agropecuária na atividade da UF; chuva acima do normal e seca
+  // prolongada no humor. Parcelas brutas: a normalização à atividade das demais UFs e a centragem da aprovação à média
+  // nacional (D7) logo abaixo as tornam pura redistribuição; a parte nacional do humor entra em `opinionStep`.
+  const climate = climateRegionalEffects(state, content);
+  ufs.forEach((_, i) => {
+    activityRaw[i].push(...climate.activity[i]);
+    approvalRaw[i].push(...climate.approval[i]);
+  });
 
   // Gasto e tributo federal pela chave de cada impulso: demanda local e aprovação per capita.
   for (const impulse of activeImpulses(impulses, t, DEMAND_TARGETS)) {

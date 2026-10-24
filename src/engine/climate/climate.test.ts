@@ -4,11 +4,11 @@ import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { CLIMATOLOGY } from '@/content/climate';
 import { SCENARIOS } from '@/content/scenarios';
 import { advanceMonth } from '@/engine/advanceMonth';
+import { toCalendar } from '@/engine/calendar';
 import { checkInvariants } from '@/engine/invariants';
 import { createRng, deriveSeed, seedRng } from '@/engine/rng';
-import { STRATEGIES } from '@/engine/sim/strategies';
 import { createInitialState } from '@/engine/state';
-import { ENGINE_VERSION, STATE_SCHEMA_VERSION, type GameState } from '@/engine/types';
+import { ENGINE_VERSION, STATE_SCHEMA_VERSION } from '@/engine/types';
 import { upgradeGameState } from '@/engine/upgrade';
 import { climatologySchema, parseClimatology, SEASON_IDS } from '@/types/climate';
 import { REGION_IDS, UF_IDS } from '@/types/regions';
@@ -34,54 +34,14 @@ import {
   regionOfUf,
   seasonOf,
 } from './climate';
+import { evolveClimate } from './evolution';
 
 // PLANO_GLOBO.md §6.1 (contrato climático), D-G6 e §8, testes 1 e 2: mesma semente → mesmo resultado; save da
-// versão anterior abre com clima neutro; sorteios dos sistemas antigos na mesma ordem. O PR 7 é só contrato: nenhum
-// resultado de simulação pode mudar.
+// versão anterior abre com clima neutro; sorteios dos sistemas antigos na mesma ordem. A evolução e os efeitos do
+// clima (PR 8) são testados em `evolution.test.ts`.
 
 const content = loadContent(DEFAULT_SCENARIO_ID);
 const EMPTY = { decisions: [] };
-
-/** Hash FNV-1a de 32 bits de um texto, encadeável (impressão digital de uma partida; não é criptográfico). */
-function fnv1a(text: string, seed = 0x811c9dc5): number {
-  let h = seed >>> 0;
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h;
-}
-
-/** Estado sem o clima e sem a versão do esquema: o que o motor anterior ao PR 7 também produzia. */
-function withoutClimate(state: GameState): Record<string, unknown> {
-  const { climate: _climate, schemaVersion: _schema, ...rest } = state;
-  return rest;
-}
-
-/** Serialização estável entre V8: Math pode variar nos últimos bits do double, sem mudar o resultado útil. */
-function fingerprintValue(value: unknown): unknown {
-  if (typeof value === 'number') return Number.isInteger(value) ? value : Number(value.toPrecision(12));
-  if (Array.isArray(value)) return value.map(fingerprintValue);
-  if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, fingerprintValue(item)]));
-  }
-  return value;
-}
-
-/** Impressão digital do estado (sem clima) e do relatório de cada mês, em hexadecimal. */
-function fingerprint(start: GameState, months: number, decide?: string): string {
-  const strategy = decide ? STRATEGIES.find((s) => s.id === decide) : undefined;
-  const c = loadContent(start.scenarioId);
-  let state = start;
-  let h = 0x811c9dc5;
-  for (let m = 0; m < months; m++) {
-    const out = advanceMonth(state, strategy ? strategy.decide(state, c) : EMPTY, c);
-    state = out.state;
-    h = fnv1a(JSON.stringify(fingerprintValue(withoutClimate(state))), h);
-    h = fnv1a(JSON.stringify(fingerprintValue(out.report)), h);
-  }
-  return h.toString(16).padStart(8, '0');
-}
 
 describe('semente do clima (PLANO_GLOBO.md §6.1)', () => {
   it('é uma função pura com valores fixos: a estabilidade do sal e da mistura é parte do contrato', () => {
@@ -157,46 +117,8 @@ describe('estado climático inicial (PLANO_GLOBO.md §6.1, D-G6)', () => {
   });
 });
 
-describe('o clima é inerte no PR 7 (PLANO_GLOBO.md §8, teste 1: nenhuma simulação muda)', () => {
-  // Impressões digitais do motor ANTERIOR ao PR 7 (commit 9970039), cenário padrão, dificuldade estratégica,
-  // 36 meses: hash do estado sem o clima e do relatório de cada mês. Números são normalizados em 12 algarismos
-  // significativos para neutralizar diferenças de arredondamento entre versões de V8. Não ajustar estes valores.
-  const GOLDEN: readonly (readonly [number, string | undefined, string])[] = [
-    [1, undefined, 'd7571d10'],
-    [1, 'reformista', '09d54de9'],
-    [1, 'populista_fiscal', '6e8d2cb9'],
-    [1, 'fisiologica', '76b5424c'],
-    [7, undefined, '4a35f976'],
-    [7, 'reformista', '8a7aeed0'],
-    [7, 'populista_fiscal', 'f7f1a1d1'],
-    [7, 'fisiologica', 'b2ecaca1'],
-    [42, undefined, '11e43712'],
-    [42, 'reformista', '7da7d11f'],
-    [42, 'populista_fiscal', '6ab19eca'],
-    [42, 'fisiologica', '041cdb74'],
-  ];
-
-  it.each(GOLDEN)('semente %i, estratégia %s: mesma partida de 36 meses que o motor anterior', (seed, strat, hash) => {
-    const start = createInitialState({ content, difficulty: 'estrategica', seed });
-    expect(fingerprint(start, 36, strat)).toBe(hash);
-  });
-
-  it('o clima e o PRNG do clima ficam intactos durante a partida, e os invariantes valem', () => {
-    const strategy = STRATEGIES.find((s) => s.id === 'reformista');
-    if (!strategy) throw new Error('estratégia ausente');
-    let state = createInitialState({ content, difficulty: 'realismo', seed: 9 });
-    const initial = structuredClone(state.climate);
-    const errors: string[] = [];
-    for (let m = 0; m < 24; m++) {
-      const out = advanceMonth(state, strategy.decide(state, content), content);
-      errors.push(...checkInvariants(state, out.state, out.report, content));
-      state = out.state;
-    }
-    expect(errors).toEqual([]);
-    expect(state.climate).toEqual(initial);
-  });
-
-  it('mesma semente e decisões → mesmo estado final, clima incluído (determinismo)', () => {
+describe('determinismo da partida com clima (PLANO_GLOBO.md §8, teste 1)', () => {
+  it('mesma semente e decisões → mesmo estado final, clima incluído', () => {
     const run = () => {
       let state = createInitialState({ content, difficulty: 'estrategica', seed: 5 });
       for (let m = 0; m < 18; m++) state = advanceMonth(state, EMPTY, content).state;
@@ -247,22 +169,24 @@ describe('atualização v10 → v11: clima neutro em todo save (PLANO_GLOBO.md �
     }
   });
 
-  it('o save v10 atualizado joga igual ao jogo sem clima (mesmo estado e relatório, 24 meses)', () => {
-    const raw = v10Save(5);
-    let migrated = upgradeGameState(10, structuredClone(raw) as unknown);
-    let reference = createInitialState({ content, difficulty: 'estrategica', seed: 5 });
-    for (let m = 0; m < 4; m++) reference = advanceMonth(reference, EMPTY, content).state;
-    const errors: string[] = [];
-    for (let m = 0; m < 24; m++) {
-      const a = advanceMonth(migrated, EMPTY, content);
-      const b = advanceMonth(reference, EMPTY, content);
-      errors.push(...checkInvariants(migrated, a.state, a.report, content));
-      expect(a.state).toEqual(b.state);
-      expect(a.report).toEqual(b.report);
-      migrated = a.state;
-      reference = b.state;
-    }
-    expect(errors).toEqual([]);
+  it('o save v10 atualizado continua jogável (24 meses): invariantes, determinismo e clima nascendo do estado neutro', () => {
+    const play = () => {
+      let state = upgradeGameState(10, structuredClone(v10Save(5)) as unknown);
+      const first = advanceMonth(state, EMPTY, content);
+      // O primeiro mês de clima do save é a evolução do estado neutro derivado da semente gravada.
+      expect(first.state.climate).toEqual(
+        evolveClimate(initialClimate(5), toCalendar(state.monthIndex).month, state.difficulty, content.climatology),
+      );
+      const errors: string[] = [];
+      for (let m = 0; m < 24; m++) {
+        const out = advanceMonth(state, EMPTY, content);
+        errors.push(...checkInvariants(state, out.state, out.report, content));
+        state = out.state;
+      }
+      expect(errors).toEqual([]);
+      return JSON.stringify(state);
+    };
+    expect(play()).toBe(play());
   });
 
   it('o clima de um save atualizado é o de uma campanha nova da mesma semente', () => {
@@ -280,21 +204,30 @@ describe('atualização v10 → v11: clima neutro em todo save (PLANO_GLOBO.md �
     }
   });
 
-  // Impressões digitais gravadas com o motor anterior ao PR 7 (commit 9970039): o save real atualizado e jogado por
-  // 12 meses (sem decisões) no cenário do próprio save produz o mesmo estado (sem clima) e os mesmos relatórios.
-  it.each([
-    [2, 'ebf9170b'],
-    [3, '5d98372b'],
-    [4, '39d71f89'],
-    [5, '5ba347d2'],
-    [6, '0fcff641'],
-    [7, '5ab1ee96'],
-  ] as const)('save real v%i atualizado joga 12 meses idêntico ao motor anterior', (version, hash) => {
-    const save = FIXTURES.find(([v]) => v === version)?.[1];
-    if (!save) throw new Error(`fixture v${version} ausente`);
-    const state = upgradeGameState(version, structuredClone(save) as unknown);
-    expect(fingerprint(state, 12)).toBe(hash);
-  });
+  // Os saves reais atualizados jogam 12 meses (sem decisões) no cenário do próprio save, com o clima novo agindo:
+  // sem violar invariantes (inclui o clima e o D7), de forma determinística e com o clima dentro dos limites.
+  it.each(FIXTURES.map(([version]) => [version] as const))(
+    'save real v%i atualizado joga 12 meses sem violar invariantes',
+    (version) => {
+      const save = FIXTURES.find(([v]) => v === version)?.[1];
+      if (!save) throw new Error(`fixture v${version} ausente`);
+      const play = () => {
+        let state = upgradeGameState(version, structuredClone(save) as unknown);
+        const c = loadContent(state.scenarioId);
+        const errors: string[] = [];
+        for (let m = 0; m < 12; m++) {
+          const out = advanceMonth(state, EMPTY, c);
+          errors.push(...checkInvariants(state, out.state, out.report, c));
+          state = out.state;
+        }
+        expect(errors).toEqual([]);
+        expect(checkClimate(state.climate)).toEqual([]);
+        expect(state.climate.rng).not.toEqual(initialClimate(save.seed).rng);
+        return JSON.stringify(state);
+      };
+      expect(play()).toBe(play());
+    },
+  );
 
   it('save sem semente inteira usa a semente 0 em vez de falhar', () => {
     const raw = { ...v10Save(5), seed: 'x' };

@@ -5,8 +5,8 @@ import type { ClimateState, GameState, UfClimate } from '../types';
 
 /**
  * Contrato do clima (PLANO_GLOBO.md §6.1; PR 7): estado inicial neutro, PRNG próprio derivado da semente da
- * campanha e leitores puros das tabelas de climatologia. A evolução (ENSO, anomalias, seca, cheia) e os efeitos
- * ficam para o PR 8; aqui nada altera o estado nem consome sorteios.
+ * campanha e leitores puros das tabelas de climatologia. A evolução mensal está em `evolution.ts` e os efeitos em
+ * `effects.ts` (PR 8, §6.2).
  */
 
 /**

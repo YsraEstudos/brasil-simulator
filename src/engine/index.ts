@@ -137,7 +137,14 @@ export {
 } from './politics/profile';
 export { ALIGNMENT_CAUSE } from './regions/regions';
 export { createRng, deriveSeed, seedRng, type Rng, type RngState } from './rng';
-export { CLIMATE_INTENSITY_PARAM, CLIMATE_PARAMS, climateParam, type ClimateParamName } from './climate/calibration';
+export {
+  CLIMATE_EXPECTED_DAMAGE,
+  CLIMATE_INTENSITY_PARAM,
+  CLIMATE_PARAMS,
+  climateParam,
+  type ClimateParamName,
+  type ExpectedDamage,
+} from './climate/calibration';
 export {
   CLIMATE_SEED_SALT,
   climateOf,
@@ -150,6 +157,24 @@ export {
   regionOfUf,
   seasonOf,
 } from './climate/climate';
+export {
+  CLIMATE_CAUSES,
+  climateDamageIndices,
+  climateDamageOf,
+  climateMoodTerms,
+  climateRegionalEffects,
+  floodRisk,
+  floodVulnerabilities,
+  type ClimateDamage,
+  type ClimateDamageIndices,
+} from './climate/effects';
+export {
+  CLIMATE_DRAWS_PER_MONTH,
+  climateEvolutionStep,
+  evolveClimate,
+  nextDryness,
+  waterVulnerability,
+} from './climate/evolution';
 export {
   AGENDA_ACTIONS_PER_MONTH,
   createInitialState,
