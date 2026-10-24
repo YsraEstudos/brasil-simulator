@@ -266,7 +266,8 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
     if (result.transition) ctx.draft.notes.push(result.transition);
   }
 
-  for (const run of projectRuns) impulses.push(...projectPreventionImpulses(run.project, run.policy, t));
+  for (const run of projectRuns)
+    impulses.push(...projectPreventionImpulses(run.project, run.policy, t, state.economy.priceLevel));
 
   publicState.capitalStockMillions = publicState.projects
     .filter((project) => project.phase === 'operacao')
@@ -409,6 +410,7 @@ function projectPreventionImpulses(
   project: PublicProject,
   policy: Policy | undefined,
   month: number,
+  priceLevel: number,
 ): ScheduledImpulse[] {
   if (!policy?.prevention || month < project.startMonth) return [];
   let coverage = 0;
@@ -417,10 +419,12 @@ function projectPreventionImpulses(
     const approvedScale = nominalBudget > 0 ? Math.min(1, project.budgetMillions / nominalBudget) : 0;
     coverage = climateParam('prevencao_fracao_obra') * project.progress * approvedScale;
   } else if (project.phase === 'operacao') {
+    // O ativo entregue está em preços-base (obra ÷ nível de preços): o nominal vai para a mesma unidade.
     const nominalAsset =
-      policy.cost.annualMillions *
-      (Math.max(1, policy.timeline.executionMonths) / MONTHS_PER_YEAR) *
-      (policy.project?.efficiency ?? 1);
+      (policy.cost.annualMillions *
+        (Math.max(1, policy.timeline.executionMonths) / MONTHS_PER_YEAR) *
+        (policy.project?.efficiency ?? 1)) /
+      positiveOr(priceLevel, 1);
     coverage = nominalAsset > 0 ? Math.min(1, project.assetMillions / nominalAsset) : 0;
   }
   return preventionImpulses(
@@ -438,12 +442,12 @@ function projectPreventionImpulses(
  * do próximo mês vai usar, sem rodar o mês. Pura e sem sorteio.
  */
 export function currentPrevention(
-  state: Pick<GameState, 'impulses' | 'monthIndex' | 'publicPolicies'>,
+  state: Pick<GameState, 'economy' | 'impulses' | 'monthIndex' | 'publicPolicies'>,
   content: Pick<GameContent, 'scenario' | 'policies'>,
 ): Prevention {
   const ufs = content.scenario.regions?.ufs ?? [];
   const fromProjects = state.publicPolicies.projects.flatMap((project) =>
-    projectPreventionImpulses(project, content.policies[project.policyId], state.monthIndex),
+    projectPreventionImpulses(project, content.policies[project.policyId], state.monthIndex, state.economy.priceLevel),
   );
   return preventionOf([...state.impulses, ...fromProjects], state.monthIndex, ufs);
 }

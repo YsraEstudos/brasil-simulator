@@ -457,6 +457,17 @@ describe('a carteira de políticas entrega a prevenção (projeto e rotina)', ()
     expect(impulse.delta).toBeCloseTo(0.7 * climateParam('prevencao_fracao_obra') * progress * 0.5, 12);
   });
 
+  it('o ativo entregue e o nominal estão na mesma unidade: com preços em alta, a obra cheia protege o mesmo', () => {
+    const state = withProject('operacao', { progress: 1, assetMillions: nominalAsset / 2 });
+    const inflated = { ...state, economy: { ...state.economy, priceLevel: 2 } } as GameState;
+    const after = publicStep(inflated);
+    const asset = after.publicPolicies.projects[0].assetMillions;
+    const [impulse] = preventionQueue(after, 'clima.prevencao_seca');
+    // ativo ÷ ativo nominal em preços-base: a metade do nominal, cheia, dá cobertura 1
+    expect(impulse.delta).toBeCloseTo(0.7 * Math.min(1, asset / (nominalAsset / 2)), 12);
+    expect(impulse.delta).toBeGreaterThan(0.7 * 0.9);
+  });
+
   it('uma obra pronta deprecia: a proteção cai devagar, mês a mês, e volta a subir se o ativo for reposto', () => {
     let state = withProject('operacao', { progress: 1, assetMillions: nominalAsset });
     const strengths: number[] = [];

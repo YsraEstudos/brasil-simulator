@@ -31,7 +31,7 @@ export interface UfFieldView {
   prevention: { drought: number; flood: number } | null;
 }
 
-type FieldState = Pick<GameState, 'monthIndex' | 'decisionLog' | 'impulses' | 'publicPolicies'>;
+type FieldState = Pick<GameState, 'economy' | 'monthIndex' | 'decisionLog' | 'impulses' | 'publicPolicies'>;
 type FieldContent = Pick<GameContent, 'scenario' | 'policies' | 'calibration'>;
 
 /** Visita ainda valendo na UF: texto com há quanto tempo e quanto falta, ou `null`. Mesma regra do marcador. */
