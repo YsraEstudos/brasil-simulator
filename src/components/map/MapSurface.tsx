@@ -69,6 +69,7 @@ function FlatMap({
   onSelect,
   onMarkerPress,
   onPulseDone,
+  paused,
   onReady,
   light,
   sun,
@@ -79,6 +80,7 @@ function FlatMap({
   onSelect: (sigla: string | null) => void;
   onMarkerPress?: (marker: MapMarker) => void;
   onPulseDone?: (instanceIds: readonly string[]) => void;
+  paused?: boolean;
   onReady?: (api: GlobeApi) => void;
   light: boolean;
   sun: SunState | null;
@@ -96,6 +98,7 @@ function FlatMap({
       onSelect={onSelect}
       onMarkerPress={onMarkerPress}
       onPulseDone={onPulseDone}
+      paused={paused}
       variant={light ? 'light' : 'full'}
       reservedRects={labels.reservedRects}
       labelInsets={labels.labelInsets}
@@ -184,6 +187,7 @@ function MapSurfaceRenderer({
       onSelect={onSelect}
       onMarkerPress={onMarkerPress}
       onPulseDone={onPulseDone}
+      paused={paused}
       onReady={onReady}
       light={light}
       sun={flatSun}
