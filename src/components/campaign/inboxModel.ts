@@ -31,6 +31,18 @@ export function pendingItems(state: Readonly<GameState>, content: GameContent): 
   });
 }
 
+/**
+ * Coloca o item da instância em foco (`PendingEvent.instanceId`, aberto pelo marcador do mapa) no topo da caixa de
+ * entrada; a ordem dos demais não muda. Sem foco, ou com foco fora da lista, devolve a mesma ordem.
+ */
+export function focusFirst<T extends { pending: { instanceId: string } }>(
+  items: readonly T[],
+  focusInstanceId: string | null | undefined,
+): T[] {
+  const focused = items.filter((i) => i.pending.instanceId === focusInstanceId);
+  return focused.length === 0 ? [...items] : [...focused, ...items.filter((i) => !focused.includes(i))];
+}
+
 /** Projetos aprovados cuja sanção se decide neste mês (POLITICAL_RULES.md §7). */
 function awaitingSanction(state: Readonly<GameState>): Proposal[] {
   return state.proposals.filter((p) => p.status === 'aguardando_sancao' && p.voteMonth === state.monthIndex);

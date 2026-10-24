@@ -10,6 +10,7 @@ import {
   type Rect,
   type UfLabelCandidate,
 } from './labels';
+import { buildMarkerCandidates, type GlobeMarker, type MarkerPoint } from './markers';
 
 /**
  * Ligação entre a câmera do globo e as regras puras de `labels.ts` (PLANO_GLOBO.md §7, PR 2): raio dos rótulos,
@@ -90,6 +91,8 @@ export type GlobeLayoutInput = {
   scale: number;
   /** Sobrescreve o nível por altitude (testes). */
   tier?: LabelTier;
+  /** Marcadores de eventos e notícias (um por UF): entram na colisão com prioridade acima das siglas. */
+  markers?: readonly GlobeMarker[];
 };
 
 /** Candidatos de rótulo na tela agora (antes de colisão): o nível sai da altitude e o tamanho da UF dos px por grau. */
@@ -103,7 +106,35 @@ export function globeLabelCandidates(input: GlobeLayoutInput): UfLabelCandidate[
   });
 }
 
+/** Resultado de um quadro: os ids que cabem e, dos marcadores, onde estão na tela (para o toque). */
+export type GlobeLayout = {
+  /** Ids (`SP:sigla`, `DF:pin`, `SP:capital`, `CE:marker`, `CE:badge`) dos rótulos que cabem agora. */
+  shown: Set<string>;
+  markerPoints: MarkerPoint[];
+};
+
+/**
+ * Layout completo de um quadro: rótulos e marcadores juntos, guloso por prioridade (marcador crítico > marcador >
+ * sigla/pin > capital). O selo (`CE:badge`) vai junto do marcador mostrado quando o grupo tem mais de um item.
+ */
+export function layoutGlobe(input: GlobeLayoutInput): GlobeLayout {
+  const markers = input.markers ?? [];
+  const candidates = [
+    ...globeLabelCandidates(input),
+    ...buildMarkerCandidates(markers, { project: input.project, scale: input.scale }),
+  ];
+  const shown = layoutLabels(candidates, input.viewport, input.reserved);
+  const markerPoints: MarkerPoint[] = [];
+  for (const m of markers) {
+    const c = candidates.find((x) => x.id === `${m.sigla}:marker`);
+    if (!c || !shown.has(c.id)) continue;
+    markerPoints.push({ sigla: m.sigla, x: c.x, y: c.y });
+    if (m.count > 1) shown.add(`${m.sigla}:badge`);
+  }
+  return { shown, markerPoints };
+}
+
 /** Ids (`SP:sigla`, `DF:pin`, `SP:capital`) dos rótulos que cabem agora, depois de prioridade e colisões. */
 export function layoutGlobeLabels(input: GlobeLayoutInput): Set<string> {
-  return layoutLabels(globeLabelCandidates(input), input.viewport, input.reserved);
+  return layoutGlobe(input).shown;
 }

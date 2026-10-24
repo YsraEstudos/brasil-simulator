@@ -477,6 +477,7 @@ Para o estado não crescer sem limite em campanhas longas (240+ meses) em celula
 - O banco guarda, por mês, o snapshot e a decomposição causal. Nos **últimos 12 meses** a decomposição fica completa (alimenta o "Por que mudou?"); nos meses mais antigos ela é descartada e fica só o vetor de indicadores (alimenta os gráficos de longo prazo).
 - A compactação roda ao gravar o mês, na mesma transação.
 - Implementado na Fase 03 (migração 4 do banco): `month_reports` guarda os últimos 12 relatórios; `snapshots` guarda o estado completo só do mês atual e dos 12 anteriores; `indicator_history` guarda, para a campanha inteira, os indicadores, a Selic, a dívida, a credibilidade, o câmbio e o prêmio de risco (preenchida a partir dos snapshots existentes ao migrar).
+- Migração 5: `regional_indicator_history` (série por UF, campanha inteira). Migração 6 (PR 12 do PLANO_GLOBO): `election_results`, a fotografia da eleição geral por UF (resultado simulado; [POLITICAL_RULES.md](POLITICAL_RULES.md) §11.3), campanha inteira, gravada na transação do mês do pleito.
 
 ---
 

@@ -9,13 +9,21 @@ import {
   type Rect,
   type UfLabelCandidate,
 } from '@/globe/labels';
+import {
+  MARKER_BADGE_OFFSET_PX,
+  MARKER_BADGE_SIZE_PX,
+  MARKER_SIZE_PX,
+  buildMarkerCandidates,
+  type GlobeMarker,
+} from '@/globe/markers';
 
 import { flatMap } from './flatProjection';
 
 /**
  * Siglas, pins e capitais do mapa 2D (PLANO_GLOBO.md §3.4 e §7, PR 2): as mesmas regras de `src/globe/labels.ts`
  * do globo (nível por tamanho, prioridade por população, colisão, áreas do HUD), aplicadas à projeção plana. Puro:
- * devolve posições em px; `FlatBrazilMap` só desenha `Text` e `View`.
+ * devolve posições em px; `FlatBrazilMap` só desenha `Text` e `View`. Os marcadores de eventos e notícias (PR 11) entram
+ * no mesmo layout, com prioridade acima das siglas: a sigla da UF some sob o marcador dela.
  */
 
 /**
@@ -30,6 +38,15 @@ export const FLAT_CAPITAL_FONT_PX = 10;
 
 export type FlatLabelItem =
   | { id: string; kind: 'sigla'; text: string; box: Rect; fontSize: number }
+  | {
+      id: string;
+      kind: 'marker';
+      sigla: string;
+      /** Disco do marcador (px do mapa). */
+      box: Rect;
+      /** Selo com o número de itens (grupo de mais de um); `null` com um item só. */
+      badge: Rect | null;
+    }
   | { id: string; kind: 'pin'; box: Rect }
   | { id: string; kind: 'capital'; text: string; dot: Rect; name: Rect; fontSize: number };
 
@@ -43,6 +60,8 @@ export type FlatLabelInput = {
   reserved?: readonly Rect[];
   /** Faixas onde um rótulo não cabe por inteiro. */
   insets?: LabelViewport['insets'];
+  /** Marcadores de eventos e notícias (um por UF); ausente = nenhum. */
+  markers?: readonly GlobeMarker[];
 };
 
 const NO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 } as const;
@@ -61,19 +80,23 @@ export function flatMapWidthPx(width: number, height: number): number {
 
 /** Os rótulos que cabem agora, com as posições finais (px) para o `FlatBrazilMap` desenhar. */
 export function layoutFlatLabels(input: FlatLabelInput): FlatLabelItem[] {
-  const { width, height, scale, reserved = [], insets = NO_INSETS } = input;
+  const { width, height, scale, reserved = [], insets = NO_INSETS, markers = [] } = input;
   if (width <= 0 || height <= 0) return [];
   const flat = flatMap();
   const fit = flatFit(width, height);
-  const candidates = buildLabelCandidates({
-    project: (lon, lat) => {
-      const p = flat.project(lon, lat);
-      return { x: fit.offsetX + p.x * fit.scale, y: fit.offsetY + p.y * fit.scale };
-    },
-    pixelsPerDegree: fit.scale * flat.unitsPerDegree,
-    tier: { siglas: true, capitals: flat.viewBox.width * fit.scale >= FLAT_CAPITALS_MIN_MAP_WIDTH_PX },
-    scale,
-  });
+  const project = (lon: number, lat: number) => {
+    const p = flat.project(lon, lat);
+    return { x: fit.offsetX + p.x * fit.scale, y: fit.offsetY + p.y * fit.scale };
+  };
+  const candidates = [
+    ...buildLabelCandidates({
+      project,
+      pixelsPerDegree: fit.scale * flat.unitsPerDegree,
+      tier: { siglas: true, capitals: flat.viewBox.width * fit.scale >= FLAT_CAPITALS_MIN_MAP_WIDTH_PX },
+      scale,
+    }),
+    ...buildMarkerCandidates(markers, { project, scale }),
+  ];
   const shown = layoutLabels(candidates, { width, height, insets }, reserved);
   const byId = new Map<string, UfLabelCandidate>(candidates.map((c) => [c.id, c]));
   const names = new Map(LABELS.map((l) => [l.sigla, l]));
@@ -83,7 +106,26 @@ export function layoutFlatLabels(input: FlatLabelInput): FlatLabelItem[] {
     if (!c) continue;
     const label = names.get(c.sigla);
     if (!label) continue;
-    if (c.kind === 'pin') {
+    if (c.kind === 'marker') {
+      const marker = markers.find((m) => m.sigla === c.sigla);
+      const size = MARKER_SIZE_PX * scale;
+      const badgeSize = MARKER_BADGE_SIZE_PX * scale;
+      items.push({
+        id,
+        kind: 'marker',
+        sigla: c.sigla,
+        box: { x: c.anchorX - size / 2, y: c.anchorY - size / 2, w: size, h: size },
+        badge:
+          marker && marker.count > 1
+            ? {
+                x: c.anchorX + MARKER_BADGE_OFFSET_PX.x * scale - badgeSize / 2,
+                y: c.anchorY + MARKER_BADGE_OFFSET_PX.y * scale - badgeSize / 2,
+                w: badgeSize,
+                h: badgeSize,
+              }
+            : null,
+      });
+    } else if (c.kind === 'pin') {
       const size = PIN_SIZE_PX * scale;
       items.push({ id, kind: 'pin', box: { x: c.anchorX - size / 2, y: c.anchorY - size / 2, w: size, h: size } });
     } else if (c.kind === 'sigla') {

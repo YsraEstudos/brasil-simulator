@@ -7,6 +7,7 @@ import {
   REGION_NAMES,
   VISIT_ACTION_ID,
   type Decision,
+  type ElectionResult,
   type GameContent,
   type GameState,
   type UfExplanation,
@@ -14,15 +15,20 @@ import {
 } from '@/engine';
 import { draftCost, fits, gameStore, hasDecision, useGame, type RegionalPoint } from '@/store';
 
-import { LinkRow } from './HudBits';
+import { buildUfElectoralView, isElectoralLayer } from '@/components/map/electoralView';
+
+import { LayerBadge, LinkRow } from './HudBits';
 import { Hud } from './hudTheme';
 import {
   bin,
   explanationFor,
   formatPiece,
   formatValue,
+  hasWhy,
   indicatorSpec,
+  layerBadge,
   legendLabels,
+  type LayerBadgeInfo,
   type MapIndicator,
   type UfRow,
 } from './regionalMetrics';
@@ -53,6 +59,7 @@ function whyTitle(indicator: MapIndicator): string {
   if (indicator === 'aprovacao' || indicator === 'governador' || indicator === 'alinhamento') {
     return 'Por que a aprovação difere da média nacional';
   }
+  if (indicator === 'intencao') return 'A aprovação do estado, de onde sai a estimativa de voto';
   if (indicator === 'chuva') return 'Como a chuva pesa na aprovação deste estado';
   if (indicator === 'seca') return 'Como a seca pesa na atividade deste estado';
   return 'Por que a economia está acima ou abaixo da tendência';
@@ -130,6 +137,43 @@ function SeriesBlock({ view }: { view: UfSeriesView }) {
   );
 }
 
+/** Mapa eleitoral no cartão da UF: o selo da camada, os números e o aviso do que o número é (estimativa, resultado…). */
+function ElectoralBlock({
+  layer,
+  badge,
+  view,
+}: {
+  layer: string;
+  badge: LayerBadgeInfo | null;
+  view: ReturnType<typeof buildUfElectoralView>;
+}) {
+  if (!view) return null;
+  return (
+    <>
+      <Text style={styles.section}>{layer}</Text>
+      <LayerBadge badge={badge ?? { text: view.badge, kind: 'data' }} />
+      {view.rows.map((r) => (
+        <View key={r.label} style={styles.metricRow}>
+          <Text style={styles.metricLabel}>{r.label}</Text>
+          <Text tabular style={styles.metricValue}>
+            {r.value}
+          </Text>
+          {r.reference ? (
+            <Text tabular style={styles.metricReference} numberOfLines={1}>
+              {r.reference}
+            </Text>
+          ) : null}
+        </View>
+      ))}
+      {view.notes.map((note) => (
+        <Text key={note} style={styles.note}>
+          {note}
+        </Text>
+      ))}
+    </>
+  );
+}
+
 /** Cartão da UF na folha "estado": números contra o Brasil, o governador, as causas do mês e a visita. */
 export function UfDetail({
   row,
@@ -138,6 +182,7 @@ export function UfDetail({
   content,
   explanation,
   regionalHistory,
+  election,
   onFly,
 }: {
   row: UfRow;
@@ -148,6 +193,8 @@ export function UfDetail({
   explanation: UfExplanation | undefined;
   /** Série por UF do banco (pode estar vazia ou com lacunas: o cartão avisa "Sem dados anteriores"). */
   regionalHistory: readonly RegionalPoint[];
+  /** Última fotografia da eleição geral (banco); só a camada Resultado a usa. */
+  election: ElectionResult | null;
   /** Leva a câmera do globo até a UF; quem chama fecha a folha para o mapa aparecer. */
   onFly: () => void;
 }) {
@@ -158,6 +205,10 @@ export function UfDetail({
   const bloc = content.scenario.blocs.find((b) => b.id === scenarioUf?.governor.bloc);
   const national = state.indicators;
   const pieces = explanationFor(indicator, explanation);
+  // Mapa eleitoral: o selo e os números da camada (estimativa, resultado ou dado do cenário).
+  const electoral = isElectoralLayer(indicator)
+    ? buildUfElectoralView(indicator, uf.id, state, content, election)
+    : null;
   const visit: Decision = { policyId: VISIT_ACTION_ID, agendaCost: 1, params: { uf: uf.id } };
   const included = hasDecision(draft, visit);
   const actionsMax = state.resources.agendaActionsPerMonth;
@@ -207,21 +258,33 @@ export function UfDetail({
         </View>
       ))}
 
+      {electoral ? (
+        <ElectoralBlock
+          layer={indicatorSpec(indicator).label}
+          badge={layerBadge(indicator, election)}
+          view={electoral}
+        />
+      ) : null}
+
       {seriesView ? <SeriesBlock view={seriesView} /> : null}
 
-      <Text style={styles.section}>{whyTitle(indicator)}</Text>
-      {pieces.length === 0 ? (
-        <Text style={styles.note}>A explicação aparece depois do primeiro mês encerrado.</Text>
-      ) : (
-        pieces.map((piece) => (
-          <View key={piece.cause} style={styles.metricRow}>
-            <Text style={styles.metricLabel}>{piece.label}</Text>
-            <Text tabular style={[styles.metricValue, { color: piece.delta >= 0 ? Hud.positive : Hud.negative }]}>
-              {formatPiece(indicator, piece.delta)}
-            </Text>
-          </View>
-        ))
-      )}
+      {hasWhy(indicator) ? (
+        <>
+          <Text style={styles.section}>{whyTitle(indicator)}</Text>
+          {pieces.length === 0 ? (
+            <Text style={styles.note}>A explicação aparece depois do primeiro mês encerrado.</Text>
+          ) : (
+            pieces.map((piece) => (
+              <View key={piece.cause} style={styles.metricRow}>
+                <Text style={styles.metricLabel}>{piece.label}</Text>
+                <Text tabular style={[styles.metricValue, { color: piece.delta >= 0 ? Hud.positive : Hud.negative }]}>
+                  {formatPiece(indicator, piece.delta)}
+                </Text>
+              </View>
+            ))
+          )}
+        </>
+      ) : null}
 
       <Pressable
         onPress={() => gameStore.getState().toggleDecision(visit)}
@@ -248,10 +311,13 @@ export function UfDetail({
 export function UfList({
   rows,
   indicator,
+  badge,
   onChoose,
 }: {
   rows: readonly UfRow[];
   indicator: MapIndicator;
+  /** Selo da camada eleitoral na lista ("estimativa", "resultado · out/2030"); ausente nas demais. */
+  badge?: LayerBadgeInfo | null;
   /** Escolhe uma UF (quem chama voa até ela e abre o cartão). */
   onChoose: (sigla: string) => void;
 }) {
@@ -261,6 +327,7 @@ export function UfList({
     <>
       <Text style={styles.section}>{`Estados · ${spec.label}`}</Text>
       <Text style={styles.note}>{spec.legend}</Text>
+      {badge ? <LayerBadge badge={badge} /> : null}
       {sorted.map((r) => (
         <Pressable
           key={r.uf.id}

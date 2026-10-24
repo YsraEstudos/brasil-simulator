@@ -44,8 +44,20 @@ export {
   governorTurnoverStep,
   MEMORY_MONTHS,
   moodOf,
+  votingIntentionOf,
   weightedMemory,
 } from './elections/elections';
+export {
+  buildElectionResult,
+  electionResultStep,
+  electorateWeights,
+  nationalRounds,
+  regionalVoteIntention,
+  solveCommonShift,
+  type CommonShiftSolution,
+  type ElectionResultInput,
+  type RegionalVoteIntention,
+} from './elections/regionalResult';
 export { inVedacaoWindow, isNovoBeneficio, vedacaoAtiva } from './elections/vedacao';
 export {
   cabinetScandalRisk,

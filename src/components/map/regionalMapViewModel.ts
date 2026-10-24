@@ -1,6 +1,9 @@
 import { binColor, indicatorSpec, legendLabels, type MapIndicator } from '@/components/painel/regionalMetrics';
+import type { ElectionResult } from '@/engine';
 
 import { NO_CLIMATE_OVERLAY, type ClimateOverlay } from './climateView';
+import { badgeText } from './electoralView';
+import type { MapMarker } from './markersView';
 
 /**
  * Modelo de dados do mapa regional, independente do renderizador (PLANO_GLOBO.md §3.4): o globo 3D (`GlobeView`) e o
@@ -22,20 +25,14 @@ export interface MapLegendEntry {
 export interface MapLegend {
   title: string;
   entries: readonly MapLegendEntry[];
+  /** Selo da camada eleitoral ("estimativa", "resultado · out/2030"…); ausente nas demais. */
+  badge?: string;
 }
 
 /** Texto fixo sobre uma UF (sigla, capital…). Reservado para os PRs de camadas; hoje sempre vazio. */
 export interface MapLabel {
   sigla: string;
   text: string;
-}
-
-/** Marcador agrupado por UF (evento, notícia…). Reservado para os PRs de camadas; hoje sempre vazio. */
-export interface MapMarker {
-  id: string;
-  sigla: string;
-  kind: string;
-  label: string;
 }
 
 export interface RegionalMapViewModel {
@@ -45,6 +42,7 @@ export interface RegionalMapViewModel {
   selectedId: string | null;
   legend: MapLegend | null;
   labels: readonly MapLabel[];
+  /** Marcadores de eventos e notícias, um por UF (`markersView`); vazio sem partida ou sem evento com local. */
   markers: readonly MapMarker[];
   /**
    * Clima no mapa 2D completo: UFs hachuradas e ícones de nuvem (PLANO_GLOBO.md §3.4). O globo 3D não lê este campo
@@ -65,17 +63,24 @@ export interface RegionalMapViewModelInput {
   labels?: readonly MapLabel[];
   markers?: readonly MapMarker[];
   climate?: ClimateOverlay;
+  /** Última fotografia da eleição geral: dá a data ao selo da camada Resultado. */
+  election?: ElectionResult | null;
 }
 
 const NO_FILLS: Readonly<Record<string, string>> = Object.freeze({});
 const NONE: readonly never[] = Object.freeze([]);
 
-/** Legenda do indicador: título e as cinco faixas (cor + rótulo), as mesmas do cartão de camadas. */
-export function indicatorLegend(id: MapIndicator): MapLegend {
+/**
+ * Legenda do indicador: título e as cinco faixas (cor + rótulo), as mesmas do cartão de camadas. As camadas do mapa
+ * eleitoral levam o selo ("estimativa", "resultado · out/2030").
+ */
+export function indicatorLegend(id: MapIndicator, election: ElectionResult | null = null): MapLegend {
   const spec = indicatorSpec(id);
+  const badge = badgeText(id, election);
   return {
     title: spec.legend,
     entries: legendLabels(spec).map((label, i) => ({ color: binColor(spec, i), label })),
+    ...(badge ? { badge } : {}),
   };
 }
 
@@ -90,8 +95,9 @@ export function buildRegionalMapViewModel(input: RegionalMapViewModelInput = {})
     labels,
     markers,
     climate,
+    election = null,
   } = input;
-  const derived = mode === 'indicator' && indicator && fills ? indicatorLegend(indicator) : null;
+  const derived = mode === 'indicator' && indicator && fills ? indicatorLegend(indicator, election) : null;
   return {
     mode,
     fills: fills ?? NO_FILLS,

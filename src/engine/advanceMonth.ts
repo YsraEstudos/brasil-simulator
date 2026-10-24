@@ -1,6 +1,7 @@
 import { actionKey, AGENDA_ACTIONS } from './actions';
 import { validateActionTarget } from './agenda';
 import { electionsStep, governorTurnoverStep } from './elections/elections';
+import { electionResultStep } from './elections/regionalResult';
 import { isNovoBeneficio, vedacaoAtiva } from './elections/vedacao';
 import { climateEvolutionStep } from './climate/evolution';
 import { cabinetStep } from './congress/cabinet';
@@ -37,7 +38,8 @@ import {
  * propostas e Congresso (negociação, votações, sanção, execução), relações com os blocos, perfil ideológico do
  * governo (PLANO_GLOBO.md §5.1), clima (PLANO_GLOBO.md §6.2: dano agregado antes da economia), economia, opinião
  * pública, eleições (FASE_08.md), distribuição às UFs (ECONOMIC_MODEL.md §5.15; o efeito regional do clima entra aqui), posse dos governadores
- * eleitos e, por fim, sorteio dos eventos que chegam à caixa de entrada do mês seguinte.
+ * eleitos, resultado simulado por UF da eleição geral (PLANO_GLOBO.md §5.3; sem sorteio) e, por fim, sorteio dos
+ * eventos que chegam à caixa de entrada do mês seguinte.
  *
  * Contrato de ordem eleitoral (revisão do PR #9): `electionsStep` roda ANTES de `regionsStep` (a contribuição
  * de aprovação do pleito entra antes da distribuição às UFs) e `governorTurnoverStep` roda DEPOIS, para o
@@ -57,6 +59,7 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
   electionsStep,
   regionsStep,
   governorTurnoverStep,
+  electionResultStep,
   triggerEventsStep,
 ];
 
@@ -118,6 +121,8 @@ export function advanceMonth(
     notes: draft.notes,
     regional: draft.regional,
     profileMoves: draft.profileMoves ?? [],
+    // Só no mês da eleição geral; nos demais o campo nem existe (o relatório não ganha uma chave vazia).
+    ...(draft.electionResult ? { electionResult: draft.electionResult } : {}),
   };
   // Notícias (FASE_07.md): geradas depois dos indicadores e do relatório finais, com causa; o relatório não muda.
   const news = generateNews({ previous: state, next, report, content });
