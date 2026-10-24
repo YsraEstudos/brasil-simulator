@@ -65,13 +65,17 @@ export const SERIES_METRICS: Record<'aprovacao' | 'desemprego' | 'crescimento' |
 
 /**
  * Série do indicador do mapa; "renda" (derivada da participação no PIB), "alinhamento", "chuva" e "seca" (já contidos
- * na aprovação, que é o que o motor grava; o clima não tem série regional gravada) não têm série própria e usam a
+ * na aprovação, que é o que o motor grava; o clima não tem série regional gravada) e as camadas eleitorais (a
+ * inclinação é fixa e a intenção sai da aprovação; o resultado é uma fotografia) não têm série própria e usam a
  * aprovação.
  */
 export function seriesMetricFor(indicator: MapIndicator): SeriesMetricSpec {
-  return indicator === 'renda' || indicator === 'alinhamento' || indicator === 'chuva' || indicator === 'seca'
-    ? SERIES_METRICS.aprovacao
-    : SERIES_METRICS[indicator];
+  return indicator === 'aprovacao' ||
+    indicator === 'desemprego' ||
+    indicator === 'crescimento' ||
+    indicator === 'governador'
+    ? SERIES_METRICS[indicator]
+    : SERIES_METRICS.aprovacao;
 }
 
 export type ComparisonTone = 'positive' | 'negative' | 'neutral';

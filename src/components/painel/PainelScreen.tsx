@@ -1,6 +1,6 @@
 import { router, useIsFocused } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BackHandler, Image, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
@@ -29,8 +29,10 @@ import {
   SANCTION_ACTION_ID,
   toCalendar,
   type Decision,
+  type ElectionResult,
   type IndicatorKey,
 } from '@/engine';
+import { resultLayerHint } from '@/components/map/electoralView';
 import { buildClimateMapData, buildClimateOverlay } from '@/components/map/climateView';
 import { endMarkerPulse } from '@/components/map/markerSession';
 import { nextMarkerItem, type MapMarker } from '@/components/map/markersView';
@@ -81,13 +83,16 @@ import {
   type RailSheetId,
 } from './mesaNav';
 import { ProfileSheet } from './ProfileSheet';
-import { availableIndicators, indicatorSpec, mapRows, type MapIndicator } from './regionalMetrics';
+import { availableIndicators, indicatorSpec, layerBadge, mapRows, type MapIndicator } from './regionalMetrics';
 import { UfDetail, UfList } from './StateDetail';
 
 const logo = require('../../../assets/images/logo-brasil.png');
 
 /** Referência estável para "sem série regional ainda" (evita refazer o cartão a cada render). */
 const EMPTY_REGIONAL: readonly RegionalPoint[] = [];
+
+/** Título do grupo de camadas do mapa eleitoral na folha Camadas (PLANO_GLOBO.md §5.3). */
+const ELECTORAL_GROUP_TITLE = 'Mapa eleitoral';
 
 /** Segunda linha do topo (retrato), abaixo dos quatro principais; a base do Painel fica para a doca. */
 const SECOND_ROW_STATS: readonly HudStatId[] = ['capital', 'inflacao', 'desemprego'];
@@ -178,6 +183,8 @@ export function PainelScreen() {
   const [size, setSize] = useState({ width: 0, height: 0 });
   // Série por UF do cartão do estado: mesma regra da série do PIB (par id + pontos, relida a cada mês gravado).
   const [regional, setRegional] = useState<{ id: string; points: readonly RegionalPoint[] } | null>(null);
+  // Fotografias das eleições gerais por UF (banco): a camada Resultado mostra a mais recente. Mesma regra do par id + dados.
+  const [elections, setElections] = useState<{ id: string; results: readonly ElectionResult[] } | null>(null);
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
@@ -251,15 +258,36 @@ export function PainelScreen() {
   }, [activeId, monthIndex]);
   const regionalHistory = activeId !== undefined && regional?.id === activeId ? regional.points : EMPTY_REGIONAL;
 
+  // Relida a cada mês gravado, como a série regional: a fotografia nasce na mesma transação do mês da eleição.
+  useEffect(() => {
+    if (activeId === undefined) return;
+    let live = true;
+    void gameStore
+      .getState()
+      .electionResults()
+      .then((results) => {
+        if (live) setElections({ id: activeId, results });
+      });
+    return () => {
+      live = false;
+    };
+  }, [activeId, monthIndex]);
+  const electionResults = activeId !== undefined && elections?.id === activeId ? elections.results : null;
+  const election = electionResults && electionResults.length > 0 ? electionResults[electionResults.length - 1] : null;
+
   // Camadas que o cenário permite (o Alinhamento precisa da inclinação das UFs).
   const layers = useMemo(() => availableIndicators(content), [content]);
   // Sem partida não há dado por UF: a camada escolhida só vale com campanha em andamento e se o cenário a oferece.
-  const layer = active && mapLayer && layers.some((l) => l.id === mapLayer) ? mapLayer : null;
+  // O Resultado só abre depois de existir uma fotografia da eleição (nunca "resultado" antes disso).
+  const layer =
+    active && mapLayer && layers.some((l) => l.id === mapLayer) && (mapLayer !== 'resultado' || election)
+      ? mapLayer
+      : null;
   // Sem o rascunho: marcar uma decisão não recalcula o HUD nem recolore o mapa. O que depende do rascunho (ações
   // livres, selo dos alertas) é contado à parte, logo abaixo.
   const hud = useMemo(
-    () => (active ? hudFromCampaign(active, content, history, layer) : hudFromScenario(content)),
-    [active, content, history, layer],
+    () => (active ? hudFromCampaign(active, content, history, layer, election) : hudFromScenario(content)),
+    [active, content, history, layer, election],
   );
   // Clima do mês: a textura do globo é refeita só quando o clima ou o mês mudam; o 2D lê as marcas (hachura, nuvem).
   const mapClouds = useGame((s) => s.mapClouds);
@@ -286,16 +314,17 @@ export function PainelScreen() {
         selectedId: selectedUf,
         climate: climateOverlay,
         markers,
+        election,
       }),
-    [layer, hud.fills, selectedUf, climateOverlay, markers],
+    [layer, hud.fills, selectedUf, climateOverlay, markers, election],
   );
   const actionsLeft = hud.actionsMax - (active ? draftCost(draft, content) : 0);
 
   // Cartão e lista do estado: o indicador é o da camada ativa (ou a aprovação, como na antiga aba Brasil).
   const listIndicator: MapIndicator = layer ?? 'aprovacao';
   const ufRows = useMemo(
-    () => (active ? mapRows(listIndicator, active.state, content) : []),
-    [active, content, listIndicator],
+    () => (active ? mapRows(listIndicator, active.state, content, election) : []),
+    [active, content, listIndicator, election],
   );
   const selectedRow = selectedUf ? (ufRows.find((r) => r.uf.id === selectedUf) ?? null) : null;
   // No mês da posse ainda não há relatório: a explicação inicial vem da própria distribuição.
@@ -610,7 +639,12 @@ export function PainelScreen() {
               Participação de cada região no produto nacional.
             </Text>
             {active ? (
-              <UfList rows={ufRows} indicator={listIndicator} onChoose={chooseState} />
+              <UfList
+                rows={ufRows}
+                indicator={listIndicator}
+                badge={layerBadge(listIndicator, election)}
+                onChoose={chooseState}
+              />
             ) : (
               <EmptyNote text="Inicie uma campanha para ver os estados no mapa de calor." />
             )}
@@ -625,6 +659,7 @@ export function PainelScreen() {
             content={content}
             explanation={explanations?.find((x) => x.id === selectedRow.uf.id)}
             regionalHistory={regionalHistory}
+            election={election}
             onFly={() => {
               globe.current?.flyToUf(selectedRow.uf.id);
               setSheet(null);
@@ -679,18 +714,29 @@ export function PainelScreen() {
               active={layer === null}
               onPress={() => setMapLayer(null)}
             />
-            {layers.map((spec) => (
-              <MapLayerRow
-                key={spec.id}
-                label={spec.label}
-                hint={spec.legend}
-                spec={spec}
-                active={layer === spec.id}
-                disabled={hud.demo}
-                onPress={() => setMapLayer(spec.id)}
-              />
-            ))}
-            {layer !== null && !hud.demo && <MapLayerLegend spec={indicatorSpec(layer)} />}
+            {layers.map((spec, i) => {
+              // O Resultado fica desabilitado, com o porquê, até a eleição geral existir.
+              const waiting = spec.id === 'resultado' && !election;
+              return (
+                <Fragment key={spec.id}>
+                  {spec.group === 'eleitoral' && layers[i - 1]?.group !== 'eleitoral' && (
+                    <SheetHeading text={ELECTORAL_GROUP_TITLE} />
+                  )}
+                  <MapLayerRow
+                    label={spec.label}
+                    hint={spec.id === 'resultado' ? resultLayerHint(content, monthIndex ?? 0, election) : spec.legend}
+                    spec={spec}
+                    badge={layerBadge(spec.id, election)}
+                    active={layer === spec.id}
+                    disabled={hud.demo || waiting}
+                    onPress={() => setMapLayer(spec.id)}
+                  />
+                </Fragment>
+              );
+            })}
+            {layer !== null && !hud.demo && (
+              <MapLayerLegend spec={indicatorSpec(layer)} badge={layerBadge(layer, election)} />
+            )}
             {hud.demo && <EmptyNote text="Inicie uma campanha para ativar os mapas por estado." />}
           </>
         );

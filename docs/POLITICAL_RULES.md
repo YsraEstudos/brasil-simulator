@@ -312,6 +312,17 @@ Código em `src/engine/politics/` (`calibration.ts`, `alignment.ts`, `profile.ts
 - **Efeito nacional (D-G10).** Eleitor mediano = média das inclinações das UFs ponderada pela população. O termo `eleitor_mediano_teto · tanh((d_neutra − d)/escala)`, com `d` a distância normalizada (0–1) entre o perfil e o mediano, vale no máximo ±2 p.p. de aprovação (estado estacionário; `eleitor_mediano_teto` = 0,02, `d_neutra` = 0,2, `escala` = 0,15) e entra como pressão mensal `ajuste_aprovacao × termo` na opinião pública, causa "Distância do eleitor médio". É ímpar em torno da distância neutra e igual para quaisquer posições à mesma distância do mediano: **nenhuma posição é premiada em si** (GAME_DESIGN.md §1).
 - **Leituras para a interface.** `alignmentView` (alinhamento por UF, mediano, termo nacional) e `previewProfilePush` (para onde uma política empurra o perfil e quais UFs tendem a ganhar ou perder aprovação relativa; estimativa, também em `RegionalDecisionPreview.profilePush`).
 
+### 11.3 Mapa eleitoral: voto estimado e resultado simulado por UF (PR 12 do [PLANO_GLOBO.md](PLANO_GLOBO.md) §5.3)
+Código em `src/engine/elections/regionalResult.ts`. O motor continua sem voto por UF: a votação nacional da eleição geral (`vote1`/`vote2`, §11 e FASE_08.md) é sorteada como antes e **distribuída** às UFs depois, sem sorteio novo.
+
+- **Conta.** Cada UF parte do logit da sua aprovação no mês da eleição (já com o alinhamento, §11.2) e recebe um **deslocamento comum** `s`; a votação da UF é `σ(logit(aprovação) + s)`. O `s` é achado por bissecção para que a soma ponderada pelo eleitorado seja exatamente a votação nacional do turno. Quem aprova mais vota mais (a ordem das UFs se mantém) e mais voto nacional é mais voto em todas as UFs. Aprovação e votação são limitadas a ]10⁻⁶, 1 − 10⁻⁶[ só para o logit existir.
+- **Turnos.** 1º turno: `vote1`. 2º turno (quando o governo não passou de 0,5): governo ÷ (governo + oposição), com `vote2` e a oposição do próprio sorteio; passa de 0,5 exatamente quando `vote2 > opponent`, a regra do motor. O último turno decide.
+- **Pesos.** `electorateWeights`: participação na **população** — **PROVISORIO** (o cenário não traz eleitores aptos por UF), a mesma ponderação da aprovação regional (D7).
+- **Troca de governador.** Sorteada em `governorTurnoverStep` (§11, FASE_08.md) no mesmo mês do pleito; as UFs que trocaram vão em `ElectionResult.governorChanges`, separadas do voto presidencial. O motor não tem a posse de janeiro como mês próprio.
+- **Intenção estimada.** `regionalVoteIntention`: a mesma conta com a intenção nacional de voto do momento no lugar da votação sorteada. É **estimativa** em qualquer mês, inclusive no da eleição — a votação real ainda leva o ruído do sorteio e, no 2º turno, a oposição.
+- **Registro.** `MonthReport.electionResult` (só no mês do pleito) e a tabela `election_results` do banco (migração 6), gravada na transação do mês; não vive no `GameState`.
+- **Neutralidade.** As cores do mapa eleitoral não são cores de partido, e a inclinação política (violeta ↔ âmbar) não marca nenhum lado como melhor (GAME_DESIGN.md §1).
+
 ---
 
 ## 12. Catálogo inicial de políticas (com instrumento e requisitos)

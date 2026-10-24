@@ -119,7 +119,9 @@ describe('camada Alinhamento (PLANO_GLOBO.md §5.2)', () => {
     expect(availableIndicators(content).map((m) => m.id)).toContain('alinhamento');
     const antigo = loadContent('brasil_2027_01_v070');
     expect(availableIndicators(antigo).map((m) => m.id)).not.toContain('alinhamento');
-    expect(availableIndicators(antigo)).toHaveLength(MAP_INDICATORS.length - 1);
+    // Sem inclinação somem o Alinhamento e a Inclinação política; Intenção e Resultado dependem só das eleições.
+    expect(availableIndicators(antigo).map((m) => m.id)).not.toContain('inclinacao');
+    expect(availableIndicators(antigo)).toHaveLength(MAP_INDICATORS.length - 2);
   });
 });
 

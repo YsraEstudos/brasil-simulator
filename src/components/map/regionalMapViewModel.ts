@@ -1,6 +1,8 @@
 import { binColor, indicatorSpec, legendLabels, type MapIndicator } from '@/components/painel/regionalMetrics';
+import type { ElectionResult } from '@/engine';
 
 import { NO_CLIMATE_OVERLAY, type ClimateOverlay } from './climateView';
+import { badgeText } from './electoralView';
 import type { MapMarker } from './markersView';
 
 /**
@@ -23,6 +25,8 @@ export interface MapLegendEntry {
 export interface MapLegend {
   title: string;
   entries: readonly MapLegendEntry[];
+  /** Selo da camada eleitoral ("estimativa", "resultado · out/2030"…); ausente nas demais. */
+  badge?: string;
 }
 
 /** Texto fixo sobre uma UF (sigla, capital…). Reservado para os PRs de camadas; hoje sempre vazio. */
@@ -59,17 +63,24 @@ export interface RegionalMapViewModelInput {
   labels?: readonly MapLabel[];
   markers?: readonly MapMarker[];
   climate?: ClimateOverlay;
+  /** Última fotografia da eleição geral: dá a data ao selo da camada Resultado. */
+  election?: ElectionResult | null;
 }
 
 const NO_FILLS: Readonly<Record<string, string>> = Object.freeze({});
 const NONE: readonly never[] = Object.freeze([]);
 
-/** Legenda do indicador: título e as cinco faixas (cor + rótulo), as mesmas do cartão de camadas. */
-export function indicatorLegend(id: MapIndicator): MapLegend {
+/**
+ * Legenda do indicador: título e as cinco faixas (cor + rótulo), as mesmas do cartão de camadas. As camadas do mapa
+ * eleitoral levam o selo ("estimativa", "resultado · out/2030").
+ */
+export function indicatorLegend(id: MapIndicator, election: ElectionResult | null = null): MapLegend {
   const spec = indicatorSpec(id);
+  const badge = badgeText(id, election);
   return {
     title: spec.legend,
     entries: legendLabels(spec).map((label, i) => ({ color: binColor(spec, i), label })),
+    ...(badge ? { badge } : {}),
   };
 }
 
@@ -84,8 +95,9 @@ export function buildRegionalMapViewModel(input: RegionalMapViewModelInput = {})
     labels,
     markers,
     climate,
+    election = null,
   } = input;
-  const derived = mode === 'indicator' && indicator && fills ? indicatorLegend(indicator) : null;
+  const derived = mode === 'indicator' && indicator && fills ? indicatorLegend(indicator, election) : null;
   return {
     mode,
     fills: fills ?? NO_FILLS,

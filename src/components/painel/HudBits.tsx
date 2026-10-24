@@ -1,7 +1,7 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { ActivityIndicator, Pressable, type StyleProp, View, type ViewStyle } from 'react-native';
 
-import { binColor, legendLabels, type MapIndicatorSpec } from './regionalMetrics';
+import { binColor, legendLabels, type LayerBadgeInfo, type MapIndicatorSpec } from './regionalMetrics';
 import { Text } from '@/components/ui';
 import { Radius } from '@/constants/theme';
 
@@ -387,17 +387,39 @@ export function RegionRow({ region }: { region: HudRegion }) {
   );
 }
 
+/**
+ * Selo da camada eleitoral: "estimativa" (contorno tracejado), "resultado · data" (cheio) ou "dado provisório". A
+ * natureza do número nunca fica só na cor: o selo é texto.
+ */
+export function LayerBadge({ badge }: { badge: LayerBadgeInfo }) {
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Selo: ${badge.text}`}
+      style={[
+        styles.badge,
+        badge.kind === 'estimate' && styles.badgeEstimate,
+        badge.kind === 'result' && styles.badgeResult,
+      ]}>
+      <Text style={[styles.badgeText, badge.kind === 'result' && styles.badgeTextResult]}>{badge.text}</Text>
+    </View>
+  );
+}
+
 /** Linha da camada do mapa (Camadas do Mapa): nome, o que mostra, prévia das cores e marca da camada ativa. */
 export function MapLayerRow({
   label,
   hint,
   spec,
+  badge,
   active,
   disabled,
   onPress,
 }: {
   label: string;
   hint: string;
+  /** Selo da camada eleitoral; ausente nas demais. */
+  badge?: LayerBadgeInfo | null;
   /** Indicador da camada; sem ele (Satélite) não há prévia de cores. */
   spec?: MapIndicatorSpec;
   active: boolean;
@@ -417,8 +439,11 @@ export function MapLayerRow({
         pressed && styles.layerRowPressed,
       ]}>
       <View style={styles.layerBody}>
-        <Text style={styles.layerLabel}>{label}</Text>
-        <Text style={styles.layerHint} numberOfLines={2}>
+        <View style={styles.layerTitle}>
+          <Text style={styles.layerLabel}>{label}</Text>
+          {badge ? <LayerBadge badge={badge} /> : null}
+        </View>
+        <Text style={styles.layerHint} numberOfLines={3}>
           {hint}
         </Text>
       </View>
@@ -437,9 +462,10 @@ export function MapLayerRow({
 }
 
 /** Legenda compacta da camada ativa: o que cada faixa de cor quer dizer (mesmos rótulos do mapa da UF). */
-export function MapLayerLegend({ spec }: { spec: MapIndicatorSpec }) {
+export function MapLayerLegend({ spec, badge }: { spec: MapIndicatorSpec; badge?: LayerBadgeInfo | null }) {
   return (
     <View style={styles.layerLegend}>
+      {badge ? <LayerBadge badge={badge} /> : null}
       {legendLabels(spec).map((label, i) => (
         <View key={label} style={styles.layerLegendItem}>
           <View style={[styles.layerSwatch, { backgroundColor: binColor(spec, i) }]} />
@@ -680,7 +706,20 @@ const styles = {
   layerRowDisabled: { opacity: 0.45 },
   layerRowPressed: { opacity: 0.75 },
   layerBody: { flex: 1, gap: 1 },
+  layerTitle: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   layerLabel: { color: Hud.text, fontSize: 12, fontWeight: '700' },
+  badge: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: Hud.textMuted,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  badgeEstimate: { borderColor: Hud.title, borderStyle: 'dashed' },
+  badgeResult: { borderColor: Hud.title, backgroundColor: Hud.title },
+  badgeText: { color: Hud.title, fontSize: 9, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
+  badgeTextResult: { color: Hud.board },
   layerHint: { color: Hud.textMuted, fontSize: 9.5, lineHeight: 12 },
   layerStrip: { flexDirection: 'row', borderRadius: 3, overflow: 'hidden' },
   layerStripCell: { width: 13, height: 13 },

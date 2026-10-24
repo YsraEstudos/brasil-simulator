@@ -250,6 +250,10 @@ Módulo `src/engine/politics/calibration.ts` (`PROFILE_PARAMS`, não sobrescrito
 | `eleitor_mediano_escala` | 0,15 | 0,08 – 0,3 | distância normalizada que satura o termo nacional |
 | `ufs_destacadas_previa`, `faixa_central` | 5; 0,2 | — | só interface (prévia e descrição em palavras) |
 
+## Mapa eleitoral (PR 12 do PLANO_GLOBO)
+
+**Nenhum parâmetro de jogo novo.** O resultado simulado por UF e a intenção estimada ([POLITICAL_RULES.md](POLITICAL_RULES.md) §11.3) reaproveitam a votação nacional já calibrada (`eleicao_*`, `turno2_*`, `int_*`) e a aprovação por UF; a única incógnita, o deslocamento comum, sai da conta (bissecção), não de um coeficiente. Duas constantes numéricas (não de jogo) ficam em `regionalResult.ts`: o piso/teto das probabilidades antes do logit (10⁻⁶) e o teto de iterações da bissecção (200). Os pesos do eleitorado são a população (`PROVISORIO`, [DATA_SOURCES.md](DATA_SOURCES.md) §4.2). A faixa de cores (< 30 / 30–40 / 40–50 / 50–60 / ≥ 60%) e a inclinação em faixas de 0,1 são só interface.
+
 ## Clima (PR 7 e PR 8 do PLANO_GLOBO)
 
 Módulo `src/engine/climate/calibration.ts` (`CLIMATE_PARAMS`, não sobrescritos pelo cenário). Valores `PROVISORIO`, **todos lidos pelo motor desde o PR 8** (`climate/evolution.ts`: ENSO, chuva e seca; `climate/effects.ts`: cheia, danos nacionais e humor regional); um teste (`evolution.test.ts`) falha se algum parâmetro ficar sem uso. Faixa e justificativa de cada um no código; o teste confere valor dentro da faixa.
