@@ -17,9 +17,6 @@ export const REGIONAL_SERIES_WINDOW_MONTHS = 12;
 /** Texto quando o mês de comparação não está na série (save anterior à série, retenção, leitura falha). */
 export const NO_PREVIOUS_DATA = 'Sem dados anteriores';
 
-/** Variação menor que isto (em fração, ≈ 0,01 p.p.; em pontos, 0,01 ponto) conta como estável no tom. */
-const STABLE_EPSILON = 1e-4;
-
 export type SeriesUnit = 'fraction' | 'points';
 
 export interface SeriesMetricSpec {
@@ -117,7 +114,7 @@ function formatSeriesDelta(metric: SeriesMetricSpec, delta: number): string {
 }
 
 function toneOf(metric: SeriesMetricSpec, delta: number): ComparisonTone {
-  if (!Number.isFinite(delta) || Math.abs(delta) < STABLE_EPSILON) return 'neutral';
+  if (!Number.isFinite(delta) || formatSeriesDelta(metric, delta) === formatSeriesDelta(metric, 0)) return 'neutral';
   return delta > 0 === (metric.goodWhen === 'up') ? 'positive' : 'negative';
 }
 

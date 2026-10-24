@@ -63,6 +63,11 @@ const FISCAL_BENEFIT: Partial<Record<ImpulseTarget, 1 | -1>> = {
 const DEMAND_TARGETS = Object.keys(DEMAND_GAIN) as ImpulseTarget[];
 const FISCAL_TARGETS = Object.keys(FISCAL_BENEFIT) as ImpulseTarget[];
 
+/** Alvos cujos efeitos o modelo regional realmente distribui entre as UFs. */
+export function supportsRegionalDistribution(target: ImpulseTarget): boolean {
+  return DEMAND_TARGETS.includes(target) || FISCAL_TARGETS.includes(target);
+}
+
 /** UFs do cenário (vazio = sem dados regionais). */
 export function regionsOf(content: Pick<GameContent, 'scenario'>): readonly ScenarioUf[] {
   return content.scenario.regions?.ufs ?? [];
