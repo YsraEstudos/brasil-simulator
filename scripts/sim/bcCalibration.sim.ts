@@ -44,7 +44,7 @@ it('diagnóstico de sensibilidade: pressão trimestral no BC por 240 meses', () 
       };
     }),
   );
-  for (const label of variants.map((v) => v.label)) {
+  for (const label of [...variants.map((v) => v.label), 'sem pressão']) {
     const group = rows.filter((r) => r.variant === label);
     console.log(
       JSON.stringify({

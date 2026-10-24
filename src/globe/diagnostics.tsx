@@ -100,20 +100,27 @@ export function GlFailureWatcher({ onFailure }: { onFailure?: GlFailureHandler }
   useEffect(() => {
     const prevCheck = gl.debug.checkShaderErrors;
     const prevHandler = gl.debug.onShaderError;
+    // Uma falha basta para o fallback 2D, que é definitivo: mais avisos (outro shader, outro evento) não repetem a troca.
+    let fired = false;
+    const fail = (reason: GlFailureReason, detail?: string) => {
+      if (fired) return;
+      fired = true;
+      ref.current?.(reason, detail);
+    };
     gl.debug.checkShaderErrors = true; // padrão do three; explícito porque o gancho abaixo depende disso
     gl.debug.onShaderError = (ctx, program, vs, fs) => {
       const detail = [ctx.getProgramInfoLog(program), ctx.getShaderInfoLog(vs), ctx.getShaderInfoLog(fs)]
         .filter(Boolean)
         .join(' | ');
       if (__DEV__) console.warn('globo: erro de shader', detail);
-      ref.current?.('init-error', detail || undefined);
+      fail('init-error', detail || undefined);
     };
 
     const el = gl.domElement as unknown as Listenable | undefined;
     const onLost = (ev: unknown) => {
       (ev as { preventDefault?: () => void } | null)?.preventDefault?.();
       if (__DEV__) console.warn('globo: contexto WebGL perdido');
-      ref.current?.('context-lost');
+      fail('context-lost');
     };
     el?.addEventListener?.('webglcontextlost', onLost);
 

@@ -131,6 +131,10 @@ function Find-Layer {
   if ($Layer) { return $Layer }
   $lines = (Invoke-Adb 'dumpsys SurfaceFlinger --list') -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
   $c = @($lines | Where-Object { $_ -like "*$Package*" -and $_ -like '*SurfaceView*' -and $_ -notlike 'Background for*' })
+  # expo-gl (GLView) é um TextureView: não tem camada SurfaceView própria; os quadros saem na janela da Activity.
+  if ($c.Count -eq 0) {
+    $c = @($lines | Where-Object { $_ -like "*$Package*MainActivity*" -and $_ -notlike 'Background for*' })
+  }
   if ($c.Count -eq 0) { return $null }
   # Android 12+ lista a camada "(BLAST)" que de fato recebe os quadros; no Android 11 e a unica.
   $blast = @($c | Where-Object { $_ -like '*BLAST*' })
