@@ -32,6 +32,7 @@ import {
   type IndicatorKey,
 } from '@/engine';
 import { buildClimateMapData, buildClimateOverlay } from '@/components/map/climateView';
+import { endMarkerPulse } from '@/components/map/markerSession';
 import { nextMarkerItem, type MapMarker } from '@/components/map/markersView';
 import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
 import { useMapMarkers } from '@/components/map/useMapMarkers';
@@ -370,6 +371,11 @@ export function PainelScreen() {
       setSeenNews({ id: active.id, month: active.state.monthIndex - 1 });
     }
     router.push(params ? { pathname: route, params } : route);
+  };
+
+  /** O anel de um pulso do mapa (globo ou 2D) terminou: essas instâncias não pulsam mais nesta partida. */
+  const onPulseDone = (instanceIds: readonly string[]) => {
+    if (active) endMarkerPulse(active.id, instanceIds);
   };
 
   /**
@@ -711,6 +717,7 @@ export function PainelScreen() {
             labelInsets={labelReserve.insets}
             onSelect={selectState}
             onMarkerPress={openMarker}
+            onPulseDone={onPulseDone}
             onGlobeFailure={() => setGlobeFailed(true)}
             onReady={(api) => {
               globe.current = api;

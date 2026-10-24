@@ -40,6 +40,8 @@ type Props = {
   drawing: boolean;
   /** Recebe `pickMarker` (toque em marcador, antes da seleção de UF). */
   controller: GlobeController;
+  /** O anel de `pulseKey` terminou as voltas: as instâncias param de pulsar na sessão. */
+  onPulseDone?: (instanceIds: readonly string[]) => void;
 };
 
 type LaidOut = {
@@ -68,6 +70,7 @@ export function GlobeLabels({
   pulseKey,
   drawing,
   controller,
+  onPulseDone,
 }: Props) {
   'use no memo'; // buffers e materiais three.js são mutados fora do React
   const { size, gl, invalidate } = useThree();
@@ -182,13 +185,20 @@ export function GlobeLabels({
   }, [controller]);
 
   // Pulso breve dos marcadores novos e críticos: um laço limitado no tempo (`markerPulse`) que pede quadros só enquanto
-  // corre e **para sozinho**; depois disso o globo parado não pede nenhum. Sem desenhar (pausado), não há pulso.
+  // corre e **para sozinho**; depois disso o globo parado não pede nenhum. Sem desenhar (pausado), não há pulso, e o
+  // fim (`onPulseDone`) só é avisado quando o anel acaba de verdade.
+  const pulseDone = useRef(onPulseDone);
+  useEffect(() => {
+    pulseDone.current = onPulseDone;
+  });
   useEffect(() => {
     if (!pulseKey || !drawing) return;
+    const instances = pulseKey.split('|');
     const stop = startMarkerPulse(
-      ({ phase }) => {
+      ({ phase, done }) => {
         material.uniforms.uPulse.value = phase;
         invalidate();
+        if (done) pulseDone.current?.(instances);
       },
       () => performance.now(),
     );
