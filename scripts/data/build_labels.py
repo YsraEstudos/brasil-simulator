@@ -15,7 +15,10 @@ Fontes e status (registrados em docs/DATA_SOURCES.md §3.2):
     digitados a partir de referências públicas, 3 casas decimais (~100 m); conferir contra o arquivo oficial quando
     o download das sedes entrar no pipeline.
   - Fonte do texto: DejaVu Sans Bold, licença livre (derivada da Bitstream Vera: uso e incorporação permitidos),
-    localizada via matplotlib (`pip install matplotlib`); os glifos entram rasterizados no atlas. Nenhuma fonte é baixada.
+    localizada via matplotlib; os glifos entram rasterizados no atlas. Nenhuma fonte é baixada.
+  - Dependências Python (`pip install matplotlib scipy Pillow numpy`): matplotlib fornece a fonte DejaVu Sans Bold;
+    Pillow rasteriza os glifos e monta o atlas; NumPy processa os canais de imagem; SciPy calcula a transformada de
+    distância usada no contorno do texto.
 
 Convenções:
   - O atlas é desenhado em 2x o tamanho lógico (ATLAS_SCALE): w/h no JSON são pixels lógicos (px do atlas / 2).

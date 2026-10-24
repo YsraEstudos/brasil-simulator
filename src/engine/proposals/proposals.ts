@@ -29,7 +29,13 @@ import { blocRelation, RELACAO_MAX, RELACAO_MIN } from '../congress/relations';
 import { isNovoBeneficio, vedacaoAtiva } from '../elections/vedacao';
 import type { Calibration } from '../economy/calibration';
 import { fiscalRoom } from '../economy/fiscal';
-import { adhesionProbability, populationShares, regionsOf, regionsView } from '../regions/regions';
+import {
+  adhesionProbability,
+  populationShares,
+  regionsOf,
+  regionsView,
+  supportsRegionalDistribution,
+} from '../regions/regions';
 import { currentNominalGdpMillions } from '../state';
 import type { Instrument, Policy } from '../../types/policy';
 import type { Bloc } from '../../types/scenario';
@@ -409,6 +415,11 @@ function impulseRegional(policy: Policy, adherents: readonly string[] | null): I
   // Sem nenhuma adesão o alcance é zero e os impulsos já não têm efeito (o escopo vazio não importa).
   const scope = adherents ? [...adherents] : [...(profile?.scope ?? [])];
   return { key, scope, ...boost };
+}
+
+/** O perfil regional só aparece na prévia se algum impacto usar um alvo distribuído pelo motor. */
+export function hasRegionalDistributionChannel(policy: Policy): boolean {
+  return policy.impacts.some((impact) => supportsRegionalDistribution(IMPULSE_TARGET[impact.channel]));
 }
 
 /**
