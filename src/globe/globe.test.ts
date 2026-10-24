@@ -4,7 +4,7 @@ import { autoTiltDeg, cameraPose, clampCamera } from './camera';
 import { CAMERA, LOD_TEXEL_THRESHOLD, MAX_LEVEL, ROOT } from './config';
 import { lonLatToVec3, pointInRing, raySphere, tileBounds, tileChildren, tileId, vec3ToLonLat, type Vec3 } from './geo';
 import { blockOf, pickEvictions } from './cache';
-import { selectTiles, type LodInput } from './lod';
+import { lodPixelsPerRadian, selectTiles, type LodInput } from './lod';
 import { isHole, ufFillGeometries } from './fills';
 import { findUf, UFS } from './ufs';
 
@@ -155,6 +155,26 @@ describe('lod', () => {
     expect(maxZ(coarse.draw)).toBeLessThanOrEqual(maxZ(normal.draw));
     expect(maxZ(normal.draw)).toBeLessThanOrEqual(maxZ(fine.draw));
     expect(coarse.draw.length).toBeLessThan(fine.draw.length);
+  });
+
+  it('o LOD conta pixels físicos: numa tela de densidade 2 o globo desce um nível a mais', () => {
+    const fov = 40;
+    const ppr1 = lodPixelsPerRadian(800, fov, 1);
+    const ppr2 = lodPixelsPerRadian(800, fov, 2);
+    expect(ppr2).toBeCloseTo(2 * ppr1);
+    // Brasil inteiro na tela (altitude inicial): nível 1 numa tela de densidade 1, nível 2 numa de densidade 2.
+    const pose = cameraPose({ lon: -52, lat: -14, altitude: CAMERA.initial.altitude });
+    const at = (pixelsPerRadian: number) =>
+      selectTiles({
+        cameraPosition: pose.position as Vec3,
+        pixelsPerRadian,
+        isSphereVisible: () => true,
+        exists: () => true,
+        isLoaded: () => true,
+        maxHeight: () => 0,
+      });
+    expect(maxZ(at(ppr1).draw)).toBe(1);
+    expect(maxZ(at(ppr2).draw)).toBe(2);
   });
 
   it('desenha o pai enquanto os filhos carregam', () => {

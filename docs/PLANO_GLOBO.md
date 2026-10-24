@@ -86,7 +86,7 @@ Documentos relacionados: [GAME_DESIGN.md](GAME_DESIGN.md) §4.5 · [ECONOMIC_MOD
 | --- | --- | --- | --- |
 | Blocos de cor em cache (`tileCacheBlocks`) | 12 | 20 | 28 |
 | Downloads simultâneos (`maxConcurrentLoads`) | 2 | 4 | 4 |
-| Limiar de LOD, px por texel (`lodTexelThreshold`; maior = menos detalhe) | 1,5 | 1,0 | 0,75 |
+| Limiar de LOD, px **físicos** por texel (`lodTexelThreshold`; maior = menos detalhe) | 2,0 | 1,25 | 0,9 |
 | Nível máximo desenhado (`maxLevel`; os assets vão até 5) | 4 | 5 | 5 |
 | Teto da razão de pixels (`dprCap`) | 1,25 | 2 | 2 |
 | Efeitos permitidos (`effects`: nuvens / nuvens animadas / textura de luzes) | não / não / não | sim / não / não | sim / sim / sim |

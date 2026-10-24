@@ -3,7 +3,7 @@ import { tileBoundingSphere, tileChildren, tileId, type TileKey, type Vec3 } fro
 
 export type LodInput = {
   cameraPosition: Vec3;
-  /** Projeção: pixels de tela por radiano de ângulo visual. */
+  /** Projeção: pixels **físicos** de tela por radiano de ângulo visual (`lodPixelsPerRadian`). */
   pixelsPerRadian: number;
   /** Teste de visibilidade da esfera envolvente (frustum). */
   isSphereVisible: (center: Vec3, radius: number) => boolean;
@@ -32,6 +32,15 @@ export type LodResult = {
 };
 
 const ROOT_SPAN_RAD = ((ROOT.east - ROOT.west) * Math.PI) / 180;
+
+/**
+ * Pixels físicos por radiano no centro da tela. O tamanho que o R3F informa é lógico (CSS/dp), mas o Canvas desenha
+ * na resolução física (`pixelRatio`: 2–3 num celular): sem multiplicar pela densidade, o LOD para um nível antes do
+ * necessário e cada texel fica esticado sobre 2–3 pixels (globo borrado em qualquer perfil).
+ */
+export function lodPixelsPerRadian(viewportHeight: number, fovDeg: number, pixelRatio: number): number {
+  return (viewportHeight * pixelRatio) / (2 * Math.tan((fovDeg * Math.PI) / 180 / 2));
+}
 
 /**
  * Seleção de nível de detalhe por erro em tela: subdivide enquanto um texel ocupa mais que
