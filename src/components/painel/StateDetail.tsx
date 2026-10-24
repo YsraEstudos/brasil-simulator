@@ -20,6 +20,8 @@ import { buildUfFieldView, preventionText, type UfFieldView } from '@/components
 
 import { LayerBadge, LinkRow } from './HudBits';
 import { Hud } from './hudTheme';
+import { UfComparison } from './MapReadingPanel';
+import { useScaledStyles } from '@/hooks/use-scaled-styles';
 import {
   bin,
   explanationFor,
@@ -80,11 +82,10 @@ const TONE_COLOR: Record<ComparisonTone, string> = {
 };
 
 function Comparison({ view }: { view: ComparisonView }) {
+  const styles = useScaledStyles(baseStyles);
   return (
     <View style={styles.metricRow}>
-      <Text style={styles.metricLabel} numberOfLines={1}>
-        {view.label}
-      </Text>
+      <Text style={styles.metricLabel}>{view.label}</Text>
       <Text tabular style={[styles.metricValue, { color: TONE_COLOR[view.tone] }]}>
         {view.text}
       </Text>
@@ -94,6 +95,7 @@ function Comparison({ view }: { view: ComparisonView }) {
 
 /** Variação, mini-série de 12 meses e posição da UF no indicador do mapa (dados de `regionalSeriesView`). */
 function SeriesBlock({ view }: { view: UfSeriesView }) {
+  const styles = useScaledStyles(baseStyles);
   const color = TONE_COLOR[view.seriesTone];
   const points = view.hasSeries ? sparklinePoints(view.series, SPARK_WIDTH, SPARK_HEIGHT, SPARK_PAD) : [];
   const last = points[points.length - 1];
@@ -106,7 +108,7 @@ function SeriesBlock({ view }: { view: UfSeriesView }) {
           {view.valueText}
         </Text>
         {view.rankText ? (
-          <Text tabular style={styles.metricReference} numberOfLines={1}>
+          <Text tabular style={styles.metricReference}>
             {view.rankText}
           </Text>
         ) : null}
@@ -148,6 +150,7 @@ function ElectoralBlock({
   badge: LayerBadgeInfo | null;
   view: ReturnType<typeof buildUfElectoralView>;
 }) {
+  const styles = useScaledStyles(baseStyles);
   if (!view) return null;
   return (
     <>
@@ -160,7 +163,7 @@ function ElectoralBlock({
             {r.value}
           </Text>
           {r.reference ? (
-            <Text tabular style={styles.metricReference} numberOfLines={1}>
+            <Text tabular style={styles.metricReference}>
               {r.reference}
             </Text>
           ) : null}
@@ -180,6 +183,7 @@ function ElectoralBlock({
  * mapa não mostra (obra pronta). Obra só aparece aqui se a política cita a UF no conteúdo; nunca há coordenadas.
  */
 function FieldBlock({ view }: { view: UfFieldView }) {
+  const styles = useScaledStyles(baseStyles);
   return (
     <>
       <Text style={styles.section}>Obras, visita e prevenção</Text>
@@ -233,6 +237,7 @@ export function UfDetail({
   onFly: () => void;
 }) {
   const draft = useGame((s) => s.draft);
+  const styles = useScaledStyles(baseStyles);
   const baseline = useGame((s) => s.active?.baseline);
   const { uf } = row;
   const scenarioUf = content.scenario.regions?.ufs.find((u) => u.id === uf.id);
@@ -281,13 +286,11 @@ export function UfDetail({
 
       {metrics.map(([label, value, reference]) => (
         <View key={label} style={styles.metricRow}>
-          <Text style={styles.metricLabel} numberOfLines={1}>
-            {label}
-          </Text>
+          <Text style={styles.metricLabel}>{label}</Text>
           <Text tabular style={styles.metricValue}>
             {value}
           </Text>
-          <Text tabular style={styles.metricReference} numberOfLines={1}>
+          <Text tabular style={styles.metricReference}>
             {reference}
           </Text>
         </View>
@@ -340,6 +343,14 @@ export function UfDetail({
         </Text>
       </Pressable>
       <LinkRow label="Ir até o estado" onPress={onFly} />
+      <UfComparison
+        key={uf.id}
+        ufId={uf.id}
+        state={state}
+        content={content}
+        history={regionalHistory}
+        election={election}
+      />
     </>
   );
 }
@@ -359,6 +370,7 @@ export function UfList({
   onChoose: (sigla: string) => void;
 }) {
   const spec = indicatorSpec(indicator);
+  const styles = useScaledStyles(baseStyles);
   const sorted = [...rows].sort((a, b) => (spec.goodWhen === 'up' ? b.value - a.value : a.value - b.value));
   return (
     <>
@@ -373,7 +385,7 @@ export function UfList({
           accessibilityLabel={`${r.name}: ${formatValue(indicator, r.value)}`}
           style={({ pressed }) => [styles.stateRow, pressed && styles.stateRowPressed]}>
           <View style={[styles.swatch, { backgroundColor: r.color }]} />
-          <Text style={styles.stateName} numberOfLines={1}>
+          <Text style={styles.stateName}>
             {r.name} <Text style={styles.stateSigla}>{r.uf.id}</Text>
           </Text>
           <Text tabular style={styles.stateValue}>
@@ -385,9 +397,9 @@ export function UfList({
   );
 }
 
-const styles = {
+const baseStyles = {
   sub: { color: Hud.textDim, fontSize: 11, lineHeight: 15 },
-  metricRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingVertical: 1 },
+  metricRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 8, paddingVertical: 1 },
   metricLabel: { flex: 1, color: Hud.textDim, fontSize: 11 },
   metricValue: { color: Hud.text, fontSize: 12, fontWeight: '700' },
   fieldValue: { flexShrink: 1, color: Hud.text, fontSize: 11.5, fontWeight: '700', textAlign: 'right' },
