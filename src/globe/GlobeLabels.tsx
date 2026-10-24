@@ -188,20 +188,31 @@ export function GlobeLabels({
   // corre e **para sozinho**; depois disso o globo parado não pede nenhum. Sem desenhar (pausado), não há pulso, e o
   // fim (`onPulseDone`) só é avisado quando o anel acaba de verdade.
   const pulseDone = useRef(onPulseDone);
+  // Um marcador de crítico novo está na tela neste quadro (vem do layout): só então o anel corre.
+  const pulseVisible = useRef(false);
   useEffect(() => {
     pulseDone.current = onPulseDone;
   });
   useEffect(() => {
     if (!pulseKey || !drawing) return;
     const instances = pulseKey.split('|');
-    const stop = startMarkerPulse(
-      ({ phase, done }) => {
-        material.uniforms.uPulse.value = phase;
-        invalidate();
-        if (done) pulseDone.current?.(instances);
-      },
-      () => performance.now(),
-    );
+    // O relógio do anel conta só o tempo com o marcador na tela: com a câmera de costas o pulso espera, e o fim só vem
+    // depois de três voltas vistas.
+    let shownMs = 0;
+    let last = performance.now();
+    let counting = pulseVisible.current;
+    const shownClock = () => {
+      const t = performance.now();
+      if (counting) shownMs += t - last;
+      last = t;
+      counting = pulseVisible.current;
+      return shownMs;
+    };
+    const stop = startMarkerPulse(({ phase, done }) => {
+      material.uniforms.uPulse.value = phase;
+      if (counting) invalidate();
+      if (done) pulseDone.current?.(instances);
+    }, shownClock);
     return () => {
       stop();
       material.uniforms.uPulse.value = 1;
@@ -259,6 +270,7 @@ export function GlobeLabels({
         markers: p.markers,
       });
       markerPoints.current = layout.markerPoints;
+      pulseVisible.current = layout.markerPoints.some((pt) => p.markers.some((m) => m.pulse && m.sigla === pt.sigla));
       writeVisibility(visibility, quads.groups, layout.shown);
       geometry.getAttribute('aVisible').needsUpdate = true;
     };
