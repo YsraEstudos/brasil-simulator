@@ -62,6 +62,7 @@ function findEvent(id: string): GameEvent {
 function withClimate(state: GameState, byUf: Record<string, Partial<UfClimate>>): GameState {
   const climate: ClimateState = {
     enso: state.climate.enso,
+    protection: state.climate.protection,
     rng: state.climate.rng,
     ufs: state.climate.ufs.map((u) => ({ ...u, rain: 0, dryness: 0, ...byUf[u.id] })),
   };

@@ -648,6 +648,12 @@ export interface ClimateState {
   enso: number;
   /** As 27 UFs, na ordem de `UF_IDS`. */
   ufs: UfClimate[];
+  /**
+   * Proteção por UF (seca e cheia) que valeu no mês anterior. O dano evitado tem a mesma recorrência do dano: a base do
+   * mês seguinte é a proteção que de fato estava em vigor, então um programa que começa, amadurece ou termina não salta.
+   * Ausente em saves anteriores à revisão: lido como sem proteção no mês anterior.
+   */
+  protection?: { drought: number[]; flood: number[] };
   /** Estado do PRNG do clima, independente de `GameState.rng`. */
   rng: RngState;
 }

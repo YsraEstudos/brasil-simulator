@@ -47,6 +47,7 @@ const WITHOUT_CLIMATE: readonly MonthStep[] = DEFAULT_STEPS.filter((s) => s !== 
 function withClimate(state: GameState, ufs: Record<string, Partial<UfClimate>>, enso = state.climate.enso): GameState {
   const climate: ClimateState = {
     enso,
+    protection: state.climate.protection,
     rng: state.climate.rng,
     ufs: state.climate.ufs.map((u) => ({ ...u, rain: 0, dryness: 0, ...ufs[u.id] })),
   };

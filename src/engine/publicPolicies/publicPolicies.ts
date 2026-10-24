@@ -399,7 +399,8 @@ function routinePreventionImpulses(
 }
 
 /**
- * Prevenção de um projeto: a obra em andamento entrega `prevencao_fracao_obra` × avanço físico da força; em operação, a
+ * Prevenção de um projeto: a obra em andamento entrega `prevencao_fracao_obra` × avanço físico × escala aprovada (orçamento
+ * ÷ custo nominal, no máximo 1: um projeto aprovado menor protege menos, como em operação); em operação, a
  * força × ativo líquido ÷ ativo nominal (custo da obra × eficiência, no máximo 1). O ativo deprecia e, sem manutenção
  * paga, deprecia mais (`processProject`), então a proteção cai sozinha quando o governo deixa a obra sem manutenção.
  * Planejamento, licenciamento, licitação e obra cancelada não protegem.
@@ -412,7 +413,9 @@ function projectPreventionImpulses(
   if (!policy?.prevention || month < project.startMonth) return [];
   let coverage = 0;
   if (project.phase === 'obra') {
-    coverage = climateParam('prevencao_fracao_obra') * project.progress;
+    const nominalBudget = policy.cost.annualMillions * (Math.max(1, policy.timeline.executionMonths) / MONTHS_PER_YEAR);
+    const approvedScale = nominalBudget > 0 ? Math.min(1, project.budgetMillions / nominalBudget) : 0;
+    coverage = climateParam('prevencao_fracao_obra') * project.progress * approvedScale;
   } else if (project.phase === 'operacao') {
     const nominalAsset =
       policy.cost.annualMillions *

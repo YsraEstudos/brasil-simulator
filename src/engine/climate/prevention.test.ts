@@ -7,7 +7,7 @@ import { DIRECTIVE_ACTION_ID } from '@/engine/actions';
 import { checkInvariants } from '@/engine/invariants';
 import { regionsOf } from '@/engine/regions/regions';
 import { createInitialState } from '@/engine/state';
-import type { ClimateState, GameState, Proposal, ScheduledImpulse, UfClimate } from '@/engine/types';
+import type { ClimateState, GameState, MonthStep, Proposal, ScheduledImpulse, UfClimate } from '@/engine/types';
 import { publicPoliciesStep } from '@/engine/publicPolicies/publicPolicies';
 import { initialPublicPolicies } from '@/engine/publicPolicies/types';
 import { createRng } from '@/engine/rng';
@@ -24,6 +24,7 @@ import {
   preventionOf,
   protectionOf,
   responseImpulses,
+  scenarioUfs,
 } from './effects';
 import { climateEvolutionStep, evolveClimate } from './evolution';
 
@@ -63,11 +64,15 @@ function withImpulses(state: GameState, impulses: readonly ScheduledImpulse[]): 
 function withClimate(state: GameState, byUf: Record<string, Partial<UfClimate>>): GameState {
   const climate: ClimateState = {
     enso: 0,
+    protection: state.climate.protection,
     rng: state.climate.rng,
     ufs: state.climate.ufs.map((u) => ({ ...u, rain: 0, dryness: 0, ...byUf[u.id] })),
   };
   return { ...state, climate };
 }
+
+/** O clima em si (ENSO, chuva, seca e PRNG). A proteção guardada no mês é a única parte que depende da prevenção. */
+const weather = ({ enso, ufs, rng }: { enso: number; ufs: unknown; rng: unknown }) => ({ enso, ufs, rng });
 
 describe('proteção e prevenção por UF (PR 13)', () => {
   it('a proteção cresce com a força, satura no teto e dá retornos decrescentes', () => {
@@ -195,7 +200,7 @@ describe('a chuva não é desligada (PLANO_GLOBO.md §8)', () => {
     for (let m = 0; m < 36; m++) {
       free = advanceMonth(free, EMPTY, content).state;
       covered = advanceMonth(covered, EMPTY, content).state;
-      expect(covered.climate, `mês ${m}`).toEqual(free.climate);
+      expect(weather(covered.climate), `mês ${m}`).toEqual(weather(free.climate));
     }
   });
 
@@ -205,7 +210,7 @@ describe('a chuva não é desligada (PLANO_GLOBO.md §8)', () => {
     const b = advanceMonth(withImpulses(base, FULL), EMPTY, content, [climateEvolutionStep]);
     expect(b.state.rng).toEqual(base.rng);
     expect(a.state.rng).toEqual(base.rng);
-    expect(b.state.climate).toEqual(a.state.climate);
+    expect(weather(b.state.climate)).toEqual(weather(a.state.climate));
   });
 });
 
@@ -441,6 +446,17 @@ describe('a carteira de políticas entrega a prevenção (projeto e rotina)', ()
     expect(p.drought[ufs.findIndex((u) => u.id === 'RS')]).toBe(0);
   });
 
+  it('a obra de um projeto aprovado menor protege na proporção da escala aprovada', () => {
+    const nominalBudget = policy.cost.annualMillions * (policy.timeline.executionMonths / 12);
+    const small = publicStep(
+      withProject('obra', { progress: 0.5, phaseMonth: 5, spentMillions: 100, budgetMillions: nominalBudget / 2 }),
+    );
+    const progress = small.publicPolicies.projects[0].progress;
+    const [impulse] = preventionQueue(small, 'clima.prevencao_seca');
+    // escala aprovada = orçamento ÷ custo nominal = 0,5: a obra protege metade do que protegeria no projeto cheio
+    expect(impulse.delta).toBeCloseTo(0.7 * climateParam('prevencao_fracao_obra') * progress * 0.5, 12);
+  });
+
   it('uma obra pronta deprecia: a proteção cai devagar, mês a mês, e volta a subir se o ativo for reposto', () => {
     let state = withProject('operacao', { progress: 1, assetMillions: nominalAsset });
     const strengths: number[] = [];
@@ -548,5 +564,37 @@ describe('conteúdo da prevenção (PR 13)', () => {
     void _project;
     expect(parsePolicy(legacy).ok).toBe(false);
     expect(parsePolicy({ ...POLICIES.rotina_defesa_civil, prevention: {} }).ok).toBe(false);
+  });
+});
+
+describe('o hiato da prevenção não salta quando um programa começa (revisão do PR 13)', () => {
+  it('no mês em que a proteção começa, o impulso de hiato é só o dano evitado daquele mês', () => {
+    const state = withClimate(
+      createInitialState({ content, difficulty: 'estrategica', seed: 1 }),
+      Object.fromEntries(UF_IDS.map((u) => [u, { dryness: 0.9, rain: -0.4 }])),
+    );
+    const start = withImpulses(state, FULL);
+    const captured: ScheduledImpulse[] = [];
+    let after = null as ClimateState | null;
+    const spy: MonthStep = (input, ctx) => {
+      const out = climateEvolutionStep(input, ctx);
+      after = out.state.climate;
+      captured.push(...out.state.impulses.slice(input.impulses.length));
+      return out;
+    };
+    advanceMonth(start, EMPTY, content, [spy]);
+    if (after === null) throw new Error('a etapa do clima não rodou');
+    const sem = climateDamageOf(after, content, 'estrategica');
+    const com = climateDamageOf(
+      after,
+      content,
+      'estrategica',
+      preventionOf(start.impulses, start.monthIndex, scenarioUfs(content)),
+    );
+    const savedNow = com.droughtGdp - sem.droughtGdp;
+    expect(savedNow).toBeLessThan(0);
+    const hiato = captured.find((i) => i.sourceId === CLIMATE_CAUSES.droughtPrevention && i.target === 'choque.hiato');
+    // sem proteção no mês anterior, a base do hiato é zero: o termo é o dano evitado de agora, sem resíduo de mês antigo
+    expect(hiato?.delta).toBeCloseTo(-savedNow, 12);
   });
 });

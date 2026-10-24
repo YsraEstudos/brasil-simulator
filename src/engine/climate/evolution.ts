@@ -116,7 +116,8 @@ export function evolveClimate(
     return { id: u.id, rain, dryness: nextDryness(climatology, u.id, month, rain, u.dryness) };
   });
 
-  return { enso, ufs, rng: rng.state() };
+  // A proteção do mês é gravada pela etapa (`climateEvolutionStep`), não aqui.
+  return { enso, ufs, protection: climate.protection, rng: rng.state() };
 }
 
 /**
@@ -155,10 +156,11 @@ export const climateEvolutionStep: MonthStep = (input, ctx) => {
   const after = climateDamageOf(climate, ctx.content, input.difficulty);
   const rho = ctx.content.calibration.rho_h;
   const t = input.monthIndex;
-  // Prevenção: o mesmo clima, com o dano protegido. `before` usa a proteção de hoje (a mudança de nível entra com a
-  // persistência do hiato, sem salto).
+  // Prevenção: o mesmo clima, com o dano protegido. `protectedBefore` usa a proteção que valeu no mês anterior (guardada
+  // no clima): é o que de fato entrou na economia, então o hiato recorrente não salta quando um programa começa,
+  // amadurece ou termina. A proteção de hoje vale só para `protectedAfter`.
   const prevention = preventionOf(input.impulses, t, scenarioUfs(ctx.content));
-  const protectedBefore = climateDamageOf(previous, ctx.content, input.difficulty, prevention);
+  const protectedBefore = climateDamageOf(previous, ctx.content, input.difficulty, previous.protection);
   const protectedAfter = climateDamageOf(climate, ctx.content, input.difficulty, prevention);
 
   const impulses: ScheduledImpulse[] = [];
@@ -226,7 +228,11 @@ export const climateEvolutionStep: MonthStep = (input, ctx) => {
   );
   impulses.push(...responseImpulses({ climate, impulses: input.impulses, monthIndex: t }, ctx.content));
   return {
-    state: { ...input, climate, impulses: impulses.length > 0 ? [...input.impulses, ...impulses] : input.impulses },
+    state: {
+      ...input,
+      climate: { ...climate, protection: prevention },
+      impulses: impulses.length > 0 ? [...input.impulses, ...impulses] : input.impulses,
+    },
     contributions: [],
   };
 };
