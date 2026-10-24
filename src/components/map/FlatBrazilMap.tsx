@@ -76,6 +76,8 @@ export interface FlatBrazilMapProps {
   sun?: SunState | null;
   /** Toque num marcador de eventos e notícias (um de `viewModel.markers`). Só na variante `full`. */
   onMarkerPress?: (marker: MapMarker) => void;
+  /** O anel de `pulseKey` terminou (as instâncias param de pulsar na sessão). Só na variante `full`. */
+  onPulseDone?: (instanceIds: readonly string[]) => void;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -185,17 +187,31 @@ interface FlatMarkersProps {
   scale: number;
   pulseKey: string;
   onPress: (marker: MapMarker) => void;
+  onPulseDone?: (instanceIds: readonly string[]) => void;
 }
 
 /**
  * Marcadores de eventos e notícias: ícone nativo por UF (disco colorido com o glifo e, em grupo, o selo com o número),
  * tocável e com rótulo de acessibilidade em português. O pulso dos críticos novos é um `Animated` finito
- * (`PULSE_ITERATIONS` voltas de `PULSE_DURATION_MS`) que para sozinho e deixa tudo estático.
+ * (`PULSE_ITERATIONS` voltas de `PULSE_DURATION_MS`) que para sozinho e deixa tudo estático; quando termina de verdade
+ * (não se foi interrompido) avisa `onPulseDone`.
  */
-const FlatMarkers = memo(function FlatMarkers({ items, markers, scale, pulseKey, onPress }: FlatMarkersProps) {
+const FlatMarkers = memo(function FlatMarkers({
+  items,
+  markers,
+  scale,
+  pulseKey,
+  onPress,
+  onPulseDone,
+}: FlatMarkersProps) {
   const [pulse] = useState(() => new Animated.Value(1)); // 1 = anel invisível
+  const pulseDone = useRef(onPulseDone);
+  useEffect(() => {
+    pulseDone.current = onPulseDone;
+  });
   useEffect(() => {
     if (!pulseKey) return;
+    const instances = pulseKey.split('|');
     pulse.setValue(0);
     const loop = Animated.loop(
       Animated.timing(pulse, {
@@ -206,7 +222,10 @@ const FlatMarkers = memo(function FlatMarkers({ items, markers, scale, pulseKey,
       }),
       { iterations: PULSE_ITERATIONS },
     );
-    loop.start(() => pulse.setValue(1));
+    loop.start(({ finished }) => {
+      pulse.setValue(1);
+      if (finished) pulseDone.current?.(instances);
+    });
     return () => {
       loop.stop();
       pulse.setValue(1);
@@ -298,6 +317,7 @@ export function FlatBrazilMap({
   labelScale = 1,
   sun,
   onMarkerPress,
+  onPulseDone,
   style,
 }: FlatBrazilMapProps) {
   // Gere os paths SVG só quando o mapa 2D for realmente renderizado; o import do fallback não bloqueia o início do globo.
@@ -464,6 +484,7 @@ export function FlatBrazilMap({
               scale={labelScale}
               pulseKey={pulseKey}
               onPress={markerPress}
+              onPulseDone={onPulseDone}
             />
           )}
         </>

@@ -34,6 +34,7 @@ import {
 } from '@/engine';
 import { resultLayerHint } from '@/components/map/electoralView';
 import { buildClimateMapData, buildClimateOverlay } from '@/components/map/climateView';
+import { endMarkerPulse } from '@/components/map/markerSession';
 import { nextMarkerItem, type MapMarker } from '@/components/map/markersView';
 import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
 import { useMapMarkers } from '@/components/map/useMapMarkers';
@@ -401,6 +402,11 @@ export function PainelScreen() {
     router.push(params ? { pathname: route, params } : route);
   };
 
+  /** O anel de um pulso do mapa (globo ou 2D) terminou: essas instâncias não pulsam mais nesta partida. */
+  const onPulseDone = (instanceIds: readonly string[]) => {
+    if (active) endMarkerPulse(active.id, instanceIds);
+  };
+
   /**
    * Toque num marcador do mapa: evento pendente abre a folha Alertas com aquela instância no topo; notícia abre o jornal
    * na edição e na manchete dela. Num grupo, o primeiro toque abre o item mais importante (crítico primeiro) e os
@@ -757,6 +763,7 @@ export function PainelScreen() {
             labelInsets={labelReserve.insets}
             onSelect={selectState}
             onMarkerPress={openMarker}
+            onPulseDone={onPulseDone}
             onGlobeFailure={() => setGlobeFailed(true)}
             onReady={(api) => {
               globe.current = api;

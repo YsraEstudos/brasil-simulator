@@ -238,6 +238,8 @@ type Props = {
   markers: readonly GlobeMarker[];
   /** Muda quando há marcador novo e crítico para pulsar; vazio = nenhum. */
   pulseKey: string;
+  /** Fim do anel de `pulseKey` (repassado aos rótulos). */
+  onPulseDone?: (instanceIds: readonly string[]) => void;
 };
 
 export function GlobeScene({
@@ -256,6 +258,7 @@ export function GlobeScene({
   drawing,
   markers,
   pulseKey,
+  onPulseDone,
 }: Props) {
   'use no memo'; // objetos three.js são mutados a cada quadro; fora do React Compiler
   const { camera, gl, size, invalidate } = useThree();
@@ -770,6 +773,7 @@ export function GlobeScene({
         pulseKey={pulseKey}
         drawing={drawing}
         controller={controller}
+        onPulseDone={onPulseDone}
       />
       <Atmosphere />
     </>
