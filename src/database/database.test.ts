@@ -336,6 +336,32 @@ describe('campanhas', () => {
     ]);
   });
 
+  it('grava a ocorrência e o local congelado do evento geográfico (PLANO_GLOBO.md §6.3)', async () => {
+    const state = newState();
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    const real = advanceMonth(state, { decisions: [] }, content, []);
+    const location = { affectedUfs: ['RS', 'SC'], primaryUf: 'RS', severityByUf: { RS: 0.9, SC: 0.8 } };
+    const fake: MonthResult = {
+      ...real,
+      report: {
+        ...real.report,
+        eventsFired: ['teste_choque'],
+        eventInstances: [{ eventId: 'teste_choque', instanceId: 'teste_choque#1', location }],
+        eventsResolved: [
+          { eventId: 'teste_choque', choiceId: 'subsidiar', automatic: false, instanceId: 'teste_choque#0' },
+        ],
+      },
+    };
+    await recordMonth(db, 'c1', fake);
+    const rows = await db.all<{ choice_id: string | null; payload_json: string | null }>(
+      'SELECT choice_id, payload_json FROM events ORDER BY id',
+    );
+    expect(rows).toEqual([
+      { choice_id: null, payload_json: JSON.stringify({ instanceId: 'teste_choque#1', location }) },
+      { choice_id: 'subsidiar', payload_json: JSON.stringify({ automatic: false, instanceId: 'teste_choque#0' }) },
+    ]);
+  });
+
   it('carrega um save da v1 (Fase 01) atualizado para a versão atual, sem recusá-lo', async () => {
     // Save real da Fase 01 gravado por SQL, como estava no banco antes da migração (AI_INSTRUCTIONS.md §2.10).
     const v1State =

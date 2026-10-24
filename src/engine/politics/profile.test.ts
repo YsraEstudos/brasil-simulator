@@ -298,7 +298,7 @@ describe('movimento do perfil: média móvel com memória (POLITICAL_RULES.md §
     const c = testContent({ events: [event] });
     const pending: GameState = {
       ...testState(),
-      events: { ...testState().events, pending: [{ eventId: event.id, monthIndex: 0 }] },
+      events: { ...testState().events, pending: [{ eventId: event.id, monthIndex: 0, instanceId: `${event.id}#0` }] },
     };
     const eventSteps: readonly MonthStep[] = [resolveEventsStep, governmentProfileStep];
     const chosen = advanceMonth(

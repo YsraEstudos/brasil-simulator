@@ -1,9 +1,11 @@
 import type { ConditionVariable, EventCondition, GameEvent } from '../../types/event';
 import type { Character } from '../../types/scenario';
 import { conditionValue } from '../events/events';
+import { formatEventText } from '../events/location';
 import { explainIndicator, proposalHeadlinePrefix } from '../report/explain';
 import { pct, pp } from '../report/format';
 import type {
+  EventLocation,
   GameContent,
   GameState,
   IndicatorKey,
@@ -170,16 +172,31 @@ function eventCause(eventId: string, args: NewsArgs): string {
   return calendar ? 'Causa: calendário do mandato' : 'Causa: acontecimento do mês';
 }
 
+/** Ocorrência e local congelado de um evento que chegou à caixa de entrada neste mês (relatório v12 em diante). */
+function firedInstance(args: NewsArgs, eventId: string): { instanceId?: string; location?: EventLocation } {
+  const hit = args.report.eventInstances?.find((i) => i.eventId === eventId);
+  return hit ? { instanceId: hit.instanceId, ...(hit.location ? { location: hit.location } : {}) } : {};
+}
+
+/** Ocorrência e local de um evento resolvido no mês: o local está na pendência do estado anterior. */
+function resolvedInstance(args: NewsArgs, eventId: string, instanceId?: string): ReturnType<typeof firedInstance> {
+  if (!instanceId) return {};
+  const pending = args.previous.events.pending.find((p) => p.eventId === eventId && p.instanceId === instanceId);
+  return { instanceId, ...(pending?.location ? { location: pending.location } : {}) };
+}
+
 function eventCandidates(args: NewsArgs): NewsCandidate[] {
   const { report, content } = args;
   const fired = report.eventsFired.map((eventId): NewsCandidate => {
     const event = findEvent(content, eventId);
+    const where = firedInstance(args, eventId);
     return {
       kind: 'evento',
       tone: 'neutra',
-      headline: event?.title ?? eventId,
+      headline: event ? formatEventText(event.title, where.location, content) : eventId,
       cause: eventCause(eventId, args),
       sourceId: eventId,
+      ...where,
       ...withCharacter(event?.characterId),
     };
   });
@@ -189,12 +206,15 @@ function eventCandidates(args: NewsArgs): NewsCandidate[] {
       const event = findEvent(content, resolved.eventId);
       const choice = event?.choices.find((c) => c.id === resolved.choiceId);
       const choiceText = choice ? ` ("${choice.label}")` : '';
+      const where = resolvedInstance(args, resolved.eventId, resolved.instanceId);
+      const title = event ? formatEventText(event.title, where.location, content) : resolved.eventId;
       return {
         kind: 'evento',
         tone: 'negativa',
-        headline: `Sem resposta do governo: ${event?.title ?? resolved.eventId}`,
+        headline: `Sem resposta do governo: ${title}`,
         cause: `Causa: prazo venceu; escolha padrão aplicada${choiceText}`,
         sourceId: resolved.eventId,
+        ...where,
       };
     });
   return [...fired, ...automatic];
@@ -208,13 +228,15 @@ function personagemCandidate(args: NewsArgs): NewsCandidate | undefined {
     if (!event?.characterId) continue;
     const character = findCharacter(content, event.characterId);
     const who = character ? `${character.name} (${character.role})` : event.characterId;
+    const where = firedInstance(args, eventId);
     return {
       kind: 'personagem',
       tone: 'neutra',
-      headline: `${who}: ${event.title}`,
+      headline: `${who}: ${formatEventText(event.title, where.location, content)}`,
       cause: eventCause(eventId, args),
       sourceId: eventId,
       characterId: event.characterId,
+      ...where,
     };
   }
   return undefined;

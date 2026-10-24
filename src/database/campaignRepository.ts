@@ -141,11 +141,18 @@ export async function recordMonth(
       report.monthIndex,
       JSON.stringify(report),
     ]);
-    // Evento disparado neste mês aguarda resposta: linha no mês seguinte, sem escolha ainda.
+    // Evento disparado neste mês aguarda resposta: linha no mês seguinte, sem escolha ainda. O payload guarda a
+    // identidade da ocorrência e o local congelado no disparo (PLANO_GLOBO.md §6.3); relatórios antigos não têm.
     for (const eventId of report.eventsFired) {
+      const instance = report.eventInstances?.find((i) => i.eventId === eventId);
       await db.run(
-        'INSERT INTO events (campaign_id, month_index, event_id, choice_id, payload_json) VALUES (?, ?, ?, NULL, NULL)',
-        [campaignId, report.monthIndex + 1, eventId],
+        'INSERT INTO events (campaign_id, month_index, event_id, choice_id, payload_json) VALUES (?, ?, ?, NULL, ?)',
+        [
+          campaignId,
+          report.monthIndex + 1,
+          eventId,
+          instance ? JSON.stringify({ instanceId: instance.instanceId, location: instance.location }) : null,
+        ],
       );
     }
     // Escolha aplicada neste mês (do jogador ou automática, quando o prazo venceu).
@@ -157,7 +164,7 @@ export async function recordMonth(
           report.monthIndex,
           resolved.eventId,
           resolved.choiceId,
-          JSON.stringify({ automatic: resolved.automatic }),
+          JSON.stringify({ automatic: resolved.automatic, instanceId: resolved.instanceId }),
         ],
       );
     }

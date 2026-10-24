@@ -30,7 +30,7 @@ import { activeInstitutionalMarks, pressureBand } from '@/components/tabs/instit
 import { NoCampaign } from '@/components/tabs/NoCampaign';
 import { Alert } from '@/components/ui';
 import { loadContent } from '@/content';
-import { headlines, impeachmentPressure } from '@/engine';
+import { formatEventText, headlines, impeachmentPressure } from '@/engine';
 import { Canvas } from '@/globe/r3f';
 import { useGame, type ActiveCampaign } from '@/store';
 
@@ -104,8 +104,8 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
   const pending = useMemo(
     () =>
       state.events.pending.map((p) => ({
-        key: `${p.eventId}_${p.monthIndex}`,
-        title: content.events.find((e) => e.id === p.eventId)?.title ?? p.eventId,
+        key: p.instanceId,
+        title: formatEventText(content.events.find((e) => e.id === p.eventId)?.title ?? p.eventId, p.location, content),
         monthIndex: p.monthIndex,
       })),
     [state.events.pending, content],

@@ -51,7 +51,9 @@ describe('eventos: disparo e prazo (GAME_DESIGN.md §11.3)', () => {
     const result = step(atMonth1, content);
 
     expect(result.report.eventsFired).toEqual(['teste_choque']);
-    expect(result.state.events.pending).toEqual([{ eventId: 'teste_choque', monthIndex: 2 }]);
+    expect(result.state.events.pending).toEqual([
+      { eventId: 'teste_choque', monthIndex: 2, instanceId: 'teste_choque#2' },
+    ]);
     const onFire = result.state.impulses.find((i) => i.sourceId === 'evento:teste_choque_2');
     expect(onFire).toMatchObject({
       target: 'choque.inflacao',
@@ -66,7 +68,9 @@ describe('eventos: disparo e prazo (GAME_DESIGN.md §11.3)', () => {
     const { content, state } = stateWithPendingEvent();
     const result = step(state, content);
 
-    expect(result.report.eventsResolved).toEqual([{ eventId: 'teste_choque', choiceId: 'absorver', automatic: true }]);
+    expect(result.report.eventsResolved).toEqual([
+      { eventId: 'teste_choque', choiceId: 'absorver', automatic: true, instanceId: 'teste_choque#2' },
+    ]);
     expect(result.state.events.pending).toEqual([]);
   });
 
@@ -89,7 +93,9 @@ describe('eventos: disparo e prazo (GAME_DESIGN.md §11.3)', () => {
       draft,
     });
 
-    expect(draft.eventsResolved).toEqual([{ eventId: 'teste_choque', choiceId: 'subsidiar', automatic: false }]);
+    expect(draft.eventsResolved).toEqual([
+      { eventId: 'teste_choque', choiceId: 'subsidiar', automatic: false, instanceId: 'teste_choque#2' },
+    ]);
     expect(out.state.events.pending).toEqual([]);
     // Exclui o impulso de disparo (choque.inflacao), que tem o mesmo sourceId neste mês.
     const mine = out.state.impulses.filter(
@@ -200,7 +206,10 @@ describe('eventos: escândalo em ministério (POLITICAL_RULES.md §6.3.1)', () =
   it('escolha que demite troca o ministro de bloco por técnico, com custo de capital e relação', () => {
     const content = testContent({ events: [SCANDAL] });
     const base = withMinister(testState(), 'centro');
-    const state: GameState = { ...base, events: { ...base.events, pending: [{ eventId: SCANDAL.id, monthIndex: 0 }] } };
+    const state: GameState = {
+      ...base,
+      events: { ...base.events, pending: [{ eventId: SCANDAL.id, monthIndex: 0, instanceId: `${SCANDAL.id}#0` }] },
+    };
     const out = step(state, content, { decisions: [], eventChoices: [{ eventId: SCANDAL.id, choiceId: 'demitir' }] });
     expect(out.state.congress.cabinet.find((m) => m.id === 'fazenda')?.occupant).toBe('tecnico');
     expect(out.state.resources.politicalCapital).toBe(
@@ -279,7 +288,11 @@ function originState(content: GameContent, flags: Record<string, number> = {}): 
   return {
     ...base,
     monthIndex: 1,
-    events: { ...base.events, pending: [{ eventId: 'teste_origem', monthIndex: 1 }], flags },
+    events: {
+      ...base.events,
+      pending: [{ eventId: 'teste_origem', monthIndex: 1, instanceId: 'teste_origem#1' }],
+      flags,
+    },
   };
 }
 
@@ -359,7 +372,9 @@ describe('eventos: encadeamento (FASE_07.md)', () => {
     const rest = runMonths(answered.state, content, 2);
     expect(rest.firedByMonth).toEqual([3]);
     expect(rest.reports[1].eventsFired).toEqual(['teste_seguinte']);
-    expect(rest.state.events.pending).toEqual([{ eventId: 'teste_seguinte', monthIndex: 4 }]);
+    expect(rest.state.events.pending).toEqual([
+      { eventId: 'teste_seguinte', monthIndex: 4, instanceId: 'teste_seguinte#4' },
+    ]);
     expect(rest.state.events.scheduled).toEqual([]);
     expect(rest.state.events.flags).toEqual({ marca_seguinte: 4 });
   });
@@ -439,7 +454,9 @@ describe('eventos: encadeamento (FASE_07.md)', () => {
     const forbidding = testContent({
       events: [{ ...CHAINED, trigger: { ...CHAINED.trigger, forbidsFlags: ['bloqueio'] } }],
     });
-    expect(step(queued({}), forbidding).state.events.pending).toEqual([{ eventId: 'teste_seguinte', monthIndex: 1 }]);
+    expect(step(queued({}), forbidding).state.events.pending).toEqual([
+      { eventId: 'teste_seguinte', monthIndex: 1, instanceId: 'teste_seguinte#1' },
+    ]);
     const blocked = step(queued({ bloqueio: 0 }), forbidding).state.events;
     expect(blocked.pending).toEqual([]);
     expect(blocked.scheduled).toEqual([]);
@@ -484,7 +501,10 @@ describe('eventos: escopo de cenário (onlyScenarios; AI_INSTRUCTIONS.md §8)', 
     const content = testContent({ events: [other] });
     const start: GameState = {
       ...testState(),
-      events: { ...testState().events, pending: [{ eventId: 'teste_fora', monthIndex: 0 }] },
+      events: {
+        ...testState().events,
+        pending: [{ eventId: 'teste_fora', monthIndex: 0, instanceId: 'teste_fora#0' }],
+      },
     };
     const out = step(start, content);
     expect(out.report.eventsResolved).toEqual([]);

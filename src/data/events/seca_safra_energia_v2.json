@@ -1,0 +1,155 @@
+{
+  "id": "seca_safra_energia_v2",
+  "title": "Estiagem severa castiga lavouras e reservatórios",
+  "description": "A estiagem se prolonga e atinge {uf}: lavouras perdidas, rios baixos e reservatórios no limite. Os efeitos da seca sobre a safra, os preços e a energia já estão nos indicadores; falta decidir como o governo responde nas regiões atingidas ({regiao}).",
+  "onlyScenarios": ["brasil_2027_01_v080"],
+  "replaces": ["seca_safra_energia"],
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [],
+    "probability": 0.35,
+    "cooldownMonths": 18,
+    "maxOccurrences": 3,
+    "climate": { "kind": "drought", "threshold": 0.7 }
+  },
+  "onFire": [],
+  "choices": [
+    {
+      "id": "nada",
+      "label": "Não intervir",
+      "description": "Preserva o caixa, mas o desgaste político cresce com a falta de resposta em {uf}.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "regiao.aprovacao",
+          "delta": -0.02,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "label": "Falta de resposta à seca",
+          "atLocation": true,
+          "scaleBySeverity": true
+        }
+      ]
+    },
+    {
+      "id": "credito_emergencial",
+      "label": "Crédito emergencial",
+      "description": "Socorre produtores e famílias em {uf} e melhora a aprovação, mas aumenta a despesa de custeio por meses.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.custeio",
+          "delta": 0.0015,
+          "lagMonths": 0,
+          "durationMonths": 6,
+          "label": "Crédito emergencial à seca",
+          "atLocation": true
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.012,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "regiao.aprovacao",
+          "delta": 0.015,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "label": "Crédito emergencial à seca",
+          "atLocation": true,
+          "scaleBySeverity": true
+        },
+        {
+          "target": "regiao.atividade",
+          "delta": 0.004,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "label": "Crédito emergencial à seca",
+          "atLocation": true,
+          "scaleBySeverity": true
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 8,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "atLocation": true
+        }
+      ]
+    },
+    {
+      "id": "carros_pipa_frentes_trabalho",
+      "label": "Carros-pipa e frentes de trabalho",
+      "description": "Leva água e renda mínima às famílias de {uf}: custa menos que o crédito e alivia a população, mas não socorre a produção.",
+      "agendaCost": 1,
+      "effects": [
+        {
+          "target": "gasto.transferencia_baixa_renda",
+          "delta": 0.001,
+          "lagMonths": 0,
+          "durationMonths": 4,
+          "label": "Carros-pipa e frentes de trabalho",
+          "atLocation": true
+        },
+        {
+          "target": "aprovacao",
+          "delta": 0.005,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "regiao.aprovacao",
+          "delta": 0.012,
+          "lagMonths": 0,
+          "durationMonths": 3,
+          "label": "Carros-pipa e frentes de trabalho",
+          "atLocation": true,
+          "scaleBySeverity": true
+        },
+        {
+          "target": "governadores.relacao",
+          "delta": 5,
+          "lagMonths": 0,
+          "durationMonths": 1,
+          "atLocation": true
+        }
+      ]
+    },
+    {
+      "id": "bandeira_tarifaria",
+      "label": "Bandeira tarifária cheia",
+      "description": "Cobre o custo da energia sem gasto público, repassando-o a todos os consumidores do país: a conta mais alta pressiona a inflação e a aprovação.",
+      "agendaCost": 0,
+      "effects": [
+        {
+          "target": "choque.inflacao",
+          "delta": 0.003,
+          "lagMonths": 0,
+          "durationMonths": 4,
+          "label": "Bandeira tarifária cheia"
+        },
+        {
+          "target": "credibilidade",
+          "delta": 0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        },
+        {
+          "target": "aprovacao",
+          "delta": -0.01,
+          "lagMonths": 0,
+          "durationMonths": 1
+        }
+      ]
+    }
+  ],
+  "defaultChoice": "nada",
+  "dataStatus": "FICTICIO"
+}

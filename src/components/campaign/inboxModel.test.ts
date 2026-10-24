@@ -52,7 +52,14 @@ function proposal(over: Partial<Proposal>): Proposal {
 function withPending(state: GameState, eventIds: readonly string[]): GameState {
   return {
     ...state,
-    events: { ...state.events, pending: eventIds.map((eventId) => ({ eventId, monthIndex: state.monthIndex })) },
+    events: {
+      ...state.events,
+      pending: eventIds.map((eventId) => ({
+        eventId,
+        monthIndex: state.monthIndex,
+        instanceId: `${eventId}#${state.monthIndex}`,
+      })),
+    },
   };
 }
 
@@ -69,6 +76,25 @@ describe('Itens da caixa de entrada', () => {
     const items = pendingItems(state, content);
     expect(items.map((i) => i.event.id)).toEqual([EVENT_ID]);
     expect(items[0].pending.eventId).toBe(EVENT_ID);
+  });
+
+  it('evento geográfico chega com os textos preenchidos pelo local congelado e sem marcadores soltos', () => {
+    const base = withPending(baseState(), ['seca_safra_energia_v2']);
+    const location = { affectedUfs: ['CE', 'PI'], primaryUf: 'CE', severityByUf: { CE: 0.9, PI: 0.8 } };
+    const state: GameState = {
+      ...base,
+      events: { ...base.events, pending: base.events.pending.map((p) => ({ ...p, location })) },
+    };
+    const [item] = pendingItems(state, content);
+    expect(item.pending.location).toEqual(location);
+    expect(item.event.description).toContain('Ceará e Piauí');
+    expect(item.event.description).toContain('Nordeste');
+    for (const text of [item.event.title, item.event.description, ...item.event.choices.map((c) => c.description)]) {
+      expect(text).not.toContain('{');
+    }
+    // Evento sem local (save antigo) mostra "o país" em vez do marcador.
+    const [national] = pendingItems(withPending(baseState(), ['seca_safra_energia_v2']), content);
+    expect(national.event.description).toContain('o país');
   });
 
   it('só as sanções deste mês entram, com o nome da política', () => {

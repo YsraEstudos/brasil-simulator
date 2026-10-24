@@ -20,6 +20,7 @@ Eventos (`src/types/event.ts`), tudo opcional, JSONs antigos continuam válidos:
 - `chainedOnly`: só chega por `followUps`; o sorteio mensal o ignora.
 - Encadeado que chega pela fila (`scheduled`) passa pelas mesmas marcas (`requiresFlags`/`forbidsFlags`) e condições do gatilho; se alguma não valer no mês de chegada, ele é descartado.
 - `onlyScenarios`, `characterId` (personagem em destaque).
+- PR 9 do PLANO_GLOBO: `trigger.climate` (`{ kind: "drought" | "flood", threshold }`: gatilho que lê o clima e devolve as UFs atingidas), `replaces` (ids de eventos que esta versão substitui no sorteio do cenário; exige `onlyScenarios`) e, nos efeitos, `atLocation` / `scaleBySeverity` (agir nas UFs atingidas, congeladas no disparo). Regras em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.20 e [GAME_DESIGN.md](GAME_DESIGN.md) §11.3.2. `PendingEvent` ganha `instanceId` e `location?` (estado v12); `NewsItem` ganha `instanceId?` e `location?`.
 - Condições novas: `impeachmentPressure` e `characterStanding` (com `characterId` na condição).
 
 Cenário (`src/types/scenario.ts`): `characters?: Character[]` (`id`, `name`, `role`, `description`, `blocId?`, `initialStanding`, `dataStatus`).

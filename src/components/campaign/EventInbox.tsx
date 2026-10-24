@@ -2,7 +2,14 @@ import { StyleSheet, View } from 'react-native';
 
 import { Card, Text } from '@/components/ui';
 import { Spacing, type ThemeColor } from '@/constants/theme';
-import { adviseEventChoice, type Opinion, type PendingEvent, type Proposal, type SanctionChoice } from '@/engine';
+import {
+  adviseEventChoice,
+  locationAcronyms,
+  type Opinion,
+  type PendingEvent,
+  type Proposal,
+  type SanctionChoice,
+} from '@/engine';
 import type { GameEvent } from '@/types/event';
 
 import { ChoiceOption } from './ChoiceOption';
@@ -108,7 +115,10 @@ export function EventInbox({
         const deadline = monthLabel(pending.monthIndex);
         const character = event.characterId ? characters.find((c) => c.id === event.characterId) : undefined;
         return (
-          <Card key={event.id} title={event.title} subtitle={`Sem resposta até o fim de ${deadline}, vale o padrão.`}>
+          <Card
+            key={pending.instanceId}
+            title={event.title}
+            subtitle={`Sem resposta até o fim de ${deadline}, vale o padrão.`}>
             {character && (
               <View style={styles.character}>
                 <Text variant="label">{characterHeading(character)}</Text>
@@ -116,6 +126,11 @@ export function EventInbox({
                   {standingText(character.standing)}
                 </Text>
               </View>
+            )}
+            {pending.location && (
+              <Text variant="label" color="textSecondary">
+                {`Atinge: ${locationAcronyms(pending.location)}`}
+              </Text>
             )}
             <Text variant="body">{event.description}</Text>
             <View style={styles.options} accessibilityRole="radiogroup">

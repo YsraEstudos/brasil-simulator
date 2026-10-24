@@ -193,7 +193,17 @@ export * from './report';
 export * from './society';
 export * from './publicPolicies/types';
 export { BRANDABLE_STATUSES } from './publicPolicies/publicPolicies';
-export { eventsForScenario, hasFlag, standingOf } from './events/events';
+export { drawableEvents, eventsForScenario, hasFlag, standingOf } from './events/events';
+export {
+  climateLocation,
+  climateSeverities,
+  eventInstanceId,
+  formatEventText,
+  localizeEvent,
+  locationAcronyms,
+  worstSeverity,
+} from './events/location';
+export { GEO_EVENT_PARAMS } from './events/calibration';
 export { impeachmentPressure } from './events/pressure';
 export { campaignOutcome, type CampaignOutcome } from './events/outcome';
 export { NEWS_LIMIT, NEWS_PER_MONTH_MAX, appendNews, generateNews } from './news';

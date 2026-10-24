@@ -5,6 +5,7 @@ import { ENGINE_VERSION, STATE_SCHEMA_VERSION, type GameState } from './types';
 import { initialSocietyForGame } from './society/society';
 import { initialPublicPolicies } from './publicPolicies/types';
 import { initialClimate } from './climate/climate';
+import { eventInstanceId } from './events/location';
 
 /** O save foi gravado com uma estrutura de estado mais nova que a deste app. */
 export class SaveTooNewError extends Error {
@@ -36,7 +37,24 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   if (version < 9) state = v8ToV9(state);
   if (version < 10) state = v9ToV10(state);
   if (version < 11) state = v10ToV11(state);
+  if (version < 12) state = v11ToV12(state);
   return state as unknown as GameState;
+}
+
+/**
+ * v11 → v12 (PR 9 do PLANO_GLOBO): a pendência de evento ganha identidade (`instanceId` = `eventId#mês de chegada`) e
+ * o local congelado no disparo (`location`). Pendências antigas ficam **sem local** (= nacional, como sempre
+ * foram): nada é inventado. Os demais campos de eventos (marcas, encadeados, notícias) e o resto do estado
+ * ficam idênticos, e nenhum sorteio é feito.
+ */
+function v11ToV12(s: Raw): Raw {
+  const events = (s.events ?? {}) as Raw;
+  const pending = ((events.pending ?? []) as Raw[]).map((p) => ({
+    ...p,
+    instanceId:
+      typeof p.instanceId === 'string' ? p.instanceId : eventInstanceId(String(p.eventId), Number(p.monthIndex)),
+  }));
+  return { ...s, schemaVersion: 12, engineVersion: ENGINE_VERSION, events: { ...events, pending } };
 }
 
 /** Semente de reserva para um save sem `seed` numérico inteiro (não ocorre em saves reais: todo estado grava a semente). */
