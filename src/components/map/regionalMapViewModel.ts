@@ -1,6 +1,7 @@
 import { binColor, indicatorSpec, legendLabels, type MapIndicator } from '@/components/painel/regionalMetrics';
 
 import { NO_CLIMATE_OVERLAY, type ClimateOverlay } from './climateView';
+import type { MapMarker } from './markersView';
 
 /**
  * Modelo de dados do mapa regional, independente do renderizador (PLANO_GLOBO.md §3.4): o globo 3D (`GlobeView`) e o
@@ -30,14 +31,6 @@ export interface MapLabel {
   text: string;
 }
 
-/** Marcador agrupado por UF (evento, notícia…). Reservado para os PRs de camadas; hoje sempre vazio. */
-export interface MapMarker {
-  id: string;
-  sigla: string;
-  kind: string;
-  label: string;
-}
-
 export interface RegionalMapViewModel {
   mode: MapMode;
   /** Cor de cada UF (sigla → hex). Vazio: o renderizador usa a cor neutra de terra. */
@@ -45,6 +38,7 @@ export interface RegionalMapViewModel {
   selectedId: string | null;
   legend: MapLegend | null;
   labels: readonly MapLabel[];
+  /** Marcadores de eventos e notícias, um por UF (`markersView`); vazio sem partida ou sem evento com local. */
   markers: readonly MapMarker[];
   /**
    * Clima no mapa 2D completo: UFs hachuradas e ícones de nuvem (PLANO_GLOBO.md §3.4). O globo 3D não lê este campo

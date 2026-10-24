@@ -1,5 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   Platform,
   Pressable,
   StyleSheet,
@@ -12,10 +14,12 @@ import {
 import Svg, { Circle, Defs, G, Line, Path, Pattern, RadialGradient, Stop } from 'react-native-svg';
 
 import type { LabelViewport, Rect } from '@/globe/labels';
+import { PULSE_DURATION_MS, PULSE_ITERATIONS } from '@/globe/markerPulse';
+import { MARKER_COLORS, MARKER_HIT_PADDING_PX, markerColor, markerCountKey } from '@/globe/markers';
 import { findUf } from '@/globe/ufs';
 import type { SunState } from '@/globe/visualClock';
 
-import { layoutFlatLabels } from './flatLabels';
+import { layoutFlatLabels, type FlatLabelItem } from './flatLabels';
 import {
   CLOUD_ICON_PATH,
   cloudIconPlacements,
@@ -27,11 +31,13 @@ import {
 } from './flatClimate';
 import { flatMap, type FlatUf } from './flatProjection';
 import { flatSunFor, LIGHT_COLOR, SHADOW_COLOR, SHADOW_OVER_FILL } from './flatSun';
+import { markerPulseKey, type MapMarker } from './markersView';
 import type { RegionalMapViewModel } from './regionalMapViewModel';
 
 /**
  * Mapa 2D do Brasil (PLANO_GLOBO.md §3.4): os 27 contornos como `<Path>` montados uma vez; só `fill` (e a seleção)
- * mudam com o modelo. Sem animação e sem estado por quadro. As siglas são `Text` nativo por cima do SVG.
+ * mudam com o modelo. Sem estado por quadro. As siglas são `Text` nativo por cima do SVG, e os marcadores de eventos e
+ * notícias (PR 11) são ícones nativos tocáveis por cima delas; só o pulso dos críticos novos anima, com laço finito.
  */
 
 /** Fundo do globo (`GlobeView`), para os dois renderizadores parecerem o mesmo lugar. */
@@ -55,7 +61,7 @@ export interface FlatBrazilMapProps {
   viewModel: RegionalMapViewModel;
   /** Toque numa UF (sigla) ou no fundo (`null`). */
   onSelect: (sigla: string | null) => void;
-  /** `full`: siglas e pontos sobre o mapa. `light`: só polígonos e seleção. */
+  /** `full`: siglas, pontos e marcadores sobre o mapa. `light`: só polígonos e seleção (sem marcadores nem pulso). */
   variant: 'full' | 'light';
   /** Áreas do HUD (px do mapa) onde nenhuma sigla ou capital pode tocar. Só na variante `full`. */
   reservedRects?: readonly Rect[];
@@ -68,6 +74,12 @@ export interface FlatBrazilMapProps {
    * nada (também em "Sempre dia"). A sombra fica em cache enquanto a hora e o mês forem os mesmos.
    */
   sun?: SunState | null;
+  /** Toque num marcador de eventos e notícias (um de `viewModel.markers`). Só na variante `full`. */
+  onMarkerPress?: (marker: MapMarker) => void;
+  /** O anel de `pulseKey` terminou (as instâncias param de pulsar na sessão). Só na variante `full`. */
+  onPulseDone?: (instanceIds: readonly string[]) => void;
+  /** Sub-tela aberta (o painel sai de foco): o pulso para e não avisa o fim; ao voltar, recomeça. */
+  paused?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -97,22 +109,11 @@ const UfPath = memo(function UfPath({ uf, fill }: UfPathProps) {
 });
 
 interface UfLabelsProps {
-  width: number;
-  height: number;
-  scale: number;
-  reserved: readonly Rect[] | undefined;
-  insets: LabelViewport['insets'] | undefined;
+  items: readonly FlatLabelItem[];
 }
 
-/**
- * Siglas, pins e capitais por cima do SVG, escolhidos por `layoutFlatLabels` (as regras do globo). Só refaz o layout
- * ao redimensionar ou quando as áreas do HUD ou a escala do texto mudam.
- */
-const UfLabels = memo(function UfLabels({ width, height, scale, reserved, insets }: UfLabelsProps) {
-  const items = useMemo(
-    () => layoutFlatLabels({ width, height, scale, reserved, insets }),
-    [width, height, scale, reserved, insets],
-  );
+/** Siglas, pins e capitais por cima do SVG, já escolhidos por `layoutFlatLabels` (as regras do globo). */
+const UfLabels = memo(function UfLabels({ items }: UfLabelsProps) {
   const textBox = (box: Rect) => ({
     left: box.x - TEXT_SLACK_PX / 2,
     top: box.y,
@@ -122,6 +123,7 @@ const UfLabels = memo(function UfLabels({ width, height, scale, reserved, insets
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none" importantForAccessibility="no-hide-descendants">
       {items.map((item) => {
+        if (item.kind === 'marker') return null;
         if (item.kind === 'pin')
           return (
             <View
@@ -175,7 +177,141 @@ const UfLabels = memo(function UfLabels({ width, height, scale, reserved, insets
   );
 });
 
-/** O mapa plano dos 27 estados com cores, seleção e (na variante `full`) siglas. */
+/** Fonte (px, escala 1) do glifo do marcador e do número do selo. */
+const MARKER_GLYPH_FONT_PX = 12;
+const MARKER_BADGE_FONT_PX = 9;
+/** Um glifo para cada tipo: o "!" do evento e o "≡" (colunas de jornal) da notícia, como no atlas do globo. */
+const MARKER_GLYPHS = { event: '!', news: '≡' } as const;
+
+interface FlatMarkersProps {
+  items: readonly FlatLabelItem[];
+  markers: readonly MapMarker[];
+  scale: number;
+  pulseKey: string;
+  onPress: (marker: MapMarker) => void;
+  onPulseDone?: (instanceIds: readonly string[]) => void;
+  paused?: boolean;
+}
+
+/**
+ * Marcadores de eventos e notícias: ícone nativo por UF (disco colorido com o glifo e, em grupo, o selo com o número),
+ * tocável e com rótulo de acessibilidade em português. O pulso dos críticos novos é um `Animated` finito
+ * (`PULSE_ITERATIONS` voltas de `PULSE_DURATION_MS`) que para sozinho e deixa tudo estático; quando termina de verdade
+ * (não se foi interrompido) avisa `onPulseDone`.
+ */
+const FlatMarkers = memo(function FlatMarkers({
+  items,
+  markers,
+  scale,
+  pulseKey,
+  onPress,
+  onPulseDone,
+  paused,
+}: FlatMarkersProps) {
+  const [pulse] = useState(() => new Animated.Value(1)); // 1 = anel invisível
+  const pulseDone = useRef(onPulseDone);
+  useEffect(() => {
+    pulseDone.current = onPulseDone;
+  });
+  useEffect(() => {
+    if (!pulseKey || paused) return;
+    const instances = pulseKey.split('|');
+    pulse.setValue(0);
+    const loop = Animated.loop(
+      Animated.timing(pulse, {
+        toValue: 1,
+        duration: PULSE_DURATION_MS,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      { iterations: PULSE_ITERATIONS },
+    );
+    loop.start(({ finished }) => {
+      pulse.setValue(1);
+      if (finished) pulseDone.current?.(instances);
+    });
+    return () => {
+      loop.stop();
+      pulse.setValue(1);
+    };
+  }, [pulseKey, paused, pulse]);
+  const ringScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 2] });
+  const ringOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 0] });
+  const hitSlop = MARKER_HIT_PADDING_PX * scale;
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {items.map((item) => {
+        if (item.kind !== 'marker') return null;
+        const marker = markers.find((m) => m.sigla === item.sigla);
+        if (!marker) return null;
+        const color = markerColor(marker);
+        return (
+          <View key={item.id} style={StyleSheet.absoluteFill} pointerEvents="box-none">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={marker.label}
+              accessibilityHint="Toque para abrir"
+              hitSlop={hitSlop}
+              onPress={() => onPress(marker)}
+              style={[
+                styles.marker,
+                {
+                  left: item.box.x,
+                  top: item.box.y,
+                  width: item.box.w,
+                  height: item.box.h,
+                  borderRadius: item.box.w / 2,
+                  backgroundColor: color,
+                },
+              ]}>
+              {marker.pulse && (
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.markerRing,
+                    {
+                      borderRadius: item.box.w / 2,
+                      borderColor: color,
+                      opacity: ringOpacity,
+                      transform: [{ scale: ringScale }],
+                    },
+                  ]}
+                />
+              )}
+              <Text
+                style={[styles.markerGlyph, { fontSize: MARKER_GLYPH_FONT_PX * scale, lineHeight: item.box.h }]}
+                maxFontSizeMultiplier={1}>
+                {MARKER_GLYPHS[marker.kind]}
+              </Text>
+            </Pressable>
+            {item.badge && (
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.markerBadge,
+                  {
+                    left: item.badge.x,
+                    top: item.badge.y,
+                    width: item.badge.w,
+                    height: item.badge.h,
+                    borderRadius: item.badge.w / 2,
+                  },
+                ]}>
+                <Text
+                  style={[styles.markerBadgeText, { fontSize: MARKER_BADGE_FONT_PX * scale, lineHeight: item.badge.h }]}
+                  maxFontSizeMultiplier={1}>
+                  {markerCountKey(marker.count)}
+                </Text>
+              </View>
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+});
+
+/** O mapa plano dos 27 estados com cores, seleção e (na variante `full`) siglas e marcadores. */
 export function FlatBrazilMap({
   viewModel,
   onSelect,
@@ -184,6 +320,9 @@ export function FlatBrazilMap({
   labelInsets,
   labelScale = 1,
   sun,
+  onMarkerPress,
+  onPulseDone,
+  paused,
   style,
 }: FlatBrazilMapProps) {
   // Gere os paths SVG só quando o mapa 2D for realmente renderizado; o import do fallback não bloqueia o início do globo.
@@ -191,15 +330,36 @@ export function FlatBrazilMap({
   const viewBox = `0 0 ${flat.viewBox.width} ${flat.viewBox.height}`;
   const [size, setSize] = useState({ width: 0, height: 0 });
   const onSelectRef = useRef(onSelect);
+  const onMarkerPressRef = useRef(onMarkerPress);
   useEffect(() => {
     onSelectRef.current = onSelect;
+    onMarkerPressRef.current = onMarkerPress;
   });
+  const markerPress = useCallback((marker: MapMarker) => onMarkerPressRef.current?.(marker), []);
   // Despachante estável: os manipuladores (e os `UfPath` memoizados) não mudam quando `onSelect` muda.
   const select = useCallback((sigla: string | null) => onSelectRef.current(sigla), []);
 
   // Sombra e luzes: refeitas só quando o Sol muda (hora fixa, mês, ou a tela renderizando na "Hora real").
   const night = variant === 'full' && sun ? flatSunFor(sun) : null;
   const shadowStrength = Object.keys(viewModel.fills).length > 0 ? SHADOW_OVER_FILL : 1;
+
+  // Rótulos e marcadores num layout só (o marcador vence a sigla da própria UF). O 2D leve não desenha nenhum dos dois.
+  const markers = viewModel.markers;
+  const laidOut = useMemo(
+    () =>
+      variant === 'full' && size.width > 0
+        ? layoutFlatLabels({
+            width: size.width,
+            height: size.height,
+            scale: labelScale,
+            reserved: reservedRects,
+            insets: labelInsets,
+            markers,
+          })
+        : [],
+    [variant, size.width, size.height, labelScale, reservedRects, labelInsets, markers],
+  );
+  const pulseKey = markerPulseKey(markers);
 
   const selected = viewModel.selectedId ? flat.ufs.find((u) => u.sigla === viewModel.selectedId) : undefined;
 
@@ -320,13 +480,20 @@ export function FlatBrazilMap({
         )}
       </Svg>
       {variant === 'full' && size.width > 0 && (
-        <UfLabels
-          width={size.width}
-          height={size.height}
-          scale={labelScale}
-          reserved={reservedRects}
-          insets={labelInsets}
-        />
+        <>
+          <UfLabels items={laidOut} />
+          {markers.length > 0 && (
+            <FlatMarkers
+              items={laidOut}
+              markers={markers}
+              scale={labelScale}
+              pulseKey={pulseKey}
+              onPress={markerPress}
+              onPulseDone={onPulseDone}
+              paused={paused}
+            />
+          )}
+        </>
       )}
     </Pressable>
   );
@@ -355,4 +522,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: PIN_OUTLINE,
   },
+  marker: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+  },
+  markerRing: { position: 'absolute', left: -1.5, top: -1.5, right: -1.5, bottom: -1.5, borderWidth: 2 },
+  markerGlyph: {
+    textAlign: 'center',
+    color: '#ffffff',
+    fontWeight: '800',
+    textShadowColor: 'rgba(16,20,28,0.95)',
+    textShadowRadius: 2,
+    textShadowOffset: { width: 0, height: 0 },
+  },
+  markerBadge: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: MARKER_COLORS.badge,
+    borderWidth: 1,
+    borderColor: '#ffffff',
+  },
+  markerBadgeText: { textAlign: 'center', color: '#ffffff', fontWeight: '700' },
 });

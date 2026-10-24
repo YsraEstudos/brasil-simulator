@@ -18,6 +18,8 @@ export class GlobeController {
   /** Definidos pela cena quando o Canvas é criado. */
   invalidate: () => void = () => {};
   pick: (x: number, y: number) => { lon: number; lat: number } | null = () => null;
+  /** Definido por `GlobeLabels`: a sigla da UF cujo marcador está em (`x`, `y`) (px da tela), ou `null`. */
+  pickMarker: (x: number, y: number) => string | null = () => null;
 
   panBy(dx: number, dy: number) {
     this.flight = null;
