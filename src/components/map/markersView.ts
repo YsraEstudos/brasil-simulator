@@ -304,7 +304,7 @@ export function markerPulseKey(markers: readonly MapMarker[]): string {
   return markers
     .filter((m) => m.pulse)
     .flatMap((m) => criticalInstances(m.items))
-    .sort()
+    .sort((a, b) => a.localeCompare(b))
     .join('|');
 }
 
