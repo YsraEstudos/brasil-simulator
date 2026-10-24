@@ -78,6 +78,8 @@ export interface FlatBrazilMapProps {
   onMarkerPress?: (marker: MapMarker) => void;
   /** O anel de `pulseKey` terminou (as instâncias param de pulsar na sessão). Só na variante `full`. */
   onPulseDone?: (instanceIds: readonly string[]) => void;
+  /** Sub-tela aberta (o painel sai de foco): o pulso para e não avisa o fim; ao voltar, recomeça. */
+  paused?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -188,6 +190,7 @@ interface FlatMarkersProps {
   pulseKey: string;
   onPress: (marker: MapMarker) => void;
   onPulseDone?: (instanceIds: readonly string[]) => void;
+  paused?: boolean;
 }
 
 /**
@@ -203,6 +206,7 @@ const FlatMarkers = memo(function FlatMarkers({
   pulseKey,
   onPress,
   onPulseDone,
+  paused,
 }: FlatMarkersProps) {
   const [pulse] = useState(() => new Animated.Value(1)); // 1 = anel invisível
   const pulseDone = useRef(onPulseDone);
@@ -210,7 +214,7 @@ const FlatMarkers = memo(function FlatMarkers({
     pulseDone.current = onPulseDone;
   });
   useEffect(() => {
-    if (!pulseKey) return;
+    if (!pulseKey || paused) return;
     const instances = pulseKey.split('|');
     pulse.setValue(0);
     const loop = Animated.loop(
@@ -230,7 +234,7 @@ const FlatMarkers = memo(function FlatMarkers({
       loop.stop();
       pulse.setValue(1);
     };
-  }, [pulseKey, pulse]);
+  }, [pulseKey, paused, pulse]);
   const ringScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 2] });
   const ringOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 0] });
   const hitSlop = MARKER_HIT_PADDING_PX * scale;
@@ -318,6 +322,7 @@ export function FlatBrazilMap({
   sun,
   onMarkerPress,
   onPulseDone,
+  paused,
   style,
 }: FlatBrazilMapProps) {
   // Gere os paths SVG só quando o mapa 2D for realmente renderizado; o import do fallback não bloqueia o início do globo.
@@ -485,6 +490,7 @@ export function FlatBrazilMap({
               pulseKey={pulseKey}
               onPress={markerPress}
               onPulseDone={onPulseDone}
+              paused={paused}
             />
           )}
         </>
