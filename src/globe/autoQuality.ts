@@ -1,9 +1,11 @@
+import { FrameStats, percentile as framePercentile, type FrameEvent, type FrameSample } from './frameStats';
 import { neighborProfile, PROFILES_3D, type Profile3d } from './qualityProfiles';
+export { MIN_FRAME_MS, MAX_FRAME_MS, MAX_BURST_GAP_MS } from './frameStats';
+export type { FrameEvent } from './frameStats';
 
 /**
  * Escolha automática do perfil 3D (PLANO_GLOBO.md §3.1): máquina de estados PURA (sem three, React ou relógio: quem a
- * usa entrega o instante de cada quadro). Não confundir com as métricas do PR 0 (medição no moto g20): este módulo só
- * decide; os nomes não colidem com `frameStats` e podem ser unificados depois.
+ * usa entrega o instante de cada quadro). Decide a partir da mesma amostra do contador `frameStats` do PR 0.
  *
  * Fluxo:
  * 1. Aquecimento: nenhum quadro conta até `WARMUP_QUIET_FRAMES` quadros seguidos sem tile em carregamento (shaders
@@ -20,13 +22,6 @@ import { neighborProfile, PROFILES_3D, type Profile3d } from './qualityProfiles'
 export const WARMUP_QUIET_FRAMES = 30;
 /** Quadros descartados depois de uma troca de perfil (os tiles são reorganizados e o cache pode encolher). */
 export const SETTLE_FRAMES = 20;
-
-/** Menor intervalo contado como quadro (abaixo disso são dois desenhos no mesmo ciclo). */
-export const MIN_FRAME_MS = 2;
-/** Maior intervalo contado: acima disso houve pausa (subtela, app em segundo plano), não lentidão. */
-export const MAX_FRAME_MS = 1000;
-/** Fora do movimento, só intervalos até este valor contam (rajada de quadros); o resto é ocioso entre pedidos. */
-export const MAX_BURST_GAP_MS = 120;
 
 /** Uma janela de movimento fecha com este número de amostras (~1 s a 60 qps)… */
 export const MOVING_WINDOW_SAMPLES = 60;
@@ -57,16 +52,6 @@ export const STEP_UP_WINDOWS = 8;
 
 export type AutoQualityPhase = 'warming' | 'sampling';
 
-/** O que o React alimenta, uma vez por quadro realmente desenhado. */
-export interface FrameEvent {
-  /** Instante do quadro, em ms (`performance.now()`); só diferenças importam. */
-  atMs: number;
-  /** A câmera ainda está andando (gesto ou inércia): o laço pede outro quadro. */
-  moving: boolean;
-  /** Há bloco de tile baixando ou na fila. */
-  tilesBusy: boolean;
-}
-
 export type ChangeReason = 'movimento-lento' | 'repouso-lento' | 'folga';
 
 export interface ProfileChange {
@@ -79,8 +64,7 @@ type WindowClass = 'slow' | 'fast' | 'neutral';
 
 /** Percentil por posto mais próximo; `sorted` crescente e não vazio. */
 export function percentile(sorted: readonly number[], p: number): number {
-  const rank = Math.ceil((p / 100) * sorted.length);
-  return sorted[Math.min(sorted.length - 1, Math.max(0, rank - 1))];
+  return framePercentile(sorted, p / 100);
 }
 
 /** Mediana e p95 de uma janela de intervalos (ms). */
@@ -134,8 +118,7 @@ export class AutoQualityMachine {
   private phasePrivate: AutoQualityPhase = 'warming';
   private quietFrames = 0;
   private settle = 0;
-  private lastAt: number | null = null;
-  private lastMoving = false;
+  private readonly frames = new FrameStats();
   private readonly moving = new SampleWindow(MOVING_WINDOW_SAMPLES);
   private readonly rest = new SampleWindow(REST_WINDOW_SAMPLES);
   private slowStreak = 0;
@@ -164,17 +147,16 @@ export class AutoQualityMachine {
 
   /** O laço de quadros parou (pausa, subtela): o próximo intervalo não é medida de desempenho. */
   interrupt() {
-    this.lastAt = null;
-    this.lastMoving = false;
+    this.frames.interrupt();
   }
 
   /** Um quadro desenhado. Devolve a troca de perfil, se esta amostra a provocou. */
   feed(event: FrameEvent): ProfileChange | null {
-    const previousAt = this.lastAt;
-    const previousMoving = this.lastMoving;
-    this.lastAt = event.atMs;
-    this.lastMoving = event.moving;
+    return this.feedSample(event, this.frames.pushEvent(event));
+  }
 
+  /** A cena compartilha esta amostra com o contador: nenhum segundo relógio. */
+  feedSample(event: FrameEvent, sample: FrameSample | null): ProfileChange | null {
     if (this.phasePrivate === 'warming') {
       this.quietFrames = event.tilesBusy ? 0 : this.quietFrames + 1;
       if (this.quietFrames >= WARMUP_QUIET_FRAMES) this.phasePrivate = 'sampling';
@@ -184,12 +166,9 @@ export class AutoQualityMachine {
       this.settle--;
       return null;
     }
-    if (previousAt === null) return null;
-
-    const dt = event.atMs - previousAt;
-    if (dt < MIN_FRAME_MS || dt > MAX_FRAME_MS) return null;
-    const isMoving = event.moving || previousMoving;
-    if (!isMoving && dt > MAX_BURST_GAP_MS) return null;
+    if (!sample) return null;
+    const dt = sample.ms;
+    const isMoving = sample.moving;
 
     const window = isMoving ? this.moving : this.rest;
     window.push(dt);

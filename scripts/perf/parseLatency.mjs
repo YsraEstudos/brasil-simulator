@@ -105,7 +105,7 @@ export function intervalsToCsv(frames, idleGapMs = IDLE_GAP_MS) {
   return ['t_ms,intervalo_ms', ...rows].join('\n') + '\n';
 }
 
-// CLI: node parseLatency.mjs [--csv saida.csv] [--idle 500] arquivo1 [arquivo2 ...]  → JSON no stdout
+// CLI: node parseLatency.mjs [--csv saida.csv] [--idle 500] [--lista arquivos.txt] arquivo1 [arquivo2 ...]  → JSON no stdout
 function main(argv) {
   const files = [];
   let csv = null;
@@ -113,6 +113,7 @@ function main(argv) {
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--csv') csv = argv[++i];
     else if (argv[i] === '--idle') idle = Number(argv[++i]);
+    else if (argv[i] === '--lista') files.push(...readFileSync(argv[++i], 'utf8').split(/\r?\n/).filter(Boolean));
     else files.push(argv[i]);
   }
   const parsed = files.map((f) => parseLatency(readFileSync(f, 'utf8')));
