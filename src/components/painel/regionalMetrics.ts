@@ -1,3 +1,4 @@
+import { badgeText, electoralValues, isElectoralLayer } from '@/components/map/electoralView';
 import { formatNumber, formatPercent, formatPointsDelta } from '@/components/ui/format';
 import {
   alignmentView,
@@ -6,6 +7,7 @@ import {
   populationShares,
   regionsOf,
   regionsView,
+  type ElectionResult,
   type GameContent,
   type GameState,
   type RegionalPiece,
@@ -20,7 +22,29 @@ import {
  */
 
 export type MapIndicator =
-  'crescimento' | 'desemprego' | 'aprovacao' | 'renda' | 'governador' | 'alinhamento' | 'chuva' | 'seca';
+  | 'crescimento'
+  | 'desemprego'
+  | 'aprovacao'
+  | 'renda'
+  | 'governador'
+  | 'alinhamento'
+  | 'chuva'
+  | 'seca'
+  | 'inclinacao'
+  | 'intencao'
+  | 'resultado';
+
+/**
+ * Natureza do selo de uma camada eleitoral (PLANO_GLOBO.md §5.3): `estimate` = palpite do jogo, nunca resultado;
+ * `result` = apuração simulada e gravada; `data` = dado do cenário, provisório.
+ */
+export type BadgeKind = 'estimate' | 'result' | 'data';
+
+/** Texto e natureza do selo de uma camada do mapa eleitoral. */
+export interface LayerBadgeInfo {
+  text: string;
+  kind: BadgeKind;
+}
 
 export interface MapIndicatorSpec {
   id: MapIndicator;
@@ -36,6 +60,10 @@ export interface MapIndicatorSpec {
   palette?: readonly string[];
   /** Limites das 4 divisas das faixas de uma escala sequencial; sem eles valem os da renda relativa. */
   edges?: readonly number[];
+  /** Natureza do selo da camada (o texto vem de `badgeText`); só as camadas do mapa eleitoral o têm. */
+  badge?: BadgeKind;
+  /** Grupo da lista de camadas: `eleitoral` entra sob o título "Mapa eleitoral". */
+  group?: 'eleitoral';
 }
 
 /**
@@ -48,6 +76,20 @@ export const RAIN_PALETTE = ['#a9632c', '#d9a26a', '#9a9893', '#86b6ef', '#3987e
 export const DRYNESS_PALETTE = ['#3b3a34', '#6f5f33', '#a47f35', '#d3a63e', '#f2d27a'] as const;
 /** Faixas da seca: sem (< 10%), leve, moderada, forte e severa (≥ 75%). */
 export const DRYNESS_EDGES = [0.1, 0.25, 0.5, 0.75] as const;
+
+/**
+ * Cores da inclinação política: divergente violeta ↔ âmbar, cinza no meio. Nenhum lado é "bom" ou "ruim" (GAME_DESIGN.md
+ * §1, neutralidade), então fica fora do vermelho/azul de melhor/pior das outras camadas e longe das cores de partido.
+ */
+export const LEAN_PALETTE = ['#7b52c9', '#b49be0', '#9a9893', '#e3b96a', '#c9852b'] as const;
+/**
+ * Cores do voto no governo (intenção estimada e resultado simulado): sequencial verde-azulado, do escuro (pouco voto) ao
+ * claro (muito voto). É a fatia do governo nos votos válidos, não "governo × oposição" de dois lados, porque o 1º turno
+ * tem vários candidatos.
+ */
+export const VOTE_PALETTE = ['#17433f', '#1f6f66', '#2a9d8f', '#7fcbc0', '#cdeee9'] as const;
+/** Faixas do voto no governo: < 30%, 30–40%, 40–50%, 50–60% (maioria absoluta começa na quarta) e ≥ 60%. */
+export const VOTE_EDGES = [0.3, 0.4, 0.5, 0.6] as const;
 
 export const MAP_INDICATORS: readonly MapIndicatorSpec[] = [
   {
@@ -83,14 +125,6 @@ export const MAP_INDICATORS: readonly MapIndicatorSpec[] = [
     legend: 'PIB per capita (Brasil = 1)',
   },
   {
-    id: 'governador',
-    label: 'Governadores',
-    scale: 'diverging',
-    goodWhen: 'up',
-    step: 10,
-    legend: 'Relação do governador com o governo (−100 a 100)',
-  },
-  {
     id: 'alinhamento',
     label: 'Alinhamento',
     scale: 'diverging',
@@ -118,14 +152,68 @@ export const MAP_INDICATORS: readonly MapIndicatorSpec[] = [
     palette: DRYNESS_PALETTE,
     edges: DRYNESS_EDGES,
   },
+  // Mapa eleitoral (PLANO_GLOBO.md §5.3): quatro camadas separadas e rotuladas.
+  {
+    id: 'governador',
+    label: 'Relação com o governador',
+    scale: 'diverging',
+    goodWhen: 'up',
+    step: 10,
+    legend: 'Relação do governador com o governo (−100 a 100)',
+    group: 'eleitoral',
+  },
+  {
+    id: 'inclinacao',
+    label: 'Inclinação política',
+    scale: 'diverging',
+    goodWhen: 'up',
+    // Média dos dois eixos (−1…1): menos de 0,1 é centro; a faixa forte começa em ±0,3.
+    step: 0.1,
+    legend:
+      'Inclinação do eleitorado do estado: média dos eixos econômico (estado ↔ mercado) e social (progressista ↔ conservador)',
+    palette: LEAN_PALETTE,
+    badge: 'data',
+    group: 'eleitoral',
+  },
+  {
+    id: 'intencao',
+    label: 'Intenção de voto',
+    scale: 'sequential',
+    goodWhen: 'up',
+    step: 0.1,
+    legend: 'Intenção de voto estimada no governo por estado, a partir da aprovação (não é resultado)',
+    palette: VOTE_PALETTE,
+    edges: VOTE_EDGES,
+    badge: 'estimate',
+    group: 'eleitoral',
+  },
+  {
+    id: 'resultado',
+    label: 'Resultado da eleição',
+    scale: 'sequential',
+    goodWhen: 'up',
+    step: 0.1,
+    legend: 'Voto simulado no governo por estado na última eleição geral; fecha com o resultado nacional',
+    palette: VOTE_PALETTE,
+    edges: VOTE_EDGES,
+    badge: 'result',
+    group: 'eleitoral',
+  },
 ];
 
 /**
- * Camadas que o cenário permite: o Alinhamento precisa da inclinação política das UFs (cenários até a v0.7.0 não a
- * têm) e some da lista nesse caso.
+ * Camadas que o cenário permite: o Alinhamento e a Inclinação precisam da inclinação política das UFs (cenários até a
+ * v0.7.0 não a têm); a Intenção e o Resultado precisam das eleições do cenário. Sem isso, somem da lista. O Resultado
+ * continua na lista mesmo antes da primeira eleição — a tela o mostra desabilitado, com o porquê.
  */
 export function availableIndicators(content: GameContent): readonly MapIndicatorSpec[] {
-  return hasLean(regionsOf(content)) ? MAP_INDICATORS : MAP_INDICATORS.filter((m) => m.id !== 'alinhamento');
+  const lean = hasLean(regionsOf(content));
+  const elections = content.scenario.elections !== undefined && regionsOf(content).length > 0;
+  return MAP_INDICATORS.filter((m) => {
+    if (m.id === 'alinhamento' || m.id === 'inclinacao') return lean;
+    if (m.id === 'intencao' || m.id === 'resultado') return elections;
+    return true;
+  });
 }
 
 /**
@@ -135,6 +223,13 @@ export function availableIndicators(content: GameContent): readonly MapIndicator
  */
 export const DIVERGING = ['#e34948', '#ec9a8f', '#9a9893', '#86b6ef', '#3987e5'] as const;
 export const SEQUENTIAL = ['#184f95', '#2a78d6', '#5598e7', '#9ec5f4', '#cde2fb'] as const;
+
+/** Selo da camada (texto e natureza) ou `null` se ela não é do mapa eleitoral. O do resultado leva a data da eleição. */
+export function layerBadge(id: MapIndicator, election: ElectionResult | null = null): LayerBadgeInfo | null {
+  const kind = MAP_INDICATORS.find((m) => m.id === id)?.badge;
+  const text = badgeText(id, election);
+  return kind && text ? { text, kind } : null;
+}
 
 export function indicatorSpec(id: MapIndicator): MapIndicatorSpec {
   const spec = MAP_INDICATORS.find((m) => m.id === id);
@@ -153,6 +248,7 @@ export function ufValue(
   populationShare: number,
   alignmentDeviation = 0,
   climate?: Pick<UfClimate, 'rain' | 'dryness'>,
+  electoral = 0,
 ): number {
   switch (id) {
     case 'crescimento':
@@ -171,6 +267,10 @@ export function ufValue(
       return climate?.rain ?? 0;
     case 'seca':
       return climate?.dryness ?? 0;
+    case 'inclinacao':
+    case 'intencao':
+    case 'resultado':
+      return electoral;
   }
 }
 
@@ -201,10 +301,12 @@ export function binColor(spec: MapIndicatorSpec, index: number): string {
 /** Rótulos das faixas da legenda, da primeira à última cor. */
 export function legendLabels(spec: MapIndicatorSpec): string[] {
   if (spec.id === 'seca') return ['sem seca', 'leve', 'moderada', 'forte', 'severa'];
+  if (spec.id === 'intencao' || spec.id === 'resultado') return ['< 30%', '30–40%', '40–50%', '50–60%', '≥ 60%'];
   if (spec.scale === 'sequential') return ['< 0,5', '0,5–0,75', '0,75–1', '1–1,5', '> 1,5'];
   const worse = spec.goodWhen === 'up' ? 'abaixo' : 'acima';
   const better = spec.goodWhen === 'up' ? 'acima' : 'abaixo';
   if (spec.id === 'governador') return ['hostil', 'distante', 'neutro', 'próximo', 'aliado'];
+  if (spec.id === 'inclinacao') return ['bem à esquerda', 'à esquerda', 'centro', 'à direita', 'bem à direita'];
   if (spec.id === 'chuva') return ['bem mais seco', 'mais seco', 'normal', 'mais chuvoso', 'bem mais chuvoso'];
   if (spec.id === 'alinhamento') return ['bem distante', 'distante', 'na média', 'alinhado', 'bem alinhado'];
   return [`bem ${worse}`, worse, 'na média', better, `bem ${better}`];
@@ -227,6 +329,11 @@ export function formatValue(id: MapIndicator, value: number): string {
       return `${value > 0 ? '+' : ''}${formatPercent(value, 0)}`;
     case 'seca':
       return formatPercent(value, 0);
+    case 'inclinacao':
+      return `${value > 0 ? '+' : ''}${formatNumber(value, 2)}`;
+    case 'intencao':
+    case 'resultado':
+      return formatPercent(value, 1);
   }
 }
 
@@ -239,8 +346,16 @@ export interface UfRow {
   color: string;
 }
 
-/** Linhas do mapa e da lista (ordem do cenário), com o valor e a cor do indicador. */
-export function mapRows(id: MapIndicator, state: GameState, content: GameContent): UfRow[] {
+/**
+ * Linhas do mapa e da lista (ordem do cenário), com o valor e a cor do indicador. `election` é a última fotografia
+ * da eleição geral (lida do banco); só a camada Resultado a usa, e sem ela todas as UFs ficam no valor 0.
+ */
+export function mapRows(
+  id: MapIndicator,
+  state: GameState,
+  content: GameContent,
+  election: ElectionResult | null = null,
+): UfRow[] {
   const spec = indicatorSpec(id);
   const scenarioUfs = regionsOf(content);
   const pop = populationShares(scenarioUfs);
@@ -249,8 +364,11 @@ export function mapRows(id: MapIndicator, state: GameState, content: GameContent
     id === 'alinhamento' ? (alignmentView(state, content)?.ufs ?? []).map((a) => [a.id, a.approvalDeviation]) : [],
   );
   const climate = new Map(state.climate.ufs.map((c) => [c.id, c]));
+  const electoral: Readonly<Record<string, number>> = isElectoralLayer(id)
+    ? electoralValues(id, state, content, election)
+    : {};
   return regionsView(state, content).map((uf, i) => {
-    const value = ufValue(id, uf, state, pop[i], deviations.get(uf.id) ?? 0, climate.get(uf.id));
+    const value = ufValue(id, uf, state, pop[i], deviations.get(uf.id) ?? 0, climate.get(uf.id), electoral[uf.id]);
     return {
       uf,
       name: scenarioUfs[i].name,
@@ -273,21 +391,31 @@ export const MAX_PIECES = 5;
 export const MIN_SHOWN = 0.0005;
 
 /**
+ * A camada tem "Por que esta UF está diferente da média?". A Inclinação é um dado fixo do cenário e o Resultado é uma
+ * fotografia do mês da eleição: nenhuma das duas é explicada pelas causas do mês corrente.
+ */
+export function hasWhy(id: MapIndicator): boolean {
+  return id !== 'inclinacao' && id !== 'resultado';
+}
+
+/**
  * Explicação da UF para o indicador escolhido, ordenada pelo tamanho, com as menores agrupadas em "Outras
  * causas" (a soma continua igual à diferença). Crescimento usa a atividade em relação à tendência; renda e
  * governador usam a explicação da atividade e da aprovação, respectivamente.
  */
 export function explanationFor(id: MapIndicator, explanation: UfExplanation | undefined): RegionalPiece[] {
-  if (!explanation) return [];
+  if (!explanation || !hasWhy(id)) return [];
   const pieces =
     id === 'desemprego'
       ? explanation.unemployment
-      : id === 'aprovacao' || id === 'governador' || id === 'alinhamento'
+      : id === 'aprovacao' || id === 'governador' || id === 'alinhamento' || id === 'intencao'
         ? explanation.approval
         : id === 'chuva'
           ? explanation.approval.filter((p) => p.cause === CLIMATE_CAUSES.rainMood)
           : id === 'seca'
-            ? explanation.activity.filter((p) => p.cause === CLIMATE_CAUSES.drought)
+            ? explanation.activity.filter(
+                (p) => p.cause === CLIMATE_CAUSES.drought || p.cause === CLIMATE_CAUSES.droughtPrevention,
+              )
             : explanation.activity;
   const sorted = [...pieces].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
   const top = sorted.slice(0, MAX_PIECES - 1).filter((p) => Math.abs(p.delta) >= MIN_SHOWN);
@@ -298,7 +426,14 @@ export function explanationFor(id: MapIndicator, explanation: UfExplanation | un
 
 /** Texto de uma parcela: p.p. para desemprego e aprovação, % para a atividade. */
 export function formatPiece(id: MapIndicator, delta: number): string {
-  if (id === 'desemprego' || id === 'aprovacao' || id === 'governador' || id === 'alinhamento' || id === 'chuva') {
+  if (
+    id === 'desemprego' ||
+    id === 'aprovacao' ||
+    id === 'governador' ||
+    id === 'alinhamento' ||
+    id === 'chuva' ||
+    id === 'intencao'
+  ) {
     return formatPointsDelta(delta);
   }
   return `${delta > 0 ? '+' : ''}${formatPercent(delta)}`;

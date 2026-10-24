@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { parsePolicy } from '@/types/policy';
 
-import { POLICIES } from './policies';
+import { POLICIES, PREVENTION_POLICY_IDS } from './policies';
 import { CAMPAIGN_MONTHS, LEGACY_SCENARIO_ID, PROTOTYPE_MONTHS, SCENARIOS, campaignMonths } from './scenarios';
 
 const validRoutine = {
@@ -90,15 +90,17 @@ describe('contratos de políticas da Fase 06', () => {
 
   it('carrega o catálogo completo e o cenário versionado sem alterar o legado', () => {
     expect(Object.keys(POLICIES).length).toBeGreaterThanOrEqual(30);
+    // As políticas de prevenção (PR 13) só entram no v0.8.0: os cenários publicados seguem com o catálogo de antes.
+    const published = Object.values(POLICIES).filter((policy) => !PREVENTION_POLICY_IDS.includes(policy.id));
     const current = SCENARIOS.brasil_2027_01_v050;
     const legacy = SCENARIOS[LEGACY_SCENARIO_ID];
     expect(current.id).toBe('brasil_2027_01_v050');
     expect(current.version).toBe('0.5.0');
-    expect(current.policies).toHaveLength(Object.keys(POLICIES).length);
-    expect([...current.policies].sort()).toEqual(Object.keys(POLICIES).sort());
-    expect(Object.values(POLICIES).filter((policy) => policy.delivery === 'rotina')).toHaveLength(22);
-    expect(Object.values(POLICIES).filter((policy) => policy.delivery === 'projeto')).toHaveLength(10);
-    expect(Object.values(POLICIES).filter((policy) => policy.delivery === undefined)).toHaveLength(10);
+    expect(current.policies).toHaveLength(published.length);
+    expect([...current.policies].sort()).toEqual(published.map((policy) => policy.id).sort());
+    expect(published.filter((policy) => policy.delivery === 'rotina')).toHaveLength(22);
+    expect(published.filter((policy) => policy.delivery === 'projeto')).toHaveLength(10);
+    expect(published.filter((policy) => policy.delivery === undefined)).toHaveLength(10);
     for (const policy of Object.values(POLICIES).filter((item) => item.delivery === 'projeto')) {
       expect(policy.timeline.executionMonths, policy.id).toBeGreaterThan(0);
       expect(policy.cost.disbursementProfile.length, policy.id).toBe(Math.ceil(policy.timeline.executionMonths / 12));

@@ -40,7 +40,21 @@ export type UfLabel = {
   capital: CapitalLabel;
 };
 
-type LabelsFile = { atlas: { width: number; height: number; scale: number }; ufs: UfLabel[] };
+/**
+ * Glifos dos marcadores (PR 11 e PR 13): o "!" do evento, o "≡" da notícia, o "⚑" da visita presidencial, o "⚒" da obra
+ * e o número do selo de grupo.
+ */
+export type MarkerAtlas = {
+  glyphs: { event: AtlasRect; news: AtlasRect; visit: AtlasRect; work: AtlasRect };
+  /** "2" … "9" e "9+", por texto do selo. */
+  counts: Readonly<Record<string, AtlasRect>>;
+};
+
+type LabelsFile = {
+  atlas: { width: number; height: number; scale: number };
+  ufs: UfLabel[];
+  markers: MarkerAtlas;
+};
 
 const FILE = data as unknown as LabelsFile;
 
@@ -48,6 +62,8 @@ const FILE = data as unknown as LabelsFile;
 export const LABEL_ATLAS = FILE.atlas;
 /** As 27 UFs, na mesma ordem de `UFS`. */
 export const LABELS: readonly UfLabel[] = FILE.ufs;
+/** Glifos dos marcadores no mesmo atlas das siglas (`markers.ts`). */
+export const MARKER_ATLAS: MarkerAtlas = FILE.markers;
 
 // ---------------------------------------------------------------- parâmetros
 
@@ -136,7 +152,7 @@ export function labelTier(altitude: number): LabelTier {
 
 export type Rect = { x: number; y: number; w: number; h: number };
 
-export type LabelKind = 'pin' | 'sigla' | 'capital';
+export type LabelKind = 'marker' | 'pin' | 'sigla' | 'capital';
 
 export type LabelCandidate = {
   id: string;
@@ -156,8 +172,8 @@ export type LabelViewport = {
   insets: { top: number; right: number; bottom: number; left: number };
 };
 
-/** Em empate de prioridade, pins e siglas vêm antes de capitais. */
-const KIND_ORDER: Record<LabelKind, number> = { pin: 0, sigla: 1, capital: 2 };
+/** Em empate de prioridade, marcadores vêm primeiro, depois pins e siglas, e por último capitais. */
+const KIND_ORDER: Record<LabelKind, number> = { marker: -1, pin: 0, sigla: 1, capital: 2 };
 
 export function candidateRect(c: Pick<LabelCandidate, 'x' | 'y' | 'w' | 'h'>): Rect {
   return { x: c.x - c.w / 2, y: c.y - c.h / 2, w: c.w, h: c.h };

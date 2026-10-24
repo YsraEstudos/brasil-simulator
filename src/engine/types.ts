@@ -175,6 +175,8 @@ export interface EconomyState {
  * | `regiao.atividade` | desvio da atividade (log) das UFs do escopo enquanto ativo; não muda o total nacional | regiões |
  * | `regiao.aprovacao` | desvio da aprovação (fração) nas UFs do escopo enquanto ativo; a média segue a nacional | regiões |
  * | `governadores.relacao` | variação da relação dos governadores do escopo em cada mês ativo (−100…100) | regiões |
+ * | `clima.prevencao_seca` | força da prevenção contra a seca nas UFs do escopo enquanto ativo (0–1 por programa; soma por UF, saturada em `prevencao_teto`); não mexe na chuva nem na seca, só no dano | clima |
+ * | `clima.prevencao_cheia` | idem, contra o dano das cheias e da chuva excessiva | clima |
  */
 export type ImpulseTarget =
   | 'gasto.investimento'
@@ -202,7 +204,9 @@ export type ImpulseTarget =
   | 'relacao_congresso'
   | 'regiao.atividade'
   | 'regiao.aprovacao'
-  | 'governadores.relacao';
+  | 'governadores.relacao'
+  | 'clima.prevencao_seca'
+  | 'clima.prevencao_cheia';
 
 /**
  * Incidência regional de um impulso (ECONOMIC_MODEL.md §5.15): como o efeito se reparte entre as UFs. Sem ela,
@@ -545,6 +549,52 @@ export interface PresidentialElection {
 }
 
 /**
+ * Votação nacional da candidatura do governo numa eleição geral, como o `electionsStep` a sorteou (POLITICAL_RULES.md
+ * §11.3). Sai só no relatório do mês (não vive no estado): é a entrada do resultado simulado por UF
+ * (PLANO_GLOBO.md §5.3). Valores crus do sorteio, sem limitar a [0, 1].
+ */
+export interface NationalElectionVote {
+  /** Votação do governo no 1º turno (maioria absoluta = vitória). */
+  vote1: number;
+  /** Votação do governo no 2º turno e votação da oposição; ausentes se o 1º turno decidiu. */
+  vote2?: number;
+  opponent?: number;
+  /** Candidatura do governo venceu. */
+  venceu: boolean;
+}
+
+/** Um turno do resultado simulado por UF: a votação do governo em cada UF fecha com a nacional do turno. */
+export interface ElectionRoundResult {
+  round: 1 | 2;
+  /**
+   * Fração dos votos válidos da candidatura do governo no turno, limitada a ]0, 1[ (no 2º turno, governo ÷ (governo +
+   * oposição), que passa de 0,5 exatamente quando o governo vence).
+   */
+  national: number;
+  /** Deslocamento comum, em logit, somado ao logit da aprovação de cada UF (achado por bissecção). */
+  shift: number;
+  /** Votação do governo por UF (sigla → fração). */
+  ufs: Record<string, number>;
+}
+
+/**
+ * Resultado simulado por UF de uma eleição geral (PLANO_GLOBO.md §5.3; POLITICAL_RULES.md §11.4): fotografia gravada
+ * no banco (`election_results`) na mesma transação do mês. Determinística: nenhum sorteio novo.
+ */
+export interface ElectionResult {
+  /** Mês da eleição (o do relatório). */
+  monthIndex: number;
+  /** A candidatura do governo venceu. */
+  governmentWon: boolean;
+  /** Peso de cada UF na soma que fecha com o nacional (PROVISORIO: população; o cenário não tem eleitorado por UF). */
+  weights: Record<string, number>;
+  /** O 1º turno e, se houve, o 2º. O último é o que decide. */
+  rounds: ElectionRoundResult[];
+  /** UFs cujo governo estadual trocou de dono na eleição (posse no mesmo mês do motor), separado do resultado. */
+  governorChanges: string[];
+}
+
+/**
  * Estado eleitoral (FASE_08.md): só existe quando o cenário tem o bloco `elections`. A migração não o cria; o
  * `electionsStep` cria no primeiro mês processado com um cenário de eleições e de lá em diante mantém.
  */
@@ -598,6 +648,12 @@ export interface ClimateState {
   enso: number;
   /** As 27 UFs, na ordem de `UF_IDS`. */
   ufs: UfClimate[];
+  /**
+   * Proteção por UF (seca e cheia) que valeu no mês anterior. O dano evitado tem a mesma recorrência do dano: a base do
+   * mês seguinte é a proteção que de fato estava em vigor, então um programa que começa, amadurece ou termina não salta.
+   * Ausente em saves anteriores à revisão: lido como sem proteção no mês anterior.
+   */
+  protection?: { drought: number[]; flood: number[] };
   /** Estado do PRNG do clima, independente de `GameState.rng`. */
   rng: RngState;
 }
@@ -736,6 +792,8 @@ export interface MonthReport {
    * `PROFILE_PARAMS.movimentos_por_mes`). Ausente em relatórios anteriores à v10.
    */
   profileMoves?: ProfileMove[];
+  /** Resultado simulado por UF, só no mês da eleição geral (PLANO_GLOBO.md §5.3); ausente nos demais meses. */
+  electionResult?: ElectionResult;
 }
 
 export interface MonthResult {
@@ -764,6 +822,12 @@ export type ReportDraft = Pick<
   copom: CopomDecision | null;
   regional: UfExplanation[] | null;
   profileMoves?: ProfileMove[];
+  /** Votação nacional sorteada na eleição geral do mês (preenchida por `electionsStep`). */
+  electionVote?: NationalElectionVote;
+  /** UFs cujo governo estadual trocou de dono no mês (preenchida por `governorTurnoverStep`). */
+  governorChanges?: string[];
+  /** Resultado simulado por UF (preenchido por `electionResultStep`, depois da posse dos governadores). */
+  electionResult?: ElectionResult;
 };
 
 export interface StepContext {

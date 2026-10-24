@@ -47,6 +47,7 @@ const WITHOUT_CLIMATE: readonly MonthStep[] = DEFAULT_STEPS.filter((s) => s !== 
 function withClimate(state: GameState, ufs: Record<string, Partial<UfClimate>>, enso = state.climate.enso): GameState {
   const climate: ClimateState = {
     enso,
+    protection: state.climate.protection,
     rng: state.climate.rng,
     ufs: state.climate.ufs.map((u) => ({ ...u, rain: 0, dryness: 0, ...ufs[u.id] })),
   };
@@ -610,9 +611,11 @@ describe('calibração do clima: nenhum parâmetro sem uso', () => {
     const { readFileSync } = await import('node:fs');
     const { join } = await import('node:path');
     const dir = join(process.cwd(), 'src', 'engine', 'climate');
-    const sources = ['evolution.ts', 'effects.ts', 'climate.ts']
-      .map((f) => readFileSync(join(dir, f), 'utf8'))
-      .join('\n');
+    const sources = [
+      ...['evolution.ts', 'effects.ts', 'climate.ts'].map((f) => readFileSync(join(dir, f), 'utf8')),
+      // A fração da obra em andamento é lida pela carteira de projetos (PR 13).
+      readFileSync(join(process.cwd(), 'src', 'engine', 'publicPolicies', 'publicPolicies.ts'), 'utf8'),
+    ].join('\n');
     for (const name of Object.keys(CLIMATE_PARAMS)) {
       if (name.startsWith('intensidade_')) continue; // lidas por CLIMATE_INTENSITY_PARAM
       expect(sources, name).toContain(`'${name}'`);

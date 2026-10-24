@@ -59,7 +59,9 @@ Parâmetros em `src/engine/economy/calibration.ts` (seção Federação); distri
 | Governadores | 27 governadores fictícios (cenário v0.4.0), cada um de um bloco e com relação própria com o governo (−100…100). A relação anda até a meta: posição própria do governador + `governador_alinhamento` × relação do bloco dele + `governador_aprovacao` × aprovação do presidente no estado acima da base. Eventos movem governadores de regiões específicas (`governadores.relacao`). |
 | Governador e aprovação local | Governador aliado puxa a aprovação do presidente no estado para cima; hostil, para baixo (`aprovacao_governador`). |
 | Adesão a convênios | Política com a condição `adesao_estadual` (hoje, a cooperação em segurança): no início da execução cada estado adere com probabilidade `adesao_base + adesao_relacao × relação/100`. O gasto e o capital público alcançam só a população dos estados que aderiram e são repartidos só entre eles; substitui o risco genérico de baixa adesão. No Casual todos aderem. A mesa de despacho mostra a adesão esperada. |
-| Visita presidencial | Ação de agenda (custo 1, uma por estado por mês): aprovação local `aprovacao_visita` por `meses_visita` meses e `relacao_visita` pontos com o governador. Não muda a aprovação nacional. |
+| Visita presidencial | Ação de agenda (custo 1, uma por estado por mês): aprovação local `aprovacao_visita` por `meses_visita` meses e `relacao_visita` pontos com o governador. Não muda a aprovação nacional. Enquanto o efeito local dura, a UF visitada ganha um pin de visita no mapa (PR 13; tocar abre o cartão da UF). |
+| Resposta federal à emergência climática (PR 13) | Numa UF em cheia ou seca prolongada **com prevenção ativa nela** (obra de segurança hídrica ou de drenagem em andamento ou pronta, ou dotação da Defesa Civil), a relação com o governador sobe até `prevencao_relacao_max` pontos no mês, proporcional à severidade e à proteção (menos que a visita; volta à meta sozinha). Sem prevenção, nada. A prevenção em si é política comum: os projetos são projetos de lei (votação dos blocos pela `position`, negociação e capital político, §6) e a rotina da Defesa Civil é ato executivo com dotação. Modelo em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.21. |
+| Obras no mapa (PR 13) | Obra da carteira (projeto) só ganha pin em UF que a **política cita** no escopo regional (`regional.scope`); obra nacional ou de macrorregião não tem pin e nenhuma coordenada é inventada. O pin fica na âncora da UF, só enquanto a obra está em andamento. |
 | Ainda não modelado | Finanças e dívidas estaduais (o evento das dívidas estaduais só mexe em relação, atividade e risco), FPE/FPM por UF, bancadas estaduais no Congresso, eleição de governadores (Fase 08), invasão de competência estadual como risco jurídico. |
 
 ---
@@ -312,6 +314,17 @@ Código em `src/engine/politics/` (`calibration.ts`, `alignment.ts`, `profile.ts
 - **Efeito nacional (D-G10).** Eleitor mediano = média das inclinações das UFs ponderada pela população. O termo `eleitor_mediano_teto · tanh((d_neutra − d)/escala)`, com `d` a distância normalizada (0–1) entre o perfil e o mediano, vale no máximo ±2 p.p. de aprovação (estado estacionário; `eleitor_mediano_teto` = 0,02, `d_neutra` = 0,2, `escala` = 0,15) e entra como pressão mensal `ajuste_aprovacao × termo` na opinião pública, causa "Distância do eleitor médio". É ímpar em torno da distância neutra e igual para quaisquer posições à mesma distância do mediano: **nenhuma posição é premiada em si** (GAME_DESIGN.md §1).
 - **Leituras para a interface.** `alignmentView` (alinhamento por UF, mediano, termo nacional) e `previewProfilePush` (para onde uma política empurra o perfil e quais UFs tendem a ganhar ou perder aprovação relativa; estimativa, também em `RegionalDecisionPreview.profilePush`).
 
+### 11.3 Mapa eleitoral: voto estimado e resultado simulado por UF (PR 12 do [PLANO_GLOBO.md](PLANO_GLOBO.md) §5.3)
+Código em `src/engine/elections/regionalResult.ts`. O motor continua sem voto por UF: a votação nacional da eleição geral (`vote1`/`vote2`, §11 e FASE_08.md) é sorteada como antes e **distribuída** às UFs depois, sem sorteio novo.
+
+- **Conta.** Cada UF parte do logit da sua aprovação no mês da eleição (já com o alinhamento, §11.2) e recebe um **deslocamento comum** `s`; a votação da UF é `σ(logit(aprovação) + s)`. O `s` é achado por bissecção para que a soma ponderada pelo eleitorado seja exatamente a votação nacional do turno. Quem aprova mais vota mais (a ordem das UFs se mantém) e mais voto nacional é mais voto em todas as UFs. Aprovação e votação são limitadas a ]10⁻⁶, 1 − 10⁻⁶[ só para o logit existir.
+- **Turnos.** 1º turno: `vote1`. 2º turno (quando o governo não passou de 0,5): governo ÷ (governo + oposição), com `vote2` e a oposição do próprio sorteio; passa de 0,5 exatamente quando `vote2 > opponent`, a regra do motor. O último turno decide.
+- **Pesos.** `electorateWeights`: participação na **população** — **PROVISORIO** (o cenário não traz eleitores aptos por UF), a mesma ponderação da aprovação regional (D7).
+- **Troca de governador.** Sorteada em `governorTurnoverStep` (§11, FASE_08.md) no mesmo mês do pleito; as UFs que trocaram vão em `ElectionResult.governorChanges`, separadas do voto presidencial. O motor não tem a posse de janeiro como mês próprio.
+- **Intenção estimada.** `regionalVoteIntention`: a mesma conta com a intenção nacional de voto do momento no lugar da votação sorteada. É **estimativa** em qualquer mês, inclusive no da eleição — a votação real ainda leva o ruído do sorteio e, no 2º turno, a oposição.
+- **Registro.** `MonthReport.electionResult` (só no mês do pleito) e a tabela `election_results` do banco (migração 6), gravada na transação do mês; não vive no `GameState`.
+- **Neutralidade.** As cores do mapa eleitoral não são cores de partido, e a inclinação política (violeta ↔ âmbar) não marca nenhum lado como melhor (GAME_DESIGN.md §1).
+
 ---
 
 ## 12. Catálogo inicial de políticas (com instrumento e requisitos)
@@ -340,6 +353,9 @@ Este é o catálogo-semente. As 8 primeiras compõem o protótipo (ver [GAME_DES
 | 18 | Reforma da previdência (parâmetros) | Fiscal | PEC + leis | 3/5; alto custo político; efeito de décadas |
 | 19 | Desoneração setorial temporária | Indústria | PL / MP | LRF art. 14; contribuições sociais: noventena |
 | 20 | Crédito extraordinário para calamidade | Emergência | MP | Somente com evento de calamidade ativo |
+| 21 | Segurança hídrica do semiárido (PR 13, v0.8.0) | Saneamento / clima | PL + obra (carteira) | Espaço no limite de despesas; território no escopo regional (9 UFs); reduz o dano da seca, não a chuva; manutenção anual |
+| 22 | Drenagem urbana e contenção de encostas (PR 13, v0.8.0) | Cidades / clima | PL + obra (carteira) | Espaço no limite de despesas; nacional; reduz o dano das cheias; manutenção anual |
+| 23 | Reforço da Defesa Civil (PR 13, v0.8.0) | Cidades / clima | Rotina (ato executivo + dotação anual) | Uma rotina por pasta e ano; efeito proporcional à dotação liberada, com maturação |
 
 ---
 

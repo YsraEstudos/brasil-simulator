@@ -37,11 +37,31 @@ export interface EditionPage {
   others: NewsItem[];
 }
 
-/** Página da edição no caderno escolhido: a primeira notícia (a de maior prioridade) vira a manchete. */
-export function editionPage(edition: Edition | undefined, filter: NewsFilter): EditionPage {
+/**
+ * Posição (0 = a mais recente) da edição que tem a notícia `newsId`; 0 se ela não está em nenhuma edição. É onde o
+ * jornal abre quando o jogador toca o marcador da notícia no mapa (PLANO_GLOBO.md §7, PR 11).
+ */
+export function editionIndexOf(editions: readonly Edition[], newsId: string | undefined): number {
+  if (newsId === undefined) return 0;
+  return Math.max(
+    0,
+    editions.findIndex((e) => e.items.some((n) => n.id === newsId)),
+  );
+}
+
+/**
+ * Página da edição no caderno escolhido: a primeira notícia (a de maior prioridade) vira a manchete. Com `focusId` (a
+ * notícia aberta pelo mapa) e ela nesta página, é ela a manchete e as demais seguem na ordem.
+ */
+export function editionPage(edition: Edition | undefined, filter: NewsFilter, focusId?: string): EditionPage {
   if (!edition) return { lead: undefined, others: [] };
-  const [lead, ...others] = filterNews(edition.items, filter);
-  return { lead, others };
+  const items = filterNews(edition.items, filter);
+  const focused = items.find((n) => n.id === focusId);
+  if (!focused) {
+    const [lead, ...others] = items;
+    return { lead, others };
+  }
+  return { lead: focused, others: items.filter((n) => n !== focused) };
 }
 
 /** Quantas colunas cabem na largura do jornal (em pixels). */

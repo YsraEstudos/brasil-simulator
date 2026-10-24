@@ -7,7 +7,9 @@ Entrada (já gerada pelo build_globe.py):
 Saídas:
   src/globe/data/capitals.json   as 27 capitais: { sigla, capital, lon, lat }
   src/globe/data/labels.json     âncora interior, área, prioridade e retângulos do atlas por UF
-  assets/globe/labels.png        atlas RGBA com 27 siglas + 27 nomes de capital (branco com contorno escuro)
+  assets/globe/labels.png        atlas RGBA com 27 siglas + 27 nomes de capital + glifos dos marcadores (PR 11): "!" do
+                                 evento, "≡" da notícia e os números 2…9 e "9+" do selo de grupo; PR 13: "⚑" da visita
+                                 presidencial e "⚒" da obra (branco com contorno escuro)
 
 Fontes e status (registrados em docs/DATA_SOURCES.md §3.2):
   - Coordenadas das capitais: sede municipal (IBGE, "localidades"/sedes municipais), status PROVISORIO — valores
@@ -59,6 +61,19 @@ SIGLA_STROKE = 3  # espessura do contorno escuro no atlas (px do atlas), por tam
 CAPITAL_STROKE = 2
 TEXT_FILL = (255, 255, 255)  # branco
 TEXT_STROKE = (16, 20, 28)  # quase preto azulado: legível sobre qualquer cor de mapa
+# Marcadores de eventos e notícias (PLANO_GLOBO.md §7, PR 11): o disco é desenhado no shader; no atlas ficam só os
+# glifos. Cada glifo é centralizado numa tela de tamanho fixo (px lógicos), para o globo trocar o glifo do marcador
+# (evento × notícia × visita × obra, 2 … 9+) mudando só o u/v, sem mexer na geometria.
+# ≡ (U+2261) lembra colunas de jornal; ⚑ (U+2691) é a bandeira da visita presidencial (PR 13); ⚒ (U+2692) é a obra (PR 13).
+# A DejaVu Sans Bold tem os quatro.
+MARKER_GLYPHS = {"event": "!", "news": "≡", "visit": "⚑", "work": "⚒"}
+MARKER_COUNTS = ["2", "3", "4", "5", "6", "7", "8", "9", "9+"]
+MARKER_GLYPH_FONT_PX = 13
+MARKER_GLYPH_CANVAS_PX = (16, 16)
+MARKER_COUNT_FONT_PX = 9
+MARKER_COUNT_PLUS_FONT_PX = 8  # "9+" é mais largo: fonte menor para caber na mesma tela
+MARKER_COUNT_CANVAS_PX = (16, 12)
+MARKER_STROKE = 2
 PACK_PADDING = 2  # px do atlas entre entradas (evita sangramento do filtro bilinear)
 ATLAS_MAX_SIDE = 1024
 ATLAS_MIN_SIDE = 128
@@ -347,6 +362,16 @@ def render_text(text: str, font: ImageFont.FreeTypeFont, stroke: int) -> Image.I
     return Image.fromarray(rgba, "RGBA")
 
 
+def pad_to(im: Image.Image, canvas_px: tuple[int, int], name: str) -> Image.Image:
+    """Centraliza a imagem numa tela transparente de `canvas_px` (px lógicos × ATLAS_SCALE)."""
+    w, h = canvas_px[0] * ATLAS_SCALE, canvas_px[1] * ATLAS_SCALE
+    if im.width > w or im.height > h:
+        raise SystemExit(f"glifo {name} ({im.width}x{im.height}) não cabe na tela {w}x{h} do atlas")
+    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    out.paste(im, ((w - im.width) // 2, (h - im.height) // 2))
+    return out
+
+
 def shelf_pack(sizes: list[tuple[str, int, int]], side_w: int, side_h: int):
     """Empacotamento em prateleiras (altura decrescente). Devolve {chave: (x, y)} ou None se não couber."""
     order = sorted(sizes, key=lambda s: (-s[2], -s[1], s[0]))
@@ -440,6 +465,15 @@ def main() -> None:
     for u in ufs:
         entries.append((f"s:{u['sigla']}", render_text(u["sigla"], sigla_font, SIGLA_STROKE)))
         entries.append((f"c:{u['sigla']}", render_text(CAPITALS[u["sigla"]][0], capital_font, CAPITAL_STROKE)))
+    glyph_font = load_font(MARKER_GLYPH_FONT_PX * ATLAS_SCALE)
+    count_font = load_font(MARKER_COUNT_FONT_PX * ATLAS_SCALE)
+    count_plus_font = load_font(MARKER_COUNT_PLUS_FONT_PX * ATLAS_SCALE)
+    for key, ch in MARKER_GLYPHS.items():
+        im = render_text(ch, glyph_font, MARKER_STROKE)
+        entries.append((f"g:{key}", pad_to(im, MARKER_GLYPH_CANVAS_PX, f"g:{key}")))
+    for text in MARKER_COUNTS:
+        im = render_text(text, count_plus_font if text.endswith("+") else count_font, MARKER_STROKE)
+        entries.append((f"n:{text}", pad_to(im, MARKER_COUNT_CANVAS_PX, f"n:{text}")))
     atlas, pos = build_atlas(entries)
     images = dict(entries)
     OUT_ATLAS.parent.mkdir(parents=True, exist_ok=True)
@@ -468,6 +502,10 @@ def main() -> None:
         {
             "atlas": {"width": atlas.width, "height": atlas.height, "scale": ATLAS_SCALE},
             "ufs": labels,
+            "markers": {
+                "glyphs": {k: rect(pos[f"g:{k}"], images[f"g:{k}"], atlas) for k in MARKER_GLYPHS},
+                "counts": {t: rect(pos[f"n:{t}"], images[f"n:{t}"], atlas) for t in MARKER_COUNTS},
+            },
         },
     )
     print(f"atlas {atlas.width}x{atlas.height}, {OUT_ATLAS.stat().st_size} bytes; labels.json {OUT_LABELS.stat().st_size} bytes")

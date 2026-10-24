@@ -119,7 +119,9 @@ describe('camada Alinhamento (PLANO_GLOBO.md §5.2)', () => {
     expect(availableIndicators(content).map((m) => m.id)).toContain('alinhamento');
     const antigo = loadContent('brasil_2027_01_v070');
     expect(availableIndicators(antigo).map((m) => m.id)).not.toContain('alinhamento');
-    expect(availableIndicators(antigo)).toHaveLength(MAP_INDICATORS.length - 1);
+    // Sem inclinação somem o Alinhamento e a Inclinação política; Intenção e Resultado dependem só das eleições.
+    expect(availableIndicators(antigo).map((m) => m.id)).not.toContain('inclinacao');
+    expect(availableIndicators(antigo)).toHaveLength(MAP_INDICATORS.length - 2);
   });
 });
 
@@ -231,6 +233,15 @@ describe('camadas Chuva e Seca (PLANO_GLOBO.md §4.2)', () => {
     };
     expect(explanationFor('chuva', x).map((p) => p.cause)).toEqual(['clima_chuvas_humor']);
     expect(explanationFor('seca', x).map((p) => p.cause)).toEqual(['clima_seca']);
+    // A prevenção (PR 13) é parte da explicação da seca: o dano evitado aparece ao lado do dano.
+    const protectedUf: UfExplanation = {
+      ...x,
+      activity: [
+        ...x.activity,
+        { cause: 'clima_seca_prevencao', label: 'Prevenção reduziu o dano da seca', delta: 0.002 },
+      ],
+    };
+    expect(explanationFor('seca', protectedUf).map((p) => p.cause)).toEqual(['clima_seca', 'clima_seca_prevencao']);
     expect(formatPiece('chuva', -0.003)).toBe('−0,3 p.p.');
     expect(formatPiece('seca', -0.004)).toBe('−0,4%');
   });

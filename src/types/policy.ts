@@ -172,6 +172,20 @@ export const policySchema = z
     dataStatus: dataStatusSchema,
     /** Entrega opcional da carteira da Fase 06; ausente conserva o fluxo legado. */
     delivery: deliverySchema.optional(),
+    /**
+     * Prevenção climática (PLANO_GLOBO.md §7, PR 13): quanto esta política, **com a entrega em plena capacidade**,
+     * contribui para reduzir o **dano** da seca e das cheias (0–1 por programa; a soma por UF satura em
+     * `prevencao_teto`). Nunca muda a chuva nem a seca. Só vale para rotina e projeto (a carteira da Fase 06 é quem
+     * mede a capacidade entregue); nas UFs do `regional.scope`, ou em todas se o escopo for vazio.
+     */
+    prevention: z
+      .object({
+        drought: z.number().min(0).max(1).optional(),
+        flood: z.number().min(0).max(1).optional(),
+      })
+      .strict()
+      .refine((p) => (p.drought ?? 0) > 0 || (p.flood ?? 0) > 0, { message: 'prevenção sem efeito algum' })
+      .optional(),
     /** Metadados de fases de um projeto explícito. */
     project: projectSchema.optional(),
   })
@@ -195,6 +209,14 @@ export const policySchema = z
         code: 'custom',
         path: ['instruments'],
         message: 'MP não pode abrir crédito adicional comum (só extraordinário)',
+      });
+    }
+
+    if (p.prevention && p.delivery !== 'rotina' && p.delivery !== 'projeto') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['prevention'],
+        message: 'prevenção climática exige delivery rotina ou projeto',
       });
     }
 

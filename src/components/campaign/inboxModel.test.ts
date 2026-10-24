@@ -9,6 +9,7 @@ import {
   canToggleDecision,
   characterBriefs,
   eventChoiceCost,
+  focusFirst,
   inboxCount,
   pendingItems,
   sanctionChoices,
@@ -196,5 +197,21 @@ describe('Cabe na agenda?', () => {
     expect(canToggleDecision(EMPTY_DRAFT, decision, content, decision.agendaCost)).toBe(true);
     const marked: AgendaDraft = { ...EMPTY_DRAFT, decisions: [decision] };
     expect(canToggleDecision(marked, decision, content, 0)).toBe(true);
+  });
+});
+
+describe('focusFirst (evento aberto pelo marcador do mapa)', () => {
+  const list = ['a', 'b', 'c'].map((id) => ({ id, pending: { instanceId: `${id}#1` } }));
+
+  it('põe a instância em foco no topo e mantém a ordem dos demais', () => {
+    expect(focusFirst(list, 'c#1').map((i) => i.id)).toEqual(['c', 'a', 'b']);
+    expect(focusFirst(list, 'b#1').map((i) => i.id)).toEqual(['b', 'a', 'c']);
+  });
+
+  it('sem foco ou com foco fora da lista, a ordem não muda (e a lista original fica intacta)', () => {
+    expect(focusFirst(list, null).map((i) => i.id)).toEqual(['a', 'b', 'c']);
+    expect(focusFirst(list, undefined).map((i) => i.id)).toEqual(['a', 'b', 'c']);
+    expect(focusFirst(list, 'z#9').map((i) => i.id)).toEqual(['a', 'b', 'c']);
+    expect(list.map((i) => i.id)).toEqual(['a', 'b', 'c']);
   });
 });

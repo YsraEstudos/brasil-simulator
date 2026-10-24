@@ -1,4 +1,6 @@
 import { termOf } from '../calendar';
+import { climateParam } from '../climate/calibration';
+import { preventionOf, type Prevention } from '../climate/effects';
 import { annualReview, fiscalStructure, revenueMonth, spendingMonth } from '../economy/fiscal';
 import { BRAND_ACTION_ID, DIRECTIVE_ACTION_ID } from '../actions';
 import { currentNominalGdpMillions, fiscalValues, scenarioEconomyValues } from '../state';
@@ -253,6 +255,7 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
     }
     roomMillions -= allocated;
     impulses.push(...routineImpulses(policy, directive, allocated, gdpMillions, t));
+    impulses.push(...routinePreventionImpulses(policy, directive, allocated, t));
   }
 
   const projectRuns = ensureProjects(publicState, proposals, ctx.content, t, state);
@@ -262,6 +265,8 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
     impulses.push(...result.impulses);
     if (result.transition) ctx.draft.notes.push(result.transition);
   }
+
+  for (const run of projectRuns) impulses.push(...projectPreventionImpulses(run.project, run.policy, t));
 
   publicState.capitalStockMillions = publicState.projects
     .filter((project) => project.phase === 'operacao')
@@ -323,6 +328,124 @@ function routineImpulses(
         ...(regional ? { regional } : {}),
       };
     });
+}
+
+/**
+ * UFs de um projeto, para o mapa (PLANO_GLOBO.md §7, PR 13: "obras sem coordenadas inventadas"). **Regra única:** só vale
+ * UF que o próprio conteúdo da política cita — as siglas de UF do `regional.scope`, o território onde a política declara
+ * gastar (macrorregiões, escopo vazio e UFs desconhecidas do cenário não contam: obra nacional ou regional **não** vira
+ * pin). Nunca há coordenadas: o pin fica na âncora da UF, como os demais marcadores. Na ordem do escopo, sem repetição.
+ */
+export function projectUfs(policy: Pick<Policy, 'regional'>, scenarioUfIds: readonly string[]): string[] {
+  const known = new Set(scenarioUfIds);
+  const scope = policy.regional?.scope ?? [];
+  return [...new Set(scope.filter((entry) => known.has(entry)))];
+}
+
+/**
+ * Prevenção climática de uma política (PLANO_GLOBO.md §7, PR 13): um impulso `clima.prevencao_seca` e/ou
+ * `clima.prevencao_cheia` com a força do programa × a capacidade entregue (0–1), no escopo regional da política (as UFs
+ * do `regional.scope`; sem escopo, todas). Só o clima lê esses alvos (`preventionOf`): não mexem na economia.
+ */
+function preventionImpulses(
+  policy: Policy,
+  coverage: number,
+  sourceId: string,
+  startMonth: number,
+  regional: ImpulseRegional | undefined,
+): ScheduledImpulse[] {
+  if (!policy.prevention || !(coverage > 0)) return [];
+  const label = `Prevenção: ${policy.name}`;
+  const make = (target: 'clima.prevencao_seca' | 'clima.prevencao_cheia', strength: number | undefined) =>
+    strength !== undefined && strength > 0
+      ? [
+          {
+            sourceId,
+            label,
+            target,
+            delta: strength * coverage,
+            startMonth,
+            endMonth: startMonth,
+            ...(regional ? { regional } : {}),
+          },
+        ]
+      : [];
+  return [
+    ...make('clima.prevencao_seca', policy.prevention.drought),
+    ...make('clima.prevencao_cheia', policy.prevention.flood),
+  ];
+}
+
+/**
+ * Rotina de prevenção (Defesa Civil): a força vale na proporção da dotação **efetivamente liberada** (`allocated` ÷ custo
+ * nominal, no máximo 1) e chega `timeline.maturationMonths` depois, como os demais efeitos da rotina: o reforço leva
+ * meses para virar alerta, equipe e abrigo, e o efeito some quando a dotação some (a rotina é recriada a cada mês).
+ */
+function routinePreventionImpulses(
+  policy: Policy,
+  directive: MinistryDirective,
+  allocatedMillions: number,
+  month: number,
+): ScheduledImpulse[] {
+  const nominal = policy.cost.annualMillions;
+  if (!policy.prevention || !(allocatedMillions > 0) || !(nominal > 0)) return [];
+  return preventionImpulses(
+    policy,
+    Math.min(1, allocatedMillions / nominal),
+    `${ROUTINE_IMPULSE_PREFIX}${directive.ministryId}:${directive.policyId}:${directive.year}:${month}`,
+    month + policy.timeline.maturationMonths,
+    policyRegional(policy),
+  );
+}
+
+/**
+ * Prevenção de um projeto: a obra em andamento entrega `prevencao_fracao_obra` × avanço físico × escala aprovada (orçamento
+ * ÷ custo nominal, no máximo 1: um projeto aprovado menor protege menos, como em operação); em operação, a
+ * força × ativo líquido ÷ ativo nominal (custo da obra × eficiência, no máximo 1). O ativo deprecia e, sem manutenção
+ * paga, deprecia mais (`processProject`), então a proteção cai sozinha quando o governo deixa a obra sem manutenção.
+ * Planejamento, licenciamento, licitação e obra cancelada não protegem.
+ */
+function projectPreventionImpulses(
+  project: PublicProject,
+  policy: Policy | undefined,
+  month: number,
+): ScheduledImpulse[] {
+  if (!policy?.prevention || month < project.startMonth) return [];
+  let coverage = 0;
+  if (project.phase === 'obra') {
+    const nominalBudget = policy.cost.annualMillions * (Math.max(1, policy.timeline.executionMonths) / MONTHS_PER_YEAR);
+    const approvedScale = nominalBudget > 0 ? Math.min(1, project.budgetMillions / nominalBudget) : 0;
+    coverage = climateParam('prevencao_fracao_obra') * project.progress * approvedScale;
+  } else if (project.phase === 'operacao') {
+    const nominalAsset =
+      policy.cost.annualMillions *
+      (Math.max(1, policy.timeline.executionMonths) / MONTHS_PER_YEAR) *
+      (policy.project?.efficiency ?? 1);
+    coverage = nominalAsset > 0 ? Math.min(1, project.assetMillions / nominalAsset) : 0;
+  }
+  return preventionImpulses(
+    policy,
+    coverage,
+    `${PROJECT_IMPULSE_PREFIX}${project.proposalId}:prevencao:${month}`,
+    month,
+    policyRegional(policy),
+  );
+}
+
+/**
+ * Proteção climática de cada UF **agora**, para a interface (cartão da UF): os impulsos de prevenção ainda ativos na fila
+ * (rotinas, que chegam com atraso) mais os dos projetos calculados do estado atual da carteira. É o que a etapa do clima
+ * do próximo mês vai usar, sem rodar o mês. Pura e sem sorteio.
+ */
+export function currentPrevention(
+  state: Pick<GameState, 'impulses' | 'monthIndex' | 'publicPolicies'>,
+  content: Pick<GameContent, 'scenario' | 'policies'>,
+): Prevention {
+  const ufs = content.scenario.regions?.ufs ?? [];
+  const fromProjects = state.publicPolicies.projects.flatMap((project) =>
+    projectPreventionImpulses(project, content.policies[project.policyId], state.monthIndex),
+  );
+  return preventionOf([...state.impulses, ...fromProjects], state.monthIndex, ufs);
 }
 
 function ensureProjects(

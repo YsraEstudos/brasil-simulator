@@ -9,6 +9,7 @@ import {
   rectsCollide,
   type Rect,
 } from '@/globe/labels';
+import { MARKER_BADGE_SIZE_PX, MARKER_SIZE_PX, type GlobeMarker } from '@/globe/markers';
 
 import { FLAT_CAPITALS_MIN_MAP_WIDTH_PX, flatFit, flatMapWidthPx, layoutFlatLabels } from './flatLabels';
 import { flatMap } from './flatProjection';
@@ -117,5 +118,61 @@ describe('layoutFlatLabels', () => {
     const a = items(360, 640);
     expect(items(360, 640)).toEqual(a);
     expect(a.map((i) => i.id)).toEqual([...a.map((i) => i.id)].sort());
+  });
+});
+
+describe('layoutFlatLabels com marcadores (PR 11)', () => {
+  const marker = (sigla: string, over: Partial<GlobeMarker> = {}): GlobeMarker => ({
+    sigla,
+    kind: 'event',
+    critical: false,
+    count: 1,
+    pulse: false,
+    ...over,
+  });
+  type Placed = Extract<ReturnType<typeof items>[number], { kind: 'marker' }>;
+  const markersOf = (list: ReturnType<typeof items>): Placed[] => list.filter((i): i is Placed => i.kind === 'marker');
+
+  it('sem marcadores não há item de marcador; com marcadores ele fica centrado no âncora, no tamanho × escala', () => {
+    expect(markersOf(items(360, 640))).toEqual([]);
+    const scale = labelScale(1.15);
+    const out = markersOf(items(360, 640, { scale, markers: [marker('SP')] }));
+    expect(out).toHaveLength(1);
+    const [m] = out;
+    expect(m.id).toBe('SP:marker');
+    expect(m.box.w).toBeCloseTo(MARKER_SIZE_PX * scale, 6);
+    const fit = flatFit(360, 640);
+    const sp = LABELS.find((l) => l.sigla === 'SP')!;
+    const p = flatMap().project(sp.anchor[0], sp.anchor[1]);
+    expect(m.box.x + m.box.w / 2).toBeCloseTo(fit.offsetX + p.x * fit.scale, 6);
+    expect(m.box.y + m.box.h / 2).toBeCloseTo(fit.offsetY + p.y * fit.scale, 6);
+  });
+
+  it('o marcador vence a sigla da própria UF; o selo só em grupo, no canto superior direito', () => {
+    const out = items(360, 640, { markers: [marker('SP', { count: 4 }), marker('BA')] });
+    expect(out.some((i) => i.id === 'SP:sigla')).toBe(false);
+    expect(out.some((i) => i.id === 'BA:sigla')).toBe(false);
+    const [ba, sp] = [markersOf(out).find((m) => m.sigla === 'BA')!, markersOf(out).find((m) => m.sigla === 'SP')!];
+    expect(ba.badge).toBeNull();
+    expect(sp.badge).not.toBeNull();
+    expect(sp.badge!.w).toBeCloseTo(MARKER_BADGE_SIZE_PX, 6);
+    expect(sp.badge!.x + sp.badge!.w / 2).toBeGreaterThan(sp.box.x + sp.box.w / 2);
+    expect(sp.badge!.y + sp.badge!.h / 2).toBeLessThan(sp.box.y + sp.box.h / 2);
+  });
+
+  it('respeita as áreas do HUD e nunca sobrepõe outro marcador', () => {
+    const all = LABELS.map((l) => marker(l.sigla));
+    const reserved: Rect[] = [{ x: 0, y: 250, w: 60, h: 160 }];
+    const out = markersOf(items(360, 740, { markers: all, reserved }));
+    expect(out.length).toBeGreaterThan(5);
+    for (const a of out) {
+      for (const q of reserved) expect(rectsCollide(a.box, q, 0), a.id).toBe(false);
+      for (const b of out) if (a !== b) expect(rectsCollide(a.box, b.box, 0), `${a.id}×${b.id}`).toBe(false);
+    }
+  });
+
+  it('é determinístico e a ordem dos marcadores de entrada não importa', () => {
+    const all = ['CE', 'PI', 'MA', 'PA', 'BA'].map((s) => marker(s));
+    expect(items(360, 640, { markers: [...all].reverse() })).toEqual(items(360, 640, { markers: all }));
   });
 });

@@ -44,8 +44,20 @@ export {
   governorTurnoverStep,
   MEMORY_MONTHS,
   moodOf,
+  votingIntentionOf,
   weightedMemory,
 } from './elections/elections';
+export {
+  buildElectionResult,
+  electionResultStep,
+  electorateWeights,
+  nationalRounds,
+  regionalVoteIntention,
+  solveCommonShift,
+  type CommonShiftSolution,
+  type ElectionResultInput,
+  type RegionalVoteIntention,
+} from './elections/regionalResult';
 export { inVedacaoWindow, isNovoBeneficio, vedacaoAtiva } from './elections/vedacao';
 export {
   cabinetScandalRisk,
@@ -165,8 +177,11 @@ export {
   climateRegionalEffects,
   floodRisk,
   floodVulnerabilities,
+  preventionOf,
+  protectionOf,
   type ClimateDamage,
   type ClimateDamageIndices,
+  type Prevention,
 } from './climate/effects';
 export {
   CLIMATE_DRAWS_PER_MONTH,
@@ -192,7 +207,7 @@ export { SaveTooNewError, upgradeGameState } from './upgrade';
 export * from './report';
 export * from './society';
 export * from './publicPolicies/types';
-export { BRANDABLE_STATUSES } from './publicPolicies/publicPolicies';
+export { BRANDABLE_STATUSES, currentPrevention, projectUfs } from './publicPolicies/publicPolicies';
 export { drawableEvents, eventsForScenario, hasFlag, standingOf } from './events/events';
 export {
   climateLocation,

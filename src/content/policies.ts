@@ -20,6 +20,9 @@ import projetoMobilidadeUrbana from '@/data/policies/projeto_mobilidade_urbana.j
 import projetoRequalificacaoPortuaria from '@/data/policies/projeto_requalificacao_portuaria.json';
 import projetoSaneamentoResiliente from '@/data/policies/projeto_saneamento_resiliente.json';
 import projetoTransmissaoEnergia from '@/data/policies/projeto_transmissao_energia.json';
+import projetoSegurancaHidrica from '@/data/policies/projeto_seguranca_hidrica.json';
+import projetoDrenagemContencao from '@/data/policies/projeto_drenagem_contencao.json';
+import rotinaDefesaCivil from '@/data/policies/rotina_defesa_civil.json';
 import rotinaAlfabetizacao from '@/data/policies/rotina_alfabetizacao.json';
 import rotinaAssistenciaTecnicaRural from '@/data/policies/rotina_assistencia_tecnica_rural.json';
 import rotinaAtencaoBasica from '@/data/policies/rotina_atencao_basica.json';
@@ -87,6 +90,17 @@ const RAW: readonly unknown[] = [
   projetoArmazenagemAgropecuaria,
   projetoMobilidadeUrbana,
   projetoRequalificacaoPortuaria,
+  // PR 13 do PLANO_GLOBO (prevenção hídrica e Defesa Civil): só o cenário v0.8.0 as oferece (`PREVENTION_POLICY_IDS`).
+  projetoSegurancaHidrica,
+  projetoDrenagemContencao,
+  rotinaDefesaCivil,
+];
+
+/** Políticas de prevenção climática do PR 13: citadas apenas pelo cenário v0.8.0 (os publicados não mudam). */
+export const PREVENTION_POLICY_IDS: readonly string[] = [
+  'projeto_seguranca_hidrica',
+  'projeto_drenagem_contencao',
+  'rotina_defesa_civil',
 ];
 
 function loadPolicies(raw: readonly unknown[]): Record<string, Policy> {

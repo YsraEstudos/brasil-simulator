@@ -5,7 +5,14 @@ import type { NewsItem } from '@/engine';
 import { deskLayout, easeInOutCubic, laptopScreenFrame, pcPose, poseAt } from './deskCamera';
 import { newspaperRect, PAPER_MAX_WIDTH, rectStyle, socialScreenRect } from './deskOverlay';
 import { keyboardTexture, newspaperTexture, radialTexture, screenTexture, woodTexture } from './deskTextures';
-import { buildEditions, editionPage, leadFontSize, mastheadFontSize, newspaperColumns } from './newspaperView';
+import {
+  buildEditions,
+  editionIndexOf,
+  editionPage,
+  leadFontSize,
+  mastheadFontSize,
+  newspaperColumns,
+} from './newspaperView';
 import { scaleTypography } from './scaledTypography';
 import {
   buildSocialFeed,
@@ -58,6 +65,23 @@ describe('edições do jornal', () => {
     expect(editionPage(first, 'congresso').lead?.id).toBe('0_1');
     expect(editionPage(first, 'evento')).toEqual({ lead: undefined, others: [] });
     expect(editionPage(undefined, 'todas')).toEqual({ lead: undefined, others: [] });
+  });
+
+  it('a notícia aberta pelo marcador do mapa abre a edição dela e vira a manchete (PR 11)', () => {
+    const editions = buildEditions(feed);
+    expect(editionIndexOf(editions, '2_0')).toBe(0);
+    expect(editionIndexOf(editions, '0_1')).toBe(1);
+    // sem pedido, ou notícia que não está em nenhuma edição: a mais recente
+    expect(editionIndexOf(editions, undefined)).toBe(0);
+    expect(editionIndexOf(editions, 'inexistente')).toBe(0);
+    expect(editionIndexOf([], '0_1')).toBe(0);
+
+    const page = editionPage(editions[1], 'todas', '0_1');
+    expect(page.lead?.id).toBe('0_1');
+    expect(page.others.map((n) => n.id)).toEqual(['0_0']);
+    // fora desta edição, ou fora do caderno escolhido, a página fica como era
+    expect(editionPage(editions[0], 'todas', '0_1').lead?.id).toBe('2_0');
+    expect(editionPage(editions[1], 'economia', '0_1').lead?.id).toBe('0_0');
   });
 
   it('colunas e manchete crescem com a largura, dentro de limites', () => {

@@ -9,7 +9,7 @@ import prototipo from '@/data/scenarios/prototipo_ficticio.json';
 import { parseScenario, type Scenario } from '@/types/scenario';
 import type { DataValue } from '@/types/data';
 
-import { POLICIES } from './policies';
+import { POLICIES, PREVENTION_POLICY_IDS } from './policies';
 import {
   CAMPAIGN_MONTHS,
   DEFAULT_SCENARIO_ID,
@@ -269,13 +269,14 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
     expect(v070.regions?.meta.lean).toBeUndefined();
   });
 
-  it('difere do v0.7.0 apenas em id, version e na inclinação (lean) das UFs, com metadados PROVISORIO', () => {
+  it('difere do v0.7.0 apenas em id, version, na inclinação (lean) das UFs e nas políticas de prevenção do PR 13', () => {
     const semLean = (scenario: Scenario): Record<string, unknown> => {
       const resto: Record<string, unknown> = { ...scenario };
       delete resto.id;
       delete resto.version;
       return {
         ...resto,
+        policies: scenario.policies.filter((id) => !PREVENTION_POLICY_IDS.includes(id)),
         regions: {
           meta: { ...scenario.regions?.meta, lean: undefined },
           ufs: scenario.regions?.ufs.map((u) => ({ ...u, lean: undefined })),

@@ -351,6 +351,37 @@ describe('série regional do cartão do estado', () => {
   });
 });
 
+describe('fotografia da eleição geral (PLANO_GLOBO.md §5.3, PR 12)', () => {
+  it('só existe depois do mês da eleição, fecha com o nacional e volta ao reabrir o app', async () => {
+    const { launchApp } = await device();
+    let app = await launchApp();
+    expect(await app.getState().electionResults()).toEqual([]);
+    await app.getState().newCampaign({ name: 'Eleição', difficulty: 'casual' });
+    const id = app.getState().active!.id;
+    const electionMonth = loadContent(app.getState().active!.state.scenarioId).scenario.elections!.mesEleicaoGeral;
+
+    // Até o mês anterior ao pleito não há resultado.
+    while (app.getState().active!.state.monthIndex < electionMonth) {
+      expect(await app.getState().electionResults()).toEqual([]);
+      expect(await app.getState().endMonth()).toBe(true);
+    }
+    expect(await app.getState().endMonth()).toBe(true);
+
+    const [saved, ...others] = await app.getState().electionResults();
+    expect(others).toEqual([]);
+    expect(saved.monthIndex).toBe(electionMonth);
+    expect(app.getState().active!.lastReport?.electionResult).toEqual(saved);
+    for (const round of saved.rounds) {
+      const sum = Object.entries(round.ufs).reduce((s, [uf, share]) => s + saved.weights[uf] * share, 0);
+      expect(Math.abs(sum - round.national)).toBeLessThan(1e-9);
+    }
+
+    app = await launchApp();
+    await app.getState().continueCampaign(id);
+    expect(await app.getState().electionResults()).toEqual([saved]);
+  });
+});
+
 describe('migração 2 (configurações)', () => {
   it('atualiza um banco da versão 1 com campanha salva sem perder nada', async () => {
     const db = openNodeDatabase();
@@ -366,8 +397,8 @@ describe('migração 2 (configurações)', () => {
       scenarioVersion: '0.1.0',
       state: createInitialState({ content: loadContent('prototipo_ficticio'), difficulty: 'casual', seed: 1 }),
     });
-    expect(await migrate(db)).toEqual([2, 3, 4, 5]);
-    expect(LATEST_DB_VERSION).toBe(5);
+    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6]);
+    expect(LATEST_DB_VERSION).toBe(6);
     await v1.getState().init();
     expect(v1.getState().campaigns.map((c) => c.name)).toEqual(['Campanha da v1']);
   });
