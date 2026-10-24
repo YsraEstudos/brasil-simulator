@@ -32,7 +32,10 @@ import {
   type IndicatorKey,
 } from '@/engine';
 import { buildClimateMapData, buildClimateOverlay } from '@/components/map/climateView';
+import { endMarkerPulse } from '@/components/map/markerSession';
+import { nextMarkerItem, type MapMarker } from '@/components/map/markersView';
 import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
+import { useMapMarkers } from '@/components/map/useMapMarkers';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
 import type { Profile3d } from '@/globe/qualityProfiles';
@@ -179,6 +182,10 @@ export function PainelScreen() {
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
   const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
+  // Evento aberto por um marcador do mapa: a folha Alertas o põe no topo e o destaca. Limpo ao fechar a folha.
+  const [focusInstance, setFocusInstance] = useState<string | null>(null);
+  // Último item que o toque num marcador abriu, por UF: tocar de novo percorre o grupo (`nextMarkerItem`).
+  const lastMarkerItem = useRef<Record<string, string>>({});
   // Último mês de notícias que o jogador abriu (por partida): o selo das Notícias some até sair um relatório novo.
   const [seenNews, setSeenNews] = useState<{ id: string; month: number } | null>(null);
   // O erro da store veio do Encerrar o mês? Só então o aviso fala do mês (a store guarda erros de outras operações).
@@ -269,6 +276,8 @@ export function PainelScreen() {
     () => (climate ? buildClimateOverlay(climate, layer, mapClouds) : undefined),
     [climate, layer, mapClouds],
   );
+  // Marcadores de eventos e notícias com local (um por UF); o pulso dos críticos novos vem marcado em cada um.
+  const markers = useMapMarkers(active, content);
   const mapModel = useMemo(
     () =>
       buildRegionalMapViewModel({
@@ -276,8 +285,9 @@ export function PainelScreen() {
         fills: hud.fills,
         selectedId: selectedUf,
         climate: climateOverlay,
+        markers,
       }),
-    [layer, hud.fills, selectedUf, climateOverlay],
+    [layer, hud.fills, selectedUf, climateOverlay, markers],
   );
   const actionsLeft = hud.actionsMax - (active ? draftCost(draft, content) : 0);
 
@@ -350,16 +360,39 @@ export function PainelScreen() {
     setSheet(null);
     setSelectedUf(null);
     setOpenIndicator(null);
+    setFocusInstance(null);
   };
 
   /** Abre uma subtela: o detalhe fecha antes de navegar (ao voltar, a mesa está limpa). */
-  const go = (route: GameRoute) => {
+  const go = (route: GameRoute, params?: { noticia: string }) => {
     closeSheet();
     // Abrir as Notícias dá o relatório por visto: o selo some até o próximo mês.
     if (route === '/noticias' && active && active.state.monthIndex > 0) {
       setSeenNews({ id: active.id, month: active.state.monthIndex - 1 });
     }
-    router.push(route);
+    router.push(params ? { pathname: route, params } : route);
+  };
+
+  /** O anel de um pulso do mapa (globo ou 2D) terminou: essas instâncias não pulsam mais nesta partida. */
+  const onPulseDone = (instanceIds: readonly string[]) => {
+    if (active) endMarkerPulse(active.id, instanceIds);
+  };
+
+  /**
+   * Toque num marcador do mapa: evento pendente abre a folha Alertas com aquela instância no topo; notícia abre o jornal
+   * na edição e na manchete dela. Num grupo, o primeiro toque abre o item mais importante (crítico primeiro) e os
+   * seguintes percorrem os demais. Sem partida em andamento não há marcador.
+   */
+  const openMarker = (marker: MapMarker) => {
+    if (!playing) return;
+    const item = nextMarkerItem(marker, lastMarkerItem.current[marker.sigla]);
+    lastMarkerItem.current[marker.sigla] = item.id;
+    if (item.kind === 'event' && item.instanceId !== undefined) {
+      setFocusInstance(item.instanceId);
+      setSheet('alertas');
+    } else if (item.newsId !== undefined) {
+      go('/noticias', { noticia: item.newsId });
+    }
   };
 
   /**
@@ -487,6 +520,7 @@ export function PainelScreen() {
             canChoose={(eventId, choiceId) => canChooseEvent(draft, content, actionsMax, eventId, choiceId)}
             onChoose={gameStore.getState().toggleEventChoice}
             characters={characters}
+            focusInstanceId={focusInstance}
             sanctions={sanctions}
             sanctionChosen={sanctionChosen}
             onSanction={(proposalId, choice) =>
@@ -682,6 +716,8 @@ export function PainelScreen() {
             reservedRects={labelReserve.rects}
             labelInsets={labelReserve.insets}
             onSelect={selectState}
+            onMarkerPress={openMarker}
+            onPulseDone={onPulseDone}
             onGlobeFailure={() => setGlobeFailed(true)}
             onReady={(api) => {
               globe.current = api;

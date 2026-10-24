@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Card, Text } from '@/components/ui';
 import { Spacing, type ThemeColor } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import {
   adviseEventChoice,
   locationAcronyms,
@@ -13,6 +14,7 @@ import {
 import type { GameEvent } from '@/types/event';
 
 import { ChoiceOption } from './ChoiceOption';
+import { focusFirst } from './inboxModel';
 import { characterHeading, standingText, type CharacterBrief } from './characterView';
 import { monthLabel } from './labels';
 
@@ -40,6 +42,11 @@ export interface EventInboxProps {
   onSanction: (proposalId: string, choice: SanctionChoice) => void;
   /** Personagens do cenário com prestígio atual; usado nos eventos com `characterId` (FASE_07.md). */
   characters?: readonly CharacterBrief[];
+  /**
+   * Evento aberto pelo marcador do mapa (`PendingEvent.instanceId`, PLANO_GLOBO.md §7, PR 11): sobe para o topo da
+   * caixa de entrada e ganha o contorno de destaque. Ausente ou fora da lista = a ordem normal, sem destaque.
+   */
+  focusInstanceId?: string | null;
 }
 
 const SANCTION_OPTIONS: Record<SanctionChoice, { label: string; description: string }> = {
@@ -72,7 +79,9 @@ export function EventInbox({
   sanctionChosen,
   onSanction,
   characters = [],
+  focusInstanceId,
 }: EventInboxProps) {
+  const { colors } = useTheme();
   return (
     <View style={styles.root}>
       {items.length === 0 && sanctions.length === 0 && (
@@ -109,7 +118,8 @@ export function EventInbox({
           </Card>
         );
       })}
-      {items.map(({ event, pending }) => {
+      {focusFirst(items, focusInstanceId).map(({ event, pending }) => {
+        const focused = pending.instanceId === focusInstanceId;
         const selectedId = chosen[event.id];
         // O padrão vale ao encerrar o mês em que o evento chegou à caixa (resolveEventsStep).
         const deadline = monthLabel(pending.monthIndex);
@@ -118,7 +128,8 @@ export function EventInbox({
           <Card
             key={pending.instanceId}
             title={event.title}
-            subtitle={`Sem resposta até o fim de ${deadline}, vale o padrão.`}>
+            subtitle={`Sem resposta até o fim de ${deadline}, vale o padrão.`}
+            style={focused ? { borderColor: colors.accent, borderWidth: 2 } : undefined}>
             {character && (
               <View style={styles.character}>
                 <Text variant="label">{characterHeading(character)}</Text>

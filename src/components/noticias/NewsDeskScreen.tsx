@@ -22,7 +22,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 import { Hud } from '@/components/painel/hudTheme';
 import { BackToPainelButton } from '@/components/painel/SubScreen';
@@ -83,6 +83,8 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
   const content = useMemo(() => loadContent(state.scenarioId), [state.scenarioId]);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   const [mode, setMode] = useState<Mode>('mesa');
+  // Notícia aberta pelo marcador do mapa (rota `/noticias?noticia=<id>`): o jornal abre nela.
+  const { noticia } = useLocalSearchParams<{ noticia?: string }>();
 
   const feed = state.events.news;
   const editions = useMemo(() => buildEditions(feed), [feed]);
@@ -287,6 +289,7 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
             pressureLabel={pressureBand(pressure)}
             marks={marks}
             pending={pending}
+            focusNewsId={noticia}
           />
         </Animated.View>
       )}
