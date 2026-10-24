@@ -8,6 +8,16 @@ type Flight = { from: CameraState; to: CameraState; t: number; duration: number 
  * Fica fora do React para não provocar re-renderizações a cada movimento.
  */
 export class GlobeController {
+  private reduceMotion = false;
+  setReduceMotion(on: boolean) {
+    this.reduceMotion = on;
+    if (on) {
+      this.stop();
+      if (this.flight) this.state = this.flight.to;
+      this.flight = null;
+      this.invalidate();
+    }
+  }
   state: CameraState = { ...CAMERA.initial };
   private velocity = { lon: 0, lat: 0 };
   private flight: Flight | null = null;
@@ -35,6 +45,7 @@ export class GlobeController {
 
   /** Inércia ao soltar o dedo (velocidade em px/s). */
   release(vx: number, vy: number) {
+    if (this.reduceMotion) return;
     const k = degreesPerPixel(this.state.altitude, this.viewportHeight, this.fovDeg);
     const cosLat = Math.max(0.2, Math.cos((this.state.lat * Math.PI) / 180));
     this.velocity = { lon: (-vx * k) / cosLat, lat: vy * k };
@@ -62,6 +73,13 @@ export class GlobeController {
   }
 
   flyTo(to: Partial<CameraState>, duration = 1.2) {
+    if (this.reduceMotion || duration <= 0) {
+      this.stop();
+      this.flight = null;
+      this.state = clampCamera({ ...this.state, ...to });
+      this.invalidate();
+      return;
+    }
     this.velocity = { lon: 0, lat: 0 };
     this.flight = { from: { ...this.state }, to: clampCamera({ ...this.state, ...to }), t: 0, duration };
     this.invalidate();
