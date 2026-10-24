@@ -37,8 +37,8 @@ export function is3dProfile(value: unknown): value is Profile3d {
 }
 
 /**
- * Efeitos visuais que o perfil PERMITE. Reservados: nada os lê ainda. Nuvens e luzes entram nos PRs 6 e 10 do plano,
- * que consultam estes booleanos em vez de criar a própria régua de aparelho.
+ * Efeitos visuais que o perfil PERMITE. As nuvens (`clouds`, `animatedClouds`) são lidas pelo `GlobeScene` desde o PR 10,
+ * em vez de criar uma régua de aparelho própria; `cityLightsTexture` segue reservado (sem leitor).
  */
 export interface GlobeEffects {
   /** Nuvens estáticas sobre o Brasil (PR 10). Desligadas no Econômico (§3.1). */

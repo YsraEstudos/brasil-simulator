@@ -31,6 +31,7 @@ import {
   type Decision,
   type IndicatorKey,
 } from '@/engine';
+import { buildClimateMapData, buildClimateOverlay } from '@/components/map/climateView';
 import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
@@ -253,9 +254,30 @@ export function PainelScreen() {
     () => (active ? hudFromCampaign(active, content, history, layer) : hudFromScenario(content)),
     [active, content, history, layer],
   );
+  // Clima do mês: a textura do globo é refeita só quando o clima ou o mês mudam; o 2D lê as marcas (hachura, nuvem).
+  const mapClouds = useGame((s) => s.mapClouds);
+  const climate = active?.state.climate;
+  const climateMonthIndex = active?.state.monthIndex;
+  const climateData = useMemo(
+    () =>
+      climate && climateMonthIndex !== undefined
+        ? buildClimateMapData({ climate, monthIndex: climateMonthIndex }, content)
+        : null,
+    [climate, climateMonthIndex, content],
+  );
+  const climateOverlay = useMemo(
+    () => (climate ? buildClimateOverlay(climate, layer, mapClouds) : undefined),
+    [climate, layer, mapClouds],
+  );
   const mapModel = useMemo(
-    () => buildRegionalMapViewModel({ indicator: layer, fills: hud.fills, selectedId: selectedUf }),
-    [layer, hud.fills, selectedUf],
+    () =>
+      buildRegionalMapViewModel({
+        indicator: layer,
+        fills: hud.fills,
+        selectedId: selectedUf,
+        climate: climateOverlay,
+      }),
+    [layer, hud.fills, selectedUf, climateOverlay],
   );
   const actionsLeft = hud.actionsMax - (active ? draftCost(draft, content) : 0);
 
@@ -653,6 +675,8 @@ export function PainelScreen() {
             renderer={mapRenderer}
             quality={globeQuality}
             sky={sky}
+            climate={climateData}
+            clouds={mapClouds}
             viewModel={mapModel}
             paused={!focused}
             reservedRects={labelReserve.rects}

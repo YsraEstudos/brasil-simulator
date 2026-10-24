@@ -6,6 +6,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AutoQualityMachine } from './autoQuality';
+import type { ClimateMapData } from './climateTexture';
 import { CAMERA, GLOBE_STATS_ENABLED } from './config';
 import { GlobeController } from './controller';
 import {
@@ -73,6 +74,10 @@ export interface GlobeViewProps {
   quality?: GlobeQuality;
   /** Dia e noite: a escolha da hora do dia e o mês do calendário do jogo (estação). Padrão: tarde, janeiro. */
   sky?: SkyInput;
+  /** Clima do mês (seca nos tiles e nuvens). Sem ele (sem partida) não há seca nem nuvens. */
+  climate?: ClimateMapData | null;
+  /** "Nuvens" de Configurações (padrão: ligadas); o perfil de qualidade pode não as permitir (Econômico). */
+  clouds?: boolean;
 }
 
 const NO_RECTS: readonly Rect[] = [];
@@ -103,6 +108,8 @@ export function GlobeView({
   labelScale = 1,
   quality = DEFAULT_QUALITY,
   sky = DEFAULT_SKY,
+  climate = null,
+  clouds = true,
 }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   const insets = useSafeAreaInsets();
@@ -246,6 +253,9 @@ export function GlobeView({
                   budget={budget}
                   onFrame={autoOn ? onFrame : undefined}
                   sky={sky}
+                  climate={climate}
+                  clouds={clouds}
+                  drawing={!paused}
                 />
               </Canvas>
             ) : (
@@ -269,6 +279,9 @@ export function GlobeView({
                   budget={budget}
                   onFrame={autoOn ? onFrame : undefined}
                   sky={sky}
+                  climate={climate}
+                  clouds={clouds}
+                  drawing={!paused}
                 />
               </NativeGlobeCanvas>
             )}

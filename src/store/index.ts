@@ -18,3 +18,4 @@ export type { NewCampaignResult } from './gameStore';
 export * from './campaignSetup';
 export * from './mapQuality';
 export * from './mapDayTime';
+export * from './mapClouds';

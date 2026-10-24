@@ -1,9 +1,20 @@
 import { useFrame, useThree } from './r3f';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import * as THREE from 'three';
 
 import { cameraPose, verticalFovDeg } from './camera';
 import { cityPointBuffers } from './cities';
+import {
+  buildClimateTexels,
+  CLIMATE_TEXTURE_SIZE,
+  cloudOffset,
+  cloudOpacity,
+  hasDrought,
+  type ClimateMapData,
+} from './climateTexture';
+import { cloudCapBuffers } from './cloudCap';
+import { CLOUD_DRIFT_PER_SECOND, shouldAnimateClouds, startCloudLoop } from './cloudLoop';
 import { EARTH_RADIUS_M, TILE_GRID, terrainExaggeration } from './config';
 import type { GlobeController } from './controller';
 import { deviceUtc } from './deviceClock';
@@ -18,6 +29,8 @@ import {
   atmosphereVertexShader,
   cityLightsFragmentShader,
   cityLightsVertexShader,
+  cloudFragmentShader,
+  cloudVertexShader,
   fillFragmentShader,
   fillVertexShader,
   globeFragmentShader,
@@ -118,6 +131,21 @@ const CITY_LIGHTS_RADIUS = 1.001;
 /** Acima do mapa de calor (4) e do contorno da UF (5), abaixo dos rótulos (6): as luzes não somem sob a cor da UF. */
 const CITY_LIGHTS_RENDER_ORDER = 5.5;
 
+/** Nuvens: acima do mapa de calor (4), abaixo do contorno da UF (5) e das luzes (5,5). */
+const CLOUD_RENDER_ORDER = 4.5;
+/** Repetições do ruído sobre a caixa do Brasil (48°): cada repetição tem ~9,6°. */
+const CLOUD_NOISE_TILES = 5;
+
+/** Textura RGBA de `size`² já alocada (preenchida depois), sem filtro de mipmap: o clima não é minificado. */
+function createClimateTexture(size: number): THREE.DataTexture {
+  const texture = new THREE.DataTexture(new Uint8Array(size * size * 4), size, size, THREE.RGBAFormat);
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 /** Crescimento das luzes ao aproximar a câmera (altitude em raios terrestres): menores de longe, maiores de perto. */
 function cityZoom(altitude: number): number {
   return Math.min(2.4, Math.max(0.7, 0.9 / Math.sqrt(altitude)));
@@ -199,6 +227,12 @@ type Props = {
   onFrame?: (frame: SceneFrame) => void;
   /** Dia e noite: a escolha da hora e o mês do jogo. No modo `real` o Sol só anda quando já há um quadro. */
   sky: SkyInput;
+  /** Clima do mês (seca nos tiles e nuvens); `null` = sem partida: nada de seca nem de nuvens. */
+  climate: ClimateMapData | null;
+  /** "Nuvens" de Configurações. O perfil de qualidade ainda manda (`budget.effects.clouds`). */
+  clouds: boolean;
+  /** O globo está desenhando (não pausado): é a condição do laço das nuvens animadas. */
+  drawing: boolean;
 };
 
 export function GlobeScene({
@@ -212,6 +246,9 @@ export function GlobeScene({
   budget,
   onFrame,
   sky,
+  climate,
+  clouds: cloudsSetting,
+  drawing,
 }: Props) {
   'use no memo'; // objetos three.js são mutados a cada quadro; fora do React Compiler
   const { camera, gl, size, invalidate } = useThree();
@@ -266,6 +303,51 @@ export function GlobeScene({
       }),
     [sunUniforms],
   );
+  // Clima: a textura 128² (R nuvem, G seca, B chuva forte) é uma só, regravada uma vez por mês, e a máscara de água
+  // (R8 256², vem do build) só é carregada quando há seca para mascarar. Os uniforms são compartilhados pelos tiles e
+  // pelas nuvens: um valor só, sem emenda.
+  const climateTexture = useMemo(() => createClimateTexture(CLIMATE_TEXTURE_SIZE), []);
+  const blankTexture = useMemo(() => {
+    const t = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, THREE.RGBAFormat);
+    t.needsUpdate = true;
+    return t;
+  }, []);
+  const climateUniforms = useMemo(
+    () => ({
+      uClimate: { value: climateTexture as THREE.Texture },
+      uWater: { value: blankTexture as THREE.Texture },
+      uDrought: { value: 0 },
+    }),
+    [climateTexture, blankTexture],
+  );
+  const cloudMesh = useMemo(() => {
+    const { positions, uvs, indices } = cloudCapBuffers();
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    const material = new THREE.ShaderMaterial({
+      vertexShader: cloudVertexShader,
+      fragmentShader: cloudFragmentShader,
+      uniforms: {
+        uClimate: climateUniforms.uClimate,
+        uNoise: { value: blankTexture as THREE.Texture },
+        uDrift: { value: new THREE.Vector2() },
+        uTiles: { value: CLOUD_NOISE_TILES },
+        uOpacity: { value: 0 },
+        uSunDir: sunUniforms.uSunDir,
+        uSunOn: sunUniforms.uSunOn,
+      },
+      transparent: true,
+      depthWrite: false,
+      side: THREE.FrontSide,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.frustumCulled = false; // a calota cobre a tela inteira no zoom geral; o descarte é por opacidade
+    mesh.renderOrder = CLOUD_RENDER_ORDER;
+    mesh.visible = false; // desligada: nenhuma chamada de desenho
+    return mesh;
+  }, [climateUniforms, blankTexture, sunUniforms]);
   const starMaterial = useMemo(
     () =>
       new THREE.PointsMaterial({
@@ -290,6 +372,23 @@ export function GlobeScene({
   // mês, nunca pedem quadro sozinhos; "Hora real" regrava a cada quadro já desenhado (sem temporizador).
   const skyRef = useRef(sky);
   const lastSun = useRef({ key: '' });
+  // Nuvens e seca: o quadro lê o estado por aqui (nada de `setState` por quadro).
+  const cloudState = useRef({
+    on: false, // perfil permite + opção ligada + textura de ruído pronta + clima gravado
+    animated: false,
+    heatMap: false,
+    offset: [0, 0] as [number, number],
+    visible: false,
+    noise: false, // textura de ruído carregada
+  });
+  const [waterReady, setWaterReady] = useState(false);
+  const waterTexture = useRef<THREE.Texture | null>(null);
+  const [appActive, setAppActive] = useState(AppState.currentState === 'active');
+  const heatMapOn = !!fills && Object.keys(fills).length > 0;
+  const droughtVisible = useMemo(() => (climate ? hasDrought(climate.values) : false), [climate]);
+  // O perfil de qualidade decide se o aparelho desenha nuvens; a opção do jogador só desliga.
+  const cloudsAllowed = cloudsSetting && budget.effects.clouds;
+  const cloudsAnimated = cloudsAllowed && budget.effects.animatedClouds;
 
   useEffect(() => {
     skyRef.current = sky;
@@ -304,6 +403,115 @@ export function GlobeScene({
     store.setBudget(budget);
     invalidate(); // o LOD e o cache precisam de um quadro para refletir os novos tetos
   }, [budget, store, invalidate]);
+
+  // Primeiro plano do aplicativo: o laço das nuvens animadas para em segundo plano (muda raramente; não é por quadro).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => setAppActive(next === 'active'));
+    return () => sub.remove();
+  }, []);
+
+  // Máscara de água do build (só terra recebe o tom de seca): carregada na primeira seca visível.
+  useEffect(() => {
+    if (!droughtVisible || waterTexture.current) return;
+    let alive = true;
+    loadTexture(require('../../assets/globe/climate/water_mask.png'))
+      .then((t) => {
+        if (!alive) {
+          t.dispose();
+          return;
+        }
+        t.colorSpace = THREE.NoColorSpace;
+        waterTexture.current = t;
+        climateUniforms.uWater.value = t;
+        setWaterReady(true);
+      })
+      .catch((e) => {
+        if (__DEV__) console.warn('máscara de água falhou', e);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [droughtVisible, climateUniforms]);
+  useEffect(
+    () => () => {
+      waterTexture.current?.dispose();
+      waterTexture.current = null;
+    },
+    [],
+  );
+
+  // Ruído das nuvens (R8 256² ladrilhável): só se o perfil permite nuvens e a opção está ligada.
+  useEffect(() => {
+    if (!cloudsAllowed) return;
+    const state = cloudState.current; // objeto estável do componente (o ref nunca é trocado)
+    let alive = true;
+    let tex: THREE.Texture | null = null;
+    loadTexture(require('../../assets/globe/climate/cloud_noise.png'))
+      .then((t) => {
+        if (!alive) {
+          t.dispose();
+          return;
+        }
+        tex = t;
+        t.colorSpace = THREE.NoColorSpace;
+        t.wrapS = THREE.RepeatWrapping;
+        t.wrapT = THREE.RepeatWrapping;
+        t.needsUpdate = true;
+        (cloudMesh.material as THREE.ShaderMaterial).uniforms.uNoise.value = t;
+        state.noise = true;
+        invalidate();
+      })
+      .catch((e) => {
+        if (__DEV__) console.warn('ruído das nuvens falhou', e);
+      });
+    return () => {
+      alive = false;
+      if (tex) {
+        state.noise = false;
+        (cloudMesh.material as THREE.ShaderMaterial).uniforms.uNoise.value = blankTexture;
+        tex.dispose();
+      }
+    };
+  }, [cloudsAllowed, cloudMesh, blankTexture, invalidate]);
+
+  // Textura de clima: refeita só quando o clima do mês muda (ou quando as nuvens são ligadas), nunca por quadro.
+  // Sem seca visível e sem nuvens nada é construído e o sombreamento dos tiles nem lê as texturas (`uDrought` = 0).
+  useEffect(() => {
+    const state = cloudState.current;
+    if (!climate || (!cloudsAllowed && !droughtVisible)) {
+      climateUniforms.uDrought.value = 0;
+      state.on = false;
+      invalidate();
+      return;
+    }
+    const texels = buildClimateTexels({ values: climate.values });
+    (climateTexture.image.data as Uint8Array).set(texels);
+    climateTexture.needsUpdate = true;
+    state.offset = cloudOffset(climate.seed);
+    state.on = cloudsAllowed;
+    climateUniforms.uDrought.value = droughtVisible && waterReady ? 1 : 0;
+    invalidate();
+  }, [climate, cloudsAllowed, droughtVisible, waterReady, climateTexture, climateUniforms, invalidate]);
+
+  // Laço das nuvens animadas (só no Alto): no máximo 30 pedidos de quadro por segundo, só enquanto as nuvens estão
+  // visíveis, o globo desenha e o app está em primeiro plano. Qualquer condição que falte limpa o temporizador.
+  const animate = shouldAnimateClouds({
+    profileAllows: cloudsAnimated,
+    cloudsOn: cloudsAllowed,
+    drawing,
+    appActive,
+  });
+  useEffect(() => {
+    if (!animate) return;
+    return startCloudLoop(() => {
+      if (cloudState.current.visible) invalidate();
+    });
+  }, [animate, invalidate]);
+  useEffect(() => {
+    cloudState.current.animated = animate;
+    cloudState.current.heatMap = heatMapOn;
+    invalidate();
+  }, [animate, heatMapOn, invalidate]);
 
   useEffect(() => {
     let alive = true;
@@ -357,6 +565,16 @@ export function GlobeScene({
       (lights.material as THREE.Material).dispose();
     },
     [store, geometry, globeMaterial, starMaterial, lights],
+  );
+
+  useEffect(
+    () => () => {
+      cloudMesh.geometry.dispose();
+      (cloudMesh.material as THREE.Material).dispose();
+      climateTexture.dispose();
+      blankTexture.dispose();
+    },
+    [cloudMesh, climateTexture, blankTexture],
   );
 
   const highlight = useMemo(() => {
@@ -450,6 +668,9 @@ export function GlobeScene({
             uSkirt: { value: ((b.east - b.west) * DEG) / 40 },
             uSunDir: sunUniforms.uSunDir,
             uSunOn: sunUniforms.uSunOn,
+            uClimate: climateUniforms.uClimate,
+            uWater: climateUniforms.uWater,
+            uDrought: climateUniforms.uDrought,
           },
         });
         mesh = new THREE.Mesh(geometry, material);
@@ -481,6 +702,18 @@ export function GlobeScene({
       const u = (lights.material as THREE.ShaderMaterial).uniforms;
       u.uZoom.value = cityZoom(s.altitude);
       u.uPointPx.value = CITY_POINT_PX * gl.getPixelRatio();
+    }
+    // Nuvens: invisíveis (sem chamada de desenho) quando desligadas, sem textura de ruído, longe demais do zoom
+    // geral... ou perto demais. A deriva só anda quando o laço do Alto está ligado; parada, o padrão do mês.
+    const cs = cloudState.current;
+    const opacity = cs.on && cs.noise ? cloudOpacity(s.altitude, cs.heatMap) : 0;
+    cs.visible = opacity > 0.01;
+    cloudMesh.visible = cs.visible;
+    if (cs.visible) {
+      const u = (cloudMesh.material as THREE.ShaderMaterial).uniforms;
+      u.uOpacity.value = opacity;
+      const drift = cs.animated ? now * CLOUD_DRIFT_PER_SECOND : 0;
+      (u.uDrift.value as THREE.Vector2).set(cs.offset[0] + drift, cs.offset[1] + drift * 0.4);
     }
 
     if (onStats) {
@@ -518,6 +751,7 @@ export function GlobeScene({
       )}
       <group ref={group} />
       <UfFills fills={fills ?? NO_FILLS} invalidate={invalidate} />
+      <primitive object={cloudMesh} />
       <primitive object={lights} />
       {highlight && <primitive object={highlight} />}
       <GlobeLabels updateRef={labelsUpdate} reservedRects={reservedRects} insets={labelInsets} scale={labelScale} />

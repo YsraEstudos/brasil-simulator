@@ -1,5 +1,7 @@
 import { binColor, indicatorSpec, legendLabels, type MapIndicator } from '@/components/painel/regionalMetrics';
 
+import { NO_CLIMATE_OVERLAY, type ClimateOverlay } from './climateView';
+
 /**
  * Modelo de dados do mapa regional, independente do renderizador (PLANO_GLOBO.md §3.4): o globo 3D (`GlobeView`) e o
  * mapa 2D (`FlatBrazilMap`) recebem o mesmo `RegionalMapViewModel`. Aqui só se compõe o que `regionalMetrics` já
@@ -44,6 +46,11 @@ export interface RegionalMapViewModel {
   legend: MapLegend | null;
   labels: readonly MapLabel[];
   markers: readonly MapMarker[];
+  /**
+   * Clima no mapa 2D completo: UFs hachuradas e ícones de nuvem (PLANO_GLOBO.md §3.4). O globo 3D não lê este campo
+   * (ele recebe a textura de clima); o 2D leve o ignora.
+   */
+  climate: ClimateOverlay;
 }
 
 export interface RegionalMapViewModelInput {
@@ -57,6 +64,7 @@ export interface RegionalMapViewModelInput {
   legend?: MapLegend | null;
   labels?: readonly MapLabel[];
   markers?: readonly MapMarker[];
+  climate?: ClimateOverlay;
 }
 
 const NO_FILLS: Readonly<Record<string, string>> = Object.freeze({});
@@ -73,7 +81,16 @@ export function indicatorLegend(id: MapIndicator): MapLegend {
 
 /** Monta o modelo do mapa. Sem indicador e sem cores (Satélite) a legenda é `null` e os preenchimentos, vazios. */
 export function buildRegionalMapViewModel(input: RegionalMapViewModelInput = {}): RegionalMapViewModel {
-  const { indicator = null, fills = null, selectedId = null, mode = 'indicator', legend, labels, markers } = input;
+  const {
+    indicator = null,
+    fills = null,
+    selectedId = null,
+    mode = 'indicator',
+    legend,
+    labels,
+    markers,
+    climate,
+  } = input;
   const derived = mode === 'indicator' && indicator && fills ? indicatorLegend(indicator) : null;
   return {
     mode,
@@ -82,5 +99,6 @@ export function buildRegionalMapViewModel(input: RegionalMapViewModelInput = {})
     legend: legend === undefined ? derived : legend,
     labels: labels ?? NONE,
     markers: markers ?? NONE,
+    climate: climate ?? NO_CLIMATE_OVERLAY,
   };
 }

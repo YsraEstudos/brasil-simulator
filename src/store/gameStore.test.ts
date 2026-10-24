@@ -246,6 +246,17 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     expect(app.getState().autoProfile).toBe('equilibrado');
   });
 
+  it('as nuvens do mapa começam ligadas, a escolha persiste e valor corrompido volta ao padrão', async () => {
+    const { db, launchApp } = await device();
+    const first = await launchApp();
+    expect(first.getState().mapClouds).toBe(true);
+    await first.getState().setMapClouds(false);
+    expect(first.getState().mapClouds).toBe(false);
+    expect((await launchApp()).getState().mapClouds).toBe(false);
+    await setSetting(db, 'mapa_nuvens', 'talvez');
+    expect((await launchApp()).getState().mapClouds).toBe(true);
+  });
+
   it('erros de banco viram mensagem, sem derrubar o app', async () => {
     const { db, launchApp } = await device();
     const app = await launchApp();
