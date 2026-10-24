@@ -185,7 +185,12 @@ describe('marcadores no mesmo buffer (PR 11)', () => {
   it('writeMarkerAttributes: cor, glifo, pulso e número do selo sem mexer na geometria', () => {
     const b = buildLabelQuadBuffers();
     const before = { positions: b.positions.slice(), corners: b.corners.slice(), kinds: b.kinds.slice() };
-    writeMarkerAttributes(b, [marker('CE', { critical: true, pulse: true, count: 3 }), marker('RS', { kind: 'news' })]);
+    writeMarkerAttributes(b, [
+      marker('CE', { critical: true, pulse: true, count: 3 }),
+      marker('RS', { kind: 'news' }),
+      marker('PI', { kind: 'work' }),
+      marker('SP', { kind: 'visit' }),
+    ]);
     const s = b.markerSlots;
     const tint = (q: number) => [...b.tints.slice(q * VERTS_PER_QUAD * 3, q * VERTS_PER_QUAD * 3 + 3)];
     const uv = (q: number) => [b.uvs[q * VERTS_PER_QUAD * 2], b.uvs[q * VERTS_PER_QUAD * 2 + 1]];
@@ -203,6 +208,15 @@ describe('marcadores no mesmo buffer (PR 11)', () => {
     const rs = s.get('RS')!;
     expect(uv(rs.marker + 1)).toEqual([f(MARKER_ATLAS.glyphs.news.u0), f(MARKER_ATLAS.glyphs.news.v0)]);
     expect(b.pulses[rs.marker * VERTS_PER_QUAD]).toBe(0);
+
+    // Obra e visita (PR 13): o glifo e a cor do próprio tipo, sem pulso.
+    const pi = s.get('PI')!;
+    expect(uv(pi.marker + 1)).toEqual([f(MARKER_ATLAS.glyphs.work.u0), f(MARKER_ATLAS.glyphs.work.v0)]);
+    expect(tint(pi.marker)).toEqual(hexToRgb(markerColor(marker('PI', { kind: 'work' }))).map(f));
+    const sp = s.get('SP')!;
+    expect(uv(sp.marker + 1)).toEqual([f(MARKER_ATLAS.glyphs.visit.u0), f(MARKER_ATLAS.glyphs.visit.v0)]);
+    expect(b.pulses[pi.marker * VERTS_PER_QUAD]).toBe(0);
+    expect(b.pulses[sp.marker * VERTS_PER_QUAD]).toBe(0);
 
     expect(b.positions).toEqual(before.positions);
     expect(b.corners).toEqual(before.corners);

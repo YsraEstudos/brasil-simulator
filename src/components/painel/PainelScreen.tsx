@@ -35,7 +35,7 @@ import {
 import { resultLayerHint } from '@/components/map/electoralView';
 import { buildClimateMapData, buildClimateOverlay } from '@/components/map/climateView';
 import { endMarkerPulse } from '@/components/map/markerSession';
-import { nextMarkerItem, type MapMarker } from '@/components/map/markersView';
+import { nextMarkerItem, opensStateCard, type MapMarker } from '@/components/map/markersView';
 import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
 import { useMapMarkers } from '@/components/map/useMapMarkers';
 import { MapSurface } from '@/components/map/MapSurface';
@@ -409,14 +409,17 @@ export function PainelScreen() {
 
   /**
    * Toque num marcador do mapa: evento pendente abre a folha Alertas com aquela instância no topo; notícia abre o jornal
-   * na edição e na manchete dela. Num grupo, o primeiro toque abre o item mais importante (crítico primeiro) e os
+   * na edição e na manchete dela; visita presidencial e obra abrem o cartão da UF. Num grupo, o primeiro toque abre o item mais importante (crítico primeiro) e os
    * seguintes percorrem os demais. Sem partida em andamento não há marcador.
    */
   const openMarker = (marker: MapMarker) => {
     if (!playing) return;
     const item = nextMarkerItem(marker, lastMarkerItem.current[marker.sigla]);
     lastMarkerItem.current[marker.sigla] = item.id;
-    if (item.kind === 'event' && item.instanceId !== undefined) {
+    if (opensStateCard(item)) {
+      // Visita presidencial e obra: o cartão da UF (que lista as obras e o estado da visita).
+      selectState(item.sigla);
+    } else if (item.kind === 'event' && item.instanceId !== undefined) {
       setFocusInstance(item.instanceId);
       setSheet('alertas');
     } else if (item.newsId !== undefined) {

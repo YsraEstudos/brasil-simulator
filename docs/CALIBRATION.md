@@ -254,7 +254,7 @@ Módulo `src/engine/politics/calibration.ts` (`PROFILE_PARAMS`, não sobrescrito
 
 **Nenhum parâmetro de jogo novo.** O resultado simulado por UF e a intenção estimada ([POLITICAL_RULES.md](POLITICAL_RULES.md) §11.3) reaproveitam a votação nacional já calibrada (`eleicao_*`, `turno2_*`, `int_*`) e a aprovação por UF; a única incógnita, o deslocamento comum, sai da conta (bissecção), não de um coeficiente. Duas constantes numéricas (não de jogo) ficam em `regionalResult.ts`: o piso/teto das probabilidades antes do logit (10⁻⁶) e o teto de iterações da bissecção (200). Os pesos do eleitorado são a população (`PROVISORIO`, [DATA_SOURCES.md](DATA_SOURCES.md) §4.2). A faixa de cores (< 30 / 30–40 / 40–50 / 50–60 / ≥ 60%) e a inclinação em faixas de 0,1 são só interface.
 
-## Clima (PR 7 e PR 8 do PLANO_GLOBO)
+## Clima (PR 7, PR 8 e PR 13 do PLANO_GLOBO)
 
 Módulo `src/engine/climate/calibration.ts` (`CLIMATE_PARAMS`, não sobrescritos pelo cenário). Valores `PROVISORIO`, **todos lidos pelo motor desde o PR 8** (`climate/evolution.ts`: ENSO, chuva e seca; `climate/effects.ts`: cheia, danos nacionais e humor regional); um teste (`evolution.test.ts`) falha se algum parâmetro ficar sem uso. Faixa e justificativa de cada um no código; o teste confere valor dentro da faixa.
 
@@ -289,6 +289,10 @@ Módulo `src/engine/climate/calibration.ts` (`CLIMATE_PARAMS`, não sobrescritos
 | `cheia_escala_nacional` | 0,1 | 0,05 – 0,3 | risco médio de cheia (ponderado pelo PIB) em que o dano nacional chega a 76% do teto |
 | `aprovacao_clima_max` | 0,015 | 0,005 – 0,03 | desvio máximo de aprovação da UF, para cada um de: cheia e seca prolongada (redistribui, D7) |
 | `seca_humor_limiar` | 0,5 | 0,3 – 0,8 | seca acumulada a partir da qual ela pesa no humor ("prolongada") |
+| `prevencao_teto` (PR 13) | 0,6 | 0,3 – 0,8 | fração máxima do dano da seca (ou da cheia) que a prevenção evita numa UF: `proteção = teto × tanh(força ÷ escala)` |
+| `prevencao_escala` (PR 13) | 0,8 | 0,4 – 1,5 | força somada dos programas numa UF em que a proteção chega a 76% do teto |
+| `prevencao_fracao_obra` (PR 13) | 0,25 | 0 – 0,5 | fração da força que uma obra ainda não concluída entrega, × avanço físico |
+| `prevencao_relacao_max` (PR 13) | 4 | 1 – 8 | pontos de relação por mês com o governador de uma UF em emergência com prevenção ativa (severidade e proteção máximas) |
 
 **Dano de média zero (`CLIMATE_EXPECTED_DAMAGE`, fora de `CLIMATE_PARAMS`).** Cada termo de dano nacional (PIB e energia e alimentos pela seca, PIB e alimentos pela chuva excessiva) é `teto × (índice − esperado)`, em que o índice é a saída do `tanh` (0–1) e o esperado é a média desse índice sob o clima estacionário. Sem isso o dano seria só adverso e viraria inflação permanente (medido em 20 anos × 10 sementes: inflação média +0,6 p.p., Selic final +0,6 a +2,5 p.p., aprovação −1 p.p.). Tabela por dificuldade (a magnitude muda a distribuição do clima), medida no cenário padrão com 30 sementes × 2.880 meses após 120 de aquecimento:
 
@@ -299,6 +303,8 @@ Módulo `src/engine/climate/calibration.ts` (`CLIMATE_PARAMS`, não sobrescritos
 | `realismo` | 0,1599 | 0,3052 | 0,2887 | 0,0608 |
 
 Clima melhor que o esperado dá pressão negativa (boa safra, reservatórios em bom nível), no máximo `−teto × esperado`; a seca vale até `teto × (1 − esperado)`. **Refazer a tabela se qualquer parâmetro de evolução ou de dano mudar** (o teste "CLIMATE_EXPECTED_DAMAGE bate com uma medição nova" falha, tolerância 0,03). Vale para o cenário padrão (v0.8.0); outro cenário com pesos de PIB e agropecuária por UF diferentes teria esperados um pouco diferentes.
+
+**Prevenção (PR 13).** A tabela `CLIMATE_EXPECTED_DAMAGE` **não** muda com a prevenção: continua sendo o dano médio sem proteção. O ganho médio da prevenção é, portanto, `−proteção × esperado × teto do termo` (com proteção 0,6 na Estratégica: PIB −0,04%/ano, alimentos −0,16 p.p., energia −0,06 p.p.), um desvio negativo permanente mas limitado pelo teto. Força de cada política (`prevention` no JSON, `PROVISORIO`): segurança hídrica 0,7 (seca), drenagem e contenção 0,7 (cheia), Defesa Civil 0,2 (seca) e 0,25 (cheia); custos 6.000, 7.000 e 2.000 mi/ano, escolhidos por ordem de grandeza (o custo total do projeto, ~18–21 bi, fica na faixa de grandes obras hídricas e de drenagem recentes) e **a calibrar com o autor**. Refazer a conferência se `prevencao_*` ou os danos mudarem: os testes de `prevention.test.ts` (piso do teto, ganho médio dentro de 1,5 × teto × esperado × teto do termo) falham se o ganho passar do que o teto permite.
 
 **Eventos geográficos (PR 9).** Módulo `src/engine/events/calibration.ts` (`GEO_EVENT_PARAMS`, `PROVISORIO`): `ufs_max` = 8 (faixa 3–12), o máximo de UFs no local de um evento climático (as de maior severidade); critério de legibilidade, o resto do país segue sob o próprio clima. Os limiares e as probabilidades dos eventos `seca_safra_energia_v2` (seca ≥ 0,7; 0,35 com severidade 1; 18 meses de intervalo) e `enchentes_metropole_v2` (severidade de cheia ≥ 0,25; 0,6; 12 meses) são conteúdo, em `src/data/events/` (`FICTICIO`/`PROVISORIO`), escolhidos pela fração de meses com alguma UF acima do limiar medida em 30 sementes × 48 meses por dificuldade (seca ≥ 0,7: 4% Casual, 13% Estratégica, 20% Realismo dos meses; cheia ≥ 0,25: 0,4%, 13%, 30%). Frequência resultante, 12 campanhas de 48 meses: ver GAME_DESIGN.md §11.3.2. Refazer a medição se os `CLIMATE_PARAMS` de seca ou cheia mudarem.
 

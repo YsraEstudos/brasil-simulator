@@ -284,7 +284,8 @@ describe('campanhas com efeitos regionais (ECONOMIC_MODEL.md §9)', () => {
     }
     expect(northeast).toBeGreaterThan(0);
     expect(south).toBeLessThan(0);
-  });
+    // 4 estratégias × 24 meses por semente: com os demais arquivos em paralelo passa do limite padrão de 5 s.
+  }, 60_000);
 
   it('impulsos enormes ficam saturados: aprovação das UFs em [0, 1] e invariantes valem', () => {
     const r = monthWith([

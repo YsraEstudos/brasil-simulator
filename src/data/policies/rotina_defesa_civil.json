@@ -1,0 +1,28 @@
+{
+  "id": "rotina_defesa_civil",
+  "name": "Rotina de reforço da Defesa Civil",
+  "summary": "Financia alertas, equipes de resposta e abrigos por ato executivo. O efeito chega alguns meses depois da dotação, é proporcional ao que for liberado e some se a dotação sumir; reduz um pouco o dano das secas e das cheias (sem mudar a chuva) e, numa UF em emergência, melhora a relação com o governador. A pasta só sustenta uma rotina por vez. Dados e custos PROVISORIO.",
+  "area": "cidades",
+  "competence": "federal",
+  "instruments": ["decreto_regulamentar"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 2000, "disbursementProfile": [1] },
+  "fundingSources": ["remanejamento"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 0, "executionMonths": 0, "maturationMonths": 3 },
+  "conditions": [],
+  "impacts": [
+    { "channel": "custeio", "magnitude": 2000, "lagMonths": 1 },
+    { "channel": "aprovacao", "magnitude": 0.001, "lagMonths": 3 }
+  ],
+  "risks": [{ "kind": "atraso", "probability": 0.15 }],
+  "affected": {
+    "groups": ["moradores_urbanos", "baixa_renda"],
+    "sectors": ["servicos"],
+    "regions": ["nacional"]
+  },
+  "position": { "economic": -0.1, "social": 0 },
+  "salience": 0.4,
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina",
+  "prevention": { "drought": 0.2, "flood": 0.25 }
+}

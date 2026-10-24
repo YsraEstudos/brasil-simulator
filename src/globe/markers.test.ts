@@ -32,14 +32,19 @@ const marker = (sigla: string, over: Partial<GlobeMarker> = {}): GlobeMarker => 
 const NO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 };
 
 describe('atlas dos marcadores', () => {
-  it('o atlas compartilhado traz o glifo do evento e da notícia e o selo de 2 a 9+, todos do mesmo tamanho', () => {
+  it('o atlas compartilhado traz os glifos de evento, notícia, visita e obra e o selo de 2 a 9+, todos do mesmo tamanho', () => {
     const { glyphs, counts } = MARKER_ATLAS;
-    expect(glyphs.event.w).toBe(glyphs.news.w);
-    expect(glyphs.event.h).toBe(glyphs.news.h);
+    for (const g of [glyphs.news, glyphs.visit, glyphs.work]) {
+      expect(g.w).toBe(glyphs.event.w);
+      expect(g.h).toBe(glyphs.event.h);
+    }
+    // Quatro glifos distintos no atlas (u/v diferentes), um por tipo de marcador.
+    const origins = new Set([glyphs.event, glyphs.news, glyphs.visit, glyphs.work].map((g) => `${g.u0},${g.v0}`));
+    expect(origins.size).toBe(4);
     expect(Object.keys(counts)).toEqual(['2', '3', '4', '5', '6', '7', '8', '9', '9+']);
     const sizes = new Set(Object.values(counts).map((r) => `${r.w}x${r.h}`));
     expect(sizes.size).toBe(1);
-    for (const r of [glyphs.event, glyphs.news, ...Object.values(counts)]) {
+    for (const r of [glyphs.event, glyphs.news, glyphs.visit, glyphs.work, ...Object.values(counts)]) {
       expect(r.u1).toBeGreaterThan(r.u0);
       expect(r.v1).toBeGreaterThan(r.v0);
       expect(r.u1).toBeLessThanOrEqual(1);
@@ -58,7 +63,18 @@ describe('cores e prioridade', () => {
     expect(markerColor(marker('CE', { critical: true }))).toBe(MARKER_COLORS.critical);
     expect(markerColor(marker('CE'))).toBe(MARKER_COLORS.event);
     expect(markerColor(marker('CE', { kind: 'news' }))).toBe(MARKER_COLORS.news);
-    expect(new Set([MARKER_COLORS.critical, MARKER_COLORS.event, MARKER_COLORS.news]).size).toBe(3);
+    expect(markerColor(marker('CE', { kind: 'visit' }))).toBe(MARKER_COLORS.visit);
+    expect(markerColor(marker('CE', { kind: 'work' }))).toBe(MARKER_COLORS.work);
+    // Visita e obra nunca são críticas, mas se o grupo for crítico (evento na mesma UF) o vermelho manda.
+    expect(markerColor(marker('CE', { kind: 'work', critical: true }))).toBe(MARKER_COLORS.critical);
+    const colors = [
+      MARKER_COLORS.critical,
+      MARKER_COLORS.event,
+      MARKER_COLORS.news,
+      MARKER_COLORS.visit,
+      MARKER_COLORS.work,
+    ];
+    expect(new Set(colors).size).toBe(5);
     expect(hexToRgb('#ff8000')).toEqual([1, 128 / 255, 0]);
   });
 

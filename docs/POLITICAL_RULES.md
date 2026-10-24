@@ -59,7 +59,9 @@ Parâmetros em `src/engine/economy/calibration.ts` (seção Federação); distri
 | Governadores | 27 governadores fictícios (cenário v0.4.0), cada um de um bloco e com relação própria com o governo (−100…100). A relação anda até a meta: posição própria do governador + `governador_alinhamento` × relação do bloco dele + `governador_aprovacao` × aprovação do presidente no estado acima da base. Eventos movem governadores de regiões específicas (`governadores.relacao`). |
 | Governador e aprovação local | Governador aliado puxa a aprovação do presidente no estado para cima; hostil, para baixo (`aprovacao_governador`). |
 | Adesão a convênios | Política com a condição `adesao_estadual` (hoje, a cooperação em segurança): no início da execução cada estado adere com probabilidade `adesao_base + adesao_relacao × relação/100`. O gasto e o capital público alcançam só a população dos estados que aderiram e são repartidos só entre eles; substitui o risco genérico de baixa adesão. No Casual todos aderem. A mesa de despacho mostra a adesão esperada. |
-| Visita presidencial | Ação de agenda (custo 1, uma por estado por mês): aprovação local `aprovacao_visita` por `meses_visita` meses e `relacao_visita` pontos com o governador. Não muda a aprovação nacional. |
+| Visita presidencial | Ação de agenda (custo 1, uma por estado por mês): aprovação local `aprovacao_visita` por `meses_visita` meses e `relacao_visita` pontos com o governador. Não muda a aprovação nacional. Enquanto o efeito local dura, a UF visitada ganha um pin de visita no mapa (PR 13; tocar abre o cartão da UF). |
+| Resposta federal à emergência climática (PR 13) | Numa UF em cheia ou seca prolongada **com prevenção ativa nela** (obra de segurança hídrica ou de drenagem em andamento ou pronta, ou dotação da Defesa Civil), a relação com o governador sobe até `prevencao_relacao_max` pontos no mês, proporcional à severidade e à proteção (menos que a visita; volta à meta sozinha). Sem prevenção, nada. A prevenção em si é política comum: os projetos são projetos de lei (votação dos blocos pela `position`, negociação e capital político, §6) e a rotina da Defesa Civil é ato executivo com dotação. Modelo em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.21. |
+| Obras no mapa (PR 13) | Obra da carteira (projeto) só ganha pin em UF que a **política cita** no escopo regional (`regional.scope`); obra nacional ou de macrorregião não tem pin e nenhuma coordenada é inventada. O pin fica na âncora da UF, só enquanto a obra está em andamento. |
 | Ainda não modelado | Finanças e dívidas estaduais (o evento das dívidas estaduais só mexe em relação, atividade e risco), FPE/FPM por UF, bancadas estaduais no Congresso, eleição de governadores (Fase 08), invasão de competência estadual como risco jurídico. |
 
 ---
@@ -351,6 +353,9 @@ Este é o catálogo-semente. As 8 primeiras compõem o protótipo (ver [GAME_DES
 | 18 | Reforma da previdência (parâmetros) | Fiscal | PEC + leis | 3/5; alto custo político; efeito de décadas |
 | 19 | Desoneração setorial temporária | Indústria | PL / MP | LRF art. 14; contribuições sociais: noventena |
 | 20 | Crédito extraordinário para calamidade | Emergência | MP | Somente com evento de calamidade ativo |
+| 21 | Segurança hídrica do semiárido (PR 13, v0.8.0) | Saneamento / clima | PL + obra (carteira) | Espaço no limite de despesas; território no escopo regional (9 UFs); reduz o dano da seca, não a chuva; manutenção anual |
+| 22 | Drenagem urbana e contenção de encostas (PR 13, v0.8.0) | Cidades / clima | PL + obra (carteira) | Espaço no limite de despesas; nacional; reduz o dano das cheias; manutenção anual |
+| 23 | Reforço da Defesa Civil (PR 13, v0.8.0) | Cidades / clima | Rotina (ato executivo + dotação anual) | Uma rotina por pasta e ano; efeito proporcional à dotação liberada, com maturação |
 
 ---
 

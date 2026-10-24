@@ -40,6 +40,7 @@ export function initialClimate(campaignSeed: number): ClimateState {
   return {
     enso: 0,
     ufs: UF_IDS.map((id): UfClimate => ({ id, rain: 0, dryness: 0 })),
+    protection: { drought: UF_IDS.map(() => 0), flood: UF_IDS.map(() => 0) },
     rng: climateRngState(campaignSeed),
   };
 }

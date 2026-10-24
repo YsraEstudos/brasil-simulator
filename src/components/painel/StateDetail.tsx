@@ -16,6 +16,7 @@ import {
 import { draftCost, fits, gameStore, hasDecision, useGame, type RegionalPoint } from '@/store';
 
 import { buildUfElectoralView, isElectoralLayer } from '@/components/map/electoralView';
+import { buildUfFieldView, preventionText, type UfFieldView } from '@/components/map/fieldView';
 
 import { LayerBadge, LinkRow } from './HudBits';
 import { Hud } from './hudTheme';
@@ -174,6 +175,39 @@ function ElectoralBlock({
   );
 }
 
+/**
+ * Obras, visita presidencial e prevenção da UF (PR 13): o que os pins de visita e de obra do mapa mostram, mais o que o
+ * mapa não mostra (obra pronta). Obra só aparece aqui se a política cita a UF no conteúdo; nunca há coordenadas.
+ */
+function FieldBlock({ view }: { view: UfFieldView }) {
+  return (
+    <>
+      <Text style={styles.section}>Obras, visita e prevenção</Text>
+      {view.visit ? (
+        <View style={styles.metricRow}>
+          <Text style={styles.metricLabel}>Visita presidencial</Text>
+          <Text style={styles.fieldValue}>{view.visit}</Text>
+        </View>
+      ) : null}
+      {view.works.map((work) => (
+        <View key={work.id} style={styles.metricRow}>
+          <Text style={styles.metricLabel}>{work.name}</Text>
+          <Text style={styles.fieldValue}>{work.status}</Text>
+        </View>
+      ))}
+      {view.prevention ? (
+        <>
+          <View style={styles.metricRow}>
+            <Text style={styles.metricLabel}>Prevenção climática</Text>
+            <Text style={styles.fieldValue}>{preventionText(view.prevention)}</Text>
+          </View>
+          <Text style={styles.note}>A prevenção reduz o dano da seca e das cheias; a chuva continua a mesma.</Text>
+        </>
+      ) : null}
+    </>
+  );
+}
+
 /** Cartão da UF na folha "estado": números contra o Brasil, o governador, as causas do mês e a visita. */
 export function UfDetail({
   row,
@@ -217,6 +251,7 @@ export function UfDetail({
   // A posse vem do próprio save (mês 0); sem o snapshot, valem os valores do cenário embutido.
   const startShare = baseline?.regions.ufs.find((u) => u.id === uf.id)?.share ?? scenarioUf?.gdpShare ?? uf.share;
 
+  const fieldView = buildUfFieldView(uf.id, state, content);
   const seriesView = buildUfSeriesView({
     metric: seriesMetricFor(indicator),
     ufId: uf.id,
@@ -267,6 +302,8 @@ export function UfDetail({
       ) : null}
 
       {seriesView ? <SeriesBlock view={seriesView} /> : null}
+
+      {fieldView ? <FieldBlock view={fieldView} /> : null}
 
       {hasWhy(indicator) ? (
         <>
@@ -353,6 +390,7 @@ const styles = {
   metricRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingVertical: 1 },
   metricLabel: { flex: 1, color: Hud.textDim, fontSize: 11 },
   metricValue: { color: Hud.text, fontSize: 12, fontWeight: '700' },
+  fieldValue: { flexShrink: 1, color: Hud.text, fontSize: 11.5, fontWeight: '700', textAlign: 'right' },
   metricReference: { minWidth: 92, textAlign: 'right', color: Hud.textMuted, fontSize: 10 },
   section: {
     color: Hud.title,

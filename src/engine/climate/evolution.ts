@@ -5,7 +5,7 @@ import { createRng } from '../rng';
 import type { ClimateState, Difficulty, MonthStep, ScheduledImpulse, UfClimate } from '../types';
 
 import { CLIMATE_INTENSITY_PARAM, climateParam } from './calibration';
-import { CLIMATE_CAUSES, climateDamageOf } from './effects';
+import { CLIMATE_CAUSES, climateDamageOf, preventionOf, responseImpulses, scenarioUfs } from './effects';
 import { ensoTeleconnection, regionOfUf, seasonOf } from './climate';
 
 /**
@@ -116,10 +116,10 @@ export function evolveClimate(
     return { id: u.id, rain, dryness: nextDryness(climatology, u.id, month, rain, u.dryness) };
   });
 
-  return { enso, ufs, rng: rng.state() };
+  // A proteção do mês é gravada pela etapa (`climateEvolutionStep`), não aqui.
+  return { enso, ufs, protection: climate.protection, rng: rng.state() };
 }
 
-/**
 /**
  * Etapa do clima (antes de `economyStep`; PLANO_GLOBO.md §6.2): evolui ENSO, chuva e seca e calcula o dano
  * **agregado** que entra no nacional, uma única vez, pela fila de impulsos que a economia já lê. O dano tem **média
@@ -133,6 +133,15 @@ export function evolveClimate(
  *  - alimentos e energia: `choque.inflacao` (nível enquanto ativo, com sinal), causas "Seca (alimentos)" / "Boa
  *    safra (alimentos)", "Seca (energia elétrica)" / "Reservatórios em bom nível (energia elétrica)" e
  *    "Chuvas acima do normal (alimentos)".
+ *
+ * **Prevenção (PR 13).** O clima acima (chuva, seca, ENSO) é calculado sem olhar a prevenção — a chuva não é desligada. O
+ * dano é calculado duas vezes sobre o mesmo clima: sem prevenção (as causas acima, como sempre) e com a proteção por UF
+ * (`preventionOf`, da fila de impulsos `clima.prevencao_*`). A diferença, sempre a favor, entra como impulsos próprios
+ * ("Prevenção reduziu o dano da seca", "… das chuvas", "… a pressão da seca nos preços", "… nos alimentos"), com a mesma
+ * persistência do hiato; a soma dos dois conjuntos é o dano protegido. O valor esperado do centramento não é escalado
+ * (ver `climateDamageOf`). Com prevenção ativa e emergência numa UF, entra também a resposta federal
+ * (`responseImpulses`: relação com o governador).
+ *
  * Os impulsos valem só neste mês (`startMonth = endMonth`) e são recriados a cada mês a partir do clima, então não
  * ficam na fila (a fila é podada ao fim do mês). Sem dados regionais no cenário não há pesos para agregar: o clima
  * evolui, mas não há dano.
@@ -147,6 +156,12 @@ export const climateEvolutionStep: MonthStep = (input, ctx) => {
   const after = climateDamageOf(climate, ctx.content, input.difficulty);
   const rho = ctx.content.calibration.rho_h;
   const t = input.monthIndex;
+  // Prevenção: o mesmo clima, com o dano protegido. `protectedBefore` usa a proteção que valeu no mês anterior (guardada
+  // no clima): é o que de fato entrou na economia, então o hiato recorrente não salta quando um programa começa,
+  // amadurece ou termina. A proteção de hoje vale só para `protectedAfter`.
+  const prevention = preventionOf(input.impulses, t, scenarioUfs(ctx.content));
+  const protectedBefore = climateDamageOf(previous, ctx.content, input.difficulty, previous.protection);
+  const protectedAfter = climateDamageOf(climate, ctx.content, input.difficulty, prevention);
 
   const impulses: ScheduledImpulse[] = [];
   const push = (sourceId: string, label: string, target: ScheduledImpulse['target'], delta: number) => {
@@ -184,8 +199,40 @@ export const climateEvolutionStep: MonthStep = (input, ctx) => {
     'choque.inflacao',
     after.rainFood,
   );
+  // Dano evitado (≤ 0): protegido − sem prevenção, termo a termo.
+  const saved = (key: keyof typeof after) => protectedAfter[key] - after[key];
+  const savedBefore = (key: keyof typeof before) => protectedBefore[key] - before[key];
+  push(
+    CLIMATE_CAUSES.droughtPrevention,
+    'Prevenção reduziu o dano da seca',
+    'choque.hiato',
+    -(saved('droughtGdp') - rho * savedBefore('droughtGdp')),
+  );
+  push(
+    CLIMATE_CAUSES.rainPrevention,
+    'Prevenção reduziu o dano das chuvas',
+    'choque.hiato',
+    -(saved('rainGdp') - rho * savedBefore('rainGdp')),
+  );
+  push(
+    CLIMATE_CAUSES.droughtPricesPrevention,
+    'Prevenção reduziu a pressão da seca nos preços',
+    'choque.inflacao',
+    saved('droughtFood') + saved('droughtEnergy'),
+  );
+  push(
+    CLIMATE_CAUSES.rainFoodPrevention,
+    'Prevenção reduziu a pressão das chuvas nos alimentos',
+    'choque.inflacao',
+    saved('rainFood'),
+  );
+  impulses.push(...responseImpulses({ climate, impulses: input.impulses, monthIndex: t }, ctx.content));
   return {
-    state: { ...input, climate, impulses: impulses.length > 0 ? [...input.impulses, ...impulses] : input.impulses },
+    state: {
+      ...input,
+      climate: { ...climate, protection: prevention },
+      impulses: impulses.length > 0 ? [...input.impulses, ...impulses] : input.impulses,
+    },
     contributions: [],
   };
 };

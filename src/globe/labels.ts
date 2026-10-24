@@ -40,9 +40,12 @@ export type UfLabel = {
   capital: CapitalLabel;
 };
 
-/** Glifos dos marcadores de eventos e notícias (PR 11): o "!" do evento, o "≡" da notícia e o número do selo de grupo. */
+/**
+ * Glifos dos marcadores (PR 11 e PR 13): o "!" do evento, o "≡" da notícia, o "⚑" da visita presidencial, o "⚒" da obra
+ * e o número do selo de grupo.
+ */
 export type MarkerAtlas = {
-  glyphs: { event: AtlasRect; news: AtlasRect };
+  glyphs: { event: AtlasRect; news: AtlasRect; visit: AtlasRect; work: AtlasRect };
   /** "2" … "9" e "9+", por texto do selo. */
   counts: Readonly<Record<string, AtlasRect>>;
 };

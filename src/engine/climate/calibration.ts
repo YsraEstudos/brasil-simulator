@@ -7,7 +7,8 @@ import type { Difficulty } from '../types';
  * PLANO_GLOBO.md §10.
  *
  * **Todos os parâmetros são lidos pelo motor** (PR 8): `climate/evolution.ts` (ENSO, chuva, seca) e `climate/effects.ts`
- * (cheia, danos nacionais, humor regional). Quem adicionar um parâmetro aqui sem usá-lo deve removê-lo.
+ * (cheia, danos nacionais, humor regional); a prevenção (PR 13) é lida por `climate/effects.ts` e pela carteira
+ * (`publicPolicies`). Quem adicionar um parâmetro aqui sem usá-lo deve removê-lo.
  *
  * Unidades: o índice ENSO é adimensional em [−1, 1] (+ = El Niño, − = La Niña); a anomalia de chuva é fração da
  * normal do mês (0 = normal); a seca é 0–1; "por mês" quando aplicado a cada turno. Sorteios: só o PRNG do clima
@@ -244,6 +245,35 @@ export const CLIMATE_PARAMS = {
     max: 0.8,
     note: 'seca acumulada (0–1) a partir da qual ela pesa no humor da UF; abaixo disso a seca não é "prolongada"',
     basis: `${JOGO}; com ganho e memória atuais, ~3 meses de déficit forte: pesa devagar`,
+  },
+  // --- prevenção hídrica e Defesa Civil (PR 13): reduz o dano esperado, nunca a chuva nem a seca
+  prevencao_teto: {
+    value: 0.6,
+    min: 0.3,
+    max: 0.8,
+    note: 'fração máxima do dano da seca (ou da cheia) que a prevenção evita numa UF, por mais programas que existam: protecao = teto × tanh(força ÷ escala)',
+    basis: `${SATURACAO}; prevenção reduz o dano, nunca o elimina: sobra sempre o dano residual (chuva e seca continuam acontecendo)`,
+  },
+  prevencao_escala: {
+    value: 0.8,
+    min: 0.4,
+    max: 1.5,
+    note: 'força somada dos programas numa UF (cada programa contribui até 1) em que a proteção chega a 76% do teto (tanh)',
+    basis: `${SATURACAO}; um programa grande (força 0,7) já entrega ~70% do teto e o segundo rende menos (retornos decrescentes)`,
+  },
+  prevencao_fracao_obra: {
+    value: 0.25,
+    min: 0,
+    max: 0.5,
+    note: 'fração da força do programa que uma obra ainda não concluída já entrega, proporcional ao avanço físico (obra 100% = esta fração; em operação = 1 × ativo ÷ ativo nominal)',
+    basis: `${JOGO}; trechos prontos protegem um pouco, mas o grosso só vem com a obra concluída e em operação`,
+  },
+  prevencao_relacao_max: {
+    value: 4,
+    min: 1,
+    max: 8,
+    note: 'pontos de relação (−100…100) ganhos por mês com o governador de uma UF em emergência climática com prevenção ativa, na severidade máxima e na proteção máxima (menos que a visita presidencial, `relacao_visita`)',
+    basis: `${JOGO}; o governador vê a União presente na hora do desastre; a relação volta à meta sozinha (\`ajuste_governador\`), então não acumula`,
   },
 } as const satisfies Record<string, ParamSpec>;
 

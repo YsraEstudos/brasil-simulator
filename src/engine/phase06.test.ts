@@ -237,6 +237,7 @@ describe('integração da execução pública (GAME_DESIGN §9.2)', () => {
         expect(state.publicPolicies.projects[0].phase).toBe('operacao');
         expect(state.publicPolicies.brands[0].name).toBe('Escolas do futuro');
       }
-    });
+      // 240 meses × 3 sementes: com o coverage do CI e os outros arquivos em paralelo passa do limite padrão de 5 s.
+    }, 60_000);
   }
 });

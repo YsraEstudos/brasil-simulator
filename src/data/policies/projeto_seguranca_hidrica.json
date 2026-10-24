@@ -1,0 +1,37 @@
+{
+  "id": "projeto_seguranca_hidrica",
+  "name": "Segurança hídrica do semiárido",
+  "summary": "Cisternas, adutoras e reservatórios nos estados do semiárido, com obra, manutenção anual e votação no Congresso. Quando em operação, reduz o dano das secas nessas UFs (sem mudar a chuva) até o teto da prevenção; a obra pronta protege mais que a obra em andamento e perde força sem manutenção. Dados e custos PROVISORIO.",
+  "area": "saneamento",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 6000, "disbursementProfile": [0.3, 0.4, 0.3] },
+  "fundingSources": ["credito_adicional"],
+  "timeline": { "planningMonths": 3, "expectedLegislativeMonths": 5, "executionMonths": 36, "maturationMonths": 12 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 6000, "lagMonths": 6 },
+    { "channel": "aprovacao", "magnitude": 0.006, "lagMonths": 6 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.3 },
+    { "kind": "sobrecusto", "probability": 0.25 }
+  ],
+  "affected": {
+    "groups": ["moradores_rurais", "baixa_renda", "produtores_rurais"],
+    "sectors": ["construcao", "agropecuaria"],
+    "regions": ["nordeste", "sudeste"]
+  },
+  "regional": {
+    "key": "pobreza",
+    "scope": ["PI", "CE", "RN", "PB", "PE", "AL", "SE", "BA", "MG"],
+    "boost": {}
+  },
+  "position": { "economic": -0.3, "social": -0.1 },
+  "salience": 0.5,
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 8, "procurementMonths": 6, "efficiency": 0.78, "annualMaintenanceRate": 0.04 },
+  "prevention": { "drought": 0.7 }
+}

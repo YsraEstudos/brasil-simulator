@@ -1,23 +1,31 @@
 import { LABELS, type CandidateOptions, type UfLabelCandidate } from './labels';
 
 /**
- * Marcadores de eventos e notícias no globo e no mapa 2D (PLANO_GLOBO.md §3.4 e §7, PR 11). Regras puras e sem
- * renderizador, compartilhadas pelo globo (os quadriláteros vão no mesmo `BufferGeometry` e no mesmo atlas das siglas,
- * uma chamada de desenho) e pelo mapa 2D (ícones nativos). Um marcador por UF: o grupo de eventos e notícias da UF.
+ * Marcadores de eventos, notícias, visitas e obras no globo e no mapa 2D (PLANO_GLOBO.md §3.4 e §7, PR 11 e PR 13). Regras
+ * puras e sem renderizador, compartilhadas pelo globo (os quadriláteros vão no mesmo `BufferGeometry` e no mesmo atlas das
+ * siglas, uma chamada de desenho) e pelo mapa 2D (ícones nativos). Um marcador por UF: o grupo de eventos, notícias,
+ * visitas presidenciais recentes e obras em andamento da UF.
  * Marcadores não são iluminados pelo Sol (como os rótulos) e **vencem** os rótulos de UF numa colisão — a sigla da UF
  * some sob o marcador; o nome continua no cartão, na lista e no rótulo de acessibilidade do 2D.
  */
 
-export type MarkerKind = 'event' | 'news';
+/** Evento e notícia (PR 11); visita presidencial recente e obra em andamento da UF (PR 13: não críticas, sem pulso). */
+export type MarkerKind = 'event' | 'news' | 'visit' | 'work';
+
+/**
+ * Qual tipo dá a cara do marcador do grupo (glifo e cor) e a ordem dos itens: evento, notícia, obra, visita. O crítico
+ * manda por cima de tudo (`critical`).
+ */
+export const MARKER_KIND_ORDER: readonly MarkerKind[] = ['event', 'news', 'work', 'visit'];
 
 /** O que o desenho precisa saber de um marcador (o modelo do mapa acrescenta os itens e os textos). */
 export interface GlobeMarker {
   sigla: string;
-  /** `event` se o grupo tem algum evento; senão `news`. */
+  /** O tipo de maior ordem do grupo (`MARKER_KIND_ORDER`): `event` se há evento; senão `news`, `work` ou `visit`. */
   kind: MarkerKind;
   /** Algum evento do grupo é crítico (`markersView`): cor de alerta e prioridade acima dos demais. */
   critical: boolean;
-  /** Itens do grupo (eventos + notícias): acima de 1 aparece o selo com o número. */
+  /** Itens do grupo (eventos, notícias, visitas e obras): acima de 1 aparece o selo com o número. */
   count: number;
   /** Pulso breve: só marcadores com evento crítico novo (ver `markerPulse`). */
   pulse: boolean;
@@ -42,15 +50,20 @@ export const MARKER_HIT_PADDING_PX = 12;
 /** Folga (px) da caixa do candidato de colisão em volta do disco (cobre o selo). */
 const MARKER_COLLISION_PADDING_PX = 4;
 
-/** Cores do disco (hex sRGB): crítico em vermelho, evento em âmbar, notícia em azul; o selo é escuro. */
+/**
+ * Cores do disco (hex sRGB): crítico em vermelho, evento em âmbar, notícia em azul, visita em verde e obra em violeta; o
+ * selo é escuro.
+ */
 export const MARKER_COLORS = {
   critical: '#e5484d',
   event: '#f5a524',
   news: '#4f9dff',
+  visit: '#2fbf8f',
+  work: '#9b7bff',
   badge: '#10141c',
 } as const;
 
-/** Cor do disco de um marcador. A cor não é o único sinal: o glifo (`!` × `≡`) e o texto de acessibilidade também dizem. */
+/** Cor do disco de um marcador. A cor não é o único sinal: o glifo (`!`, `≡`, `⚑`, `⚒`) e o texto de acessibilidade também dizem. */
 export function markerColor(marker: Pick<GlobeMarker, 'kind' | 'critical'>): string {
   return marker.critical ? MARKER_COLORS.critical : MARKER_COLORS[marker.kind];
 }
