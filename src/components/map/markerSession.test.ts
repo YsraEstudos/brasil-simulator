@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { PULSE_TOTAL_MS } from '@/globe/markerPulse';
+
 import { claimNewCritical, pulsingInstances, resetMarkerSession, subscribeMarkerSession } from './markerSession';
 import type { MarkerItem } from './markersView';
 
-// PR 11: cada evento crítico pulsa uma vez por sessão e por partida; o que sai do mapa deixa de pulsar.
+// PR 11: cada evento crítico pulsa uma vez por sessão e por partida; o pulso dura o anel e o que sai do mapa deixa de pulsar.
 
 const crit = (instanceId: string): MarkerItem => ({
   id: `evento:${instanceId}`,
@@ -35,7 +37,7 @@ describe('memória do pulso na sessão', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it('o pulso continua enquanto o evento segue no mapa e some quando sai; não volta a pulsar depois de visto', () => {
+  it('o pulso segue enquanto o anel corre; sair do mapa tira o pulso; não volta a pulsar depois de visto', () => {
     claimNewCritical('p1', [crit('a#1')]);
     claimNewCritical('p1', [crit('a#1'), crit('b#2')]);
     expect(pulsingInstances('p1')).toEqual(['a#1', 'b#2']);
@@ -48,6 +50,22 @@ describe('memória do pulso na sessão', () => {
     // a#1 já pulsou nesta sessão: voltar à tela com ele não repete
     claimNewCritical('p1', [crit('a#1')]);
     expect(pulsingInstances('p1')).toEqual([]);
+  });
+
+  it('o pulso para ao fim do anel mesmo com o evento ainda no mapa; voltar à tela não o repete', () => {
+    vi.useFakeTimers();
+    try {
+      claimNewCritical('p1', [crit('a#1')]);
+      vi.advanceTimersByTime(PULSE_TOTAL_MS - 1);
+      expect(pulsingInstances('p1')).toEqual(['a#1']);
+      vi.advanceTimersByTime(1);
+      expect(pulsingInstances('p1')).toEqual([]);
+      // voltou do subpainel com o evento ainda no mapa: já foi visto, não pulsa de novo
+      claimNewCritical('p1', [crit('a#1')]);
+      expect(pulsingInstances('p1')).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('cada partida tem a sua memória', () => {

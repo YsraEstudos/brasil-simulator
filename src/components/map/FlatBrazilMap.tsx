@@ -79,8 +79,6 @@ export interface FlatBrazilMapProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const FLAT = flatMap();
-const VIEWBOX = `0 0 ${FLAT.viewBox.width} ${FLAT.viewBox.height}`;
 const CITY_GLOW_ID = 'cityGlow';
 /** Ícone de nuvem da chuva acima do normal: branco com contorno escuro, legível sobre qualquer cor de camada. */
 const CLOUD_ICON_FILL = '#ffffff';
@@ -302,6 +300,9 @@ export function FlatBrazilMap({
   onMarkerPress,
   style,
 }: FlatBrazilMapProps) {
+  // Gere os paths SVG só quando o mapa 2D for realmente renderizado; o import do fallback não bloqueia o início do globo.
+  const flat = flatMap();
+  const viewBox = `0 0 ${flat.viewBox.width} ${flat.viewBox.height}`;
   const [size, setSize] = useState({ width: 0, height: 0 });
   const onSelectRef = useRef(onSelect);
   const onMarkerPressRef = useRef(onMarkerPress);
@@ -335,7 +336,7 @@ export function FlatBrazilMap({
   );
   const pulseKey = markerPulseKey(markers);
 
-  const selected = viewModel.selectedId ? FLAT.ufs.find((u) => u.sigla === viewModel.selectedId) : undefined;
+  const selected = viewModel.selectedId ? flat.ufs.find((u) => u.sigla === viewModel.selectedId) : undefined;
 
   // Clima (só no 2D completo): hachura nas UFs em seca forte ou chuva forte e um ícone de nuvem por UF com chuva acima do
   // normal. Estático: refeito só quando o modelo muda (nada anima).
@@ -357,10 +358,10 @@ export function FlatBrazilMap({
     const locationY = native.locationY ?? native.offsetY;
     const { width, height } = size;
     if (width === 0 || height === 0 || locationX === undefined || locationY === undefined) return select(null);
-    const scale = Math.min(width / FLAT.viewBox.width, height / FLAT.viewBox.height);
-    const x = (locationX - (width - FLAT.viewBox.width * scale) / 2) / scale;
-    const y = (locationY - (height - FLAT.viewBox.height * scale) / 2) / scale;
-    const [lon, lat] = FLAT.unproject({ x, y });
+    const scale = Math.min(width / flat.viewBox.width, height / flat.viewBox.height);
+    const x = (locationX - (width - flat.viewBox.width * scale) / 2) / scale;
+    const y = (locationY - (height - flat.viewBox.height * scale) / 2) / scale;
+    const [lon, lat] = flat.unproject({ x, y });
     select(findUf(lon, lat)?.sigla ?? null);
   };
 
@@ -373,8 +374,8 @@ export function FlatBrazilMap({
         const { width, height } = e.nativeEvent.layout;
         setSize((s) => (s.width === width && s.height === height ? s : { width, height }));
       }}>
-      <Svg width="100%" height="100%" viewBox={VIEWBOX} preserveAspectRatio="xMidYMid meet">
-        {FLAT.ufs.map((uf) => (
+      <Svg width="100%" height="100%" viewBox={viewBox} preserveAspectRatio="xMidYMid meet">
+        {flat.ufs.map((uf) => (
           <UfPath key={uf.sigla} uf={uf} fill={viewModel.fills[uf.sigla] ?? LAND} />
         ))}
         {hatched.length > 0 && (
