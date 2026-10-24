@@ -1,4 +1,4 @@
-import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import type { GlobeApi, GlobeQuality, GlobeViewProps } from '@/globe/GlobeView';
@@ -135,7 +135,11 @@ function LazyGlobe(props: GlobeViewProps) {
   return <GlobeView {...props} />;
 }
 
-export function MapSurface({
+export function MapSurface(props: MapSurfaceProps) {
+  return <MapSurfaceRenderer key={props.renderer} {...props} />;
+}
+
+function MapSurfaceRenderer({
   renderer,
   viewModel,
   onSelect,
@@ -151,6 +155,14 @@ export function MapSurface({
   clouds,
   style,
 }: MapSurfaceProps) {
+  const [globeFailed, setGlobeFailed] = useState(false);
+  const reportGlobeFailure = useCallback(
+    (error: Error) => {
+      setGlobeFailed(true);
+      onGlobeFailure?.(error);
+    },
+    [onGlobeFailure],
+  );
   // O mesmo ajuste de texto do aplicativo vale para as siglas do globo e do mapa 2D.
   const scale = labelScale(useGame((s) => s.textScale));
   const labels: LabelProps = { reservedRects, labelInsets, labelScale: scale };
@@ -172,20 +184,21 @@ export function MapSurface({
       labels={labels}
     />
   );
-  if (renderer !== 'globe') return flat(renderer === 'flat-light');
+  if (renderer !== 'globe' || globeFailed) return flat(renderer === 'flat-light');
   // O globo devolve a sigla da UF do marcador tocado; o modelo tem um marcador por UF.
   const markerPressed = (sigla: string) => {
     const marker = viewModel.markers.find((m) => m.sigla === sigla);
     if (marker) onMarkerPress?.(marker);
   };
   return (
-    <GlobeBoundary onFailure={onGlobeFailure} fallback={flat(false)}>
+    <GlobeBoundary onFailure={reportGlobeFailure} fallback={flat(false)}>
       <LazyGlobe
         fills={viewModel.fills}
         selectedId={viewModel.selectedId}
         onSelect={onSelect}
         onReady={onReady}
         paused={paused}
+        onGlobeFailure={reportGlobeFailure}
         reservedRects={reservedRects}
         labelInsets={labelInsets}
         labelScale={scale}

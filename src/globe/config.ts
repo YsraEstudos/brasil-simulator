@@ -50,3 +50,6 @@ export const MAX_CONCURRENT_LOADS = 4;
 export function blockSide(z: number): number {
   return Math.min(4, 2 ** z);
 }
+
+/** Contador opcional: só liga com EXPO_PUBLIC_GLOBE_STATS=1, inclusive em desenvolvimento. */
+export const GLOBE_STATS_ENABLED: boolean = process.env.EXPO_PUBLIC_GLOBE_STATS === '1';

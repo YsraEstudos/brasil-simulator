@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { CLIMATOLOGY } from '@/content/climate';
@@ -68,6 +68,10 @@ const std = (xs: readonly number[]) => {
   const mean = xs.reduce((s, x) => s + x, 0) / xs.length;
   return Math.sqrt(xs.reduce((s, x) => s + (x - mean) ** 2, 0) / xs.length);
 };
+
+// Este arquivo simula centenas ou milhares de meses; o coverage do CI é várias vezes mais lento que o local (um teste
+// leva ~2 s aqui), então o limite padrão de 5 s não basta. Limite maior só para este arquivo; não esconde regressão.
+vi.setConfig({ testTimeout: 60_000 });
 
 describe('ordem das etapas (PLANO_GLOBO.md §6.2)', () => {
   it('o clima roda antes da economia; a distribuição regional, depois dela e da opinião', () => {
