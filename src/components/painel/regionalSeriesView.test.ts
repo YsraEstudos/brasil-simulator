@@ -117,6 +117,11 @@ describe('variação desde o mês passado e desde a posse', () => {
     expect(v.sinceStart).toMatchObject({ text: '±0,0 p.p.', tone: 'neutral' });
   });
 
+  it('variação exibida como zero permanece neutra mesmo acima da tolerância fixa', () => {
+    const v = build(1, 0.50011, [point(0, 0.5)]);
+    expect(v.sinceStart).toMatchObject({ text: '±0,0 p.p.', tone: 'neutral' });
+  });
+
   it('no mês da posse não há com o que comparar, e isso não é lacuna', () => {
     const v = build(0, 0.5, [point(0, 0.5)]);
     expect(v.sinceLastMonth.text).toBe('Primeiro mês');
