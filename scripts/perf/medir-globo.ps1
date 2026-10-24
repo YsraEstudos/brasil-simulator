@@ -27,7 +27,11 @@ param(
   [string]$Layer,
   # Intervalo entre consultas ao SurfaceFlinger (o buffer guarda 128 quadros ~ 2 s a 60 fps).
   [double]$PollSeconds = 1.5,
-  [switch]$SkipCpu
+  [switch]$SkipCpu,
+  # Segundos com o globo parado antes da medição (0 desliga). O critério do RELEASE_GLOBO vale depois do aquecimento.
+  [int]$AquecimentoSeg = 15,
+  # Não usa `dumpsys battery unplug` (por padrão o aparelho é tratado como desconectado durante a medição).
+  [switch]$SemUnplug
 )
 
 $ErrorActionPreference = 'Stop'
@@ -35,7 +39,8 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..')).Path
 if (-not $Out) { $Out = Join-Path $repoRoot 'docs' 'medicoes' }
 $parser = Join-Path $PSScriptRoot 'parseLatency.mjs'
 
-function Stop-Com([string]$msg) { Write-Error $msg; exit 1 }
+# `throw` (e não `exit`) para o `finally` que restaura a bateria rodar.
+function Stop-Com([string]$msg) { throw $msg }
 
 # --- adb ---
 if (-not $Adb) {
@@ -148,98 +153,111 @@ if (-not $layerName) {
 }
 Write-Host "Camada: $layerName"
 
-# --- inicio ---
-$batIni = Get-Bateria
-$termIni = Get-Termico
-$memIni = Get-Memoria
-Write-Host ("Inicio: bateria {0}% / {1} C; termico max {2} C; PSS {3} MB; Graphics {4} MB" -f $batIni.Nivel, (Fmt $batIni.TempC), (Fmt $termIni.MaxC), (Fmt $memIni.PssMB), (Fmt $memIni.GraphicsMB))
-if (-not $termIni.Disponivel) { Write-Warning 'thermalservice sem temperaturas neste aparelho; usando so a temperatura da bateria.' }
-
-$tmpDir = Join-Path ([IO.Path]::GetTempPath()) ("medir-globo-" + [guid]::NewGuid().ToString('N'))
-New-Item -ItemType Directory -Path $tmpDir | Out-Null
-
-# --- amostragem ---
-[void](Invoke-Adb "dumpsys SurfaceFlinger --latency-clear '$layerName'")
-Write-Host "Medindo '$Scenario' por $Seconds s. Faca o cenario no aparelho AGORA (nao encoste no cabo/tela do PC)."
-$cpuSamples = New-Object System.Collections.Generic.List[double]
-$files = New-Object System.Collections.Generic.List[string]
-$sw = [Diagnostics.Stopwatch]::StartNew()
-$i = 0
-$falhas = 0
-# CPU só antes e depois da janela: cada leitura leva ~1 s e, no meio do laço, faria a consulta ao SurfaceFlinger
-# demorar o bastante para o buffer de 128 quadros (~2 s) perder quadros, o que parece jank que não existe.
-if (-not $SkipCpu) { $c = Get-CpuPct; if ($null -ne $c) { $cpuSamples.Add($c) } }
-while ($sw.Elapsed.TotalSeconds -lt $Seconds) {
-  $txt = Invoke-Adb "dumpsys SurfaceFlinger --latency '$layerName'"
-  if (($txt -split "`n").Count -lt 2) {
-    $falhas++
-    $nl = Find-Layer
-    if ($nl) { $layerName = $nl }
-    if ($falhas -gt 5) { Write-Warning 'Consultas ao SurfaceFlinger voltando vazias; a camada pode ter sido recriada.' }
-  } else {
-    $f = Join-Path $tmpDir ('lat{0:D5}.txt' -f $i++)
-    Set-Content -Path $f -Value $txt -Encoding utf8
-    $files.Add($f)
+# --- desconecta a carga (corta o carregamento por software) e restaura no fim, mesmo se algo falhar ---
+if (-not $SemUnplug) { [void](Invoke-Adb 'dumpsys battery unplug') }
+try {
+  # --- aquecimento: o globo já aberto e parado, antes de qualquer leitura ou consulta ---
+  for ($t = $AquecimentoSeg; $t -gt 0; $t--) {
+    Write-Progress -Activity 'Aquecimento do globo' -Status "Deixe o globo parado: $t s (nada de toques)" -PercentComplete (100 * ($AquecimentoSeg - $t) / [math]::Max(1, $AquecimentoSeg))
+    Start-Sleep -Seconds 1
   }
-  Start-Sleep -Milliseconds ([int]($PollSeconds * 1000))
-  Write-Progress -Activity "Medindo $Scenario" -Status ('{0:N0}/{1} s' -f $sw.Elapsed.TotalSeconds, $Seconds) -PercentComplete ([math]::Min(100, 100 * $sw.Elapsed.TotalSeconds / $Seconds))
+  Write-Progress -Activity 'Aquecimento do globo' -Completed
+
+  # --- inicio ---
+  $batIni = Get-Bateria
+  $termIni = Get-Termico
+  $memIni = Get-Memoria
+  Write-Host ("Inicio: bateria {0}% / {1} C; termico max {2} C; PSS {3} MB; Graphics {4} MB" -f $batIni.Nivel, (Fmt $batIni.TempC), (Fmt $termIni.MaxC), (Fmt $memIni.PssMB), (Fmt $memIni.GraphicsMB))
+  if (-not $termIni.Disponivel) { Write-Warning 'thermalservice sem temperaturas neste aparelho; usando so a temperatura da bateria.' }
+
+  $tmpDir = Join-Path ([IO.Path]::GetTempPath()) ("medir-globo-" + [guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $tmpDir | Out-Null
+
+  # --- amostragem ---
+  [void](Invoke-Adb "dumpsys SurfaceFlinger --latency-clear '$layerName'")
+  Write-Host "Medindo '$Scenario' por $Seconds s. Faca o cenario no aparelho AGORA (nao encoste no cabo/tela do PC)."
+  $cpuSamples = New-Object System.Collections.Generic.List[double]
+  $files = New-Object System.Collections.Generic.List[string]
+  $sw = [Diagnostics.Stopwatch]::StartNew()
+  $i = 0
+  $falhas = 0
+  # CPU só antes e depois da janela: cada leitura leva ~1 s e, no meio do laço, faria a consulta ao SurfaceFlinger
+  # demorar o bastante para o buffer de 128 quadros (~2 s) perder quadros, o que parece jank que não existe.
+  if (-not $SkipCpu) { $c = Get-CpuPct; if ($null -ne $c) { $cpuSamples.Add($c) } }
+  while ($sw.Elapsed.TotalSeconds -lt $Seconds) {
+    $txt = Invoke-Adb "dumpsys SurfaceFlinger --latency '$layerName'"
+    if (($txt -split "`n").Count -lt 2) {
+      $falhas++
+      $nl = Find-Layer
+      if ($nl) { $layerName = $nl }
+      if ($falhas -gt 5) { Write-Warning 'Consultas ao SurfaceFlinger voltando vazias; a camada pode ter sido recriada.' }
+    } else {
+      $f = Join-Path $tmpDir ('lat{0:D5}.txt' -f $i++)
+      Set-Content -Path $f -Value $txt -Encoding utf8
+      $files.Add($f)
+    }
+    Start-Sleep -Milliseconds ([int]($PollSeconds * 1000))
+    Write-Progress -Activity "Medindo $Scenario" -Status ('{0:N0}/{1} s' -f $sw.Elapsed.TotalSeconds, $Seconds) -PercentComplete ([math]::Min(100, 100 * $sw.Elapsed.TotalSeconds / $Seconds))
+  }
+  Write-Progress -Activity "Medindo $Scenario" -Completed
+  if (-not $SkipCpu) { $c = Get-CpuPct; if ($null -ne $c) { $cpuSamples.Add($c) } }
+
+  # --- fim ---
+  $batFim = Get-Bateria
+  $termFim = Get-Termico
+  $memFim = Get-Memoria
+
+  # --- estatistica ---
+  New-Item -ItemType Directory -Force -Path $Out | Out-Null
+  $stamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
+  $slug = ($Scenario -replace '[^\w\-]+', '_')
+  $csv = Join-Path $Out "$stamp`_$slug.csv"
+  if ($files.Count -eq 0) { Stop-Com 'Nenhuma consulta ao SurfaceFlinger retornou dados.' }
+  # Lista em arquivo, não na linha de comando: uma sessão de 30 min tem ~1.200 consultas e estoura o limite do Windows.
+  $lista = Join-Path $tmpDir 'arquivos.txt'
+  Set-Content -Path $lista -Value $files -Encoding utf8
+  $json = & node $parser --csv $csv --lista $lista
+  if ($LASTEXITCODE -ne 0) { Stop-Com "Falha no parser: $json" }
+  $s = $json | ConvertFrom-Json
+  Write-Host ("RAW_DIR: " + $tmpDir)
+
+  $cpuMed = if ($cpuSamples.Count) { ($cpuSamples | Measure-Object -Average).Average } else { $null }
+  $memPss = if ($null -ne $memFim.PssMB) { $memFim.PssMB } else { $memIni.PssMB }
+  $memGfx = if ($null -ne $memFim.GraphicsMB) { $memFim.GraphicsMB } else { $memFim.GlMtrackMB }
+  $tIni = if ($termIni.Disponivel) { $termIni.MaxC } else { $batIni.TempC }
+  $tFim = if ($termFim.Disponivel) { $termFim.MaxC } else { $batFim.TempC }
+  $dBat = if ($null -ne $batIni.Nivel -and $null -ne $batFim.Nivel) { $batFim.Nivel - $batIni.Nivel } else { $null }
+
+  Write-Host ''
+  Write-Host "=== $Scenario ($Seconds s) ==="
+  if ($s.frames -eq 0) {
+    Write-Host 'Quadros apresentados: 0 (laco parado: esperado no repouso; se estava mexendo, confira a camada).'
+  } else {
+    Write-Host ("Quadros: {0} (intervalos validos {1}, pausas >500 ms ignoradas {2}, tempo ativo {3} s)" -f $s.frames, $s.intervals, $s.idleGaps, (Fmt $s.activeSeconds))
+    Write-Host ("Intervalo p50 {0} ms | p95 {1} ms | p99 {2} ms | max {3} ms | {4} fps | quadros >100 ms: {5}" -f (Fmt $s.p50), (Fmt $s.p95), (Fmt $s.p99), (Fmt $s.max), (Fmt $s.fps), $s.jank)
+  }
+  Write-Host ("PSS {0} MB | Graphics {1} MB | GL mtrack {2} MB | CPU medio {3}% (100% = 1 nucleo)" -f (Fmt $memPss), (Fmt $memGfx), (Fmt $memFim.GlMtrackMB), (Fmt $cpuMed))
+  Write-Host ("Bateria {0}% -> {1}% (delta {2}) | Temp {3} -> {4} C" -f $batIni.Nivel, $batFim.Nivel, (Fmt $dBat '0'), (Fmt $tIni), (Fmt $tFim))
+  if ($termFim.Disponivel) { Write-Host "Termico (fim): $($termFim.Detalhe)" }
+  Write-Host "CSV: $csv"
+
+  # --- resumo em Markdown ---
+  $md = Join-Path $Out 'resultados.md'
+  if (-not (Test-Path $md)) {
+    @(
+      '# Resultados das medicoes do globo (adb)',
+      '',
+      'Gerado por `scripts/perf/medir-globo.ps1`. Intervalos em ms entre quadros apresentados (SurfaceFlinger). Veja docs/MEDICAO_GLOBO.md.',
+      '',
+      '| Data | Aparelho | Cenario | Duracao (s) | p50 (ms) | p95 (ms) | p99 (ms) | fps | Quadros >100 ms | PSS (MB) | Graphics (MB) | CPU (%) | Bateria (delta) | Temp inicio (C) | Temp fim (C) |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |'
+    ) | Set-Content -Path $md -Encoding utf8
+  }
+  $row = '| {0} | {1} (Android {2}) | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} |' -f `
+    (Get-Date -Format 'yyyy-MM-dd HH:mm'), $model, $android, $Scenario, $Seconds, (Fmt $s.p50), (Fmt $s.p95), (Fmt $s.p99), (Fmt $s.fps), $s.jank, `
+    (Fmt $memPss), (Fmt $memGfx), (Fmt $cpuMed), (Fmt $dBat '0'), (Fmt $tIni), (Fmt $tFim)
+  Add-Content -Path $md -Value $row -Encoding utf8
+  Write-Host "Linha adicionada a $md"
+} finally {
+  if (-not $SemUnplug) { [void](Invoke-Adb 'dumpsys battery reset') }
 }
-Write-Progress -Activity "Medindo $Scenario" -Completed
-if (-not $SkipCpu) { $c = Get-CpuPct; if ($null -ne $c) { $cpuSamples.Add($c) } }
-
-# --- fim ---
-$batFim = Get-Bateria
-$termFim = Get-Termico
-$memFim = Get-Memoria
-
-# --- estatistica ---
-New-Item -ItemType Directory -Force -Path $Out | Out-Null
-$stamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
-$slug = ($Scenario -replace '[^\w\-]+', '_')
-$csv = Join-Path $Out "$stamp`_$slug.csv"
-if ($files.Count -eq 0) { Stop-Com 'Nenhuma consulta ao SurfaceFlinger retornou dados.' }
-# Lista em arquivo, não na linha de comando: uma sessão de 30 min tem ~1.200 consultas e estoura o limite do Windows.
-$lista = Join-Path $tmpDir 'arquivos.txt'
-Set-Content -Path $lista -Value $files -Encoding utf8
-$json = & node $parser --csv $csv --lista $lista
-if ($LASTEXITCODE -ne 0) { Stop-Com "Falha no parser: $json" }
-$s = $json | ConvertFrom-Json
-Write-Host ("RAW_DIR: " + $tmpDir)
-
-$cpuMed = if ($cpuSamples.Count) { ($cpuSamples | Measure-Object -Average).Average } else { $null }
-$memPss = if ($null -ne $memFim.PssMB) { $memFim.PssMB } else { $memIni.PssMB }
-$memGfx = if ($null -ne $memFim.GraphicsMB) { $memFim.GraphicsMB } else { $memFim.GlMtrackMB }
-$tIni = if ($termIni.Disponivel) { $termIni.MaxC } else { $batIni.TempC }
-$tFim = if ($termFim.Disponivel) { $termFim.MaxC } else { $batFim.TempC }
-$dBat = if ($null -ne $batIni.Nivel -and $null -ne $batFim.Nivel) { $batFim.Nivel - $batIni.Nivel } else { $null }
-
-Write-Host ''
-Write-Host "=== $Scenario ($Seconds s) ==="
-if ($s.frames -eq 0) {
-  Write-Host 'Quadros apresentados: 0 (laco parado: esperado no repouso; se estava mexendo, confira a camada).'
-} else {
-  Write-Host ("Quadros: {0} (intervalos validos {1}, pausas >500 ms ignoradas {2}, tempo ativo {3} s)" -f $s.frames, $s.intervals, $s.idleGaps, (Fmt $s.activeSeconds))
-  Write-Host ("Intervalo p50 {0} ms | p95 {1} ms | p99 {2} ms | max {3} ms | {4} fps | quadros >100 ms: {5}" -f (Fmt $s.p50), (Fmt $s.p95), (Fmt $s.p99), (Fmt $s.max), (Fmt $s.fps), $s.jank)
-}
-Write-Host ("PSS {0} MB | Graphics {1} MB | GL mtrack {2} MB | CPU medio {3}% (100% = 1 nucleo)" -f (Fmt $memPss), (Fmt $memGfx), (Fmt $memFim.GlMtrackMB), (Fmt $cpuMed))
-Write-Host ("Bateria {0}% -> {1}% (delta {2}) | Temp {3} -> {4} C" -f $batIni.Nivel, $batFim.Nivel, (Fmt $dBat '0'), (Fmt $tIni), (Fmt $tFim))
-if ($termFim.Disponivel) { Write-Host "Termico (fim): $($termFim.Detalhe)" }
-Write-Host "CSV: $csv"
-
-# --- resumo em Markdown ---
-$md = Join-Path $Out 'resultados.md'
-if (-not (Test-Path $md)) {
-  @(
-    '# Resultados das medicoes do globo (adb)',
-    '',
-    'Gerado por `scripts/perf/medir-globo.ps1`. Intervalos em ms entre quadros apresentados (SurfaceFlinger). Veja docs/MEDICAO_GLOBO.md.',
-    '',
-    '| Data | Aparelho | Cenario | Duracao (s) | p50 (ms) | p95 (ms) | p99 (ms) | fps | Quadros >100 ms | PSS (MB) | Graphics (MB) | CPU (%) | Bateria (delta) | Temp inicio (C) | Temp fim (C) |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |'
-  ) | Set-Content -Path $md -Encoding utf8
-}
-$row = '| {0} | {1} (Android {2}) | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} |' -f `
-  (Get-Date -Format 'yyyy-MM-dd HH:mm'), $model, $android, $Scenario, $Seconds, (Fmt $s.p50), (Fmt $s.p95), (Fmt $s.p99), (Fmt $s.fps), $s.jank, `
-  (Fmt $memPss), (Fmt $memGfx), (Fmt $cpuMed), (Fmt $dBat '0'), (Fmt $tIni), (Fmt $tFim)
-Add-Content -Path $md -Value $row -Encoding utf8
-Write-Host "Linha adicionada a $md"

@@ -31,7 +31,9 @@ Da raiz do repositório, com o app aberto na tela do globo (Painel), aparelho ca
 pwsh scripts/perf/medir-globo.ps1 -Package <id.do.pacote> -Scenario arrastar -Seconds 60
 ```
 
-Parâmetros: `-Package`, `-Scenario` (obrigatório), `-Seconds` (60), `-Out` (`docs/medicoes/`), `-Adb`, `-Layer` (força a camada, se a detecção falhar), `-PollSeconds` (1,5) e `-SkipCpu` (omite as consultas bloqueantes a `top`). Para 60/90 Hz, use `-PollSeconds 0.2 -SkipCpu`, escolhendo a camada explicitamente com `-Layer`.
+Antes da leitura, o script roda `dumpsys battery unplug` (corta a carga por software, para a bateria não mascarar o consumo) e espera `-AquecimentoSeg` (15 s) com o globo parado, sem toques. Ao fim, restaura com `dumpsys battery reset`, mesmo se a medição falhar. Use `-SemUnplug` para não mexer na carga.
+
+Parâmetros: `-Package`, `-Scenario` (obrigatório), `-Seconds` (60), `-Out` (`docs/medicoes/`), `-Adb`, `-Layer` (força a camada, se a detecção falhar), `-PollSeconds` (1,5), `-SkipCpu` (omite as consultas bloqueantes a `top`), `-AquecimentoSeg` (15, 0 desliga) e `-SemUnplug`. Para 60/90 Hz, use `-PollSeconds 0.2 -SkipCpu`, escolhendo a camada explicitamente com `-Layer`.
 
 Os arquivos brutos `lat*.txt` são preservados na pasta temporária indicada por `RAW_DIR`; copie-os junto ao relatório. Ausência de sobreposição entre buffers sucessivos exige investigar perda de amostras; um resumo numérico não aprova automaticamente a coleta.
 
