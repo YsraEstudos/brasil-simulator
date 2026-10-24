@@ -31,6 +31,8 @@ export interface MapSurfaceProps {
    * leve não desenha marcadores (eles seguem nos Alertas e nas Notícias).
    */
   onMarkerPress?: (marker: MapMarker) => void;
+  /** O anel de um pulso terminou (globo ou 2D): as instâncias param de pulsar na sessão da partida. */
+  onPulseDone?: (instanceIds: readonly string[]) => void;
   /** Comandos de câmera; no 2D os comandos não fazem nada (o mapa já mostra o Brasil inteiro). */
   onReady?: (api: GlobeApi) => void;
   /** Pausa o desenho do globo (a tela perdeu o foco). No 2D não há laço de quadros, então não muda nada. */
@@ -66,6 +68,7 @@ function FlatMap({
   viewModel,
   onSelect,
   onMarkerPress,
+  onPulseDone,
   onReady,
   light,
   sun,
@@ -75,6 +78,7 @@ function FlatMap({
   viewModel: RegionalMapViewModel;
   onSelect: (sigla: string | null) => void;
   onMarkerPress?: (marker: MapMarker) => void;
+  onPulseDone?: (instanceIds: readonly string[]) => void;
   onReady?: (api: GlobeApi) => void;
   light: boolean;
   sun: SunState | null;
@@ -91,6 +95,7 @@ function FlatMap({
       viewModel={viewModel}
       onSelect={onSelect}
       onMarkerPress={onMarkerPress}
+      onPulseDone={onPulseDone}
       variant={light ? 'light' : 'full'}
       reservedRects={labels.reservedRects}
       labelInsets={labels.labelInsets}
@@ -144,6 +149,7 @@ function MapSurfaceRenderer({
   viewModel,
   onSelect,
   onMarkerPress,
+  onPulseDone,
   onReady,
   paused,
   onGlobeFailure,
@@ -177,6 +183,7 @@ function MapSurfaceRenderer({
       viewModel={viewModel}
       onSelect={onSelect}
       onMarkerPress={onMarkerPress}
+      onPulseDone={onPulseDone}
       onReady={onReady}
       light={light}
       sun={flatSun}
@@ -209,6 +216,7 @@ function MapSurfaceRenderer({
         markers={viewModel.markers}
         pulseKey={markerPulseKey(viewModel.markers)}
         onMarkerPress={markerPressed}
+        onPulseDone={onPulseDone}
       />
     </GlobeBoundary>
   );

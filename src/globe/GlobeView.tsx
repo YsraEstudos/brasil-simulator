@@ -85,6 +85,8 @@ export interface GlobeViewProps {
   pulseKey?: string;
   /** Toque num marcador (a sigla da UF dele): tem prioridade sobre a seleção da UF. */
   onMarkerPress?: (sigla: string) => void;
+  /** O anel de `pulseKey` terminou (as instâncias param de pulsar na sessão). */
+  onPulseDone?: (instanceIds: readonly string[]) => void;
 }
 
 const NO_RECTS: readonly Rect[] = [];
@@ -121,6 +123,7 @@ export function GlobeView({
   markers = NO_MARKERS,
   pulseKey = '',
   onMarkerPress,
+  onPulseDone,
 }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   const insets = useSafeAreaInsets();
@@ -283,6 +286,7 @@ export function GlobeView({
                   drawing={!paused}
                   markers={markers}
                   pulseKey={pulseKey}
+                  onPulseDone={onPulseDone}
                 />
               </Canvas>
             ) : (
@@ -311,6 +315,7 @@ export function GlobeView({
                   drawing={!paused}
                   markers={markers}
                   pulseKey={pulseKey}
+                  onPulseDone={onPulseDone}
                 />
               </NativeGlobeCanvas>
             )}
