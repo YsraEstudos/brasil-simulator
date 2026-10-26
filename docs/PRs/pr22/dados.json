@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "pr": null,
+    "title": "Painel de auditoria",
+    "date": "2026-10-21"
+  },
+  "schema_version": 3,
+  "audit_sha": "50260f41f8c5e97426f5cab29684a7ba9e3fc52d",
+  "base": "https://github.com/YsraEstudos/brasil-simulator/blob/50260f41f8c5e97426f5cab29684a7ba9e3fc52d/",
+  "repository": "YsraEstudos/brasil-simulator",
+  "id_aliases": {},
+  "issues": [],
+  "rejected": [],
+  "docs": {},
+  "glossary": [],
+  "scenarios": [],
+  "env_vars": [],
+  "counters": [],
+  "tools": [],
+  "fault_points": [],
+  "preserved_optimizations": [],
+  "migration_log": [],
+  "test_protocols": []
+}

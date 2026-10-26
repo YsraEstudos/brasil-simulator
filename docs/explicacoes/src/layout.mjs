@@ -18,6 +18,11 @@ export const ESTADOS = {
     classe: 'parc',
     nota: 'Resumo do tema. Os detalhes completos entram na revisão com o autor.',
   },
+  'nao-implementado': {
+    rotulo: 'Não implementado',
+    classe: 'nao',
+    nota: 'O desenho existe, mas nada disso está no jogo ainda.',
+  },
   pendente: {
     rotulo: 'A preencher',
     classe: 'todo',
@@ -26,6 +31,16 @@ export const ESTADOS = {
 };
 
 const pill = (status) => `<span class="pill ${ESTADOS[status].classe}">${ESTADOS[status].rotulo}</span>`;
+// Marca ao lado do título: lápis amarelo para rascunho, círculo cortado vermelho para não implementado.
+const marcaStatus = (status) => {
+  if (status === 'rascunho') {
+    return '<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+  }
+  if (status === 'nao-implementado') {
+    return '<svg class="marca-nao-implementado" viewBox="0 0 24 24" role="img" aria-label="Não implementado"><title>Não implementado</title><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg>';
+  }
+  return '';
+};
 const hrefPagina = (ctx, id) => `${ctx.pasta}${id}.html`;
 const hrefDoc = (ctx, arquivo) => `${ctx.voltaDocs}${arquivo}`;
 const bloco = (titulo, html) => `<section class="bloco"><h2>${esc(titulo)}</h2>${html}</section>`;
@@ -55,7 +70,7 @@ function menuLateral(ctx, atual) {
         ? `<ul>${pags
             .map(
               (p) =>
-                `<li><a href="${hrefPagina(ctx, p.id)}"${p.id === atual.pagina ? ' aria-current="page"' : ''}>${esc(p.titulo)}</a></li>`,
+                `<li><a href="${hrefPagina(ctx, p.id)}"${p.id === atual.pagina ? ' aria-current="page"' : ''}>${esc(p.titulo)}${marcaStatus(p.status)}</a></li>`,
             )
             .join('')}</ul>`
         : '';
@@ -103,7 +118,7 @@ function casca(ctx, atual, { titulo, descricao, main }) {
 
 const cartaoPagina = (ctx, p) =>
   `<a class="cartao" href="${hrefPagina(ctx, p.id)}"><div class="cartao-topo">${pill(p.status)}</div>` +
-  `<h3>${esc(p.titulo)}</h3><p>${esc(p.resumo)}</p></a>`;
+  `<h3>${esc(p.titulo)}${marcaStatus(p.status)}</h3><p>${esc(p.resumo)}</p></a>`;
 
 function paginacao(ctx, anterior, proxima) {
   if (!anterior && !proxima) return '';
@@ -184,7 +199,16 @@ export function paginaHtml(ctx, p) {
 
   const blocos = [];
   if (p.pontos?.length) {
-    blocos.push(bloco('Como funciona', `<ul class="bullets">${p.pontos.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`));
+    // Um ponto é texto puro ou { partes }: cada parte é texto puro ou { termo, dica }.
+    // Um termo com dica aparece destacado e mostra a explicação dele ao passar o mouse (ou focar).
+    const termo = (p) =>
+      `<span class="com-dica" tabindex="0"><span class="destaque-dica">${esc(p.termo)}</span>` +
+      `<span class="dica" role="tooltip">${p.dica.map((d) => `<span class="dica-linha">${esc(d)}</span>`).join('')}</span></span>`;
+    const item = (t) =>
+      typeof t === 'string'
+        ? `<li>${esc(t)}</li>`
+        : `<li>${t.partes.map((p) => (typeof p === 'string' ? esc(p) : termo(p))).join('')}</li>`;
+    blocos.push(bloco('Como funciona', `<ul class="bullets">${p.pontos.map(item).join('')}</ul>`));
   }
   if (p.corpo) {
     blocos.push(`<section class="bloco corpo">${ctx.fragmentos.get(p.corpo)}</section>`);
@@ -215,7 +239,7 @@ export function paginaHtml(ctx, p) {
   const main = `
   ${migalhas([{ t: 'Início', h: ctx.inicio }, { t: grupo.titulo, h: hrefPagina(ctx, grupo.id) }, { t: p.titulo }])}
   <p class="eyebrow">${esc(grupo.titulo)}</p>
-  <h1>${esc(p.titulo)}</h1>
+  <h1>${esc(p.titulo)}${marcaStatus(p.status)}</h1>
   <p class="resumo">${esc(p.resumo)}</p>
   <div class="linha-meta">${pill(p.status)}<span>${p.codigo.length} caminho${p.codigo.length > 1 ? 's' : ''} de código</span></div>
   ${blocos.join('\n  ')}

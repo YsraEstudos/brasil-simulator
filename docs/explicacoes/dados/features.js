@@ -720,6 +720,260 @@ window.FEATURES_DADOS = {
           "pastas": []
         }
       ]
+    },
+    {
+      "id": "cat-mvi7h9m71",
+      "nome": "Ideais a se condiderar",
+      "features": [],
+      "pastas": [
+        {
+          "id": "cat-mvi7jn3x2",
+          "nome": "jogos para jogar",
+          "features": [],
+          "pastas": [
+            {
+              "id": "cat-jogo-democracy4",
+              "nome": "Democracy 4",
+              "features": [],
+              "pastas": []
+            },
+            {
+              "id": "cat-jogo-suzerain",
+              "nome": "Suzerain",
+              "features": [],
+              "pastas": []
+            },
+            {
+              "id": "cat-jogo-rebel-inc",
+              "nome": "Rebel Inc.",
+              "features": [],
+              "pastas": []
+            },
+            {
+              "id": "cat-jogo-political-process",
+              "nome": "The Political Process",
+              "features": [],
+              "pastas": []
+            },
+            {
+              "id": "cat-jogo-victoria3",
+              "nome": "Victoria 3",
+              "features": [],
+              "pastas": []
+            },
+            {
+              "id": "cat-jogo-president-simulator",
+              "nome": "President Simulator / 21st Century Peace Simulator",
+              "features": [],
+              "pastas": []
+            }
+          ]
+        },
+        {
+          "id": "cat-ideias-descartadas",
+          "nome": "Ideias descartadas",
+          "features": [
+            {
+              "id": "feat-desc-coalizoes",
+              "titulo": "Coalizões reais e troca de cargos (Democracy)",
+              "descricao": "Cliff Harris resistiu a multipartidarismo e coalizões por temer uma simulação de acordos de bastidores; quando incluiu, virou divisão fria de porcentagens.",
+              "concluida": false,
+              "cor": "amarelo",
+              "tamanho": "m",
+              "itens": [],
+              "html": "<p><b>O que foi pensado:</b> o criador de Democracy queria um gabinete em que ministros representassem partidos rivais e exigissem pastas específicas para apoiar o governo.</p><p><b>Por que cortou:</b> achou que o jogador médio ficaria frustrado ao perder o controle de um ministério para a IA e considerou a negociação “chata e burocrática demais”. Quando finalmente adicionou coalizões, simplificou tudo para uma divisão fria de porcentagens eleitorais.</p><p><b>A lição:</b> o que o design ocidental tratou como feio demais é a alma do presidencialismo de coalizão brasileiro. O jogo deve abraçar a tensão de partidos aliados exigindo ministérios, chantagens e derrubada de governo como mecânica central, e não escondê-la.</p>"
+            },
+            {
+              "id": "feat-desc-urban-empire",
+              "titulo": "O Parlamento votando em tudo (Urban Empire)",
+              "descricao": "A Kalypso submeteu até bueiro e escola de bairro ao voto da Câmara; a tramitação virou gargalo repetitivo e o jogo afundou na crítica.",
+              "concluida": false,
+              "cor": "rosa",
+              "tamanho": "m",
+              "itens": [],
+              "html": "<p><b>O que tentaram:</b> em 2017, Urban Empire propunha um prefeito que precisava da Câmara de Vereadores para cada decisão da cidade.</p><p><b>Por que deu errado:</b> até a construção de um bueiro ou de uma escola de bairro passava por votação. A tramitação legislativa virou um gargalo burocrático repetitivo e enfadonho.</p><p><b>A lição:</b> nunca levar atos de gestão rotineira ao Congresso. Manter a divisão do GDD: atos do Executivo (decretos, nomeações, contingenciamento) saem por canetada; o Legislativo entra apenas em lei ordinária, PEC, orçamento e sabatina.</p>"
+            },
+            {
+              "id": "feat-desc-republic",
+              "titulo": "Simulação de milhões de indivíduos (Republic: The Revolution)",
+              "descricao": "Demis Hassabis prometeu simular cada cidadão e político de uma república pós-soviética; o escopo engoliu o projeto e o jogo virou um tabuleiro abstrato.",
+              "concluida": false,
+              "cor": "azul",
+              "tamanho": "g",
+              "itens": [],
+              "html": "<p><b>O que foi pensado:</b> no início dos anos 2000, Republic: The Revolution prometia simular individualmente cada cidadão, pedestre e político de uma república pós-soviética.</p><p><b>Por que cortou:</b> modelar a rotina de milhares de pessoas drenava o processamento e enlouquecia a IA. Pedestres, animais e crianças foram cortados, e o jogo foi simplificado para um tabuleiro abstrato.</p><p><b>A lição:</b> não simular 215 milhões de brasileiros um a um. Simular instituições, bancadas e grupos de interesse: Faria Lima, evangélicos, agro, servidores, centrais sindicais e Centrão.</p>"
+            },
+            {
+              "id": "feat-desc-suzerain",
+              "titulo": "Motor econômico 100% dinâmico (Suzerain)",
+              "descricao": "A Torpor queria um modelo macroeconômico dinâmico completo, mas o efeito borboleta tornava o colapso inexplicável; trocou por Pontos de Orçamento.",
+              "concluida": false,
+              "cor": "verde",
+              "tamanho": "m",
+              "itens": [],
+              "html": "<p><b>O que tentaram:</b> os criadores de Suzerain queriam um motor macroeconômico dinâmico e matemático completo.</p><p><b>Por que cortaram:</b> modelos puros criavam o “efeito borboleta incontrolável”: o jogador aumentava um imposto e três turnos depois o país quebrava sem a narrativa explicar por quê. Trocaram a matemática por Pontos de Orçamento estáticos e árvores de decisão.</p><p><b>A lição:</b> o Brasil Simulator pode manter o modelo econômico real do ECONOMIC_MODEL.md, desde que toda variação tenha causa explicada em texto. Se o desemprego sobe 0,5%, o card deve dizer: “Reflexo dos juros altos do Copom segurando o investimento industrial”.</p>"
+            },
+            {
+              "id": "feat-desc-hidden-agenda",
+              "titulo": "Escassez de tempo na mesa de despacho (Hidden Agenda)",
+              "descricao": "No clássico de 1988, o turno era decidido por quem você recebia no gabinete; atender embaixador e chefe do Exército consumia o mês e deixava o líder camponês furioso.",
+              "concluida": false,
+              "cor": "amarelo",
+              "tamanho": "p",
+              "itens": [],
+              "html": "<p><b>O que o clássico inventou:</b> em Hidden Agenda (1988), o jogador era presidente de um país centro-americano em crise e não tinha botões mágicos: o turno consistia em escolher quem receber no gabinete.</p><p><b>A mecânica:</b> receber o embaixador americano e o chefe do Exército acabava com o tempo do mês, e o líder dos camponeses esperava furioso na antessala por um “chá de cadeira”.</p><p><b>A lição:</b> a angústia de agenda é real e divertida. O presidente nunca tem tempo para tudo; cada reunião escolhida significa outra bancada ou liderança abandonada.</p>"
+            },
+            {
+              "id": "feat-desc-orcamento-amarrado",
+              "titulo": "Orçamento 100% amarrado e dívida asfixiante (Civilization e SimCity)",
+              "descricao": "Civilization e SimCity testaram quebra de orçamento e hiperinflação por dívida, mas jogadores odiaram; no Brasil Simulator, o orçamento engessado é o desafio.",
+              "concluida": false,
+              "cor": "rosa",
+              "tamanho": "m",
+              "itens": [],
+              "html": "<p><b>O que foi pensado:</b> versões de teste de Civilization e SimCity tentaram quebras reais de orçamento e hiperinflação por dívida.</p><p><b>Por que cortaram:</b> jogadores odiavam ter 90% do orçamento preso em juros e custos fixos. Os desenvolvedores deram a ilusão de que todo dinheiro que entra pode ser gasto onde o jogador quiser.</p><p><b>O contraponto:</b> para o Brasil Simulator, o orçamento engessado é justamente o desafio divertido: “você governa uma das maiores economias do mundo, mas só manda em 6% do dinheiro livre”.</p>"
+            },
+            {
+              "id": "feat-desc-judiciario",
+              "titulo": "Sistema judiciário ativo (The Political Process e Democracy)",
+              "descricao": "The Political Process e Democracy cortaram tribunais que derrubam decretos; a chance é ter um STF ativo, com ADIs e liminares monocráticas.",
+              "concluida": false,
+              "cor": "azul",
+              "tamanho": "m",
+              "itens": [],
+              "html": "<p><b>O que foi pensado:</b> ter tribunais constitucionais que derrubam decretos do presidente por iniciativa de partidos de oposição.</p><p><b>Por que cortaram:</b> o sistema foi cortado ou reduzido a um “teste de legalidade” instantâneo para evitar que o jogador sentisse que a máquina estava roubando suas decisões.</p><p><b>A oportunidade:</b> transformar o STF em um poder ativo e imprevisível, com ADIs, liminares monocráticas e sabatinas de indicação — algo que nenhum jogo de estratégia política entrega hoje.</p>"
+            }
+          ],
+          "pastas": []
+        },
+        {
+          "id": "cat-ideias-inovadoras",
+          "nome": "Ideias inovadoras",
+          "features": [
+            {
+              "id": "feat-inov-alavancas",
+              "titulo": "Sistema de alavancas e dossiês (hooks de Crusader Kings)",
+              "descricao": "O jogador acumula dossiês sobre parlamentares e ministros e os usa para comprar votos, com risco de vazamento de áudio e crise institucional.",
+              "concluida": false,
+              "cor": "amarelo",
+              "tamanho": "g",
+              "itens": [],
+              "html": "<p><b>A referência:</b> em Crusader Kings III, descobrir o segredo de um nobre o força a votar a favor. Nenhum jogo moderno de política usa essa moeda suja.</p><p><b>No Brasil Simulator:</b> o jogador acumula ou descobre alavancas sobre parlamentares e ministros — relatório do Coaf sobre um líder de bancada, apoio à reeleição no reduto, diretoria na Itaipu para o irmão de um senador.</p><p><b>O risco divertido:</b> gastar uma alavanca forte para aprovar uma PEC por 1 voto pode vazar um áudio gravado no gabinete no dia seguinte e explodir uma crise institucional.</p>"
+            },
+            {
+              "id": "feat-inov-cpi",
+              "titulo": "Mini-jogo da CPI",
+              "descricao": "A oposição instala a CPI, o governo escala a tropa de choque e um relatório final desfavorável pode indiciar ministros e abrir a gaveta do impeachment.",
+              "concluida": false,
+              "cor": "rosa",
+              "tamanho": "g",
+              "itens": [],
+              "html": "<p><b>A inovação:</b> nenhum jogo simulou uma CPI. Quando a oposição reúne 1/3 das assinaturas, por queda de aprovação ou escândalo, a comissão é instalada.</p><p><b>Como funciona:</b> por 3 a 5 turnos, a CPI vira evento fixo no início do mês. O jogador escala a tropa de choque (deputados governistas articulados) para tumultuar sessões, apresentar requerimentos de adiamento e blindar ministros.</p><p><b>Consequência:</b> um relatório final desfavorável pode indiciar ministros e abrir a gaveta do impeachment, dando a sensação de viver uma crise de Brasília transmitida pela TV Senado.</p>"
+            },
+            {
+              "id": "feat-inov-indicacao",
+              "titulo": "Indicação técnica vs. entrega da chave do cofre",
+              "descricao": "Cada estatal e ministério aceita um técnico (eficiência, mercado e imprensa) ou um apadrinhado (30 a 50 votos fiéis e risco crescente de Operação da PF).",
+              "concluida": false,
+              "cor": "azul",
+              "tamanho": "g",
+              "itens": [],
+              "html": "<p><b>O dilema:</b> a maioria dos jogos trata cargos como bônus numéricos. Aqui, cada estatal (Petrobras, Caixa, Banco do Brasil, Codevasf, Dnit, Correios) e ministério tem dois caminhos.</p><ul><li><b>Indicação técnica:</b> aumenta eficiência, atrai investimento, agrada mercado e imprensa, mas gera zero votos no Congresso e revolta o partido da base.</li><li><b>Indicação política (Centrão):</b> garante um bloco de 30 a 50 votos fiéis para qualquer PEC, porém acumula Risco de Investigação a cada turno.</li></ul><p><b>Se o risco estourar:</b> o jogador acorda com a manchete de uma Operação da Polícia Federal cumprindo mandados dentro do ministério indicado.</p>"
+            },
+            {
+              "id": "feat-inov-copom",
+              "titulo": "Guerra do Boletim Focus e reuniões do Copom",
+              "descricao": "A cada 45 dias o Copom decide a Selic; atacar o Banco Central agrada a base, mas piora o Focus, dispara o dólar e encarece os combustíveis no mês seguinte.",
+              "concluida": false,
+              "cor": "verde",
+              "tamanho": "m",
+              "itens": [],
+              "html": "<p><b>A inovação:</b> o presidente do Banco Central tem mandato fixo e vontade própria; o jogador não move a taxa de juros com uma barra.</p><p><b>O ciclo:</b> a cada 45 dias, a tela do Copom mostra a decisão. Se a política fiscal for frouxa ou o gasto estourar, o Copom sobe a Selic na cara do governo.</p><p><b>A bravata:</b> atacar publicamente o presidente do BC em coletiva sobe a popularidade junto à militância (+4%), mas a Faria Lima reage na hora: o Boletim Focus piora as projeções, a curva de juros futura sobe, o dólar dispara e os combustíveis encarecem no mês seguinte. É um cabo-de-guerra de expectativas.</p>"
+            },
+            {
+              "id": "feat-inov-pauta-bomba",
+              "titulo": "Pautas-bomba e batalha da derrubada de veto",
+              "descricao": "O Congresso aprova despesa obrigatória gigante; sancionar estoura a LRF, vetar compra briga, e a derrubada do veto vira batalha em sessão conjunta.",
+              "concluida": false,
+              "cor": "amarelo",
+              "tamanho": "m",
+              "itens": [],
+              "html": "<p><b>A inovação:</b> quando o Congresso quer emparedar o presidente, aprova uma pauta-bomba — um projeto que cria despesa obrigatória gigantesca, como reajuste de 40% para uma categoria barulhenta.</p><p><b>O dilema:</b> sancionar estoura a Lei de Responsabilidade Fiscal e rende advertência do TCU; vetar compra briga aberta com os parlamentares.</p><p><b>A sessão conjunta:</b> uma vez vetado, o veto vai para Câmara e Senado. O jogador tem 1 turno para gastar prestígio, liberar emendas ou articular antes que o Congresso derrube o veto na marra.</p>"
+            },
+            {
+              "id": "feat-inov-dois-feeds",
+              "titulo": "Opinião pública em dois feeds: Zap dos tios vs. editorial dos jornais",
+              "descricao": "Em vez de uma barra única de aprovação, o humor da nação se divide entre o Zap, visceral ao preço do feijão, e o editorial tradicional, atento às contas públicas.",
+              "concluida": false,
+              "cor": "rosa",
+              "tamanho": "g",
+              "itens": [],
+              "html": "<p><b>A inovação:</b> substituir a barra genérica de aprovação por dois feeds vivos de opinião pública.</p><ul><li><b>Redes e WhatsApp:</b> reagem visceralmente ao preço do feijão, do gás e da gasolina, além de memes satíricos sobre o governo.</li><li><b>Editorial tradicional e mercado:</b> reagem à estabilidade das contas públicas, à segurança jurídica e à diplomacia.</li></ul><p><b>O cobertor curto:</b> a decisão que faz o editorial elogiar o governo como “maduro e responsável” pode ser a mesma que sobe o botijão e convoca protestos com bonecos infláveis na Esplanada.</p>"
+            },
+            {
+              "id": "feat-inov-orcamento-emendas",
+              "titulo": "Orçamento engessado e emendas parlamentares",
+              "descricao": "Dos R$ 100 bi, R$ 94 bi já estão carimbados por lei; os R$ 6 bi livres viram moeda de troca por emendas e apoio a reformas.",
+              "concluida": false,
+              "cor": "azul",
+              "tamanho": "m",
+              "itens": [],
+              "html": "<p><b>A inovação:</b> mostrar o orçamento como ele é. De cada R$ 100 bi, R$ 94 bi já estão carimbados por lei (Previdência, salários, pisos de saúde e educação); só R$ 6 bi são livres.</p><p><b>A mecânica:</b> para aprovar a Reforma Tributária ou da Previdência, os deputados não querem discurso: exigem liberação de emendas parlamentares para as cidades deles.</p><p><b>O dilema:</b> liberar a emenda e cumprir o teto no limite, ou segurar a verba e ver a reforma ser tratorada na comissão.</p>"
+            },
+            {
+              "id": "feat-inov-centrao",
+              "titulo": "Bancada do fisiologismo (Centrão)",
+              "descricao": "O bloco pragmático sem ideologia fixa: quer orçamento de estatais, diretorias de bancos públicos, verbas regionais e cargos de segundo e terceiro escalão.",
+              "concluida": false,
+              "cor": "verde",
+              "tamanho": "m",
+              "itens": [],
+              "html": "<p><b>A inovação:</b> em vez de facções ideológicas genéricas, criar a bancada do fisiologismo — o Centrão pragmático.</p><p><b>O que ele quer:</b> orçamento de estatais e diretorias de bancos públicos, verbas regionais e cargos de segundo e terceiro escalão (Codevasf, Dnit, diretorias regionais). Não tem paixão por privatização nem por estatização.</p><p><b>O risco:</b> indicar técnico competente rende eficiência econômica; lotear com apadrinhados garante votos, mas aumenta a cada turno a chance de uma Operação da Polícia Federal com mandados de busca e manchetes no jornal.</p>"
+            },
+            {
+              "id": "feat-inov-stf-liminares",
+              "titulo": "Guerra da canetada: STF e liminares monocráticas",
+              "descricao": "Medida Provisória agressiva ou nomeação suspeita vira ADI; um ministro sorteado pode conceder liminar monocrática e suspender a política no meio do caminho.",
+              "concluida": false,
+              "cor": "amarelo",
+              "tamanho": "m",
+              "itens": [],
+              "html": "<p><b>A inovação:</b> nenhum jogo tem a guerra da canetada. Se o presidente assina uma MP agressiva ou faz nomeação suspeita, a oposição entra com uma ADI no STF.</p><p><b>A liminar:</b> um ministro sorteado pode conceder liminar monocrática e suspender a política no meio do caminho.</p><p><b>A sabatina:</b> quando um ministro se aposenta aos 75 anos, a indicação vira o evento do ano. Indicar alguém leal blinda o governo; indicar um técnico evita desgaste no Senado.</p>"
+            },
+            {
+              "id": "feat-inov-impeachment",
+              "titulo": "Termômetro da gaveta do presidente da Câmara (impeachment real)",
+              "descricao": "Os pedidos acumulam na gaveta; a barra de pressão sobe com crime de responsabilidade e popularidade baixa, e o relacionamento com o presidente da Câmara decide a abertura.",
+              "concluida": false,
+              "cor": "rosa",
+              "tamanho": "g",
+              "itens": [],
+              "html": "<p><b>A inovação:</b> impeachment não acontece do nada. O presidente da Câmara acumula dezenas de pedidos na gaveta e o jogo mostra a barra “Pressão pela Abertura do Impeachment”.</p><p><b>Como enche:</b> crime de responsabilidade (como pedalada fiscal) e perda de apoio popular elevam a pressão.</p><p><b>A decisão:</b> a abertura depende do relacionamento com o presidente da Câmara. Aliado, ele senta em cima dos pedidos; rompido, deflagra a Comissão Especial e começa uma batalha voto a voto na TV aberta.</p>"
+            },
+            {
+              "id": "feat-inov-governadores",
+              "titulo": "Guerra dos governadores e a federação",
+              "descricao": "Uma medida que corta ICMS de combustíveis une os 27 governadores, que entram na Justiça contra a União e ameaçam a base de deputados nos estados.",
+              "concluida": false,
+              "cor": "azul",
+              "tamanho": "p",
+              "itens": [],
+              "html": "<p><b>A inovação:</b> o Brasil não é um país unitário. Aprovar uma medida que reduz a arrecadação de ICMS para baixar o preço dos combustíveis na marra tem consequência federativa.</p><p><b>A reação:</b> os 27 governadores se unem, entram na Justiça contra a União e ameaçam a base de deputados do governo nos estados.</p><p><b>O aprendizado:</b> política nacional precisa negociar com os estados, não apenas com o Congresso.</p>"
+            },
+            {
+              "id": "feat-inov-gerador-historias",
+              "titulo": "Gerador procedural de histórias absurdas e realistas",
+              "descricao": "Em vez de planilha fria (Democracy 4) ou história fechada (Suzerain), cada partida gera uma narrativa única de sobrevivência no hospício institucional.",
+              "concluida": false,
+              "cor": "verde",
+              "tamanho": "g",
+              "itens": [],
+              "html": "<p><b>A tese:</b> o coração da diversão não é ser um ditador onipotente, mas a arte da sobrevivência no hospício institucional.</p><p><b>O ciclo:</b> “Eu preciso passar a reforma da saúde, mas para isso preciso dar duas diretorias ao Centrão, torcer para a PF não bater lá semana que vem, rezar para o Copom cortar os juros e convencer o presidente da Câmara a não pautar a urgência da oposição.”</p><p><b>O resultado:</b> escolhas com consequências vivas e conectadas produzem um gerador procedural de histórias absurdas e realistas — o diferencial que nenhum jogo do mercado entrega hoje.</p>"
+            }
+          ],
+          "pastas": []
+        }
+      ]
     }
   ]
 };
