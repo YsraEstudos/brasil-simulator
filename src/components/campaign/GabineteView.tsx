@@ -1,18 +1,37 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { loadContent } from '@/content';
 import { Button, Card, Text } from '@/components/ui';
-import { Spacing } from '@/constants/theme';
-import { isNovoBeneficio, vedacaoAtiva, type Decision } from '@/engine';
+import { Radius, Spacing } from '@/constants/theme';
+import {
+  AGENDA_ACTIONS,
+  BRAND_ACTION_ID,
+  DIRECTIVE_ACTION_ID,
+  isNovoBeneficio,
+  vedacaoAtiva,
+  type Decision,
+  type GameContent,
+} from '@/engine';
+import { useTheme } from '@/hooks/use-theme';
 import type { Policy } from '@/types/policy';
 import { decisionCost, draftCost, fits, gameStore, useGame, type ActiveCampaign } from '@/store';
 
 import { AgendaActions } from './AgendaActions';
 import { DecisionPanel } from './DecisionPanel';
+import { Icon, ICONS, SectionTab, type IconName } from './GabineteBits';
 import { DIFFICULTY } from './labels';
-import { PublicPoliciesPanel } from './PublicPoliciesPanel';
+import { DirectivesPanel, ProjectsPanel } from './PublicPoliciesPanel';
+
+type Section = 'decisoes' | 'diretrizes' | 'projetos' | 'acoes';
+
+const SECTIONS: readonly { id: Section; label: string; icon: IconName }[] = [
+  { id: 'decisoes', label: 'Decisões', icon: ICONS.decisions },
+  { id: 'diretrizes', label: 'Ministérios', icon: ICONS.ministries },
+  { id: 'projetos', label: 'Obras e marcas', icon: ICONS.projects },
+  { id: 'acoes', label: 'Ações rápidas', icon: ICONS.actions },
+];
 
 /**
  * Gabinete (GAME_DESIGN.md §4.2): a agenda presidencial do mês — mesa de despacho das decisões, políticas públicas
@@ -26,6 +45,7 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
 
   const draft = useGame((s) => s.draft);
   const [expandedPolicy, setExpandedPolicy] = useState<string | null>(null);
+  const [section, setSection] = useState<Section>('decisoes');
 
   const actionsMax = state.resources.agendaActionsPerMonth;
   const actionsUsed = draftCost(draft, content);
@@ -67,39 +87,203 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
     );
   }
 
+  const counts: Record<Section, number> = {
+    decisoes: draft.decisions.filter((d) => content.policies[d.policyId] !== undefined).length,
+    diretrizes: draft.decisions.filter((d) => d.policyId === DIRECTIVE_ACTION_ID).length,
+    projetos: draft.decisions.filter((d) => d.policyId === BRAND_ACTION_ID).length,
+    acoes: draft.decisions.filter((d) => AGENDA_ACTIONS[d.policyId]?.listed).length,
+  };
+
   return (
     <View style={styles.root}>
-      <Text variant="caption" color="textSecondary">
-        {campaign.name} · {DIFFICULTY[state.difficulty].name}
-      </Text>
-
-      <DecisionPanel
-        state={state}
+      <AgendaSummary
+        campaignLabel={`${campaign.name} · ${DIFFICULTY[state.difficulty].name}`}
         content={content}
-        selected={selected}
-        expandedId={expandedPolicy}
+        decisions={draft.decisions}
+        eventChoices={Object.keys(draft.eventChoices).length}
         actionsUsed={actionsUsed}
         actionsMax={actionsMax}
-        onExpand={setExpandedPolicy}
-        onToggle={toggleSimple}
-        canInclude={canInclude}
-        isVedada={isVedada}
-        onToggleBypass={toggleBypass}
+        onRemove={toggleDecision}
       />
 
-      <PublicPoliciesPanel state={state} content={content} actionsMax={actionsMax} />
+      <View style={styles.tabs} accessibilityRole="tablist">
+        {SECTIONS.map((s) => (
+          <SectionTab
+            key={s.id}
+            icon={s.icon}
+            label={s.label}
+            active={section === s.id}
+            count={counts[s.id]}
+            onPress={() => setSection(s.id)}
+          />
+        ))}
+      </View>
 
-      <AgendaActions
-        state={state}
-        content={content}
-        selected={selected}
-        canInclude={(cost) => actionsUsed + cost <= actionsMax}
-        onToggle={toggleSimple}
-      />
+      {section === 'decisoes' && (
+        <DecisionPanel
+          state={state}
+          content={content}
+          selected={selected}
+          expandedId={expandedPolicy}
+          actionsMax={actionsMax}
+          onExpand={setExpandedPolicy}
+          onToggle={toggleSimple}
+          canInclude={canInclude}
+          isVedada={isVedada}
+          onToggleBypass={toggleBypass}
+        />
+      )}
+      {section === 'diretrizes' && <DirectivesPanel state={state} content={content} actionsMax={actionsMax} />}
+      {section === 'projetos' && <ProjectsPanel state={state} content={content} actionsMax={actionsMax} />}
+      {section === 'acoes' && (
+        <AgendaActions
+          state={state}
+          content={content}
+          selected={selected}
+          canInclude={(cost) => actionsUsed + cost <= actionsMax}
+          onToggle={toggleSimple}
+        />
+      )}
+    </View>
+  );
+}
+
+/** Nome curto de uma decisão do rascunho, para o resumo da agenda. */
+function decisionLabel(decision: Decision, content: GameContent): string {
+  const params = decision.params ?? {};
+  if (decision.policyId === DIRECTIVE_ACTION_ID && typeof params.policyId === 'string') {
+    return `Diretriz: ${content.policies[params.policyId]?.name ?? params.policyId}`;
+  }
+  if (decision.policyId === BRAND_ACTION_ID && typeof params.name === 'string') return `Marca: ${params.name}`;
+  return content.policies[decision.policyId]?.name ?? AGENDA_ACTIONS[decision.policyId]?.name ?? decision.policyId;
+}
+
+/**
+ * Topo do Gabinete: as ações de agenda do mês como casas (cheias = usadas) e a lista do que já foi marcado, com
+ * como retirar. Lembra que nada acontece antes de encerrar o mês no Painel.
+ */
+function AgendaSummary({
+  campaignLabel,
+  content,
+  decisions,
+  eventChoices,
+  actionsUsed,
+  actionsMax,
+  onRemove,
+}: {
+  campaignLabel: string;
+  content: GameContent;
+  decisions: readonly Decision[];
+  eventChoices: number;
+  actionsUsed: number;
+  actionsMax: number;
+  onRemove: (decision: Decision) => void;
+}) {
+  const { colors } = useTheme();
+  const left = actionsMax - actionsUsed;
+  const slots = Math.max(actionsMax, actionsUsed);
+  return (
+    <View style={[styles.summary, { backgroundColor: colors.surface, borderColor: colors.accent }]}>
+      <View style={styles.summaryTop}>
+        <Icon name={ICONS.agenda} size={22} />
+        <View style={styles.summaryTitle}>
+          <Text variant="heading">Agenda do mês</Text>
+          <Text variant="caption" color="textMuted">
+            {campaignLabel}
+          </Text>
+        </View>
+        <View style={styles.summaryCount}>
+          <Text variant="title" color={left > 0 ? 'accent' : 'textSecondary'} tabular>
+            {left}
+          </Text>
+          <Text variant="caption" color="textSecondary">
+            {left === 1 ? 'ação livre' : 'ações livres'}
+          </Text>
+        </View>
+      </View>
+
+      <View
+        style={styles.slots}
+        accessible
+        accessibilityLabel={`${actionsUsed} de ${actionsMax} ações de agenda usadas neste mês`}>
+        {Array.from({ length: slots }, (_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.slot,
+              i < actionsUsed
+                ? { backgroundColor: colors.accent, borderColor: colors.accent }
+                : { borderColor: colors.border, backgroundColor: colors.surfaceRaised },
+            ]}
+          />
+        ))}
+      </View>
+
+      {decisions.length === 0 && eventChoices === 0 ? (
+        <Text variant="caption" color="textSecondary">
+          Escolha nas abas abaixo o que entra na agenda. Cada item gasta ações; nada é aplicado até você encerrar o mês
+          no Painel.
+        </Text>
+      ) : (
+        <View style={styles.picked}>
+          {decisions.map((decision) => {
+            const label = decisionLabel(decision, content);
+            return (
+              <Pressable
+                key={`${decision.policyId}:${JSON.stringify(decision.params ?? {})}`}
+                onPress={() => onRemove(decision)}
+                accessibilityRole="button"
+                accessibilityLabel={`Retirar ${label} da agenda`}
+                style={({ pressed }) => [
+                  styles.pickedChip,
+                  { borderColor: colors.accent, backgroundColor: colors.surfaceRaised },
+                  pressed && styles.pressed,
+                ]}>
+                <Icon name={ICONS.check} size={14} />
+                <Text variant="caption" numberOfLines={1} style={styles.pickedLabel}>
+                  {label}
+                </Text>
+                <Text variant="caption" color="accent" tabular>
+                  {decisionCost(decision, content)}
+                </Text>
+                <Icon name={ICONS.remove} size={12} color="textMuted" />
+              </Pressable>
+            );
+          })}
+          {eventChoices > 0 && (
+            <View style={[styles.pickedChip, { borderColor: colors.border }]}>
+              <Icon name={ICONS.info} size={14} color="textSecondary" />
+              <Text variant="caption" color="textSecondary">
+                {eventChoices} {eventChoices === 1 ? 'resposta a evento' : 'respostas a eventos'}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { gap: Spacing.four },
+  root: { gap: Spacing.three },
+  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  summary: { borderWidth: 1, borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.two },
+  summaryTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  summaryTitle: { flex: 1 },
+  summaryCount: { alignItems: 'flex-end' },
+  slots: { flexDirection: 'row', gap: Spacing.one },
+  slot: { flex: 1, height: 10, borderRadius: 5, borderWidth: 1 },
+  picked: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
+  pickedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    borderWidth: 1,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.two,
+    minHeight: 32,
+    maxWidth: '100%',
+  },
+  pickedLabel: { flexShrink: 1 },
+  pressed: { opacity: 0.75 },
 });

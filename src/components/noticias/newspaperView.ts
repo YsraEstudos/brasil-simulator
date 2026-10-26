@@ -87,3 +87,68 @@ export function mastheadFontSize(width: number, short: boolean): number {
   const fit = (width - MASTHEAD_BUTTONS) / (NEWSPAPER_NAME.length * TITLE_CHAR_WIDTH);
   return Math.round(Math.min(short ? 26 : 40, Math.max(18, fit)));
 }
+
+/**
+ * Manchete-bomba: ganha a capa inteira da edição (faixa de edição extra, título gigante e foto, se houver).
+ * Toda notícia institucional é bomba (CPI, TCU, impeachment, eleições, candidatura); `extraIds` acrescenta
+ * notícias pelo `sourceId` (ver `newsPhotos.ts`).
+ */
+export function isBombshell(item: NewsItem | undefined, extraIds: ReadonlySet<string> = new Set()): boolean {
+  if (!item) return false;
+  return item.kind === 'institucional' || (item.sourceId !== undefined && extraIds.has(item.sourceId));
+}
+
+/** Uma página do jornal: a capa-bomba de uma edição ou a página comum (manchete, colunas e quadros). */
+export type NewspaperPage =
+  | { kind: 'bomba'; editionIndex: number; item: NewsItem }
+  | { kind: 'comum'; editionIndex: number; skip: string | undefined };
+
+/**
+ * As páginas na ordem de folhear, da edição mais recente para a mais antiga: a capa-bomba (quando a notícia de
+ * maior prioridade é bomba) e depois a página comum, que não repete a bomba. Sem edições, uma página comum vazia.
+ */
+export function buildPages(editions: readonly Edition[], extraIds: ReadonlySet<string> = new Set()): NewspaperPage[] {
+  if (editions.length === 0) return [{ kind: 'comum', editionIndex: 0, skip: undefined }];
+  return editions.flatMap((edition, editionIndex): NewspaperPage[] => {
+    const lead = edition.items[0];
+    if (!lead || !isBombshell(lead, extraIds)) return [{ kind: 'comum', editionIndex, skip: undefined }];
+    return [
+      { kind: 'bomba', editionIndex, item: lead },
+      { kind: 'comum', editionIndex, skip: lead.id },
+    ];
+  });
+}
+
+/**
+ * Página e caderno em que o jornal abre na notícia `newsId`, aberta pelo marcador do mapa: a primeira página da edição
+ * dela, no caderno "Todas". Sem a notícia, a página mais recente (como antes).
+ */
+export function focusedView(
+  editions: readonly Edition[],
+  pages: readonly NewspaperPage[],
+  newsId: string | undefined,
+): { page: number; filter: NewsFilter } {
+  if (newsId === undefined) return { page: 0, filter: 'todas' };
+  const editionIndex = editionIndexOf(editions, newsId);
+  const page = pages.findIndex((p) => p.editionIndex === editionIndex);
+  return { page: Math.max(0, page), filter: 'todas' };
+}
+
+/**
+ * Página comum de uma edição sem a notícia que já foi capa-bomba. Com `focusId` (notícia aberta pelo mapa) e ela nesta
+ * página, é ela a manchete.
+ */
+export function regularPage(
+  edition: Edition | undefined,
+  filter: NewsFilter,
+  skip: string | undefined,
+  focusId?: string,
+): EditionPage {
+  if (!edition) return { lead: undefined, others: [] };
+  return editionPage({ ...edition, items: edition.items.filter((i) => i.id !== skip) }, filter, focusId);
+}
+
+/** Tamanho do título da capa-bomba: enorme, mas cabendo em poucas linhas. */
+export function bombshellFontSize(width: number): number {
+  return Math.round(Math.min(78, Math.max(34, width * 0.1)));
+}
