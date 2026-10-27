@@ -136,6 +136,11 @@ export const scenarioInstitutionsSchema = z
   .object({
     housePresidents: z.object({ camara: contentIdSchema, senado: contentIdSchema }).strict(),
     ministries: z.array(ministrySchema),
+    /**
+     * Pautas-bomba do cenário (PLANO_CAMPANHA.md Fase C6c): ids de políticas que o Congresso pode aprovar por conta
+     * própria, na ordem em que chegam. Fora de `policies` (o jogador não as propõe). Ausente = sistema desligado.
+     */
+    fiscalBombs: z.array(contentIdSchema).optional(),
   })
   .strict();
 export type ScenarioInstitutions = z.infer<typeof scenarioInstitutionsSchema>;

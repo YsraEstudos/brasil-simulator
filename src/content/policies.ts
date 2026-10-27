@@ -45,6 +45,8 @@ import rotinaRegularizacaoUrbanistica from '@/data/policies/rotina_regularizacao
 import rotinaSegurancaViaria from '@/data/policies/rotina_seguranca_viaria.json';
 import rotinaServicosDigitais from '@/data/policies/rotina_servicos_digitais.json';
 import rotinaVigilanciaEpidemiologica from '@/data/policies/rotina_vigilancia_epidemiologica.json';
+import pautaBombaDesoneracaoFolha from '@/data/policies/pauta_bomba_desoneracao_folha.json';
+import pautaBombaReajusteServidores from '@/data/policies/pauta_bomba_reajuste_servidores.json';
 
 /** Catálogo de políticas (src/data/policies/*.json), validado ao carregar: um JSON inválido é erro de desenvolvimento. */
 const RAW: readonly unknown[] = [
@@ -94,6 +96,9 @@ const RAW: readonly unknown[] = [
   projetoSegurancaHidrica,
   projetoDrenagemContencao,
   rotinaDefesaCivil,
+  // Pautas-bomba (PLANO_CAMPANHA.md Fase C6c): fora de `scenario.policies`, só o Congresso as aprova.
+  pautaBombaReajusteServidores,
+  pautaBombaDesoneracaoFolha,
 ];
 
 /** Políticas de prevenção climática do PR 13: citadas apenas pelo cenário v0.8.0 (os publicados não mudam). */

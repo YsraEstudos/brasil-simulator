@@ -71,6 +71,14 @@ export {
   policyMinistry,
 } from './congress/cabinet';
 export {
+  fiscalBombChance,
+  fiscalBombCostText,
+  fiscalBombPolicies,
+  fiscalBombProposer,
+  isFiscalBomb,
+  nextFiscalBomb,
+} from './congress/fiscalBombs';
+export {
   blocRelation,
   blocSupport,
   housePresident,

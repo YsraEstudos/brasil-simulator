@@ -989,6 +989,36 @@ export const PARAMS = {
     basis: JOGO,
   },
 
+  // ── Pauta-bomba (PLANO_CAMPANHA.md Fase C6c; POLITICAL_RULES.md §7.1) ──────────────────────────
+  bomba_relacao_limite: {
+    value: 0,
+    min: -30,
+    max: 20,
+    note: 'relação média com o Congresso abaixo da qual pode chegar pauta-bomba',
+    basis: JOGO,
+  },
+  bomba_chance_por_ponto: {
+    value: 0.004,
+    min: 0.001,
+    max: 0.01,
+    note: 'chance mensal de pauta-bomba por ponto de relação abaixo do limite',
+    basis: JOGO,
+  },
+  bomba_chance_max: {
+    value: 0.15,
+    min: 0.05,
+    max: 0.3,
+    note: 'teto da chance mensal de pauta-bomba',
+    basis: SATURACAO,
+  },
+  bomba_intervalo_meses: {
+    value: 12,
+    min: 6,
+    max: 24,
+    note: 'meses mínimos entre duas pautas-bomba',
+    basis: JOGO,
+  },
+
   // ── Ministérios (POLITICAL_RULES.md §6.3.1) ─────────────────────────────────────────────────────
   apoio_ministerio: {
     value: 0.25,

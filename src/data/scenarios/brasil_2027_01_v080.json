@@ -298,6 +298,7 @@
       "camara": "centro",
       "senado": "centro"
     },
+    "fiscalBombs": ["pauta_bomba_reajuste_servidores", "pauta_bomba_desoneracao_folha"],
     "ministries": [
       {
         "id": "fazenda",

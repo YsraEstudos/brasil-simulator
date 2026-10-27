@@ -98,3 +98,19 @@ export function createRng(initial: RngState): Rng {
     state: () => [a, b, c, d] as const,
   };
 }
+
+/** FNV-1a de 32 bits sobre o texto (só `Math.imul`: idêntico no Hermes e no V8). */
+function hashText(text: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193) >>> 0;
+  return h;
+}
+
+/**
+ * Sorteio por chave (PLANO_CAMPANHA.md §4.1): uniforme em [0, 1) que depende só da semente da campanha, do sal do
+ * sistema e da chave (ex.: `['pauta_bomba', mês]`). Não consome o PRNG principal, então ligar um sistema que sorteia
+ * assim não muda os demais sorteios. Mesma semente, sal e chave → mesmo valor. Sais publicados nunca mudam.
+ */
+export function keyedFloat(seed: number, salt: number, key: readonly (string | number)[]): number {
+  return createRng(seedRng(deriveSeed(seed, (salt ^ hashText(key.join('|'))) >>> 0))).float();
+}

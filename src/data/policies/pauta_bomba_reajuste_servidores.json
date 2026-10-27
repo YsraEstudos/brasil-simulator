@@ -1,0 +1,50 @@
+{
+  "id": "pauta_bomba_reajuste_servidores",
+  "name": "Reajuste extra de carreiras do serviço público (pauta-bomba)",
+  "summary": "Texto aprovado pelo Congresso por iniciativa própria: reajuste acima do previsto para carreiras do serviço público federal, sem indicar receita que o compense. A despesa obrigatória sobe de forma permanente e, com o limite de despesas fixo, comprime as discricionárias. Ficção: valores de ordem de grandeza, sem projeto real.",
+  "area": "estado",
+  "competence": "federal",
+  "instruments": ["projeto_lei"],
+  "agendaCost": 0,
+  "cost": {
+    "annualMillions": 12000,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": {
+    "planningMonths": 0,
+    "expectedLegislativeMonths": 1,
+    "executionMonths": 0,
+    "maturationMonths": 0
+  },
+  "conditions": [],
+  "impacts": [
+    {
+      "channel": "despesa_obrigatoria",
+      "magnitude": 12000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "credibilidade_fiscal",
+      "magnitude": -0.02,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": 0.003,
+      "lagMonths": 0
+    }
+  ],
+  "risks": [],
+  "affected": {
+    "groups": ["servidores"],
+    "sectors": ["servicos"],
+    "regions": ["nacional"]
+  },
+  "position": {
+    "economic": -0.5,
+    "social": 0
+  },
+  "salience": 0,
+  "dataStatus": "FICTICIO"
+}
