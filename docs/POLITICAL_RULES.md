@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1)
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1) • v0.5 (27/10/2026, Fase C6a do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)): diretorias de estatais (§6.3.2), motor 0.10.0
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -208,6 +208,19 @@ Cada ministério relevante tem um ocupante com `origem`: **técnico/aliado** ou 
 | Agenda da pasta | segue o presidente | pode **travar** políticas contrárias à ideologia do bloco |
 
 Todos os pesos são parâmetros a calibrar (Fase 04). Demitir um ministro de bloco custa capital político e piora a relação com o bloco.
+
+### 6.3.2 Diretorias de estatais (Fase C6a do PLANO_CAMPANHA, motor 0.10.0)
+Cargos de segundo escalão em estatais e bancos públicos, **genéricos e fictícios** ("estatal de energia", "banco público", "estatal de obras", "banco público de habitação"; `FICTICIO`, sem estatal real; [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md) §5.3). Cada diretoria do cenário (`institutions.directorates`) é um cargo, vinculado a um ministério, com peso e ocupante: **técnico** ou **indicação de bloco**, como as pastas (§6.3.1). Os requisitos legais de nomeação em estatais não são modelados (simplificação: a verificar antes de qualquer regra que dependa deles).
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Cargos limitados | Uma vaga por diretoria do cenário (4 no cenário padrão, todas técnicas no início). A troca é a ação de agenda `nomear_diretoria` (custo 1, params `directorateId` e `occupant`), processada na etapa do gabinete, na ordem das decisões. Não há vaga extra nem acúmulo. |
+| Efeito político | O bloco que recebe a diretoria melhora a relação (`relacao_nomeacao_diretoria` × peso) e passa a apoiar o governo em todas as votações (`apoio_diretoria` × peso), **somado** ao apoio das pastas sob o mesmo teto (`apoio_ministerio_max`). |
+| Custo de substituição | Tirar a diretoria de um bloco custa capital (`capital_demissao_diretoria`) e a relação com ele (`relacao_demissao_diretoria` × peso), para outro bloco ou para o quadro técnico. |
+| Risco | Diretoria técnica não tem risco. A de bloco segue a regra das pastas (`escandalo_base_mes` + `escandalo_por_ano` × anos no cargo, × peso, saturada em `escandalo_max_mes`), × `fator_porteira_fechada` quando o mesmo bloco ocupa o ministério ao qual a diretoria se vincula ("porteira fechada"). O risco agregado é 1 − Π(1 − p). |
+| Escândalo, com causa | O evento "Escândalo em diretoria de estatal" só é elegível com diretoria de bloco (sem ela, não consome o sorteio) e dispara com probabilidade igual ao risco agregado. No disparo, o motor **congela o alvo** (`PendingEvent.subjectId`): a diretoria de maior risco (empate: a há mais tempo no cargo). O relatório do mês diz a causa: a diretoria, o bloco, o tempo no cargo e se a porteira está fechada. "Afastar" devolve **essa** diretoria ao quadro técnico, com o custo de substituição; se ela já mudou de mãos, não faz nada. |
+| Sistema desligado | Sem `institutions.directorates` no cenário, nada muda. O estado só ganha `congress.directorates` na primeira troca, então o jogo sem trocas é idêntico com o sistema ligado ou desligado (teste de regressão). |
+| Para a Fase C6b | `directorateScandalChance`, `directorateScandalRisk` e `riskiestDirectorate` são o risco que a C6b (escândalos graduais) vai consumir. Nenhuma marca é gravada nesta fase. |
 
 ### 6.4 Evolução
 Fase 04: Câmara e Senado separadas e relatores (feito, §6.5). Comissões permanentes individuais e parlamentares individuais: Fase 09.

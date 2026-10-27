@@ -28,6 +28,8 @@ export const CONCEDE_ACTION_ID = 'ceder_texto';
 export const URGENCY_ACTION_ID = 'pedir_urgencia';
 /** Nomeia o ocupante de um ministério (§6.3.1). Params: `ministryId`, `occupant` (`tecnico` ou id do bloco). */
 export const APPOINT_ACTION_ID = 'nomear_ministro';
+/** Nomeia o ocupante de uma diretoria de estatal (§6.3.2, Fase C6a). Params: `directorateId`, `occupant`. */
+export const DIRECTORATE_ACTION_ID = 'nomear_diretoria';
 /** Sanção ou veto de projeto aprovado (§7). Params: `proposalId`, `choice` (`SanctionChoice`). */
 export const SANCTION_ACTION_ID = 'sancao';
 /** Visita presidencial a uma UF (POLITICAL_RULES.md §2.1). Params: `uf` (sigla). */
@@ -117,6 +119,17 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
       'de escândalo cresce com o tempo; demitir ministro de bloco custa capital e a relação com o bloco.',
     agendaCost: 1,
     targetParams: ['ministryId'],
+    listed: false,
+  },
+  [DIRECTORATE_ACTION_ID]: {
+    id: DIRECTORATE_ACTION_ID,
+    name: 'Nomear diretoria de estatal',
+    summary:
+      'Troca o ocupante da diretoria. Indicação de bloco rende um pouco de apoio no Congresso, mas o risco de ' +
+      'escândalo cresce com o tempo, e mais quando o mesmo bloco tem o ministério; tirar o cargo de um bloco custa ' +
+      'capital e a relação com ele.',
+    agendaCost: 1,
+    targetParams: ['directorateId'],
     listed: false,
   },
   [SANCTION_ACTION_ID]: {

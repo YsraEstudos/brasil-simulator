@@ -109,6 +109,7 @@ recusados.
 | Acréscimos do relator ("jabutis") | `rider` |
 | Sanção / veto | `sanction` / `veto` |
 | Ministério, gabinete | `ministry`, `cabinet` |
+| Diretoria de estatal / "porteira fechada" (bloco com a diretoria e o ministério) | `directorate` (`congress/directorates.ts`, ação `nomear_diretoria`) / `isClosedGate` |
 | Pauta | `pauta` (sem tradução: termo do regimento) |
 | Unidade da Federação (UF) | `uf` (id = sigla, ex.: `BA`) |
 | Participação no PIB / de tendência | `share` / `structuralShare` |
