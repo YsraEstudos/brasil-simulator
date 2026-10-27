@@ -25,6 +25,7 @@ export {
   CONCEDE_ACTION_ID,
   DECLARE_CANDIDACY_ACTION_ID,
   DIRECTIVE_ACTION_ID,
+  DIRECTORATE_ACTION_ID,
   BRAND_ACTION_ID,
   isAgendaAction,
   NEGOTIATE_ACTION_ID,
@@ -70,6 +71,17 @@ export {
   partisanMinistries,
   policyMinistry,
 } from './congress/cabinet';
+export {
+  directorateOccupant,
+  directorateScandalChance,
+  directorateScandalRisk,
+  directoratesOf,
+  directorateSince,
+  directorateSupport,
+  isClosedGate,
+  partisanDirectorates,
+  riskiestDirectorate,
+} from './congress/directorates';
 export {
   blocRelation,
   blocSupport,

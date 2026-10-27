@@ -376,6 +376,36 @@
         "weight": 0.6,
         "occupant": "tecnico"
       }
+    ],
+    "directorates": [
+      {
+        "id": "diretoria_estatal_energia",
+        "name": "Diretoria da estatal de energia",
+        "ministryId": "minas_energia",
+        "weight": 0.7,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "diretoria_banco_publico",
+        "name": "Diretoria do banco público",
+        "ministryId": "fazenda",
+        "weight": 0.8,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "diretoria_estatal_obras",
+        "name": "Diretoria da estatal de obras",
+        "ministryId": "transportes",
+        "weight": 0.5,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "diretoria_banco_habitacao",
+        "name": "Diretoria do banco público de habitação",
+        "ministryId": "cidades",
+        "weight": 0.5,
+        "occupant": "tecnico"
+      }
     ]
   },
   "regions": {

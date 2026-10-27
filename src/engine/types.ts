@@ -9,10 +9,10 @@ import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 12;
+export const STATE_SCHEMA_VERSION = 13;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.9.0';
+export const ENGINE_VERSION = '0.10.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -391,6 +391,11 @@ export interface CongressState {
   blocs: BlocState[];
   /** Ministérios cujo ocupante mudou desde o início; os demais seguem o cenário. */
   cabinet: MinistryState[];
+  /**
+   * Diretorias de estatais cujo ocupante mudou desde o início (Fase C6a), no mesmo formato dos ministérios. Ausente
+   * até a primeira troca: o estado do jogo sem trocas é o mesmo com o sistema ligado ou desligado.
+   */
+  directorates?: MinistryState[];
 }
 
 /**
@@ -419,6 +424,11 @@ export interface PendingEvent {
   instanceId: string;
   /** Local congelado no disparo; ausente = evento nacional (e saves anteriores à v12). */
   location?: EventLocation;
+  /**
+   * Alvo congelado no disparo de um evento com `trigger.subject` (Fase C6a): o id da diretoria do escândalo. A
+   * resposta age sobre ela, mesmo que o risco tenha mudado de lugar até lá.
+   */
+  subjectId?: string;
 }
 
 /** Ocorrência de evento que chegou à caixa de entrada no mês, para o relatório (PLANO_GLOBO.md §6.3). */

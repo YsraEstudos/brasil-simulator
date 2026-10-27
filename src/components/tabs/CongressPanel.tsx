@@ -14,6 +14,11 @@ import {
   blocRelation,
   CONCEDE_ACTION_ID,
   currentHouse,
+  DIRECTORATE_ACTION_ID,
+  directorateOccupant,
+  directorateScandalChance,
+  directoratesOf,
+  isClosedGate,
   housePresident,
   legislativeInstrument,
   ministriesOf,
@@ -33,7 +38,7 @@ import {
 } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
 import { draftCost, findDecision, fits, gameStore, hasDecision, useGame, type ActiveCampaign } from '@/store';
-import { TECHNICAL_MINISTER, type Bloc, type Ministry } from '@/types/scenario';
+import { TECHNICAL_MINISTER, type Bloc, type Directorate, type Ministry } from '@/types/scenario';
 
 import { signedInt } from './StatRow';
 
@@ -115,6 +120,7 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
       ))}
 
       <MinistriesCard state={state} content={content} agenda={agenda} />
+      <DirectoratesCard state={state} content={content} agenda={agenda} />
     </>
   );
 }
@@ -272,9 +278,14 @@ function ProposalItem({
 
 function BlocCard({ bloc, state, content }: { bloc: Bloc; state: GameState; content: GameContent }) {
   const relation = blocRelation(state, bloc);
-  const held = ministriesOf(content)
-    .filter((m) => ministryOccupant(state, m) === bloc.id)
-    .map((m) => m.name);
+  const held = [
+    ...ministriesOf(content)
+      .filter((m) => ministryOccupant(state, m) === bloc.id)
+      .map((m) => m.name),
+    ...directoratesOf(content)
+      .filter((d) => directorateOccupant(state, d) === bloc.id)
+      .map((d) => d.name),
+  ];
   const presides = HOUSES.filter((h) => housePresident(content, h)?.id === bloc.id).map((h) => HOUSE_LABEL[h]);
   return (
     <Card
@@ -343,6 +354,76 @@ function MinistriesCard({ state, content, agenda }: { state: GameState; content:
                         ? 'Nomear técnico'
                         : `Entregar ao bloco ${content.scenario.blocs.find((b) => b.id === o)?.name ?? o}`
                     }
+                    agenda={agenda}
+                  />
+                ))
+              : null}
+          </View>
+        );
+      })}
+    </Card>
+  );
+}
+
+/**
+ * Diretorias de estatais (PLANO_CAMPANHA.md Fase C6a): mesmo desenho dos ministérios. Mostra o ministério ao qual
+ * cada uma se vincula e avisa quando o mesmo bloco ocupa os dois ("porteira fechada"), que aumenta o risco.
+ */
+function DirectoratesCard({
+  state,
+  content,
+  agenda,
+}: {
+  state: GameState;
+  content: GameContent;
+  agenda: AgendaHelpers;
+}) {
+  const [open, setOpen] = useState<string | null>(null);
+  const directorates = directoratesOf(content);
+  if (directorates.length === 0) return null;
+  const blocName = (o: string) => content.scenario.blocs.find((b) => b.id === o)?.name ?? o;
+  const occupantName = (o: string) => (o === TECHNICAL_MINISTER ? 'quadro técnico' : `indicação: ${blocName(o)}`);
+  const ministryName = (id: string) => ministriesOf(content).find((m) => m.id === id)?.name ?? id;
+
+  return (
+    <Card
+      title="Diretorias de estatais"
+      subtitle="Ficção: estatais e bancos públicos genéricos. Diretoria entregue a um bloco rende um pouco de apoio nas votações, mas acumula risco de escândalo, maior quando o mesmo bloco tem o ministério da área. Tirar o cargo de um bloco custa capital e a relação com ele.">
+      {directorates.map((d: Directorate) => {
+        const occupant = directorateOccupant(state, d);
+        const risk = directorateScandalChance(state, content, d);
+        const closed = isClosedGate(state, content, d);
+        const pending = agenda.pending(actionDecision(DIRECTORATE_ACTION_ID, { directorateId: d.id, occupant: '' }));
+        const pendingOccupant = typeof pending?.params?.occupant === 'string' ? pending.params.occupant : null;
+        const options = [TECHNICAL_MINISTER, ...content.scenario.blocs.map((b) => b.id)].filter((o) => o !== occupant);
+        return (
+          <View key={d.id} style={styles.row}>
+            <Text variant="label">{d.name}</Text>
+            <Text variant="body" color="textSecondary">
+              {`${occupantName(occupant)} · vinculada a ${ministryName(d.ministryId)} · peso ${formatPercent(d.weight, 0)}${risk > 0 ? ` · risco de escândalo ${formatPercent(risk, 1)} ao mês` : ''}`}
+            </Text>
+            {closed ? (
+              <Text variant="caption" color="negative">
+                O mesmo bloco ocupa o ministério da área: o risco de escândalo é maior.
+              </Text>
+            ) : null}
+            {pendingOccupant ? (
+              <Text variant="caption" color="accent">
+                {`● Na agenda: ${occupantName(pendingOccupant)}`}
+              </Text>
+            ) : null}
+            <Button
+              label={open === d.id ? 'Fechar' : 'Trocar ocupante…'}
+              variant="ghost"
+              onPress={() => setOpen((cur) => (cur === d.id ? null : d.id))}
+              block
+            />
+            {open === d.id
+              ? options.map((o) => (
+                  <ActionButton
+                    key={o}
+                    decision={actionDecision(DIRECTORATE_ACTION_ID, { directorateId: d.id, occupant: o })}
+                    label={o === TECHNICAL_MINISTER ? 'Nomear técnico' : `Entregar ao bloco ${blocName(o)}`}
                     agenda={agenda}
                   />
                 ))
