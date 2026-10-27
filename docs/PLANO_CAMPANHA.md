@@ -1,8 +1,10 @@
 # Plano — Carreira de 4 a 8 anos (Camadas 1 a 5)
 
-Versão 0.6 do documento • 27/10/2026 • 🟨 Fases C0, C1 (M1.1) e C2 (parte M1.2) feitas a pedido do autor; as decisões continuam com o autor
+Versão 0.7 do documento • 27/10/2026 • 🟨 Fases C0, C1 (M1.1), C2 e C4 (partes M1.2) feitas a pedido do autor, C3 em verificação; as decisões continuam com o autor
 v0.2: incorpora comentários de revisão de 27/10/2026 (persistência, percurso inicial, modelo eleitoral, posse, divisão da Fase C6, saves).
 v0.3: incorpora a segunda revisão de 27/10/2026, na ordem de prioridade dela — M1 como sequência de entregas (§3.1), ações entre os turnos eleitorais (D-C15) e calendário fechado (§2.4), contabilidade dos eleitores (Fase C2), vitória do adversário no 1º turno (Fase C5), visibilidade e persistência das pesquisas (Fase C2), retenção, linha de base da posse e relógio da fila (§2.3), contratos de ordem e de sorteio (§4.1), Fase C6 separável com contratos de integração; e ajustes menores (nomenclatura, notícias, estimativas, D-C10).
+
+v0.7: o autor pediu a Fase C4. Implementadas as tarefas M1.2 (C4.1–C4.4): as escolhas tomadas e o que ficou de fora estão em §5, Fase C4, "Implementação".
 
 v0.6: o autor pediu a Fase C2. Implementadas as tarefas M1.2 (C2.1–C2.5): as escolhas tomadas e o que ficou de fora estão em §5, Fase C2, "Implementação".
 
@@ -626,6 +628,73 @@ Para a opção “sucessor e governo”, produzir leituras identificadas por obj
 **Testes da pesquisa qualitativa (por entrega).** Pré-campanha, reeleição e sucessão: custo de agenda zero e débito exclusivamente no caixa eleitoral correspondente; patrimônio pessoal inalterado; contexto ou UF inválidos e saldo insuficiente rejeitados sem desconto parcial. Governo fora da eleição: custo e fonte conforme decisão registrada. A pesquisa não altera diretamente aprovação, rejeição ou intenção; cada tema tem evidência, segmentos sem suporte são omitidos ou indicados como indisponíveis, e falas são fictícias e ilustrativas. Verificar abrangência nacional e UF, confidencialidade sem manchete automática, geração uma vez, estabilidade ao reabrir e após salvar/retomar, e ausência de consumo de PRNG ao navegar. Testar reeleição e sucessão quando seus caixas estiverem implementados; até lá, não marcar esses contextos como entregues.
 
 **Estimativa (esforço).** M1: motor 1; interface 2. Expansão anterior à pesquisa: motor 1; interface 1; conteúdo 1. Pesquisa qualitativa: estimativa adicional a definir após escolher financiamento do governo, retenção e contratos dos caixas de reeleição e sucessão.
+
+#### Implementação (27/10/2026, tarefas M1.2 C4.1–C4.4)
+
+**Escolhas tomadas para implementar** (de jogo, `FICTICIO`; o autor pode revê-las):
+
+- **Catálogo mínimo: uma ação por arquétipo.** A lista de ids executáveis é `CAREER_ACTION_IDS`, em `src/types/scenario.ts`; estágios, alvos e efeitos ficam em `src/engine/career/actions.ts`. Os custos vêm de `career.finance.costs`, e o Zod recusa custo de ação que não esteja na lista.
+
+  | Arquétipo | Ação | Estágios | Efeito | Custo (R$ mil) |
+  | --- | --- | --- | --- | ---: |
+  | nacional amplo | `comicio_nacional` | corrida, eleição | reconhecimento +`acao_nacional`·(1 − R) em todas as UFs | 3.000 |
+  | regional direcionado | `caravana_regional` (alvo: UF) | pré-campanha a eleição | +`acao_regional`·(1 − R) só na UF | 800 |
+  | mobilização partidária | `mobilizar_militancia` | pré-campanha a eleição | +`acao_mobilizacao`·alinhamento·(1 − R), só onde o alinhamento do bloco com a UF é positivo | 300 |
+  | comunicação com risco | `ataque_adversario` (alvo: adversário) | corrida, eleição | sucesso: valência do atacado −`ataque_dano`; bumerangue: a sua −`ataque_bumerangue` | 500 |
+  | arrecadação/negociação | `arrecadar_doacoes` | pré-campanha a eleição | a da Fase C3 (dinheiro no turno seguinte) | 200 |
+
+  O comício e o ataque só existem na campanha oficial, porque a propaganda começa em 16/8 ([DATA_SOURCES.md](DATA_SOURCES.md) §6).
+- **Limite por turno.** As ações de campanha por turno são as mesmas da agenda (4 no Casual, 3 nos outros modos), e cada ação vale uma vez por turno. A triagem, em ordem:
+  1. estágio (`fora_do_estagio`);
+  2. alvo (`alvo_invalido`);
+  3. repetição (`acao_repetida`);
+  4. limite (`sem_acoes_de_agenda`);
+  5. reserva do custo pela Fase C3, na ordem de envio.
+
+  Só a ação aceita ocupa vaga: uma ação recusada por falta de dinheiro não gasta nada e libera a vaga.
+- **Valência com causa.** Um pseudo-indicador novo, `'careerValence'`, só de relatório. A invariante confere que a variação da valência do jogador é igual à soma das contribuições. A valência dos adversários muda só pelo ataque e fica registrada no resultado da ação (`CareerTurnReport.actions`).
+- **Risco do ataque (observável).** A chance de bumerangue é min(`ataque_risco_max`, `ataque_risco_base` + `ataque_risco_valencia`·max(0, valência do atacado)). Atacar quem tem imagem boa é mais arriscado. O sorteio é por chave (§4.1, contrato 2): `['career', 'action', estágio, turno, ação, alvo, 0]`. O teste de permutação usa ações independentes (ataque e caravana).
+- **Debate (C4.2).** Configurado no cenário em `career.debates`: um debate, "Debate na TV", no turno de set/2026. O Zod exige que ele caia num turno de corrida ou de eleição.
+  - **Decisão:** `participar_debate`, com `postura` ∈ {propositiva, técnica, ataque} e `alvo` no ataque. Não gasta ação nem dinheiro.
+  - **Efeitos:**
+    - todo debate dá exposição: reconhecimento +`debate_exposicao`·(1 − R);
+    - a propositiva dá +`debate_propositivo` de valência, sem risco;
+    - a técnica dá +`debate_tecnico`·(reconhecimento nacional): rende para quem já é conhecido;
+    - o ataque segue as regras do ataque de campanha, com a chave `['career', 'debate', id, turno]`.
+  - **Escolha padrão:** sem postura marcada, vale a propositiva, registrada como automática e avisada no relatório.
+  - **Tabela de vantagens:** `debateOptions` dá, antes de escolher, o efeito esperado de cada postura e o risco de bumerangue contra cada adversário.
+- **Ordem no turno.** `PRE_INAUGURATION_STEPS = [campaignStep, viabilityStep, pollStep]`: as ações e o debate rodam antes do esquecimento e do crescimento do mês, e a pesquisa do turno já mostra o efeito delas.
+- **Mapa (C4.3).** Uma camada nova, "Seu reconhecimento", no grupo eleitoral, só antes da posse.
+  - Mostra a faixa da última pesquisa ("sem pesquisa" e as quatro faixas do I8), nunca o valor interno.
+  - Usa uma paleta própria em âmbar, fora do azul e do vermelho de melhor/pior, e traz o selo "estimativa".
+  - O cartão da UF traz a faixa e o mês da pesquisa.
+  - O mapa 2D e a leitura acessível usam as mesmas linhas (`mapRows`), e a legenda é só texto.
+- **Versão do motor 0.11.0.** O debate padrão muda toda campanha que começa na corrida. A versão do estado não mudou: nenhum campo novo no `GameState`.
+
+**Entregue:**
+- **Motor:** `src/engine/career/actions.ts`, `debate.ts` e `campaignStep.ts`; triagem no `advanceCareerTurn`; parâmetros novos em `CAREER_PARAMS`, todos lidos pelo motor (teste).
+- **Interface:** cartão "Ações de campanha" na folha Eleições.
+  - Mostra a vaga do turno, o bolso que paga e o custo, e só deixa marcar o que cabe.
+  - Os alvos aparecem com faixas de imagem e risco, sem números.
+  - Traz o resultado do turno anterior em texto e, no turno do debate, o cartão do debate com a tabela de posturas e a escolha padrão.
+  - O contador do botão de encerrar conta as ações de campanha, e o relatório e as finanças mostram o nome das ações.
+  - "Por que mudou?" da pesquisa ganhou as causas das ações e do debate.
+- **Testes:**
+  - catálogo e custos;
+  - efeito de cada ação, só nas UFs certas;
+  - fora do estágio, alvo inválido, repetição, limite (3 e 4 no Casual) e falta de dinheiro sem gasto;
+  - risco crescente, saídas de sucesso e de bumerangue, permutação e estabilidade do sorteio;
+  - debate fora do turno, escolha padrão, tabela de vantagens, postura inválida e repetida;
+  - invariante da valência;
+  - leitura do cartão e do mapa, sem números do motor.
+
+**Não entregue nesta fase:**
+- O teste do Maestro (os fluxos de ponta a ponta ainda não existem no repositório). A conferência foi manual, no navegador: marcar e desmarcar ações, encerrar o turno e ver o resultado e o debate.
+- C4.5 (HGPE), C4.6 (vice selecionável), C4.7 (variações de conteúdo) e C4.8–C4.10 (pesquisa qualitativa): expansão.
+- Mais de uma ação por UF no mesmo turno (a caravana vale uma vez por turno) e transbordo regional (C2.6).
+- Globo e caravana animada (Fase C8).
+- Efeito das ações na eleição (Fase C5): a partição em modo `eleicao` já lê reconhecimento e valência, mas ninguém a chama ainda.
+- Calibração: os efeitos e custos são de jogo, a medir com `sim:*` e com o protocolo de ritmo.
 
 ---
 

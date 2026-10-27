@@ -2,7 +2,16 @@ import { StyleSheet, View } from 'react-native';
 
 import { Alert, Card, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { AGENDA_ACTIONS, pct, type GameContent, type MonthReport, type ProposalChange } from '@/engine';
+import {
+  AGENDA_ACTIONS,
+  CAREER_ACTIONS,
+  DEBATE_ACTION_ID,
+  isCareerAction,
+  pct,
+  type GameContent,
+  type MonthReport,
+  type ProposalChange,
+} from '@/engine';
 
 import { careerTurnLabel, monthLabel, PROPOSAL_STATUS_LABEL, REJECTION_REASON_LABEL } from './labels';
 
@@ -14,7 +23,13 @@ export function MonthSummary({ report, content }: { report: MonthReport; content
     usar_caixa_dois: 'Caixa 2',
     pagar_divida_campanha: 'Pagamento de dívida',
   };
-  const policyName = (id: string) => financialNames[id] ?? content.policies[id]?.name ?? AGENDA_ACTIONS[id]?.name ?? id;
+  const policyName = (id: string) =>
+    financialNames[id] ??
+    (isCareerAction(id) ? CAREER_ACTIONS[id].name : undefined) ??
+    (id === DEBATE_ACTION_ID ? 'Debate na TV' : undefined) ??
+    content.policies[id]?.name ??
+    AGENDA_ACTIONS[id]?.name ??
+    id;
   const copom = report.copom;
   let copomText: string | undefined;
   if (copom) {

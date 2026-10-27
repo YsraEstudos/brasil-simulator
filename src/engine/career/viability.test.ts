@@ -100,7 +100,7 @@ describe('viabilidade (PLANO_CAMPANHA.md Fase C2, C2.1)', () => {
     const { readFileSync } = await import('node:fs');
     const { join } = await import('node:path');
     const dir = join(process.cwd(), 'src', 'engine', 'career');
-    const sources = ['viability.ts', 'polls.ts', 'electorate.ts']
+    const sources = ['viability.ts', 'polls.ts', 'electorate.ts', 'actions.ts', 'debate.ts']
       .map((f) => readFileSync(join(dir, f), 'utf8'))
       .join('\n');
     for (const name of Object.keys(CAREER_PARAMS)) expect(sources, name).toContain(`'${name}'`);

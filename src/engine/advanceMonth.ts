@@ -247,7 +247,8 @@ function applyContributions(indicators: Indicators, contributions: readonly Cont
   const next = { ...indicators };
   for (const c of contributions) {
     // Pseudo-indicadores (`ReportOnlyIndicator`) são report-only: não pertencem ao `Indicators`.
-    if (c.indicator === 'votingIntention' || c.indicator === 'careerRecognition') continue;
+    if (c.indicator === 'votingIntention' || c.indicator === 'careerRecognition' || c.indicator === 'careerValence')
+      continue;
     next[c.indicator] += c.delta;
   }
   return next;

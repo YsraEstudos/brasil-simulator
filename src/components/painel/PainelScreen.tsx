@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
 
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campaign/labels';
+import { CareerActionsCard } from '@/components/campaign/CareerActionsCard';
 import { CareerPollCard } from '@/components/campaign/CareerPollCard';
 import { CareerDebtCard, CareerFinanceCard } from '@/components/campaign/CareerFinanceCard';
 import { careerPollViewModel } from '@/components/campaign/careerPollView';
@@ -287,7 +288,9 @@ export function PainelScreen() {
   const election = electionResults && electionResults.length > 0 ? electionResults[electionResults.length - 1] : null;
 
   // Camadas que o cenário permite (o Alinhamento precisa da inclinação das UFs).
-  const layers = useMemo(() => availableIndicators(content), [content]);
+  // A camada Reconhecimento só aparece antes da posse (PLANO_CAMPANHA.md Fase C4).
+  const careerLayer = active ? isPreInauguration(active.state) : false;
+  const layers = useMemo(() => availableIndicators(content, careerLayer), [content, careerLayer]);
   // Sem partida não há dado por UF: a camada escolhida só vale com campanha em andamento e se o cenário a oferece.
   // O Resultado só abre depois de existir uma fotografia da eleição (nunca "resultado" antes disso).
   const layer =
@@ -617,6 +620,13 @@ export function PainelScreen() {
         if (active && isPreInauguration(active.state)) {
           return (
             <>
+              <CareerActionsCard
+                state={active.state}
+                content={content}
+                report={active.lastReport}
+                draft={draft}
+                onToggle={(decision) => gameStore.getState().toggleDecision(decision)}
+              />
               <CareerFinanceCard
                 state={active.state}
                 content={content}

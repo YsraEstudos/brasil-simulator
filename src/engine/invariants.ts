@@ -191,7 +191,8 @@ export function checkInvariants(
 /**
  * Carreira antes da posse (PLANO_CAMPANHA.md Fase C2, tarefa C2.5): reconhecimento em [0, 1] e valência em [−1, 1]
  * para todos os candidatos; pesquisa com parcelas não negativas que somam 1; e, com o conteúdo (população das UFs),
- * a variação do reconhecimento nacional do jogador igual à soma das contribuições `'careerRecognition'` (§7.3).
+ * a variação do reconhecimento nacional do jogador igual à soma das contribuições `'careerRecognition'` (§7.3); e a
+ * variação da valência do jogador igual à soma das contribuições `'careerValence'` (Fase C4).
  */
 function checkCareer(
   prev: GameState,
@@ -293,6 +294,16 @@ function checkCareer(
       .reduce((s, c) => s + c.delta, 0);
     if (Math.abs(delta - explained) > EPSILON) {
       errors.push(`careerRecognition: variação ${delta} ≠ soma das contribuições ${explained}`);
+    }
+  }
+  // Fase C4: a valência do jogador só muda com causa (ações e debate).
+  if (prev.career) {
+    const delta = career.valence - prev.career.valence;
+    const explained = report.contributions
+      .filter((c) => c.indicator === 'careerValence')
+      .reduce((s, c) => s + c.delta, 0);
+    if (Math.abs(delta - explained) > EPSILON) {
+      errors.push(`careerValence: variação ${delta} ≠ soma das contribuições ${explained}`);
     }
   }
   return errors;

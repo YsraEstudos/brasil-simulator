@@ -16,6 +16,9 @@ import type {
 } from '../types';
 import { createRng } from '../rng';
 
+import { careerActionsPerTurn, isCareerAction, screenCareerAction } from './actions';
+import { campaignStep } from './campaignStep';
+import { DEBATE_ACTION_ID, screenDebate } from './debate';
 import { createOpponents } from './opponents';
 import { pollStep } from './polls';
 import { initialRecognition, viabilityStep } from './viability';
@@ -41,8 +44,8 @@ import {
 
 /**
  * Carreira antes da posse (PLANO_CAMPANHA.md, Fase C1 / entrega M1.1): identidade dos turnos, despacho por estágio e
- * transição mínima de estágio. Fase C2: viabilidade, adversários e pesquisas (módulos vizinhos). Ainda sem ações,
- * finanças e eleição (Fases C3–C5).
+ * transição mínima de estágio. Fase C2: viabilidade, adversários e pesquisas; Fase C3: finanças; Fase C4: ações e
+ * debate (módulos vizinhos). Ainda sem eleição (Fase C5).
  */
 
 /** Índice sequencial do turno a ser jogado (PLANO_CAMPANHA.md §2.3): chave de banco, retenção e store. */
@@ -144,19 +147,20 @@ export function currentCareerTurn(
 }
 
 /**
- * Etapas de um turno pré-posse, na ordem: viabilidade (Fase C2) e, por último, a pesquisa (PLANO_CAMPANHA.md Fase C2,
- * "etapa definida do turno"). As Fases C3–C5 acrescentam finanças, ações e eleição antes da pesquisa; nenhuma etapa
- * de governo roda antes da posse. Os indicadores de governo não mudam antes da posse: contribuições destas etapas são
- * só de relatório (pseudo-indicador `'careerRecognition'`).
+ * Etapas de um turno pré-posse, na ordem: ações e debate (Fase C4), viabilidade (Fase C2) e, por último, a pesquisa
+ * (PLANO_CAMPANHA.md Fase C2, "etapa definida do turno"). As finanças (Fase C3) são a triagem antes das etapas; a
+ * Fase C5 acrescenta a eleição antes da pesquisa. Nenhuma etapa de governo roda antes da posse: contribuições destas
+ * etapas são só de relatório (pseudo-indicadores `'careerRecognition'` e `'careerValence'`).
  */
-export const PRE_INAUGURATION_STEPS: readonly MonthStep[] = [viabilityStep, pollStep];
+export const PRE_INAUGURATION_STEPS: readonly MonthStep[] = [campaignStep, viabilityStep, pollStep];
 
 /** Nota do relatório no turno em que a campanha termina e o próximo é a posse. */
 export const INAUGURATION_NOTE = 'Fim da campanha: o próximo turno é a posse, em janeiro de 2027.';
 
 /**
- * Processa um turno pré-posse (despacho do `advanceMonth`). Decisões de governo são recusadas com `fora_do_estagio`
- * (ainda não há ações de campanha); o mês do mandato não anda; o turno avança e, no fim do calendário do ponto de
+ * Processa um turno pré-posse (despacho do `advanceMonth`). Decisões de governo são recusadas com `fora_do_estagio`;
+ * ações de campanha e debate passam pela triagem (estágio, alvo, limite do turno) e pela reserva do custo, na ordem
+ * de envio, e a etapa `campaignStep` aplica as aceitas. O mês do mandato não anda; o turno avança e, no fim do calendário do ponto de
  * partida, o estágio passa a `governo` (transição mínima, sem regras de posse — Fase C5). Função pura.
  */
 export function advanceCareerTurn(
@@ -173,9 +177,14 @@ export function advanceCareerTurn(
   const expenditures: FinanceExpenditure[] = [];
   const rejected: { decision: Decision; reason: DecisionRejection }[] = [];
   const decisionOrder: { decision: Decision; accepted: boolean; reason: DecisionRejection | null }[] = [];
+  // Ações de campanha (Fase C4): limite por turno e uma vez cada; contam só quando aceitas (inclusive a reserva).
+  const actionLimit = careerActionsPerTurn(state);
+  const actionsDone = new Set<string>();
+  let debateAnswered = false;
   const accept = (decision: Decision) => {
     accepted.push(decision);
     decisionOrder.push({ decision, accepted: true, reason: null });
+    if (isCareerAction(decision.policyId)) actionsDone.add(decision.policyId);
   };
   const reject = (decision: Decision, reason: DecisionRejection) => {
     rejected.push({ decision, reason });
@@ -212,6 +221,22 @@ export function advanceCareerTurn(
     if (turn.stage === 'transicao') {
       reject(decision, 'fora_do_estagio');
       continue;
+    }
+    if (decision.policyId === DEBATE_ACTION_ID) {
+      const reason = screenDebate(career, turn, decision, content, debateAnswered);
+      if (reason) reject(decision, reason);
+      else {
+        debateAnswered = true;
+        accept(decision);
+      }
+      continue;
+    }
+    if (isCareerAction(decision.policyId)) {
+      const reason = screenCareerAction(career, turn, decision, content, actionsDone.size, actionLimit, actionsDone);
+      if (reason) {
+        reject(decision, reason);
+        continue;
+      }
     }
     if (decision.policyId === 'arrecadar_doacoes' && fundraisingDone) {
       reject(decision, 'acao_repetida');
@@ -476,6 +501,8 @@ export function advanceCareerTurn(
           ? { expandedFinance: { ...expandedFinance, expenditures, receipts, personalContribution } }
           : {}),
         ...(illicitReport ? { illicit: illicitReport } : {}),
+        ...(draft.careerActions ? { actions: draft.careerActions } : {}),
+        ...(draft.careerDebate ? { debate: draft.careerDebate } : {}),
       },
       accepted,
       rejected,

@@ -252,6 +252,25 @@ const calendarMonthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'mês no
 export const PRE_INAUGURATION_STAGES = ['pre_campanha', 'convencao', 'corrida', 'eleicao', 'transicao'] as const;
 
 /**
+ * Ações de campanha com execução no motor (PLANO_CAMPANHA.md Fase C4, tarefa C4.1): um id por arquétipo. Só ids desta
+ * lista podem ter custo em `career.finance.costs`; o catálogo (efeitos e estágios) mora em `engine/career/actions.ts`.
+ */
+export const CAREER_ACTION_IDS = [
+  'comicio_nacional',
+  'caravana_regional',
+  'mobilizar_militancia',
+  'ataque_adversario',
+  'arrecadar_doacoes',
+] as const;
+export type CareerActionId = (typeof CAREER_ACTION_IDS)[number];
+
+/** Debate na TV (PLANO_CAMPANHA.md Fase C4, tarefa C4.2): acontece no turno que começa em `from`. */
+export const careerDebateSchema = z
+  .object({ id: contentIdSchema, name: z.string().min(1), from: calendarMonthSchema })
+  .strict();
+export type CareerDebate = z.infer<typeof careerDebateSchema>;
+
+/**
  * Turno de jogo antes da posse (PLANO_CAMPANHA.md §2.4): estágio e meses do calendário civil que ele cobre. `to`
  * ausente = um mês só; com `to`, o turno é condensado (ex.: transição nov–dez).
  */
@@ -380,6 +399,8 @@ export const scenarioCareerSchema = z
       .optional(),
     /** Adversários por bloco; o do bloco do perfil escolhido sai da disputa (o jogador ocupa a vaga). */
     opponents: z.array(careerOpponentSchema).min(1),
+    /** Debates na TV (Fase C4); ausente = nenhum debate. */
+    debates: z.array(careerDebateSchema).optional(),
     dataStatus: dataStatusSchema,
   })
   .strict();
@@ -602,7 +623,7 @@ function checkCareer(
 ) {
   const costIds = new Set<string>();
   for (const [index, cost] of (career.finance?.costs ?? []).entries()) {
-    if (cost.id !== 'arrecadar_doacoes') {
+    if (!(CAREER_ACTION_IDS as readonly string[]).includes(cost.id)) {
       ctx.addIssue({
         code: 'custom',
         path: ['career', 'finance', 'costs', index, 'id'],
@@ -669,6 +690,19 @@ function checkCareer(
       ctx.addIssue({ code: 'custom', path, message: `adversário sem candidato em elections.candidatos: ${o.blocId}` });
     }
     checkBase(o.territorialBase, [...path, 'territorialBase']);
+  }
+  // Debate: id único, num turno de campanha oficial (corrida ou eleição) de algum ponto de partida.
+  const debateIds = new Set<string>();
+  for (const [i, d] of (career.debates ?? []).entries()) {
+    const path = ['career', 'debates', i];
+    if (debateIds.has(d.id)) ctx.addIssue({ code: 'custom', path, message: `debate repetido: ${d.id}` });
+    debateIds.add(d.id);
+    const inCampaign = Object.values(career.startPoints).some((spec) =>
+      spec?.turns.some((t) => t.from === d.from && (t.stage === 'corrida' || t.stage === 'eleicao')),
+    );
+    if (!inCampaign) {
+      ctx.addIssue({ code: 'custom', path, message: `debate fora de um turno de campanha oficial: ${d.from}` });
+    }
   }
   for (const [point, spec] of Object.entries(career.startPoints)) {
     if (!spec) continue;

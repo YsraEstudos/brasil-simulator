@@ -20,7 +20,8 @@ describe('RegionalMapViewModel', () => {
       expect(vm.fills).toBe(fills);
       expect(vm.selectedId).toBe('BA');
       expect(vm.legend?.title).toBe(m.legend);
-      expect(vm.legend?.entries.every((e) => /\d/.test(e.label))).toBe(true);
+      // O Reconhecimento (Fase C4) mostra só faixas em texto: nenhum número do motor na tela.
+      if (m.id !== 'reconhecimento') expect(vm.legend?.entries.every((e) => /\d/.test(e.label))).toBe(true);
       expect(vm.legend?.entries).toHaveLength(5);
       expect(vm.labels).toEqual([]);
       expect(vm.markers).toEqual([]);

@@ -5,7 +5,8 @@ import type { ParamSpec } from '../economy/calibration';
  * Mesma forma de `PARAMS` e `CLIMATE_PARAMS`: valor, faixa, significado e justificativa. Valores `PROVISORIO`
  * (ordens de grandeza registradas no DATA_SOURCES.md §6) ou de jogo, a calibrar por simulação.
  *
- * **Todos os parâmetros são lidos pelo motor** (`career/viability.ts`, `career/electorate.ts`, `career/polls.ts`);
+ * **Todos os parâmetros são lidos pelo motor** (`career/viability.ts`, `career/electorate.ts`, `career/polls.ts`,
+ * `career/actions.ts`, `career/debate.ts`);
  * quem adicionar um parâmetro aqui sem usá-lo deve removê-lo (teste em `career/viability.test.ts`).
  *
  * Unidades: reconhecimento, rejeição e parcelas do eleitorado em fração (0–1); "por mês" quando aplicado a cada mês
@@ -136,6 +137,85 @@ export const CAREER_PARAMS = {
   faixa_baixo: { value: 0.2, min: 0.1, max: 0.3, note: 'limite superior da faixa "desconhecido"', basis: JOGO },
   faixa_medio: { value: 0.45, min: 0.3, max: 0.6, note: 'limite superior da faixa "pouco conhecido"', basis: JOGO },
   faixa_alto: { value: 0.75, min: 0.6, max: 0.9, note: 'limite superior da faixa "conhecido"', basis: JOGO },
+  // --- ações de campanha (PLANO_CAMPANHA.md Fase C4, tarefa C4.1): fração da distância ao teto ganha no turno
+  acao_nacional: {
+    value: 0.04,
+    min: 0.01,
+    max: 0.08,
+    note: 'comício nacional: fração da distância a 1 ganha pelo reconhecimento em todas as UFs',
+    basis: `${JOGO}; menor que a caravana numa UF, mas no país inteiro`,
+  },
+  acao_regional: {
+    value: 0.15,
+    min: 0.05,
+    max: 0.3,
+    note: 'caravana: fração da distância a 1 ganha pelo reconhecimento na UF visitada',
+    basis: JOGO,
+  },
+  acao_mobilizacao: {
+    value: 0.08,
+    min: 0.02,
+    max: 0.15,
+    note: 'mobilização da militância: ganho de reconhecimento por unidade de alinhamento positivo da UF',
+    basis: `${JOGO}; só rende onde o bloco do partido é forte`,
+  },
+  ataque_dano: {
+    value: 0.08,
+    min: 0.02,
+    max: 0.15,
+    note: 'ataque bem-sucedido: queda da valência do adversário atacado',
+    basis: JOGO,
+  },
+  ataque_bumerangue: {
+    value: 0.06,
+    min: 0.02,
+    max: 0.12,
+    note: 'ataque que vira bumerangue: queda da valência do próprio jogador',
+    basis: JOGO,
+  },
+  ataque_risco_base: {
+    value: 0.2,
+    min: 0.05,
+    max: 0.4,
+    note: 'chance de bumerangue contra um adversário de imagem neutra ou ruim',
+    basis: JOGO,
+  },
+  ataque_risco_valencia: {
+    value: 0.5,
+    min: 0.2,
+    max: 1,
+    note: 'chance extra de bumerangue por unidade de valência positiva do atacado (atacar quem é bem avaliado)',
+    basis: JOGO,
+  },
+  ataque_risco_max: {
+    value: 0.8,
+    min: 0.5,
+    max: 0.95,
+    note: 'teto da chance de bumerangue',
+    basis: JOGO,
+  },
+  // --- debate na TV (Fase C4, tarefa C4.2)
+  debate_exposicao: {
+    value: 0.05,
+    min: 0.01,
+    max: 0.1,
+    note: 'debate: fração da distância a 1 ganha pelo reconhecimento em todas as UFs, qualquer que seja a postura',
+    basis: JOGO,
+  },
+  debate_propositivo: {
+    value: 0.03,
+    min: 0.01,
+    max: 0.06,
+    note: 'postura propositiva: ganho de valência, sem risco',
+    basis: JOGO,
+  },
+  debate_tecnico: {
+    value: 0.1,
+    min: 0.03,
+    max: 0.2,
+    note: 'postura técnica: ganho de valência por unidade de reconhecimento nacional (rende para quem já é conhecido)',
+    basis: JOGO,
+  },
 } as const satisfies Record<string, ParamSpec>;
 
 export type CareerParamName = keyof typeof CAREER_PARAMS;

@@ -1245,7 +1245,13 @@
         "installments": [{ "turn": 1, "amount": 1000, "pocket": "party" }],
         "illicit": { "decay": 0.5, "sensitivity": 0.0002, "maxHazard": 0.35, "monthlyLimit": 1000 }
       },
-      "costs": [{ "id": "arrecadar_doacoes", "cost": 200, "pockets": ["party", "donations", "illicit"] }]
+      "costs": [
+        { "id": "comicio_nacional", "cost": 3000, "pockets": ["party", "donations"] },
+        { "id": "caravana_regional", "cost": 800, "pockets": ["party", "donations"] },
+        { "id": "mobilizar_militancia", "cost": 300, "pockets": ["party", "donations"] },
+        { "id": "ataque_adversario", "cost": 500, "pockets": ["party", "donations"] },
+        { "id": "arrecadar_doacoes", "cost": 200, "pockets": ["party", "donations", "illicit"] }
+      ]
     },
     "startPoints": {
       "corrida": {
@@ -1309,6 +1315,7 @@
         "territorialBase": { "SC": 0.3, "MT": 0.3, "GO": 0.25, "RO": 0.25 },
         "dataStatus": "FICTICIO"
       }
-    ]
+    ],
+    "debates": [{ "id": "debate_tv_setembro", "name": "Debate na TV", "from": "2026-09" }]
   }
 }

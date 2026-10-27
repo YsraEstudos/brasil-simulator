@@ -251,7 +251,9 @@ describe('bloco career do cenário (Zod, PLANO_CAMPANHA.md Fase C1, tarefa C1.1)
     );
     expect(errors(turns([{ stage: 'corrida', from: '2026-12', to: '2026-11' }]))).not.toEqual([]);
     expect(errors(turns([{ stage: 'governo', from: '2026-12' }]))).not.toEqual([]);
-    expect(errors(turns([{ stage: 'transicao', from: '2026-08', to: '2026-12' }]))).toEqual([]);
+    // Sem turno de campanha não há onde pôr o debate do cenário: ele sai junto.
+    const onlyTransition = { ...turns([{ stage: 'transicao', from: '2026-08', to: '2026-12' }]), debates: undefined };
+    expect(errors(onlyTransition)).toEqual([]);
   });
 
   it('recusa perfis repetidos e lista vazia', () => {
