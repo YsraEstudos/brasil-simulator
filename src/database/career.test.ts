@@ -147,10 +147,12 @@ describe('carreira no banco (PLANO_CAMPANHA.md §2.3)', () => {
     );
     expect(reports[0].turn_index).toBe(total - REPORT_RETENTION_MONTHS);
     expect(reports[0].turn_index).toBeGreaterThanOrEqual(PRE_TURNS);
-    const firstSnap = await db.first<{ t: number }>(
-      "SELECT MIN(turn_index) AS t FROM snapshots WHERE campaign_id = 'c1'",
+    // Dos turnos antigos só sobra o da posse (base do "na posse"); os da campanha saem todos.
+    const snaps = await db.all<{ turn_index: number }>(
+      "SELECT turn_index FROM snapshots WHERE campaign_id = 'c1' ORDER BY turn_index",
     );
-    expect(firstSnap!.t).toBeGreaterThan(PRE_TURNS);
+    expect(snaps[0].turn_index).toBe(PRE_TURNS);
+    expect(snaps[1].turn_index).toBeGreaterThan(PRE_TURNS + 1);
 
     const summary = await loadCareerSummary(db, 'c1');
     expect(summary).toMatchObject({ startPoint: 'corrida', profileId: 'ex_governador' });

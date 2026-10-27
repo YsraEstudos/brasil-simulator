@@ -141,7 +141,15 @@ export function advanceCareerTurn(
     regional: null,
     profileMoves: [],
   };
-  const ctx = { rng, content, decisions: [], eventChoices: [], draft };
+  // Respostas a eventos seguem para as etapas, como no mandato: uma por evento pendente (ainda não há eventos de
+  // campanha, Fase C3 em diante; o custo em ações de campanha entra com eles).
+  const answered = new Set<string>();
+  const eventChoices = (input.eventChoices ?? []).filter((choice) => {
+    const ok = !answered.has(choice.eventId) && state.events.pending.some((p) => p.eventId === choice.eventId);
+    answered.add(choice.eventId);
+    return ok;
+  });
+  const ctx = { rng, content, decisions: [], eventChoices, draft };
   const contributions: Contribution[] = [];
   let current: GameState = state;
   for (const step of steps) {
@@ -174,10 +182,10 @@ export function advanceCareerTurn(
       eventsResolved: draft.eventsResolved,
       eventsFired: draft.eventsFired,
       eventInstances: draft.eventInstances ?? [],
-      copom: null,
+      copom: draft.copom,
       notes: draft.notes,
-      regional: null,
-      profileMoves: [],
+      regional: draft.regional,
+      profileMoves: draft.profileMoves ?? [],
     },
   };
 }

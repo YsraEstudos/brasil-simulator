@@ -79,6 +79,15 @@ describe('Painel com a partida', () => {
     expect(data.actionsMax).toBe(active.state.resources.agendaActionsPerMonth);
   });
 
+  it('antes da posse, o card do mês concorda com o cabeçalho (turno da campanha)', () => {
+    const state = createInitialState({ content, difficulty: 'estrategica', seed: 7, startPoint: 'corrida' });
+    const data = hudFromCampaign({ ...campaign(), state }, content, null);
+    expect(data.monthLabel).toBe('Agosto de 2026');
+    expect(stat(data, 'mes').value).toBe(data.monthLabel);
+    expect(stat(data, 'mes').context).toBe(`Turno 1 de ${data.turnTotal}`);
+    expect(data.turnTotal).toBeLessThan(months);
+  });
+
   it('campanha encerrada mostra o último mês jogado, não o seguinte', () => {
     const active = campaign();
     const state = { ...active.state, monthIndex: months };

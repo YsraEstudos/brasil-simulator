@@ -187,7 +187,7 @@ function SavedItem({
   // Antes da posse (PLANO_CAMPANHA.md Fase C1) o mês do mandato ainda não anda: mostra o estágio e o turno.
   const where = done
     ? `Encerrada · ${c.currentMonth} ${c.currentMonth === 1 ? 'mês jogado' : 'meses jogados'}`
-    : c.stage && c.stage !== 'governo'
+    : c.stage
       ? `${CAREER_STAGE_LABEL[c.stage]} · turno ${c.currentTurn + 1} · antes da posse`
       : `${shortMonthLabel(c.currentMonth)} · mês ${c.currentMonth + 1} de até ${months}`;
   const difficulty = DIFFICULTY[c.difficulty]?.name ?? c.difficulty;

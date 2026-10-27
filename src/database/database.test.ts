@@ -264,7 +264,7 @@ describe('campanhas', () => {
     expect((await loadReport(db, 'c1', 0))?.rejected[0]?.reason).toBe('sem_acoes_de_agenda');
   });
 
-  it('guarda snapshots completos só dos últimos 13 meses e a série de indicadores inteira (ECONOMIC_MODEL.md §11)', async () => {
+  it('guarda snapshots completos só dos últimos 13 meses (e o da posse) e a série de indicadores inteira (ECONOMIC_MODEL.md §11)', async () => {
     let state = newState(8);
     await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
     for (let m = 0; m < 20; m++) {
@@ -277,10 +277,12 @@ describe('campanhas', () => {
       'SELECT turn_index FROM snapshots WHERE campaign_id = ? ORDER BY turn_index',
       ['c1'],
     );
-    expect(snaps.map((r) => r.turn_index)).toEqual(Array.from({ length: 13 }, (_, i) => i + 8));
+    expect(snaps.map((r) => r.turn_index)).toEqual([0, ...Array.from({ length: 13 }, (_, i) => i + 8)]);
     expect(await loadLatestState(db, 'c1')).toEqual(state);
     expect(await loadStateAt(db, 'c1', 19)).not.toBeNull();
     expect(await loadStateAt(db, 'c1', 7)).toBeNull();
+    // A posse fica: é a base do "na posse" ao retomar a partida.
+    expect(await loadStateAt(db, 'c1', 0)).not.toBeNull();
 
     const history = await loadIndicatorHistory(db, 'c1');
     expect(history.map((p) => p.monthIndex)).toEqual(Array.from({ length: 21 }, (_, i) => i));
@@ -468,6 +470,8 @@ describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
       await recordMonth(db, 'c1', r);
       state = r.state;
     }
+    // O snapshot da posse escapa da retenção; apagado à mão, a série continua inteira sem ele.
+    await db.run('DELETE FROM snapshots WHERE campaign_id = ? AND turn_index = 0', ['c1']);
     expect(await loadStateAt(db, 'c1', 0)).toBeNull();
     const history = await loadRegionalHistory(db, 'c1');
     expect(history.map((p) => p.monthIndex)).toEqual(Array.from({ length: 16 }, (_, i) => i));

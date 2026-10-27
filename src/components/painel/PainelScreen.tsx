@@ -232,8 +232,11 @@ export function PainelScreen() {
   const content = useMemo(() => loadContent(scenarioId), [scenarioId]);
   const activeId = active?.id;
   const monthIndex = active?.state.monthIndex;
+  // As leituras do banco seguem o turno, não o mês do mandato: da transição para a posse o mês fica em 0 e só o
+  // turno anda, e é justamente aí que a série grava o primeiro ponto (PLANO_CAMPANHA.md Fase C1).
+  const turnIndex = active ? turnIndexOf(active.state) : undefined;
 
-  // Série do PIB: relida do banco quando a partida ou o mês mudam; a tela não guarda histórico próprio.
+  // Série do PIB: relida do banco quando a partida ou o turno mudam; a tela não guarda histórico próprio.
   // O par (id, pontos) evita mostrar a série de uma partida anterior enquanto a nova ainda não chegou.
   useEffect(() => {
     if (activeId === undefined) return;
@@ -247,7 +250,7 @@ export function PainelScreen() {
     return () => {
       live = false;
     };
-  }, [activeId, monthIndex]);
+  }, [activeId, turnIndex]);
   const history = activeId !== undefined && series?.id === activeId ? series.points : null;
 
   useEffect(() => {
@@ -262,10 +265,10 @@ export function PainelScreen() {
     return () => {
       live = false;
     };
-  }, [activeId, monthIndex]);
+  }, [activeId, turnIndex]);
   const regionalHistory = activeId !== undefined && regional?.id === activeId ? regional.points : EMPTY_REGIONAL;
 
-  // Relida a cada mês gravado, como a série regional: a fotografia nasce na mesma transação do mês da eleição.
+  // Relida a cada turno gravado, como a série regional: a fotografia nasce na mesma transação do mês da eleição.
   useEffect(() => {
     if (activeId === undefined) return;
     let live = true;
@@ -278,7 +281,7 @@ export function PainelScreen() {
     return () => {
       live = false;
     };
-  }, [activeId, monthIndex]);
+  }, [activeId, turnIndex]);
   const electionResults = activeId !== undefined && elections?.id === activeId ? elections.results : null;
   const election = electionResults && electionResults.length > 0 ? electionResults[electionResults.length - 1] : null;
 
