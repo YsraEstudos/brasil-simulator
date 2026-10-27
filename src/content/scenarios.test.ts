@@ -274,7 +274,11 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
       const resto: Record<string, unknown> = { ...scenario };
       delete resto.id;
       delete resto.version;
-      const institutions = scenario.institutions && { ...scenario.institutions, directorates: undefined };
+      const institutions = scenario.institutions && {
+        ...scenario.institutions,
+        directorates: undefined,
+        scandalCases: undefined,
+      };
       return {
         ...resto,
         institutions,

@@ -377,6 +377,7 @@
         "occupant": "tecnico"
       }
     ],
+    "scandalCases": true,
     "directorates": [
       {
         "id": "diretoria_estatal_energia",

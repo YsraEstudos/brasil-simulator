@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1) • v0.5 (27/10/2026, Fase C6a do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)): diretorias de estatais (§6.3.2), motor 0.10.0
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1) • v0.5 (27/10/2026, Fase C6a do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)): diretorias de estatais (§6.3.2), motor 0.10.0 • v0.6 (27/10/2026, Fase C6b): casos de escândalo graduais (§9.1), motor 0.11.0
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -271,6 +271,21 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 - **TCU (contas):** o gasto acima do limite de despesas (`limitExcess` > 0) dá o **alerta do TCU** (30%, até 3 vezes, intervalo de 6 meses; grava `tcu_alerta`). Corrigir a execução contingencia custeio por seis meses; defender a execução (padrão) ou pedir prazo deixa o alerta virar **parecer** em 3 meses com 50% (sorteio único). O parecer pela rejeição grava `tcu_parecer_rejeicao` (sem resposta, é a escolha padrão) e pesa na credibilidade. O julgamento final das contas continua **fora**: o jogo não tem votação do Congresso sobre o parecer.
 - **Contagem na pressão:** `cpi_instalada` e `cpi_encerrada` contam como uma CPI só; `cpi_relatorio_pesado` conta à parte (relatório desfavorável pesa mais).
 - **Fora da Fase 07:** CPI com comissão própria, votos por bancada e convocações (Fase 09); efeito das CPIs sobre ministérios (demissão automática).
+
+### 9.1 Casos de escândalo graduais (Fase C6b do PLANO_CAMPANHA, motor 0.11.0)
+Ficção (`FICTICIO`): o caso atinge o **indicado do bloco** numa diretoria de estatal (§6.3.2), não a Presidência. O jogo não descreve procedimento ilícito; não há ação ilegal do jogador nesta fase (D-C3 continua em aberto para a Camada 3).
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Gatilho | O escândalo em diretoria (§6.3.2) abre um caso em **investigação** sobre a diretoria e o bloco congelados no disparo, e grava a marca `escandalo_investigacao`. Ligado por `institutions.scandalCases` no cenário (exige diretorias). |
+| Etapas | `investigacao` → `acusacao` → `condenacao`, ou `arquivado`. A **condenação só vem depois de uma acusação**, nunca direto da investigação (invariante), e cada etapa dura pelo menos `caso_meses_min` meses. |
+| Descoberta | Mesma especificação de perigo do caixa 2 (Fase C3): exposição E_t = δ·E_{t−1} + volume_t (`caso_decaimento`), com volume 1 enquanto o bloco do caso segue no cargo e 0 depois; perigo de avançar h = min(`caso_perigo_max`, 1 − e^(−`caso_lambda`·E)). Um sorteio por caso e por mês, **por chave** (não consome o PRNG principal). |
+| Arquivamento | Exposição abaixo de `caso_arquivamento` arquiva o caso (em investigação ou acusação). Afastar o indicado corta o volume: a exposição cai mês a mês e o caso tende a ser arquivado. |
+| Defesa | Ação de agenda `defender_caso` (custo 1, params `caseId`): reduz o perigo do mês em `caso_defesa` e custa capital (`capital_defesa_caso`). Não arquiva sozinha. |
+| Acusação | Marca `escandalo_acusacao`, aprovação `caso_aprovacao_acusacao` por 2 meses e, com chance `caso_prob_cpi` (sorteio por chave), agenda a CPI existente (`fase07_inst_cpi_instalada`) para o mês seguinte (a CPI continua com no máximo uma ocorrência). |
+| Condenação | Marca `escandalo_condenacao`, aprovação `caso_aprovacao_condenacao` por 3 meses e o condenado sai do cargo (volta ao quadro técnico; o bloco perde a diretoria e piora a relação, sem custo de capital). |
+| Pressão de impeachment | As três marcas têm prefixo `escandalo_` e entram na contagem existente (§10), cada uma uma vez. A cadeia de impeachment segue a única via de condenação da Presidência. |
+| Para a Fase C6e | As marcas acima e `GameState.cases` são o que a gaveta do impeachment vai consumir. |
 
 ---
 

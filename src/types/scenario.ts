@@ -156,6 +156,8 @@ export const scenarioInstitutionsSchema = z
     ministries: z.array(ministrySchema),
     /** Diretorias de estatais (Fase C6a). Ausente = sistema desligado no cenário. */
     directorates: z.array(directorateSchema).optional(),
+    /** Casos de escândalo graduais (Fase C6b): o escândalo em diretoria abre um caso. Exige `directorates`. */
+    scandalCases: z.boolean().optional(),
   })
   .strict();
 export type ScenarioInstitutions = z.infer<typeof scenarioInstitutionsSchema>;
