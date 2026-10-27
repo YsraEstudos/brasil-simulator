@@ -245,6 +245,74 @@ export const scenarioElectionsSchema = z
   .strict();
 export type ScenarioElections = z.infer<typeof scenarioElectionsSchema>;
 
+/** Mês do calendário civil no formato "AAAA-MM" (rótulo de turno antes da posse; PLANO_CAMPANHA.md §2.4). */
+const calendarMonthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'mês no formato AAAA-MM');
+
+/** Estágios antes da posse (PLANO_CAMPANHA.md Fase C5, máquina de estados); `governo` começa na posse. */
+export const PRE_INAUGURATION_STAGES = ['pre_campanha', 'convencao', 'corrida', 'eleicao', 'transicao'] as const;
+
+/**
+ * Turno de jogo antes da posse (PLANO_CAMPANHA.md §2.4): estágio e meses do calendário civil que ele cobre. `to`
+ * ausente = um mês só; com `to`, o turno é condensado (ex.: transição nov–dez).
+ */
+export const careerTurnSchema = z
+  .object({ stage: z.enum(PRE_INAUGURATION_STAGES), from: calendarMonthSchema, to: calendarMonthSchema.optional() })
+  .strict();
+export type CareerTurn = z.infer<typeof careerTurnSchema>;
+
+/** Calendário de um ponto de partida: turnos contíguos que terminam no mês anterior à posse. */
+export const careerStartPointSchema = z.object({ turns: z.array(careerTurnSchema).min(1) }).strict();
+export type CareerStartPointSpec = z.infer<typeof careerStartPointSchema>;
+
+/**
+ * Perfil de candidato (PLANO_CAMPANHA.md Fase C1, contratos iniciais). Valores de design (`FICTICIO`) até a
+ * calibração; dinheiro em R$ mil inteiros (D-C14). `territorialBase`: reconhecimento extra por UF (0–1); UF
+ * ausente = sem base própria.
+ */
+export const careerProfileSchema = z
+  .object({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    description: z.string().min(1),
+    /** Reconhecimento nacional inicial, 0–1. */
+    recognition: unitInterval,
+    /** Valência nacional (imagem entre quem conhece), −1…1. */
+    valence: axis,
+    /** Influência no próprio partido, 0–1. */
+    partyInfluence: unitInterval,
+    /** Patrimônio pessoal, R$ mil. */
+    wealth: z.number().int().min(0),
+    /** Fração do patrimônio que pode virar dinheiro na campanha, 0–1. */
+    liquidity: unitInterval,
+    /** Capacidade de arrecadar por turno, R$ mil. */
+    fundraisingCapacity: z.number().int().min(0),
+    territorialBase: z.record(ufIdSchema, unitInterval),
+    dataStatus: dataStatusSchema,
+  })
+  .strict();
+export type CareerProfile = z.infer<typeof careerProfileSchema>;
+
+/**
+ * Carreira antes da posse (PLANO_CAMPANHA.md, Fase C1). Ausente = o jogo só começa na posse, como sempre. Cada ponto
+ * de partida é opcional; um nome desconhecido é recusado (`.strict()`).
+ */
+export const scenarioCareerSchema = z
+  .object({
+    startPoints: z
+      .object({ pre_campanha: careerStartPointSchema.optional(), corrida: careerStartPointSchema.optional() })
+      .strict(),
+    profiles: z.array(careerProfileSchema).min(1),
+    dataStatus: dataStatusSchema,
+  })
+  .strict();
+export type ScenarioCareer = z.infer<typeof scenarioCareerSchema>;
+
+/** "2026-08" → meses contados a partir de "2027-01" (negativo antes da posse). */
+function monthsFromInauguration(key: string): number {
+  const [y, m] = key.split('-').map(Number);
+  return (y - 2027) * 12 + (m - 1);
+}
+
 export const scenarioSchema = z
   .object({
     /** Ex.: `brasil_2027_01` */
@@ -269,6 +337,8 @@ export const scenarioSchema = z
     characters: z.array(characterSchema).optional(),
     /** Eleições e calendário eleitoral (Fase 08); ausente nos cenários anteriores. */
     elections: scenarioElectionsSchema.optional(),
+    /** Carreira antes da posse (PLANO_CAMPANHA.md, Fase C1); ausente = só o ponto de partida da posse. */
+    career: scenarioCareerSchema.optional(),
   })
   .strict()
   .superRefine((s, ctx) => {
@@ -438,7 +508,53 @@ export const scenarioSchema = z
         }
       }
     }
+    if (s.career) checkCareer(s.career, s.regions?.ufs.map((u) => u.id) ?? [], ctx);
   });
+
+/**
+ * Regras do bloco `career` que dependem do resto do cenário: UFs da base territorial existem no cenário, ids de
+ * perfil únicos e turnos de cada ponto de partida contíguos, em ordem e terminando no mês anterior à posse.
+ */
+function checkCareer(career: ScenarioCareer, ufIds: readonly string[], ctx: z.RefinementCtx) {
+  const known = new Set(ufIds);
+  const seen = new Set<string>();
+  for (const p of career.profiles) {
+    if (seen.has(p.id)) ctx.addIssue({ code: 'custom', path: ['career', 'profiles'], message: `id repetido: ${p.id}` });
+    seen.add(p.id);
+    for (const uf of Object.keys(p.territorialBase)) {
+      if (!known.has(uf)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['career', 'profiles', p.id, 'territorialBase'],
+          message: `UF inexistente no cenário: ${uf}`,
+        });
+      }
+    }
+  }
+  for (const [point, spec] of Object.entries(career.startPoints)) {
+    if (!spec) continue;
+    let expected = monthsFromInauguration(spec.turns[0].from);
+    for (const [i, t] of spec.turns.entries()) {
+      const from = monthsFromInauguration(t.from);
+      const to = t.to ? monthsFromInauguration(t.to) : from;
+      if (from !== expected || to < from) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['career', 'startPoints', point, 'turns', i],
+          message: `turno fora de ordem ou com lacuna: ${t.from}${t.to ? `–${t.to}` : ''}`,
+        });
+      }
+      expected = to + 1;
+    }
+    if (expected !== 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'startPoints', point, 'turns'],
+        message: 'os turnos precisam terminar em dezembro de 2026, o mês anterior à posse',
+      });
+    }
+  }
+}
 export type Scenario = z.infer<typeof scenarioSchema>;
 
 /** Valida dados desconhecidos (JSON) e devolve o cenário ou os erros em texto legível. */

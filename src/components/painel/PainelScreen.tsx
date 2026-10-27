@@ -5,7 +5,7 @@ import { BackHandler, Image, StyleSheet, View, type LayoutChangeEvent } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
 
-import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER, shortMonthLabel } from '@/components/campaign/labels';
+import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campaign/labels';
 import { ElectionsCard } from '@/components/campaign/ElectionsCard';
 import { EventInbox } from '@/components/campaign/EventInbox';
 import {
@@ -527,7 +527,7 @@ export function PainelScreen() {
   const topCells = (
     <>
       {statCell('mes', {
-        value: shortMonthLabel(hud.turn - 1),
+        value: hud.shortLabel,
         line: `${hud.turn}/${hud.turnTotal} · ${actionsLeft === 1 ? '1 ação' : `${actionsLeft} ações`}`,
       })}
       {statCell('aprovacao')}

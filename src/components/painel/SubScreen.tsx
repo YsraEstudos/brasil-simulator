@@ -4,7 +4,7 @@ import { useMemo, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { shortMonthLabel } from '@/components/campaign/labels';
+import { shortTurnLabel } from '@/components/campaign/labels';
 import { NoCampaign } from '@/components/tabs/NoCampaign';
 import { Alert, formatNumber, Text } from '@/components/ui';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -140,8 +140,7 @@ function StatusStrip({ campaign }: { campaign: ActiveCampaign }) {
   return (
     <View style={styles.strip}>
       <Text tabular style={styles.stripText}>
-        {/* Encerrada, `monthIndex` já é o mês seguinte ao último jogado. */}
-        {shortMonthLabel(finished ? Math.max(0, state.monthIndex - 1) : state.monthIndex)}
+        {shortTurnLabel(state, content, finished)}
       </Text>
       <Text style={styles.stripDot}>·</Text>
       <Text tabular style={[styles.stripText, actionsLeft <= 0 && styles.stripWarn]}>

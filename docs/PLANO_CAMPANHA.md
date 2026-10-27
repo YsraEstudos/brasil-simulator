@@ -1,8 +1,10 @@
 # Plano — Carreira de 4 a 8 anos (Camadas 1 a 5)
 
-Versão 0.3 do documento • 27/10/2026 • ⬜ Rascunho — **nenhuma decisão aprovada**; aguarda decisão do autor
+Versão 0.4 do documento • 27/10/2026 • 🟨 Fase C1 (entrega M1.1) implementada a pedido do autor; demais decisões em aberto
 v0.2: incorpora comentários de revisão de 27/10/2026 (persistência, percurso inicial, modelo eleitoral, posse, divisão da Fase C6, saves).
 v0.3: incorpora a segunda revisão de 27/10/2026, na ordem de prioridade dela — M1 como sequência de entregas (§3.1), ações entre os turnos eleitorais (D-C15) e calendário fechado (§2.4), contabilidade dos eleitores (Fase C2), vitória do adversário no 1º turno (Fase C5), visibilidade e persistência das pesquisas (Fase C2), retenção, linha de base da posse e relógio da fila (§2.3), contratos de ordem e de sorteio (§4.1), Fase C6 separável com contratos de integração; e ajustes menores (nomenclatura, notícias, estimativas, D-C10).
+
+v0.4: o autor pediu a implementação da Fase C1. Registro da tarefa C1.0, das escolhas tomadas para implementá-la (D-C1 forma, D-C15, D-C9, D-C12, relógio da fila) e do que ficou de fora (§5, Fase C1, "Implementação").
 
 **Nomenclatura deste documento:** "Camada 1…5" são as camadas de carreira do documento de origem; "Fase C0…C8" são as fases deste plano; "M1.1…M1.3" são entregas do primeiro percurso (§3.1). Camada e fase nunca são abreviadas da mesma forma.
 
@@ -288,6 +290,36 @@ Coluna **Entrega**: M1.1, M1.2, M1.3 ou Exp (§3.1).
 **Critério de conclusão.** M1.1 entregue; `npm run check` verde; contratos iniciais revisados.
 
 **Estimativa (esforço).** Motor 1; banco e store 1–2; testes de integração 1.
+
+#### Implementação (27/10/2026, entrega M1.1)
+
+**Tarefa C1.0 — consumidores do mês como identidade** (lidos no código):
+
+| Consumidor | Uso do mês | Destino |
+| --- | --- | --- |
+| `snapshots`, `month_reports`, `decisions`, `events` | chave / coluna do turno salvo | `turn_index` (migração 7, `RENAME COLUMN`; dados existentes já corretos) |
+| `campaigns.current_month` | trava do `recordMonth` e rótulo da lista de saves | trava passa a `current_turn`; `current_month` fica como mês do mandato; coluna `stage` para o rótulo |
+| `indicator_history`, `regional_indicator_history`, `election_results` | séries de governo | continuam por mês do mandato; **não** recebem turnos pré-posse |
+| Retenção (`REPORT_RETENTION_MONTHS`, `SNAPSHOT_RETENTION_MONTHS`) | distância em meses | distância em turnos |
+| Store: relatório e indicadores anteriores, linha de base | `monthIndex − 1`, snapshot do mês 0 | turno − 1; snapshot do **turno da posse** (`inaugurationTurnIndex`); sem base antes da posse |
+| `loadProfileHistory` | mês da linha do snapshot | mês do mandato lido do estado/relatório; turnos pré-posse fora do rastro |
+| Rótulos (`monthLabel`, `shortMonthLabel`, HUD, subtela, lista de saves) | `toCalendar(monthIndex)` | antes da posse, rótulo do calendário da campanha (`careerTurnLabel`); depois, como antes. Os demais rótulos de mês só aparecem em telas de governo |
+| Fila `ScheduledImpulse` | `startMonth`/`endMonth` × `monthIndex` | sem mudança (decisão abaixo) |
+| Motor (`advanceMonth`, eleições, vedação, lua de mel, calendário) | mês do mandato | sem mudança; antes da posse nenhuma etapa de governo roda |
+| Simulações (`scripts/sim`) | mês do mandato | sem mudança (começam na posse) |
+
+**Escolhas tomadas para implementar** (recomendações do §7, registradas aqui; o autor pode revê-las):
+
+- **D-C1 forma (a), índice sequencial.** `CareerState.turnIndex` é o turno a jogar; `turnIndexOf(state)` devolve `monthIndex` quando não há carreira, então a partida da posse não muda. Antes da posse `monthIndex` fica em 0; depois, os dois relógios andam juntos (`inaugurationTurnIndex = turnIndex − monthIndex`).
+- **D-C15 = A.** O calendário da corrida tem 4 turnos pré-posse (§2.4, alternativa A) no cenário.
+- **D-C9 = bloco no cenário atual** (não a recomendação de cenário novo): `brasil_2027_01_v080` ganhou o bloco `career` (permitido antes do lançamento, [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) §2.1), com um perfil `FICTICIO` e só o ponto `'corrida'`. A posse não lê o bloco, e o teste de regressão confirma.
+- **D-C12 = congelada.** O estado do governo nasce igual ao da posse e nada dele muda nem sorteia antes dela.
+- **Relógio da fila (§2.3, item 5): o mês do mandato.** Como o mês do mandato não anda antes da posse e nenhuma etapa de governo lê a fila, um efeito criado antes da posse com `startMonth` no calendário do mandato vale uma vez, no mês certo. Efeitos com defasagem **dentro** da pré-campanha (Fase C2 em diante) precisarão de um relógio de turno próprio; não há nenhum ainda.
+- **Versão do estado 13**, sem função de atualização: um save v12 só ganha o número (o `career` ausente é a partida da posse).
+
+**Entregue:** tipos e Zod do bloco `career` (`src/types/scenario.ts`); `CareerState`, rejeições `fora_do_estagio`/`sem_recursos`/`teto_legal` (as duas últimas reservadas para a Fase C3), relatório com `turnIndex` e `career` (`src/engine/types.ts`); rótulos pré-posse (`calendarAt`, `offsetOfKey`); despacho por estágio, etapas pré-posse vazias (`PRE_INAUGURATION_STEPS`) e transição mínima (`src/engine/career/index.ts`); migração 7, retenção por turno e resumo compacto (`career_summaries`); store; ponto de partida no NOVO JOGO ("Corrida eleitoral", primeiro perfil do cenário); rótulos no HUD, na subtela e na lista de saves.
+
+**Não entregue nesta fase:** pseudo-indicadores e `ImpulseTarget` da carreira (entram com a primeira regra que os use, Fase C2); ponto `'pre_campanha'` (Exp); escolha de perfil na tela (um perfil só); sem eleição: na entrega M1.1 todo jogador chega à posse (Fase C5); estratégia-robô de simulação para a corrida (`sim:*`); teste no Maestro (o fluxo integrado é do M1.3). Turnos pré-posse ainda não têm ações próprias: as decisões de governo enviadas neles são recusadas com motivo.
 
 ---
 

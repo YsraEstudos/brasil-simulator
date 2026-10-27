@@ -1,5 +1,6 @@
 import { actionKey, AGENDA_ACTIONS } from './actions';
 import { validateActionTarget } from './agenda';
+import { advanceCareerTurn, isPreInauguration } from './career';
 import { electionsStep, governorTurnoverStep } from './elections/elections';
 import { electionResultStep } from './elections/regionalResult';
 import { isNovoBeneficio, vedacaoAtiva } from './elections/vedacao';
@@ -64,8 +65,9 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
 ];
 
 /**
- * Processa um mês: valida as escolhas pelas ações de agenda do mês, roda as etapas e aplica as contribuições.
- * Função pura: não altera `state` nem `input`; mesma entrada → mesma saída.
+ * Processa um turno. Antes da posse (carreira, PLANO_CAMPANHA.md Fase C1) despacha para `advanceCareerTurn`; da posse
+ * em diante, processa o mês do mandato: valida as escolhas pelas ações de agenda do mês, roda as etapas (`steps`) e
+ * aplica as contribuições. Função pura: não altera `state` nem `input`; mesma entrada → mesma saída.
  */
 export function advanceMonth(
   state: GameState,
@@ -73,6 +75,7 @@ export function advanceMonth(
   content: GameContent,
   steps: readonly MonthStep[] = DEFAULT_STEPS,
 ): MonthResult {
+  if (isPreInauguration(state)) return advanceCareerTurn(state, input, content);
   const screened = screenInput(state, input, content);
 
   const rng = createRng(state.rng);
@@ -101,6 +104,8 @@ export function advanceMonth(
     ...current,
     rng: rng.state(),
     monthIndex: nextMonth,
+    // Os dois relógios andam juntos depois da posse (PLANO_CAMPANHA.md §2.3).
+    ...(current.career && state.career ? { career: { ...current.career, turnIndex: state.career.turnIndex + 1 } } : {}),
     impulses: pruneImpulses(current.impulses, nextMonth),
     decisionLog: [
       ...state.decisionLog,
@@ -110,6 +115,7 @@ export function advanceMonth(
 
   const report: MonthReport = {
     monthIndex: state.monthIndex,
+    ...(state.career ? { turnIndex: state.career.turnIndex } : {}),
     accepted: screened.accepted,
     rejected: screened.rejected,
     contributions,
