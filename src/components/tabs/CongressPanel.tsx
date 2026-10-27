@@ -12,8 +12,13 @@ import {
   AMENDMENTS_ACTION_ID,
   APPOINT_ACTION_ID,
   blocRelation,
+  CASE_STAGE_LABEL,
+  caseRiskBand,
+  caseSubjectHeld,
   CONCEDE_ACTION_ID,
   currentHouse,
+  DEFEND_CASE_ACTION_ID,
+  isOpenCase,
   DIRECTORATE_ACTION_ID,
   directorateOccupant,
   directorateScandalChance,
@@ -121,6 +126,7 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
 
       <MinistriesCard state={state} content={content} agenda={agenda} />
       <DirectoratesCard state={state} content={content} agenda={agenda} />
+      <CasesCard state={state} content={content} agenda={agenda} />
     </>
   );
 }
@@ -428,6 +434,51 @@ function DirectoratesCard({
                   />
                 ))
               : null}
+          </View>
+        );
+      })}
+    </Card>
+  );
+}
+
+/**
+ * Casos de escândalo (PLANO_CAMPANHA.md Fase C6b): etapa, tempo na etapa e faixa de risco atual de avançar, sem
+ * número do motor. Os abertos vêm primeiro; defender entra na agenda do mês.
+ */
+function CasesCard({ state, content, agenda }: { state: GameState; content: GameContent; agenda: AgendaHelpers }) {
+  const cases = [...(state.cases ?? [])].sort((a, b) => Number(isOpenCase(b)) - Number(isOpenCase(a)));
+  if (cases.length === 0) return null;
+  const directorateName = (id: string) => directoratesOf(content).find((d) => d.id === id)?.name ?? id;
+  const blocName = (id: string) => content.scenario.blocs.find((b) => b.id === id)?.name ?? id;
+
+  return (
+    <Card
+      title="Casos de escândalo"
+      subtitle="Ficção. Um caso passa por investigação, acusação formal e, só depois da acusação, condenação; investigação não é condenação. A exposição cresce enquanto o bloco segue no cargo e cai quando o indicado sai; exposição baixa arquiva o caso.">
+      {cases.map((c) => {
+        const open = isOpenCase(c);
+        const months = state.monthIndex - c.stageMonth;
+        const held = caseSubjectHeld(state, content, c);
+        return (
+          <View key={c.id} style={styles.row}>
+            <Text variant="label">{`${directorateName(c.subjectId)} · indicação do bloco ${blocName(c.blocId)}`}</Text>
+            <Text variant="body" color="textSecondary">
+              {open
+                ? `${CASE_STAGE_LABEL[c.stage]} ${months === 0 ? 'desde este mês' : months === 1 ? 'há 1 mês' : `há ${months} meses`} · risco de avançar: ${caseRiskBand(c.exposure, content)}`
+                : `${CASE_STAGE_LABEL[c.stage]} em ${shortMonthLabel(c.stageMonth)}`}
+            </Text>
+            {open && !held ? (
+              <Text variant="caption" color="textSecondary">
+                O bloco já não ocupa o cargo: a exposição cai a cada mês.
+              </Text>
+            ) : null}
+            {open ? (
+              <ActionButton
+                decision={actionDecision(DEFEND_CASE_ACTION_ID, { caseId: c.id })}
+                label="Defender o caso"
+                agenda={agenda}
+              />
+            ) : null}
           </View>
         );
       })}

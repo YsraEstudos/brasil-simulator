@@ -195,5 +195,17 @@ export function checkInvariants(
       if (!(d.since >= 0 && d.since <= next.monthIndex)) errors.push(`${d.id}: nomeação no mês ${d.since}`);
     }
   }
+
+  // Casos de escândalo (Fase C6b): ids únicos, exposição não negativa e condenação só depois de uma acusação.
+  const caseIds = new Set<string>();
+  for (const c of next.cases ?? []) {
+    if (caseIds.has(c.id)) errors.push(`caso repetido: ${c.id}`);
+    caseIds.add(c.id);
+    if (!(c.exposure >= 0)) errors.push(`${c.id}: exposição negativa ${c.exposure}`);
+    if (c.stageMonth < c.openedMonth) errors.push(`${c.id}: etapa antes da abertura`);
+    if (c.stage === 'condenacao' && !(c.accusedMonth !== undefined && c.accusedMonth < c.stageMonth)) {
+      errors.push(`${c.id}: condenação sem acusação anterior`);
+    }
+  }
   return errors;
 }

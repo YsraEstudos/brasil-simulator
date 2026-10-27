@@ -26,6 +26,7 @@ export {
   DECLARE_CANDIDACY_ACTION_ID,
   DIRECTIVE_ACTION_ID,
   DIRECTORATE_ACTION_ID,
+  DEFEND_CASE_ACTION_ID,
   BRAND_ACTION_ID,
   isAgendaAction,
   NEGOTIATE_ACTION_ID,
@@ -82,6 +83,16 @@ export {
   partisanDirectorates,
   riskiestDirectorate,
 } from './congress/directorates';
+export {
+  CASE_FLAGS,
+  CASE_STAGE_LABEL,
+  caseHazard,
+  caseRiskBand,
+  casesEnabled,
+  caseSubjectHeld,
+  isOpenCase,
+  openCases,
+} from './congress/cases';
 export {
   blocRelation,
   blocSupport,

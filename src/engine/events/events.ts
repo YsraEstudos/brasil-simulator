@@ -12,6 +12,7 @@ import {
   longestServingPartisan,
   partisanMinistries,
 } from '../congress/cabinet';
+import { CASE_FLAGS, casesEnabled, newCase } from '../congress/cases';
 import {
   directorateScandalNote,
   directorateScandalRisk,
@@ -28,6 +29,7 @@ import {
   type GameState,
   type MonthStep,
   type PendingEvent,
+  type ScandalCase,
   type ScheduledEvent,
   type ScheduledImpulse,
   type StepContext,
@@ -366,6 +368,16 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
   const flags = { ...state.events.flags };
   const impulses = [...state.impulses];
   const scheduled: ScheduledEvent[] = [];
+  // Escândalo com alvo abre caso em investigação (Fase C6b), quando o cenário liga os casos.
+  const cases: ScandalCase[] = [...(state.cases ?? [])];
+  const opened = (subject?: { id: string }) => {
+    if (!subject || !casesEnabled(ctx.content)) return;
+    const item = newCase(state, ctx.content, subject.id, n);
+    if (!item || cases.some((c) => c.id === item.id)) return;
+    cases.push(item);
+    flags[CASE_FLAGS.investigacao] = n;
+    ctx.draft.notes.push('O escândalo abriu uma investigação. Investigação não é condenação.');
+  };
 
   for (const item of state.events.scheduled) {
     if (item.monthIndex > n) {
@@ -383,6 +395,7 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
     const subject = eventSubject(state, event, ctx.content);
     if (!allowed || subject === null) continue;
     fireEvent(event, n, ctx, book, impulses, flags, item.location, subject);
+    opened(subject);
   }
 
   let firedNow = 0;
@@ -409,6 +422,7 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
     if (!ctx.rng.chance(eventProbability(state, event, ctx.content, location))) continue;
 
     fireEvent(event, n, ctx, book, impulses, flags, location, subject);
+    opened(subject);
     firedNow += 1;
   }
 
@@ -416,6 +430,7 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
     state: {
       ...state,
       impulses,
+      ...(cases.length > 0 ? { cases } : {}),
       events: {
         ...state.events,
         pending: book.pending,

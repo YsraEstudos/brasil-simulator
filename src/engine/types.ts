@@ -9,10 +9,10 @@ import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 13;
+export const STATE_SCHEMA_VERSION = 14;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.10.0';
+export const ENGINE_VERSION = '0.11.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -710,6 +710,40 @@ export interface GameState {
   climate: ClimateState;
   /** Eleições e intenção de voto (Fase 08); cenários sem eleições e saves antigos ficam sem o campo. */
   politics?: PoliticsState;
+  /**
+   * Casos de escândalo em andamento ou encerrados (PLANO_CAMPANHA.md Fase C6b). Ausente até o primeiro caso: o
+   * estado sem casos é o mesmo com o sistema ligado ou desligado.
+   */
+  cases?: ScandalCase[];
+}
+
+/**
+ * Etapas graduais de um caso (Fase C6b): `investigacao` → `acusacao` → `condenacao`. `arquivado` encerra sem
+ * condenação. A condenação só vem depois da acusação, nunca direto da investigação.
+ */
+export type CaseStage = 'investigacao' | 'acusacao' | 'condenacao' | 'arquivado';
+
+/** Caso aberto por um escândalo com alvo (Fase C6b). Atinge o indicado do bloco, não a Presidência. */
+export interface ScandalCase {
+  /** `${origem}:${alvo}#${mês de abertura}`, único. */
+  id: string;
+  /** Origem do caso; hoje só o escândalo em diretoria de estatal (Fase C6a). */
+  source: 'diretoria';
+  /** Diretoria atingida. */
+  subjectId: string;
+  /** Bloco que ocupava o cargo na abertura. */
+  blocId: string;
+  stage: CaseStage;
+  /** Mês em que o caso abriu (o da chegada do escândalo à caixa de entrada). */
+  openedMonth: number;
+  /** Mês em que entrou na etapa atual. */
+  stageMonth: number;
+  /** Mês da acusação, se houve. */
+  accusedMonth?: number;
+  /** Exposição acumulada E_t = δ·E_{t−1} + volume_t (mesma especificação de perigo da Fase C3). */
+  exposure: number;
+  /** Último mês em que o governo gastou ação para defender o caso. */
+  defendedMonth?: number;
 }
 
 /**

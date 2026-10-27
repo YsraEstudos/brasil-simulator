@@ -30,6 +30,8 @@ export const URGENCY_ACTION_ID = 'pedir_urgencia';
 export const APPOINT_ACTION_ID = 'nomear_ministro';
 /** Nomeia o ocupante de uma diretoria de estatal (§6.3.2, Fase C6a). Params: `directorateId`, `occupant`. */
 export const DIRECTORATE_ACTION_ID = 'nomear_diretoria';
+/** Defesa do governo num caso de escândalo em andamento (§9.1, Fase C6b). Params: `caseId`. */
+export const DEFEND_CASE_ACTION_ID = 'defender_caso';
 /** Sanção ou veto de projeto aprovado (§7). Params: `proposalId`, `choice` (`SanctionChoice`). */
 export const SANCTION_ACTION_ID = 'sancao';
 /** Visita presidencial a uma UF (POLITICAL_RULES.md §2.1). Params: `uf` (sigla). */
@@ -130,6 +132,16 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
       'capital e a relação com ele.',
     agendaCost: 1,
     targetParams: ['directorateId'],
+    listed: false,
+  },
+  [DEFEND_CASE_ACTION_ID]: {
+    id: DEFEND_CASE_ACTION_ID,
+    name: 'Defender o caso',
+    summary:
+      'Mobiliza a defesa do governo num caso de escândalo em andamento: reduz neste mês a chance de o caso avançar ' +
+      'de etapa e custa capital político. Não arquiva o caso: só a exposição baixa arquiva.',
+    agendaCost: 1,
+    targetParams: ['caseId'],
     listed: false,
   },
   [SANCTION_ACTION_ID]: {

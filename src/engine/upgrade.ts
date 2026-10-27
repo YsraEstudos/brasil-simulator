@@ -41,6 +41,8 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   // v12 → v13 (PLANO_CAMPANHA.md Fase C6a): só entram campos opcionais (`congress.directorates`,
   // `PendingEvent.subjectId`); ausentes = nenhuma diretoria trocada. Sem conversão antes do lançamento.
   if (version < 13) state = { ...state, schemaVersion: 13 };
+  // v13 → v14 (Fase C6b): só entra o campo opcional `cases`; ausente = nenhum caso. Sem conversão.
+  if (version < 14) state = { ...state, schemaVersion: 14 };
   return state as unknown as GameState;
 }
 

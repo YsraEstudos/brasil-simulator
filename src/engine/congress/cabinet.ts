@@ -11,6 +11,7 @@ import {
   type MonthStep,
 } from '../types';
 
+import { advanceCases } from './cases';
 import { appointDirector, directorateSupport, directoratesOf } from './directorates';
 import { allRelations, shiftRelation } from './relations';
 
@@ -158,7 +159,7 @@ export function applyAppointment(state: Readonly<GameState>, a: Appointment): Ga
 
 /**
  * Etapa mensal: nomeações decididas no mês (ações `nomear_ministro` e `nomear_diretoria`, já validadas pelo
- * `advanceMonth`), na ordem das decisões.
+ * `advanceMonth`), na ordem das decisões, e em seguida os casos de escândalo (defesa e etapas, Fase C6b).
  */
 export const cabinetStep: MonthStep = (state, ctx) => {
   let current: GameState = state;
@@ -180,5 +181,6 @@ export const cabinetStep: MonthStep = (state, ctx) => {
     current = applyAppointment(current, appointment);
     ctx.draft.notes.push(appointment.note);
   }
-  return { state: current, contributions: [] };
+  // Casos de escândalo (Fase C6b) depois das nomeações: afastar no mês já tira o volume da exposição.
+  return { state: advanceCases(current, ctx), contributions: [] };
 };

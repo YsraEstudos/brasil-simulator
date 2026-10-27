@@ -5,6 +5,7 @@ import {
   DECLARE_CANDIDACY_ACTION_ID,
   DIRECTIVE_ACTION_ID,
   DIRECTORATE_ACTION_ID,
+  DEFEND_CASE_ACTION_ID,
   BRAND_ACTION_ID,
   NEGOTIATE_ACTION_ID,
   SANCTION_ACTION_ID,
@@ -16,6 +17,7 @@ import {
 } from './actions';
 import { monthOfTerm, termOf } from './calendar';
 import { ministriesOf, ministryOccupant } from './congress/cabinet';
+import { openCases } from './congress/cases';
 import { directorateOccupant, directoratesOf } from './congress/directorates';
 import { legislativeInstrument } from './congress/congress';
 import { declarationInTermWindow } from './elections/elections';
@@ -84,6 +86,10 @@ export function validateActionTarget(
       if (!directorate || !occupantOk) return 'alvo_invalido';
       return directorateOccupant(state, directorate) === occupant ? 'alvo_invalido' : null;
     }
+    case DEFEND_CASE_ACTION_ID:
+      return openCases(state).some((c) => c.id === params.caseId && c.openedMonth <= state.monthIndex)
+        ? null
+        : 'alvo_invalido';
     case SANCTION_ACTION_ID: {
       const p = proposal();
       const choice = SANCTION_CHOICES.find((c) => c === params.choice);
