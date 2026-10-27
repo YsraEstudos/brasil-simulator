@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1)
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1) • v0.5 (27/10/2026, Fase C6c do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)): pauta-bomba (§7.1)
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -236,6 +236,18 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 4. Derrubada de veto = derrota política (capital político ↓).
 
 **No motor (Fase 04):** aprovado no Congresso, o projeto fica **aguardando sanção** no mês seguinte; sem resposta, vale a sanção tácita. O jogador pode sancionar, vetar o projeto inteiro ou, quando o relator incluiu acréscimos, vetar só os acréscimos (o motor trata os acréscimos como dispositivos inteiros, então o veto parcial é sempre possível). O veto vai à sessão conjunta no mês seguinte; a derrubada exige maioria absoluta de cada Casa e depende do interesse dos blocos no texto, menos a lealdade ao governo (relação e pastas) e a popularidade do presidente. Veto derrubado: a lei (ou os acréscimos) entra em vigor e o capital cai; veto mantido rende um pouco de capital. **PEC** é promulgada pelas Mesas, sem sanção (CF art. 60 §3º); **MP** convertida segue em vigor sem nova sanção no motor.
+
+### 7.1 Pauta-bomba (Fase C6c do PLANO_CAMPANHA)
+Projeto de aumento de despesa ou de renúncia aprovado pelo Congresso **por iniciativa própria**, contra o governo. Textos genéricos e fictícios (`FICTICIO`), com valores de ordem de grandeza. Antes desta fase não havia nenhum evento com aumento aprovado pelo Congresso nem escolha entre vetar e sancionar (verificação C0.5 do plano); os vizinhos (pauta travada, obstrução, liminar do STF, greve de servidores) continuam como estão.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Textos | Os do cenário (`institutions.fiscalBombs`): no padrão, reajuste extra de carreiras do serviço público (despesa obrigatória, cerca de R$ 12 bi/ano) e desoneração ampliada da folha de setores (renúncia, cerca de R$ 15 bi/ano), ambos sem compensação e com perda de credibilidade fiscal. Ficam fora do catálogo do jogador. Cada texto chega no máximo uma vez, na ordem do cenário. |
+| Quem propõe | O bloco com maior apoio à **derrubada de um veto** ao texto (afinidade e interesse menos a lealdade ao governo, a mesma conta da sessão do veto). |
+| Quando chega | Só com a relação média com o Congresso abaixo de `bomba_relacao_limite`, fora de janeiro (recesso) e pelo menos `bomba_intervalo_meses` depois da anterior. Chance mensal `bomba_chance_por_ponto` × distância ao limite, até `bomba_chance_max`. Sorteio **por chave** (não consome o PRNG principal). |
+| Sanção e veto | O texto chega já aprovado, **aguardando sanção** no mês seguinte, e segue o caminho deste §7: sem resposta, sanção tácita; o veto total vai à sessão conjunta, onde a derrubada exige maioria absoluta de cada Casa (veto derrubado custa capital; mantido rende um pouco). O cartão de sanção diz quem propôs e quanto custa. |
+| Impacto fiscal | Executado, o custo entra pelos canais da política (ECONOMIC_MODEL.md §5.11): `despesa_obrigatoria` ou `desoneracao_renda` em R$ milhões/ano ÷ PIB nominal, permanente; com o limite de despesas fixo, a despesa obrigatória comprime as discricionárias. A regra de compensação da LRF (§4.5) vale como para qualquer política sem compensação. |
+| Sistema desligado | Sem `institutions.fiscalBombs`, nada muda. Ligado, o jogo é idêntico até a primeira chegada (teste de regressão); numa partida sem decisões a relação média cai abaixo do limite e a pauta-bomba chega no 1º ano. |
 
 ---
 

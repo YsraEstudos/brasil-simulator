@@ -9,6 +9,7 @@ import {
   type SanctionChoice,
 } from '../actions';
 import { isPartisan, ministryOccupant, policyMinistry } from '../congress/cabinet';
+import { drawFiscalBomb, fiscalBombCostText } from '../congress/fiscalBombs';
 import {
   blocSupport,
   expectedYes,
@@ -158,6 +159,7 @@ export const proposalsStep: MonthStep = (state, ctx) => {
   applyNegotiations(run);
   runVetoSessions(run);
   runVotes(run);
+  arriveFiscalBomb(run);
 
   const blocs = ctx.content.scenario.blocs.map((bloc) => ({
     id: bloc.id,
@@ -645,6 +647,48 @@ function scheduleRider(run: Run, p: Proposal, start: number): void {
   };
   const j = p.judicial;
   run.impulses.push(...(j ? cutWindow([rider], j.suspendFrom, j.struckDown ? null : j.suspendTo) : [rider]));
+}
+
+/**
+ * Pauta-bomba (PLANO_CAMPANHA.md Fase C6c; POLITICAL_RULES.md §7.1): o texto aprovado pelo Congresso por iniciativa
+ * de um bloco chega ao presidente para sanção no mês seguinte, como um projeto do governo aprovado; daí em diante
+ * segue o caminho de §7 (sanção tácita, veto total e sessão do veto).
+ */
+function arriveFiscalBomb(run: Run): void {
+  const bomb = drawFiscalBomb({ ...run.state, proposals: run.proposals }, run.ctx.content);
+  if (!bomb) return;
+  const { policy, proposer } = bomb;
+  const p: Proposal = {
+    id: `${policy.id}_${run.t}`,
+    policyId: policy.id,
+    createdMonth: run.t,
+    status: 'aguardando_sancao',
+    scale: TEXTO_ORIGINAL,
+    voteMonth: run.t + SANCAO_MESES,
+    stage: 0,
+    rapporteur: null,
+    textAltered: false,
+    postponements: 0,
+    negotiation: { blocs: {}, amendments: false, textConceded: false, urgency: false },
+    rider: 0,
+    veto: null,
+    judicial: null,
+    executionStart: null,
+    executionEnd: null,
+    adherents: null,
+    votes: [],
+    history: [],
+  };
+  run.proposals.push(p);
+  pushTransition(
+    run,
+    p,
+    'aguardando_sancao',
+    'pauta_bomba',
+    `Pauta-bomba: o Congresso aprovou, por iniciativa do bloco ${proposer.name}, um texto com custo de ` +
+      `${fiscalBombCostText(policy)}, sem compensação. Sem resposta no mês seguinte, vale a sanção tácita; um veto ` +
+      'pode ser derrubado por maioria absoluta de cada Casa.',
+  );
 }
 
 /** Decisões aceitas neste mês: envio de política. */

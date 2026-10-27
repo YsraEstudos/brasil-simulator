@@ -109,6 +109,7 @@ recusados.
 | Acréscimos do relator ("jabutis") | `rider` |
 | Sanção / veto | `sanction` / `veto` |
 | Ministério, gabinete | `ministry`, `cabinet` |
+| Pauta-bomba (texto de despesa aprovado pelo Congresso contra o governo) | `fiscalBomb` (`congress/fiscalBombs.ts`, `institutions.fiscalBombs`, causa `pauta_bomba`) |
 | Pauta | `pauta` (sem tradução: termo do regimento) |
 | Unidade da Federação (UF) | `uf` (id = sigla, ex.: `BA`) |
 | Participação no PIB / de tendência | `share` / `structuralShare` |

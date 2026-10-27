@@ -12,7 +12,7 @@ import type { PublicPolicyState } from './publicPolicies/types';
 export const STATE_SCHEMA_VERSION = 12;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.9.0';
+export const ENGINE_VERSION = '0.10.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
