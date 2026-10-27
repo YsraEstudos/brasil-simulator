@@ -4,14 +4,7 @@ import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { insertLegacyCampaign } from '@/tests/legacyDb';
 import { TEST_BILL, TEST_DECREE, TEST_PEC, testContent, testState } from '@/tests/fixtures';
 
-import {
-  advanceMonth,
-  createInitialState,
-  STATE_SCHEMA_VERSION,
-  type GameState,
-  type MonthResult,
-  type MonthStep,
-} from '../engine';
+import { advanceMonth, createInitialState, type GameState, type MonthResult, type MonthStep } from '../engine';
 import {
   CampaignNotFoundError,
   createCampaign,
@@ -379,7 +372,7 @@ describe('campanhas', () => {
     );
 
     const state = await loadLatestState(db, 'antiga');
-    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.schemaVersion).toBe(14);
     expect(state.monthIndex).toBe(3);
     expect(state.indicators).toEqual({
       approval: 0.45,

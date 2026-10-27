@@ -207,3 +207,29 @@ describe('Depois de encerrar o mês', () => {
     expect(endMonthOutcome(undefined, undefined, false)).toBe('nada');
   });
 });
+
+// PLANO_CAMPANHA.md Fase C3: notícia da campanha usa o turno como identidade.
+it('sinaliza descoberta antes da posse sem confundir meses de governo', () => {
+  const base = createInitialState({ content, difficulty: 'estrategica', seed: 1, startPoint: 'corrida' });
+  const state: GameState = {
+    ...base,
+    career: { ...base.career!, turnIndex: 2 },
+    events: {
+      ...base.events,
+      news: [
+        {
+          id: 'career_1_caixa_dois',
+          monthIndex: 0,
+          turnIndex: 1,
+          careerPeriod: '2026-09',
+          kind: 'institucional',
+          tone: 'negativa',
+          headline: 'Investigação',
+          cause: 'Fiscalização',
+        },
+      ],
+    },
+  };
+  expect(newsBadge(state, null)).toBe(1);
+  expect(newsBadge(state, 1)).toBe(0);
+});

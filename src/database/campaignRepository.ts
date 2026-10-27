@@ -180,7 +180,7 @@ export async function recordMonth(
   // Turno processado e turno seguinte: na partida que começa na posse, os próprios meses.
   const turn = report.turnIndex ?? report.monthIndex;
   const nextTurn = turnIndexOf(state);
-  const rows: { decision: Decision; accepted: boolean; reason: string | null }[] = [
+  const rows: { decision: Decision; accepted: boolean; reason: string | null }[] = report.decisionOrder ?? [
     ...report.accepted.map((decision) => ({ decision, accepted: true, reason: null })),
     ...report.rejected.map((r) => ({ decision: r.decision, accepted: false, reason: r.reason })),
   ];

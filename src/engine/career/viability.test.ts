@@ -164,3 +164,72 @@ describe('adversários (PLANO_CAMPANHA.md Fase C2, C2.3, D-C17)', () => {
     expect(utility(1, 0)).toBeGreaterThan(utility(0, 0));
   });
 });
+
+// PLANO_CAMPANHA.md Fase C3: invariantes financeiros também são checados em simulações.
+it('invariante detecta saldos negativos e teto de gastos ultrapassado', () => {
+  const before = corrida();
+  const result = advanceMonth(before, { decisions: [] }, content);
+  const finance = result.state.career!.expandedFinance!;
+  const broken: GameState = {
+    ...result.state,
+    career: {
+      ...result.state.career!,
+      expandedFinance: {
+        ...finance,
+        pockets: { ...finance.pockets, party: -1 },
+        spent: finance.spendingLimit + 1,
+      },
+    },
+  };
+  const errors = checkInvariants(before, broken, result.report, content);
+  expect(errors.some((item) => item.includes('saldo'))).toBe(true);
+  expect(errors.some((item) => item.includes('teto'))).toBe(true);
+});
+
+// PLANO_CAMPANHA.md Fase C3: entradas e saídas explicam a variação dos bolsos.
+it('detecta criação de dinheiro sem recebimento ou aporte', () => {
+  const before = corrida();
+  const result = advanceMonth(before, { decisions: [] }, content);
+  const finance = result.state.career!.expandedFinance!;
+  const broken: GameState = {
+    ...result.state,
+    career: {
+      ...result.state.career!,
+      expandedFinance: {
+        ...finance,
+        pockets: { ...finance.pockets, party: finance.pockets.party + 1 },
+      },
+    },
+  };
+  expect(checkInvariants(before, broken, result.report, content).some((error) => error.includes('conservação'))).toBe(
+    true,
+  );
+});
+
+// PLANO_CAMPANHA.md Fase C3: conservação do caixa simples.
+it('detecta saldo criado sem causa no caixa simples', () => {
+  const configured = {
+    ...content,
+    scenario: {
+      ...content.scenario,
+      career: {
+        ...content.scenario.career!,
+        finance: {
+          initialBalance: 100,
+          spendingLimit: 1000,
+          dataStatus: 'FICTICIO' as const,
+        },
+      },
+    },
+  };
+  const before = createInitialState({ content: configured, difficulty: 'estrategica', seed: 1, startPoint: 'corrida' });
+  const result = advanceMonth(before, { decisions: [] }, configured);
+  const simple = result.state.career!.finance!;
+  const broken: GameState = {
+    ...result.state,
+    career: { ...result.state.career!, finance: { ...simple, balance: simple.balance + 1 } },
+  };
+  expect(
+    checkInvariants(before, broken, result.report, configured).some((error) => error.includes('conservação')),
+  ).toBe(true);
+});

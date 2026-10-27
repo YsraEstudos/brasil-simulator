@@ -7,6 +7,7 @@ import type { SymbolViewProps } from 'expo-symbols';
 
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campaign/labels';
 import { CareerPollCard } from '@/components/campaign/CareerPollCard';
+import { CareerDebtCard, CareerFinanceCard } from '@/components/campaign/CareerFinanceCard';
 import { careerPollViewModel } from '@/components/campaign/careerPollView';
 import { ElectionsCard } from '@/components/campaign/ElectionsCard';
 import { EventInbox } from '@/components/campaign/EventInbox';
@@ -439,7 +440,7 @@ export function PainelScreen() {
     closeSheet();
     // Abrir as Notícias dá o relatório por visto: o selo some até o próximo mês.
     if (route === '/noticias' && active && active.state.monthIndex > 0) {
-      setSeenNews({ id: active.id, month: active.state.monthIndex - 1 });
+      setSeenNews({ id: active.id, month: turnIndexOf(active.state) - 1 });
     }
     router.push(params ? { pathname: route, params } : route);
   };
@@ -614,7 +615,18 @@ export function PainelScreen() {
         );
       case 'eleicoes':
         if (active && isPreInauguration(active.state)) {
-          return <CareerPollCard view={careerPollViewModel(active.state, content, active.lastReport)} />;
+          return (
+            <>
+              <CareerFinanceCard
+                state={active.state}
+                content={content}
+                report={active.lastReport}
+                draft={draft}
+                onToggle={(decision) => gameStore.getState().toggleDecision(decision)}
+              />
+              <CareerPollCard view={careerPollViewModel(active.state, content, active.lastReport)} />
+            </>
+          );
         }
         return active && content.scenario.elections ? (
           <ElectionsCard
@@ -629,10 +641,21 @@ export function PainelScreen() {
           <EmptyNote text="Este cenário não tem eleições." />
         );
       case 'relatorio':
-        return active?.lastReport ? (
-          <MonthSummary report={active.lastReport} content={content} />
-        ) : (
-          <EmptyNote text="O primeiro relatório chega quando você encerrar o mês." />
+        return (
+          <>
+            {active && (
+              <CareerDebtCard
+                state={active.state}
+                draft={draft}
+                onToggle={(decision) => gameStore.getState().toggleDecision(decision)}
+              />
+            )}
+            {active?.lastReport ? (
+              <MonthSummary report={active.lastReport} content={content} />
+            ) : (
+              <EmptyNote text="O primeiro relatório chega quando você encerrar o mês." />
+            )}
+          </>
         );
       case 'meta':
         return (

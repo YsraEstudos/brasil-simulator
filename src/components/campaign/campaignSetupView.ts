@@ -229,8 +229,7 @@ const START_POINT_NAME: Record<StartPoint, string> = {
 
 /**
  * Pontos de partida do cenário (PLANO_CAMPANHA.md Fase C1, entrada mínima): a posse e os da carreira, com o mês de
- * início e o perfil de candidato lidos do próprio cenário. A versão atual da campanha ainda não tem ações próprias, e
- * o texto diz isso.
+ * início e o perfil de candidato lidos do próprio cenário. A transição até a posse ainda é provisória.
  */
 export function startPointViews(scenarioId: string): StartPointView[] {
   const scenario = isKnownScenario(scenarioId) ? SCENARIOS[scenarioId] : undefined;
@@ -245,7 +244,9 @@ export function startPointViews(scenarioId: string): StartPointView[] {
       name: START_POINT_NAME[id],
       description:
         `Começa em ${startLabel(first.from)}, como ${profile.name.toLowerCase()}, e chega à posse em janeiro de 2027. ` +
-        'Versão inicial: os turnos da campanha ainda não têm ações próprias.',
+        (scenario.career?.finance?.expanded
+          ? 'Inclui finanças de campanha; a eleição ainda não é disputada nesta versão.'
+          : 'Versão inicial: a eleição ainda não é disputada nesta versão.'),
     };
   });
 }

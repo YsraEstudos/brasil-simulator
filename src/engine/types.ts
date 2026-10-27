@@ -7,12 +7,15 @@ import type { Calibration } from './economy/calibration';
 import type { Rng, RngState } from './rng';
 import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
+import type { CampaignFinance, ExpandedFinance, ScheduledReceipt, FinanceExpenditure } from './career/finance';
+import type { DebtCommitment } from './career/commitments';
+import type { IllicitState } from './career/illicit';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 14;
+export const STATE_SCHEMA_VERSION = 15;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.9.0';
+export const ENGINE_VERSION = '0.10.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -451,6 +454,10 @@ export interface NewsItem {
   /** `${monthIndex}_${ordem}` */
   id: string;
   monthIndex: number;
+  /** Referência civil anterior à posse, quando a notícia veio da carreira. */
+  careerPeriod?: string;
+  /** Identidade do turno quando a partida tem carreira. */
+  turnIndex?: number;
   kind: NewsKind;
   tone: NewsTone;
   headline: string;
@@ -739,6 +746,17 @@ export interface CareerState {
   startPoint: CareerStartPoint;
   /** Perfil de candidato do cenário (`Scenario.career.profiles`). */
   profileId: string;
+  /** Caixa de campanha opcional, mantido no save. */
+  finance?: CampaignFinance;
+  /** Contabilidade de três bolsos quando o cenário habilita a expansão. */
+  expandedFinance?: ExpandedFinance;
+  illicit?: IllicitState & {
+    balance: number;
+    pending: { turn: number; amount: number }[];
+    closedBalance?: number;
+    cancelledPending?: number;
+  };
+  commitments?: DebtCommitment[];
   stage: CareerStage;
   /** Turno que está para ser jogado. */
   turnIndex: number;
@@ -798,6 +816,21 @@ export interface CareerTurnReport {
   to: string;
   /** Pesquisa feita no turno (Fase C2); ausente nos turnos sem pesquisa (transição). */
   poll?: CareerPoll;
+  /** Posição financeira no encerramento deste turno, em R$ mil. */
+  finance?: CampaignFinance & { expenditures: FinanceExpenditure[]; receipts: { turn: number; amount: number }[] };
+  expandedFinance?: ExpandedFinance & {
+    expenditures: FinanceExpenditure[];
+    receipts: ScheduledReceipt[];
+    personalContribution: number;
+  };
+  illicit?: {
+    volume: number;
+    exposure: number;
+    hazard: number;
+    discovered: boolean;
+    balance: number;
+    investigations: number;
+  };
 }
 
 /**
@@ -868,6 +901,8 @@ export interface MonthReport {
   career?: CareerTurnReport;
   accepted: Decision[];
   rejected: { decision: Decision; reason: DecisionRejection }[];
+  /** Sequência original de triagem quando a ordem de envio afeta reservas financeiras. */
+  decisionOrder?: { decision: Decision; accepted: boolean; reason: DecisionRejection | null }[];
   /** Variação de cada indicador no mês, decomposta por causa. */
   contributions: Contribution[];
   proposalChanges: ProposalChange[];

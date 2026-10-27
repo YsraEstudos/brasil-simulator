@@ -1232,6 +1232,21 @@
   },
   "career": {
     "dataStatus": "FICTICIO",
+    "finance": {
+      "initialBalance": 10000,
+      "spendingLimit": 88944,
+      "spendingLimitStatus": "PROVISORIO",
+      "dataStatus": "FICTICIO",
+      "expanded": {
+        "personalAvailable": 750,
+        "personalLimit": 750,
+        "debtLimit": 1000,
+        "debtDeadline": 6,
+        "installments": [{ "turn": 1, "amount": 1000, "pocket": "party" }],
+        "illicit": { "decay": 0.5, "sensitivity": 0.0002, "maxHazard": 0.35, "monthlyLimit": 1000 }
+      },
+      "costs": [{ "id": "arrecadar_doacoes", "cost": 200, "pockets": ["party", "donations", "illicit"] }]
+    },
     "startPoints": {
       "corrida": {
         "turns": [

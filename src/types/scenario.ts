@@ -324,6 +324,60 @@ export const scenarioCareerSchema = z
       .object({ pre_campanha: careerStartPointSchema.optional(), corrida: careerStartPointSchema.optional() })
       .strict(),
     profiles: z.array(careerProfileSchema).min(1),
+    /** Caixa eleitoral em R$ mil; ausente desliga a contabilidade da carreira. */
+    finance: z
+      .object({
+        initialBalance: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+        spendingLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+        spendingLimitStatus: dataStatusSchema.optional(),
+        dataStatus: dataStatusSchema,
+        expanded: z
+          .object({
+            personalAvailable: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            personalLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            debtLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            debtDeadline: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            illicit: z
+              .object({
+                decay: z.number().min(0).lt(1).optional(),
+                sensitivity: z.number().min(0).optional(),
+                maxHazard: z.number().min(0).max(1).optional(),
+                monthlyLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+              })
+              .strict()
+              .optional(),
+            installments: z
+              .array(
+                z
+                  .object({
+                    turn: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+                    amount: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+                    pocket: z.enum(['party', 'donations']),
+                  })
+                  .strict(),
+              )
+              .optional(),
+          })
+          .strict()
+          .optional(),
+        /** Catálogo de custos em R$ mil; só incluir ações que tenham execução no motor. */
+        costs: z
+          .array(
+            z
+              .object({
+                id: contentIdSchema,
+                cost: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+                pockets: z
+                  .array(z.enum(['personal', 'party', 'donations', 'illicit']))
+                  .min(1)
+                  .optional(),
+              })
+              .strict(),
+          )
+          .optional(),
+      })
+      .strict()
+      .optional(),
     /** Adversários por bloco; o do bloco do perfil escolhido sai da disputa (o jogador ocupa a vaga). */
     opponents: z.array(careerOpponentSchema).min(1),
     dataStatus: dataStatusSchema,
@@ -546,6 +600,23 @@ function checkCareer(
   career: ScenarioCareer,
   ctx: z.RefinementCtx,
 ) {
+  const costIds = new Set<string>();
+  for (const [index, cost] of (career.finance?.costs ?? []).entries()) {
+    if (cost.id !== 'arrecadar_doacoes') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'finance', 'costs', index, 'id'],
+        message: `ação de carreira sem execução: ${cost.id}`,
+      });
+    }
+    if (costIds.has(cost.id))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'finance', 'costs', index, 'id'],
+        message: `custo repetido: ${cost.id}`,
+      });
+    costIds.add(cost.id);
+  }
   const known = new Set(s.regions?.ufs.map((u) => u.id) ?? []);
   const blocIds = new Set(s.blocs.map((b) => b.id));
   const named = new Set(s.elections?.candidatos?.map((c) => c.blocId) ?? []);
@@ -555,9 +626,23 @@ function checkCareer(
     }
   };
   const seen = new Set<string>();
+  if (career.finance?.expanded && career.finance.expanded.personalLimit > career.finance.spendingLimit / 10) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['career', 'finance', 'expanded', 'personalLimit'],
+      message: 'limite pessoal excede 10% do teto de campanha',
+    });
+  }
   for (const p of career.profiles) {
     if (seen.has(p.id)) ctx.addIssue({ code: 'custom', path: ['career', 'profiles'], message: `id repetido: ${p.id}` });
     seen.add(p.id);
+    if (career.finance?.expanded && career.finance.expanded.personalAvailable > p.wealth * p.liquidity) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'finance', 'expanded', 'personalAvailable'],
+        message: `liquidez insuficiente no perfil ${p.id}`,
+      });
+    }
     checkBase(p.territorialBase, ['career', 'profiles', p.id, 'territorialBase']);
     if (!blocIds.has(p.blocId)) {
       ctx.addIssue({

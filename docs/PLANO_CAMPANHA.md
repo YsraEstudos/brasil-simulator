@@ -514,6 +514,23 @@ Persistência das pesquisas:
 
 **Testes exigidos.** Conservação em inteiros; saldo nunca negativo sem dívida escolhida; teto global sobre o contratado; fronteiras (saldo exato aceito, 1 unidade acima rejeitada; duas ações que juntas excedem → a segunda é rejeitada e a reserva da rejeitada é liberada); estabilidade do sorteio por chave (contrato 2); permutação só de ações independentes (contrato 3); trajetórias do caixa 2; sem deriva de arredondamento em 96 turnos.
 
+**Implementação em verificação (27/10/2026).** O motor oferece caixa simples ou três bolsos por configuração do cenário, reserva na ordem, parcelas, aporte, arrecadação com recebimento no turno seguinte e contratação explícita por dívida. O fechamento registra as sobras e, fora do Casual, gera um compromisso pagável com patrimônio pessoal; uma dívida vencida produz cobrança de capital político. O caixa 2 fica fora do Casual, tem teto de entrada, exposição e um sorteio por turno; descoberta inicia investigação e notícia, sem condenação automática. A folha eleitoral mostra as escolhas e o risco; o relatório e o resumo persistido registram a contabilidade. O estado é v15 e o motor 0.10.0, sem migração nova de saves.
+
+**Limites atuais.** O cenário usa repasses, riscos e custos `FICTICIO`, ainda sem calibração com prestações de contas. O teto de R$ 88.944 mil é uma aproximação conservadora `PROVISORIO` do limite do primeiro turno; a C5 precisa definir a regra de segundo turno. As doações são agregadas e não simulam a renda ou o limite de cada doador individual; a renda de arrecadação é uma simplificação de jogo. Os outros arquétipos e efeitos eleitorais são da C4; a eleição, resultado e possível cassação são da C5. A investigação registra a ocorrência, mas não condena nem cassa. Compromissos implementam inicialmente dívida com estados pendente, cumprido e expirado; negociação, cancelamento e conflitos entre cargos continuam sem modelagem. A homologação em aparelho, a sessão com pessoas e a calibração completa continuam pendentes.
+
+**Protocolo de diagnóstico financeiro (pré-registro).** Executar 20 sementes por estratégia com a mesma dificuldade, saldo inicial, calendário e objetivo de terminar com recursos disponíveis: (1) sem decisões, (2) arrecadação limpa em cada turno possível, (3) a mesma arrecadação mais uma entrada de caixa 2 por turno possível. Registrar recusas, sobras oficiais, caixa 2, dívidas, investigações e um intervalo de Wilson de 95% para a proporção de campanhas com investigação. Critérios de integridade: zero violações das invariantes e determinismo por semente. São robôs de diagnóstico, não prova de melhor estratégia, calibração eleitoral ou homologação com pessoas; o resultado não mede vitórias, pois a eleição da C5 ainda não existe.
+
+**Ampliação pré-registrada do diagnóstico.** Comparar também arrecadação limpa financiada por dívida com a estratégia limpa paga à vista. Em ambas, o objetivo é o valor final líquido (sobras oficiais e ilícitas + patrimônio pessoal disponível − dívida); ambas começam com os mesmos recursos e informação. O robô com caixa 2 faz a mesma arrecadação e usa a verba ilícita disponível quando permitida. Reportar a melhor das duas estratégias limpas testadas, sem extrapolar para o conjunto de todas as estratégias possíveis.
+**Resultado exploratório (27/10/2026).** `npx vitest run --config vitest.balance.config.mts scripts/sim/careerFinance.sim.ts`: 20 sementes por estratégia, sem violações e com determinismo. Sobra oficial média em R$ mil: inerte 11.000; limpa 12.800; caixa 2 12.800, além de 1.500 de sobra ilícita média. Dívida e recusas médias: 0 nos três robôs. Investigação: 0/20 nas duas estratégias sem caixa 2 e 5/20 com caixa 2 (intervalo de Wilson de 95%: 11,2%–46,9%). Amostra pequena e roteiro fixo; não mede vitória eleitoral, não prova a melhor estratégia limpa nem substitui balanceamento e homologação.
+**Resultado da ampliação (27/10/2026).** Em R$ mil de valor líquido médio: inerte 11.750; limpa à vista 13.550; limpa com dívida 13.550; caixa 2 15.050. A melhor das duas estratégias limpas testadas empatou em 13.550; caixa 2 teve 5/20 campanhas com investigação (IC95% de Wilson 11,2%–46,9%). As investigações ainda não têm as consequências da C5, portanto essa vantagem financeira é um sinal de balanceamento pendente, não uma recomendação nem avaliação de vitória. Foram observadas zero recusas e zero violações nas quatro estratégias, 20 sementes por estratégia.
+**Trajetórias ilustrativas de caixa 2 (`FICTICIO`).** Condição hipotética sem descoberta; δ = 0,5, λ = 0,01 e teto de perigo = 0,30. Não são previsões de trajetórias futuras que dependam de decisões.
+
+| Trajetória | Exposição inicial | Volumes por turno | Exposição antes da fiscalização | Perigo por turno aproximado |
+| --- | ---: | --- | --- | --- |
+| Constante | 20 | 10; 10; 10 | 20; 20; 20 | 18,1%; 18,1%; 18,1% |
+| Crescente | 0 | 5; 10; 15 | 5; 12,5; 21,25 | 4,9%; 11,8%; 19,1% |
+| Decrescente | 0 | 15; 5; 0 | 15; 12,5; 6,25 | 13,9%; 11,8%; 6,1% |
+
 **Estimativa (esforço).** M1: motor 1. Expansão: motor 2; conteúdo 1; testes 1.
 
 ---
@@ -841,6 +858,8 @@ Em ordem de prioridade. Nenhuma está tomada.
 ## 8. Fontes a verificar
 
 **Conferido em 27/10/2026 (Fase C0, tarefa C0.4)**: os resultados, com link e data, estão no [DATA_SOURCES.md](DATA_SOURCES.md) §6. Os valores de 2026 tirados da imprensa (FEFC e teto de gastos) e a ordem de grandeza do comparecimento ficam `PROVISORIO`. A ADI 4650 não foi reconferida na fonte primária, e os custos de campanha ficam para a Fase C3. Cada registro vai para [DATA_SOURCES.md](DATA_SOURCES.md) §6 com: link direto da fonte primária e data da consulta; versão e data da regra aplicável ao cenário (eleição de 2026, posse em 2027); dispositivo ou trecho; conclusão e simplificação adotada; responsável; e decisão registrada quando a fonte não vira mecânica diretamente.
+
+**Complemento C3:** a pesquisa posterior está no mesmo documento. O TSE informa o FEFC de 2026 e a manutenção do teto de 2022; o STF confirma a vedação de doações empresariais. Os arquivos de despesas foram identificados, mas ainda não analisados, e os custos de jogo continuam fictícios. O anexo com os valores de 2026 não foi acessado diretamente.
 
 | Item | O que verificar | Dispositivo provável (a confirmar) | Usado em |
 | --- | --- | --- | --- |

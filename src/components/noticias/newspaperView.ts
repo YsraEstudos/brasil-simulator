@@ -1,5 +1,5 @@
-import type { NewsItem } from '@/engine';
-import { monthLabel } from '@/components/campaign/labels';
+import { offsetOfKey, type NewsItem } from '@/engine';
+import { careerTurnLabel, monthLabel } from '@/components/campaign/labels';
 
 import { filterNews, type NewsFilter } from '@/components/tabs/newsView';
 
@@ -21,15 +21,27 @@ export interface Edition {
  * `EventsState.news` (mais antiga primeiro); dentro do mês a ordem gravada é a de prioridade do motor.
  */
 export function buildEditions(news: readonly NewsItem[]): Edition[] {
-  const byMonth = new Map<number, NewsItem[]>();
+  const byMonth = new Map<string, NewsItem[]>();
   for (const item of news) {
-    const list = byMonth.get(item.monthIndex);
+    const key = item.careerPeriod ? `career:${item.careerPeriod}` : `government:${item.monthIndex}`;
+    const list = byMonth.get(key);
     if (list) list.push(item);
-    else byMonth.set(item.monthIndex, [item]);
+    else byMonth.set(key, [item]);
   }
   return [...byMonth.entries()]
-    .sort((a, b) => b[0] - a[0])
-    .map(([monthIndex, items]) => ({ monthIndex, number: monthIndex + 1, label: monthLabel(monthIndex), items }));
+    .sort((a, b) => {
+      const time = (item: NewsItem) => (item.careerPeriod ? offsetOfKey(item.careerPeriod) : item.monthIndex);
+      return time(b[1][0]) - time(a[1][0]);
+    })
+    .map(([, items]) => {
+      const item = items[0];
+      return {
+        monthIndex: item.monthIndex,
+        number: item.monthIndex + 1,
+        label: item.careerPeriod ? careerTurnLabel({ from: item.careerPeriod }) : monthLabel(item.monthIndex),
+        items,
+      };
+    });
 }
 
 export interface EditionPage {
