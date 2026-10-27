@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Orquestração do mês · Brasil Simulator</title>
-<meta name="description" content="Avança o jogo um mês: ordem de cálculo, estado inicial, decisões, sementes e migração de saves.">
+<meta name="description" content="Avança o jogo um mês: função pura, pipeline de 15 etapas, triagem constitucional, rastreabilidade contábil, PRNG estável e migração de saves.">
 <link rel="stylesheet" href="assets/site.css">
 <script src="assets/site.js" defer></script>
 </head>
@@ -18,9 +18,9 @@
 <div class="layout">
   <aside class="indice" id="indice-lateral" aria-label="Índice do site">
     <a class="inicio-link" href="../EXPLICACOES.html">Início</a>
-    <details open><summary><a href="motores.html">Motores</a><span class="contagem">13</span></summary><ul><li><a href="motor-orquestra.html" aria-current="page">Orquestração do mês<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-economia.html">Economia<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-congresso.html">Congresso (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-propostas.html">Propostas<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-politica.html">Política<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-regioes.html">Regiões<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-politicas.html">Políticas públicas (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-sociedade.html">Sociedade (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-eventos.html">Eventos (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-noticias.html">Notícias (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-eleicoes.html">Eleições (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-relatorio.html">Relatório<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-simulacao.html">Simulação<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
+    <details open><summary><a href="motores.html">Motores</a><span class="contagem">13</span></summary><ul><li><a href="motor-orquestra.html" aria-current="page">Orquestração do mês</a></li><li><a href="motor-economia.html">Economia<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-congresso.html">Congresso (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-propostas.html">Propostas<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-politica.html">Política<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-regioes.html">Regiões<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-politicas.html">Políticas públicas (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-sociedade.html">Sociedade (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-eventos.html">Eventos (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-noticias.html">Notícias (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-eleicoes.html">Eleições (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-relatorio.html">Relatório<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-simulacao.html">Simulação<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
 <details><summary><a href="telas.html">Telas</a><span class="contagem">10</span></summary><ul><li><a href="tela-painel.html">Painel (a mesa do jogo)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-gabinete.html">Gabinete (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-economia.html">Economia (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-congresso.html">Congresso (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-noticias.html">Notícias (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-legado.html">Legado (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-novo-jogo.html">Novo jogo<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-carregar-jogo.html">Carregar jogo<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-configuracoes.html">Configurações<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-vitrine.html">Vitrine de design</a></li></ul></details>
-<details><summary><a href="sistemas.html">Sistemas de jogo</a><span class="contagem">11</span></summary><ul><li><a href="sis-campanha.html">Campanha de 4 anos<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-economia.html">Economia (sistema)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-impostos.html">Impostos<svg class="marca-nao-implementado" viewBox="0 0 24 24" role="img" aria-label="Não implementado"><title>Não implementado</title><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></a></li><li><a href="sis-mudancas-grandes.html">Mudanças grandes<svg class="marca-nao-implementado" viewBox="0 0 24 24" role="img" aria-label="Não implementado"><title>Não implementado</title><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></a></li><li><a href="sis-federacao.html">Federação<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-politicas.html">Políticas públicas (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-sociedade.html">Sociedade (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-eventos.html">Eventos e personagens<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-noticias.html">Notícias (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-eleicoes.html">Eleições e mandatos<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-globo.html">Globo 3D<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
+<details><summary><a href="sistemas.html">Sistemas de jogo</a><span class="contagem">11</span></summary><ul><li><a href="sis-campanha.html">Campanha de 4 a 8 anos<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-economia.html">Economia (sistema)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-impostos.html">Impostos<svg class="marca-nao-implementado" viewBox="0 0 24 24" role="img" aria-label="Não implementado"><title>Não implementado</title><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></a></li><li><a href="sis-mudancas-grandes.html">Mudanças grandes<svg class="marca-nao-implementado" viewBox="0 0 24 24" role="img" aria-label="Não implementado"><title>Não implementado</title><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></a></li><li><a href="sis-federacao.html">Federação<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-politicas.html">Políticas públicas (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-sociedade.html">Sociedade (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-eventos.html">Eventos e personagens<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-noticias.html">Notícias (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-eleicoes.html">Eleições e mandatos<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-globo.html">Globo 3D<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
 <details><summary><a href="congresso.html">Congresso</a><span class="contagem">7</span></summary><ul><li><a href="cong-estrutura.html">Estrutura do Congresso</a></li><li><a href="cong-tramitacao.html">Tramitação de uma lei</a></li><li><a href="cong-apoio.html">Como os blocos votam</a></li><li><a href="cong-arsenal.html">Ferramentas de negociação</a></li><li><a href="cong-conexoes.html">Conexões com o resto do jogo</a></li><li><a href="cong-casual.html">Modo Casual</a></li><li><a href="cong-resumo.html">Resumo para guardar</a></li></ul></details>
 <details><summary><a href="tecnico.html">Camadas técnicas</a><span class="contagem">4</span></summary><ul><li><a href="tec-estado.html">Estado da interface<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tec-banco.html">Banco de dados<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tec-globo.html">Globo (camada técnica)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tec-dados.html">Dados de conteúdo<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
 <details><summary><a href="tecnologias.html">Tecnologias</a><span class="contagem">14</span></summary><ul><li><a href="stk-linguagens.html">Linguagens</a></li><li><a href="stk-expo.html">Expo e Expo Router</a></li><li><a href="stk-react.html">React e React Native</a></li><li><a href="stk-estado.html">Zustand e Zod</a></li><li><a href="stk-componentes.html">Bibliotecas de interface, gesto e animação</a></li><li><a href="stk-banco.html">SQLite: app e testes</a></li><li><a href="stk-globo.html">Globo 3D: three, R3F e shaders</a></li><li><a href="stk-dados.html">Pipeline de dados (Python)</a></li><li><a href="stk-testes.html">Testes e simulações (Vitest)</a></li><li><a href="stk-qualidade.html">Qualidade: TypeScript, ESLint e Prettier</a></li><li><a href="stk-ci.html">Integração contínua (GitHub Actions)</a></li><li><a href="stk-ferramentas.html">npm, Metro e app.json</a></li><li><a href="stk-site.html">Este site de documentação</a></li><li><a href="stk-regras.html">Regras que as tecnologias respeitam</a></li></ul></details>
@@ -31,18 +31,422 @@
     
   <nav class="migalhas" aria-label="Caminho"><a href="../EXPLICACOES.html">Início</a><span class="sep" aria-hidden="true">/</span><a href="motores.html">Motores</a><span class="sep" aria-hidden="true">/</span><span aria-current="page">Orquestração do mês</span></nav>
   <p class="eyebrow">Motores</p>
-  <h1>Orquestração do mês<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></h1>
-  <p class="resumo">Avança o jogo um mês: ordem de cálculo, estado inicial, decisões, sementes e migração de saves.</p>
-  <div class="linha-meta"><span class="pill parc">Rascunho</span><span>9 caminhos de código</span></div>
-  <section class="bloco"><h2>Como funciona</h2><ul class="bullets"><li>advanceMonth(state, decisions, rng) é uma função pura: recebe o estado e devolve o novo estado e o relatório.</li><li>A aleatoriedade vem só do gerador com semente, recebido como parâmetro (rng.ts).</li><li>impulses.ts guarda os efeitos agendados, que chegam com defasagem.</li><li>invariants.ts confere as identidades contábeis em toda simulação de teste.</li><li>upgrade.ts atualiza saves de versões antigas em vez de recusá-los.</li></ul></section>
+  <h1>Orquestração do mês</h1>
+  <p class="resumo">Avança o jogo um mês: função pura, pipeline de 15 etapas, triagem constitucional, rastreabilidade contábil, PRNG estável e migração de saves.</p>
+  <div class="linha-meta"><span class="pill ok">Completo</span><span>9 caminhos de código</span></div>
+  <section class="bloco"><h2>Como funciona</h2><ul class="bullets"><li>advanceMonth(state, input, content) é uma função pura: recebe o estado, valida as ações de agenda e devolve o novo estado e o relatório.</li><li>Pipeline ordenado de 15 etapas sequenciais (DEFAULT_STEPS), respeitando a causalidade entre política, clima, economia, sociedade e eleições.</li><li>Triagem rigorosa em screenInput: travas constitucionais da CF art. 62 §10 (vedação de reedição de MP) e da Lei 9.504/97 (vedações eleitorais).</li><li>Rastreabilidade contábil estrita (&quot;Por que mudou?&quot;) garantida pela Invariante 3 em todas as variações de indicadores.</li><li>Gerador pseudoaleatório determinístico (sfc32) com aproximação de Irwin-Hall, idêntico no motor Hermes e no V8.</li><li>Fila de impulsos temporais (ScheduledImpulse) com defasagem e poda automática de efeitos expirados.</li><li>Auditoria de 9 invariantes contábeis e físicas em todas as baterias de testes de simulação.</li><li>Migração progressiva em cascata (upgrade.ts) da v1 até a v12, preservando campanhas antigas.</li></ul></section>
+  <section class="bloco corpo"><h3>1. Visão geral: função pura e determinismo</h3>
+<p>O coração de toda a simulação do <strong>Brasil Simulator</strong> é a função <code>advanceMonth</code>, localizada em <code>src/engine/advanceMonth.ts</code>. Diferente de arquiteturas tradicionais de jogos que mantêm estado mutável em memória ou espalham regras em múltiplos subsistemas com efeitos colaterais, o motor do jogo opera sob um modelo funcional estrito:</p>
+
+<div class="formula">
+  advanceMonth(state: GameState, input: MonthInput, content: GameContent, steps?: readonly MonthStep[]): MonthResult
+</div>
+
+<p>Essa assinatura estabelece regras arquiteturais inegociáveis para qualquer linha de código em <code>src/engine/</code>:</p>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="meta">Pureza estrita</div>
+    <h4>Sem efeitos colaterais nem I/O</h4>
+    <p>A função recebe o estado atual, a entrada do jogador e o conteúdo do cenário, devolvendo um <strong>novo estado</strong> e um <strong>relatório do mês</strong>. Nenhuma propriedade dos objetos de entrada é modificada. O motor não acessa disco, banco de dados SQLite, rede ou chamadas de log em código de produção.</p>
+  </div>
+  <div class="card">
+    <div class="meta">Determinismo de plataforma</div>
+    <h4>Mesma entrada, idêntica saída</h4>
+    <p>A mesma tripla de estado, escolhas do jogador e semente aleatória gera exatamente os mesmos números em qualquer ambiente. A execução é matematicamente idêntica rodando no motor <strong>Hermes</strong> de um celular Android ou iOS e no <strong>V8</strong> dos testes automatizados em Node.js no computador.</p>
+  </div>
+  <div class="card">
+    <div class="meta">Calendário contínuo</div>
+    <h4>Tempo como inteiro indexado</h4>
+    <p>É estritamente proibido o uso de <code>Date.now()</code> ou <code>new Date()</code> no motor. O tempo é modelado como um índice inteiro contínuo <code>monthIndex</code> (onde <code>0</code> equivale a janeiro de 2027), convertido para ano e mês civil pelas funções puras de <code>src/engine/calendar.ts</code>.</p>
+  </div>
+  <div class="card">
+    <div class="meta">Aleatoriedade controlada</div>
+    <h4>PRNG encapsulado no estado</h4>
+    <p>O uso de <code>Math.random()</code> é proibido. Toda a aleatoriedade decorre de um gerador pseudoaleatório com semente serializado no próprio <code>GameState.rng</code>. Salvar e carregar uma partida retoma a sequência exata de sorteios futuros sem qualquer desvio estatístico.</p>
+  </div>
+</div>
+
+<div class="callout ok">
+  <strong>Contrato de imutabilidade defensiva</strong>
+  Todas as decisões aceitas do jogador são clonadas pelo motor através de <code>copyDecision</code> antes de ingressarem no histórico <code>decisionLog</code>. Isso garante que alterações posteriores feitas pela interface do usuário ou pelas camadas de apresentação nunca corrompam o histórico de simulação.
+</div>
+
+<h3>2. O pipeline mensal: as 15 etapas sequenciais</h3>
+<p>O processamento de um turno avança através de uma cadeia ordenada de 15 etapas padronizadas (<code>DEFAULT_STEPS</code>). Cada etapa é uma função pura do tipo <code>MonthStep</code> que recebe o estado acumulado da etapa anterior e o contexto de execução, produzindo o estado atualizado e as contribuições explicativas geradas naquele estágio.</p>
+
+<div class="flow" aria-label="Pipeline de etapas do mês">
+  <div class="step stage">
+    <b>1. Resolução de eventos pendentes (<code>resolveEventsStep</code>)</b>
+    <span>Aplica as escolhas do jogador aos eventos que estavam aguardando resposta na caixa de entrada do mês anterior.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>2. Gabinete ministerial (<code>cabinetStep</code>)</b>
+    <span>Calcula a eficiência das pastas com ministros técnicos e os ganhos de apoio ou desgastes de aliança de ministros indicados por blocos parlamentares.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>3. Propostas legislativas (<code>proposalsStep</code>)</b>
+    <span>Insere novas propostas aceitas na fila de tramitação, processa sanções, vetos presidenciais e eventuais intervenções judiciais do STF.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>4. Congresso Nacional (<code>congressStep</code>)</b>
+    <span>Mede a ocupação da pauta, sorteia relatores, aplica desidratações de texto e pendura de jabutis, verifica o pedágio de emendas e processa votações na Câmara e no Senado.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>5. Políticas públicas (<code>publicPoliciesStep</code>)</b>
+    <span>Atualiza as rotinas ministeriais ativas, deduz gastos discricionários fixados nas diretrizes e acompanha as marcas prioritárias de governo.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>6. Perfil ideológico do governo (<code>governmentProfileStep</code>)</b>
+    <span>Atualiza a média móvel das posições do governo nos eixos econômico e social [−1, 1], conforme as políticas e reformas apoiadas ou vetadas.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>7. Evolução climática (<code>climateEvolutionStep</code>)</b>
+    <span>Evolui o ciclo ENSO (El Niño / La Niña), atualiza anomalias de precipitação e seca nas 27 UFs e calcula o choque de oferta agregado antes da economia.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>8. Motor econômico (<code>economyStep</code>)</b>
+    <span>Calcula PIB potencial, hiato do produto, inflação IPCA, reunião do Copom/Selic, câmbio, contas públicas (receitas, despesas obrigatórias e discricionárias), superávit primário e dívida pública.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>9. Sociedade e bem-estar (<code>societyStep</code>)</b>
+    <span>Distribui a renda real pelas classes A a E e quintis da população, apura o impacto do salário mínimo, taxa de pobreza e índice de desigualdade de Gini.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>10. Opinião pública e política (<code>opinionStep</code>)</b>
+    <span>Calcula a aprovação presidencial e o capital político a partir dos indicadores econômicos e sociais, amortecidos pela curva de lua de mel.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>11. Sistema eleitoral (<code>electionsStep</code>)</b>
+    <span>Calcula a intenção de voto com base na memória ponderada do eleitor (janela móvel de até 24 meses) e apura os pleitos municipais ou gerais nos meses de eleição.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>12. Distribuição federativa (<code>regionsStep</code>)</b>
+    <span>Distribui os totais nacionais entre as 27 UFs: atividade econômica estadual, desemprego local, aprovação regional e danos do clima por unidade da federação.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>13. Transição de governadores (<code>governorTurnoverStep</code>)</b>
+    <span>Processa a posse dos governadores eleitos após a eleição geral, redefinindo as relações políticas estaduais para a nova gestão.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>14. Resultado eleitoral regional (<code>electionResultStep</code>)</b>
+    <span>Consolida a distribuição de votos por UF na eleição geral, apurando a votação simulada sem consumir novos sorteios de PRNG.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step end">
+    <b>15. Sorteio de novos eventos (<code>triggerEventsStep</code>)</b>
+    <span>Verifica gatilhos e sorteia novos eventos baseando-se no estado final estabilizado do mês, enviando-os para a caixa de entrada do próximo turno.</span>
+  </div>
+</div>
+
+<h3>3. A lógica das dependências e da ordenação causal</h3>
+<p>A sequência das etapas não é arbitrária; ela reflete contratos de causa e efeito indispensáveis para o realismo institucional e a estabilidade matemática da simulação:</p>
+
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>Relação de ordem</th>
+        <th>Por que ocorre nesta posição?</th>
+        <th>O que aconteceria se a ordem fosse invertida?</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Eventos e Gabinete antes do Congresso</strong></td>
+        <td>Respostas a crises emergenciais e trocas ministeriais alteram a relação com os partidos e o capital político imediatamente, determinando a base de apoio parlamentar.</td>
+        <td>Votações em plenário usariam o apoio da bancada desatualizado, ignorando a nomeação ou demissão feita no mesmo turno.</td>
+      </tr>
+      <tr>
+        <td><strong>Congresso e Políticas antes da Economia</strong></td>
+        <td>Propostas legislativas aprovadas, sancionadas ou vetadas no mês (novos tributos, tetos de despesas, auxílios) alteram a legislação e os parâmetros orçamentários.</td>
+        <td>O motor econômico fecharia o resultado fiscal com as regras antigas, gerando defasagem artificial de um mês nas contas da União.</td>
+      </tr>
+      <tr>
+        <td><strong>Clima antes da Economia</strong></td>
+        <td>Eventos climáticos extremos (secas em bacias hidroelétricas e polos agrícolas) configuram choques exógenos de oferta que afetam a safra, os preços de alimentos e a energia.</td>
+        <td>O cálculo do PIB e da inflação do IPCA não capturaria o impacto imediato das quebras de safra na curva de Phillips do mesmo mês.</td>
+      </tr>
+      <tr>
+        <td><strong>Economia antes de Sociedade e Opinião</strong></td>
+        <td>O bem-estar das famílias (renda real, linha de pobreza) e a popularidade do Presidente dependem das variáveis de resultado da economia: desemprego, inflação e transferências.</td>
+        <td>A aprovação popular reagiria aos números defasados do mês anterior, quebrando a causalidade direta entre choques econômicos e avaliação do governo.</td>
+      </tr>
+      <tr>
+        <td><strong>Eleições antes de Regiões</strong> (Contrato PR #9)</td>
+        <td>A apuração da intenção de voto nacional e o impacto do pleito no ânimo cívico consolidam o vetor de aprovação antes que ele seja repartido federativamente.</td>
+        <td>A distribuição de indicadores regionais utilizaria uma média nacional desatualizada, violando o fechamento da Invariante 9.</td>
+      </tr>
+      <tr>
+        <td><strong>Posse de Governadores após Regiões</strong> (Contrato PR #9)</td>
+        <td>A transição dos executivos estaduais (<code>governorTurnoverStep</code>) ocorre após a apuração regional do mês para que o novo governador inicie com a relação política limpa.</td>
+        <td>O novo mandatário estadual seria injustamente penalizado pela evolução econômica e pelo humor popular do mês anterior, período em que ainda não governava.</td>
+      </tr>
+      <tr>
+        <td><strong>Novos Eventos por último</strong></td>
+        <td>O sorteador de eventos (<code>triggerEventsStep</code>) precisa examinar o estado consolidado ao final do mês (nível de dívida, inflação acumulada, tensão social e escândalos).</td>
+        <td>Eventos de crise econômica seriam sorteados sem detectar que o governo acabou de estourar o limite de despesas ou atingir inflação recorde no mesmo turno.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>4. Triagem de agenda e travas institucionais (<code>screenInput</code>)</h3>
+<p>Antes de executar qualquer etapa, <code>advanceMonth</code> submete os dados enviados pelo jogador à função de triagem <code>screenInput</code>. O Presidente possui um recurso restrito: o total de <strong>ações de agenda por mês</strong> (<code>resources.agendaActionsPerMonth</code>). A triagem valida a viabilidade jurídica e orçamentária de cada decisão.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="meta">Prioridade absoluta</div>
+    <h4>Respostas a eventos primeiro</h4>
+    <p>As escolhas enviadas para eventos pendentes consom ações de agenda antes de qualquer proposta de governo. Se o jogador tiver poucas ações, responder a crises graves consome a cota, impedindo novos projetos de lei no mesmo mês.</p>
+  </div>
+  <div class="card">
+    <div class="meta">Integridade do catálogo</div>
+    <h4>Custo oficial inviolável</h4>
+    <p>O custo de agenda de cada política ou ação é extraído exclusivamente das definições estáticas do catálogo (<code>content.policies</code> e <code>AGENDA_ACTIONS</code>). Qualquer custo arbitrário ou adulterado enviado pela interface é descartado.</p>
+  </div>
+</div>
+
+<h4>Travas constitucionais e eleitorais</h4>
+<p>A triagem implementa de forma rigorosa as restrições da legislação brasileira:</p>
+
+<div class="callout warn">
+  <strong>Trava Constitucional: Vedação de Reedição de MP (CF art. 62 §10)</strong>
+  A Constituição proíbe a reedição, na mesma sessão legislativa (ano civil), de Medida Provisória rejeitada ou que tenha perdido a eficácia por decurso de prazo (caducidade). A função <code>reissueBarredPolicies</code> rastreia o histórico de propostas do ano corrente. Se o jogador tentar reenviar a mesma MP rejeitada no mesmo ano, a decisão é bloqueada sumariamente com o motivo <code>reedicao_vedada</code>.
+</div>
+
+<div class="callout danger">
+  <strong>Vedação Eleitoral: Proibição de Novos Benefícios (Lei 9.504/1997 art. 73 §10)</strong>
+  Nos <strong>3 meses que antecedem as eleições municipais e gerais</strong>, a legislação eleitoral proíbe a criação ou distribuição gratuita de novos benefícios sociais.
+  <ul class="bullets">
+    <li>A função <code>isNovoBeneficio</code> identifica se a proposta expande despesas obrigatórias, salário mínimo real ou transferências diretas de renda.</li>
+    <li>Se o período estiver ativo (<code>vedacaoAtiva</code>), a política é rejeitada com o código <code>vedacao_eleitoral</code>.</li>
+    <li>O jogador pode forçar a aprovação declarando a quebra intencional via <code>decision.params.vedacao_bypass = true</code>. Nesse caso, a proposta tramita, mas o motor agenda penalidades mensais na intenção de voto e risco de multas graves de popularidade.</li>
+    <li>No modo de dificuldade <em>Casual</em>, essa restrição é desativada para simplificar o aprendizado.</li>
+  </ul>
+</div>
+
+<p>Além dessas regras, a triagem confere se a proposta já está em tramitação (<code>ja_em_andamento</code>), se a ação sobre aquele alvo já foi realizada no mês (<code>acao_repetida</code>), se a política pertence ao cenário e se há saldo suficiente de ações de agenda (<code>sem_acoes_de_agenda</code>).</p>
+
+<h3>5. Rastreabilidade contábil: "Por que mudou?" e a Invariante 3</h3>
+<p>Nenhum indicador do jogo varia como uma "caixa preta". Toda movimentação sofrida pelos indicadores nacionais (inflação, PIB, desemprego, aprovação, etc.) deve gerar uma ou mais estruturas de rastreamento denominadas <code>Contribution</code>:</p>
+
+<div class="formula">
+  interface Contribution { indicator: IndicatorKey | 'votingIntention'; cause: string; delta: number; }
+</div>
+
+<p>Ao término de cada etapa, a função <code>applyContributions</code> aplica os deltas calculados aos indicadores do <code>GameState</code>. Essa mecânica sustenta a <strong>Invariante 3</strong> de <code>src/engine/invariants.ts</code>:</p>
+
+<div class="callout ok">
+  <strong>Invariante 3 (ECONOMIC_MODEL.md §7.3): Conservação de variações</strong>
+  Para cada indicador de resultado do jogo, a diferença entre o valor final e o valor inicial do turno deve ser <strong>rigorosamente igual à soma de todas as contribuições registradas no relatório mensal</strong>:
+  <br><br>
+  <code>| (next.indicators[k] - prev.indicators[k]) - Σ contributions[k] | &lt; 1e-9</code>
+  <br><br>
+  Se uma etapa alterar um indicador sem registrar a contribuição correspondente, ou se a soma divergir por mais de 0,000000001, a bateria de testes quebra imediatamente. Isso assegura que a subtela de Economia e os relatórios sempre consigam explicar ao jogador as causas exatas de cada movimento.
+</div>
+
+<h3>6. Gerador pseudoaleatório determinístico (RNG)</h3>
+<p>O motor não depende de geradores do sistema operacional. O módulo <code>src/engine/rng.ts</code> implementa o algoritmo <strong>sfc32</strong> (<em>Small Fast Chaotic</em> de Chris Doty-Humphrey), com estado interno mantido em quatro palavras de 32 bits sem sinal: <code>[a, b, c, d]</code>.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="meta">Inicialização segura</div>
+    <h4>splitmix32 e avalanche</h4>
+    <p>A função <code>seedRng(seed)</code> utiliza o gerador <strong>splitmix32</strong> combinado com o finalizador de 32 bits do <strong>MurmurHash3</strong> (função <code>mix32</code>) para dispersar a semente inicial nas quatro palavras de estado, descartando as primeiras 15 iterações para garantir dispersão estatística completa.</p>
+  </div>
+  <div class="card">
+    <div class="meta">Subsubsistemas isolados</div>
+    <h4>Sementes derivadas (sal estável)</h4>
+    <p>A função <code>deriveSeed(seed, salt)</code> permite que subsistemas paralelos — como a simulação do clima — recebam um gerador PRNG próprio a partir da semente da campanha. Isso garante que a evolução do clima nunca consuma números aleatórios da linha do tempo da política ou do Congresso.</p>
+  </div>
+</div>
+
+<h4>Por que Irwin-Hall em vez de Box-Muller?</h4>
+<p>Para gerar números com distribuição normal (usados em ruídos de mercado e choques de produtividade), a maioria dos motores gráficos e jogos usa a transformada de Box-Muller. No entanto, Box-Muller utiliza <code>Math.log()</code> e <code>Math.cos()</code>, que dependem das funções transcendentais da biblioteca C (libm) do sistema operacional, variando no último bit entre processadores ARM e x86 ou entre os motores Hermes e V8.</p>
+
+<p>Por essa razão, o <strong>Brasil Simulator</strong> adota a <strong>aproximação de Irwin-Hall com 12 uniformes</strong>:</p>
+
+<div class="formula">
+  normal() = (Σ_{i=1}^{12} float()) - 6
+</div>
+
+<p>Essa fórmula tem média exata <code>0</code>, desvio-padrão unitário <code>1</code> e opera estritamente com adições e divisões de ponto flutuante padrão IEEE 754, garantindo reproducibilidade matemática absoluta entre celulares e computadores.</p>
+
+<h3>7. Fila de impulsos com defasagem (<code>ScheduledImpulse</code>) e poda</h3>
+<p>Na teoria macroeconômica, medidas fiscais e reformas estruturais não surtem efeito instantâneo. Uma obra de infraestrutura leva meses para ser executada e uma reforma tributária possui regras de transição. O motor utiliza uma fila de efeitos agendados (<code>ScheduledImpulse</code>), gerenciada por <code>src/engine/impulses.ts</code>:</p>
+
+<div class="formula">
+  interface ScheduledImpulse { id: string; target: ImpulseTarget; startMonth: number; endMonth: number | null; delta: number; source?: string; }
+</div>
+
+<ul class="bullets">
+  <li><strong>Ativação temporal:</strong> a função <code>activeImpulses(impulses, monthIndex, targets)</code> filtra apenas os impulsos que atendem à condição <code>startMonth &le; monthIndex && (endMonth === null || endMonth &ge; monthIndex)</code>.</li>
+  <li><strong>Agregação linear:</strong> a função <code>sumActive</code> calcula o impacto líquido acumulado sobre um alvo no mês corrente.</li>
+  <li><strong>Poda automática (<code>pruneImpulses</code>):</strong> ao fim de cada mês, <code>advanceMonth</code> remove todos os impulsos temporários cujo prazo já expirou (<code>endMonth &lt; nextMonth</code>). Isso evita o crescimento infinito da memória e mantém o arquivo de save do banco de dados compacto.</li>
+</ul>
+
+<h3>8. Garantia contábil via invariantes de simulação</h3>
+<p>O arquivo <code>src/engine/invariants.ts</code> executa uma auditoria completa após cada avanço de mês durante testes de integração e simulações com bots automatizados. Nenhuma release é aprovada se houver violação das identidades contábeis estabelecidas em <code>ECONOMIC_MODEL.md §7</code>:</p>
+
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>Invariante</th>
+        <th>Regra auditada</th>
+        <th>Tolerância</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>§7.1 Primário do mês</strong></td>
+        <td>O resultado primário mensal deve ser rigorosamente igual à receita líquida menos a despesa primária total (<code>revenue - primarySpending</code>).</td>
+        <td><code>1e-9</code></td>
+      </tr>
+      <tr>
+        <td><strong>§7.2 Dinâmica da dívida</strong></td>
+        <td>A dívida pública bruta do final do mês deve fechar com a dívida anterior somada aos juros apropriados menos o primário do mês e o ajuste patrimonial de estoque.</td>
+        <td><code>1e-9</code></td>
+      </tr>
+      <tr>
+        <td><strong>§7.3 Contribuições</strong></td>
+        <td>A variação mensal de todo indicador quantitativo deve equivaler à soma exata das contribuições registradas no relatório.</td>
+        <td><code>1e-9</code></td>
+      </tr>
+      <tr>
+        <td><strong>§7.4 Limite de despesas</strong></td>
+        <td>A despesa primária sujeita ao arcabouço fiscal não pode ultrapassar o teto vigente somado às exceções e créditos extraordinários legalmente autorizados.</td>
+        <td><code>1e-9</code></td>
+      </tr>
+      <tr>
+        <td><strong>§7.5 Domínio físico</strong></td>
+        <td>Taxa de desemprego deve estar em <code>(0, 1)</code>, aprovação em <code>[0, 1]</code>, Selic &ge; 0, credibilidade em <code>[0, 1]</code> e capital político em <code>[0, 100]</code>.</td>
+        <td>Exato</td>
+      </tr>
+      <tr>
+        <td><strong>§7.6 Finitude</strong></td>
+        <td>Varredura recursiva completa de todas as propriedades numéricas do estado para certificar ausência de <code>NaN</code> ou <code>Infinity</code>.</td>
+        <td>Exato</td>
+      </tr>
+      <tr>
+        <td><strong>§7.9 Federação</strong></td>
+        <td>As participações das 27 UFs no PIB devem somar exatamente <code>1.0</code>, e as médias ponderadas de aprovação e desemprego estaduais devem bater os agregados nacionais.</td>
+        <td><code>1e-9</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>9. Migração progressiva de saves em cascata (<code>upgrade.ts</code>)</h3>
+<p>Conforme estabelecido nas regras de engenharia (<code>AI_INSTRUCTIONS.md §3</code>), campanhas salvas em versões anteriores do motor <strong>nunca são rejeitadas nem descartadas</strong>. O arquivo <code>src/engine/upgrade.ts</code> implementa uma escada de migração progressiva através de <code>upgradeGameState</code>:</p>
+
+<div class="chain">
+  <span class="node">v1</span><span class="sep">→</span>
+  <span class="node">v2</span><span class="sep">→</span>
+  <span class="node">v3</span><span class="sep">→</span>
+  <span class="node">v4</span><span class="sep">→</span>
+  <span class="node">v5</span><span class="sep">→</span>
+  <span class="node">v6</span><span class="sep">→</span>
+  <span class="node">v7</span><span class="sep">→</span>
+  <span class="node">v8</span><span class="sep">→</span>
+  <span class="node">v9</span><span class="sep">→</span>
+  <span class="node">v10</span><span class="sep">→</span>
+  <span class="node">v11</span><span class="sep">→</span>
+  <span class="node good">v12</span>
+</div>
+
+<p>Se o save possuir versão superior à conhecida pelo aplicativo, é lançado o erro explícito <code>SaveTooNewError</code>. Caso contrário, cada migração individual injeta os blocos e campos novos de forma neutra, determinística e sem consumir sorteios do PRNG:</p>
+
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>Migração</th>
+        <th>Campos e estruturas introduzidos</th>
+        <th>Estratégia de compatibilidade</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>v1 → v2</code></td>
+        <td>Economia básica, Congresso, propostas, fila de impulsos e controle de eventos.</td>
+        <td>Injeta valores econômicos padrão provisórios; blocos parlamentares herdam relações do cenário.</td>
+      </tr>
+      <tr>
+        <td><code>v2 → v3</code></td>
+        <td>Níveis de preço e PIB potencial, setor externo, pressão sobre o Banco Central e partição fiscal por grupos.</td>
+        <td>Normaliza índices de nível em <code>1.0</code> e calcula despesas obrigatórias a partir da receita do próprio save.</td>
+      </tr>
+      <tr>
+        <td><code>v3 → v4</code></td>
+        <td>Gabinete de ministros, etapas de tramitação, relatores sorteados, jabutis, sanção/veto e ações no STF.</td>
+        <td>Propostas em tramitação reiniciam a pauta na Câmara; projetos já concluídos recebem a etapa final (4).</td>
+      </tr>
+      <tr>
+        <td><code>v4 → v5</code></td>
+        <td>Federação (27 UFs) e adesão de estados a políticas nacionais.</td>
+        <td>Lista de UFs inicializada vazia para ser gerada pelas participações estruturais no mês subsequente.</td>
+      </tr>
+      <tr>
+        <td><code>v5 → v6</code></td>
+        <td>Sociedade (classes A a E, quintis de renda) e estrutura de políticas públicas.</td>
+        <td>Gera a sociedade inicial compatível com o nível de PIB e emprego já existente no save.</td>
+      </tr>
+      <tr>
+        <td><code>v6 → v7</code></td>
+        <td>Marcas e flags de eventos, cadeias agendadas, prestígio de personagens e arquivo de notícias.</td>
+        <td>Listas iniciadas vazias, preservando contadores e histórico de eventos disparados.</td>
+      </tr>
+      <tr>
+        <td><code>v7 → v8</code></td>
+        <td>Estado eleitoral (<code>politics</code>), intenção de voto e memória curta do eleitor.</td>
+        <td>Campo criado dinamicamente no primeiro mês processado se o cenário possuir eleições.</td>
+      </tr>
+      <tr>
+        <td><code>v8 → v9</code></td>
+        <td>Renomeação de "pontos de agenda" para "ações de agenda" (<code>resources.agendaActionsPerMonth</code>).</td>
+        <td>Migração semântica de propriedade, preservando o valor numérico acumulado.</td>
+      </tr>
+      <tr>
+        <td><code>v9 → v10</code></td>
+        <td>Perfil ideológico do governo (<code>government.profile</code>).</td>
+        <td>Inicia com perfil neutro <code>{ economic: 0, social: 0 }</code>, sem distorcer o posicionamento das UFs.</td>
+      </tr>
+      <tr>
+        <td><code>v10 → v11</code></td>
+        <td>Módulo climático nacional e estadual (<code>climate</code>).</td>
+        <td>Inicia neutro (ENSO 0, chuva e seca zeradas). O PRNG do clima é derivado da semente original do save (<code>seed</code>) com sal fixo.</td>
+      </tr>
+      <tr>
+        <td><code>v11 → v12</code></td>
+        <td>Identidade única (<code>instanceId</code>) e localização geográfica (<code>location</code>) de eventos pendentes.</td>
+        <td>Eventos legados recebem <code>instanceId = eventId#mês</code> e localização nacional, sem inventar sorteios retrospectivos.</td>
+      </tr>
+    </tbody>
+  </table>
+</div></section>
   <section class="bloco"><h2>Onde está no código</h2><ul class="codigo-lista"><li><code>src/engine/advanceMonth.ts</code></li><li><code>src/engine/state.ts</code></li><li><code>src/engine/actions.ts</code></li><li><code>src/engine/agenda.ts</code></li><li><code>src/engine/calendar.ts</code></li><li><code>src/engine/impulses.ts</code></li><li><code>src/engine/invariants.ts</code></li><li><code>src/engine/rng.ts</code></li><li><code>src/engine/upgrade.ts</code></li></ul></section>
   <section class="bloco"><h2>Documentos</h2><ul class="bullets"><li><a href="../ECONOMIC_MODEL.md">ECONOMIC_MODEL.md</a></li><li><a href="../AI_INSTRUCTIONS.md">AI_INSTRUCTIONS.md</a></li></ul></section>
   <section class="bloco"><h2>Veja também</h2><div class="relacionados"><a href="motor-simulacao.html">Simulação</a><a href="motor-relatorio.html">Relatório</a></div></section>
-  <section class="bloco"><h2>Estado do texto</h2><p>Resumo do tema. Os detalhes completos entram na revisão com o autor.</p></section>
+  <section class="bloco"><h2>Estado do texto</h2><p>Conferido com src/engine/ e ECONOMIC_MODEL.md.</p></section>
   <nav class="paginacao" aria-label="Página anterior e próxima"><span></span><a class="prox" href="motor-economia.html"><small>Próxima →</small><span>Economia</span></a></nav>
     <footer class="rodape">Gerado por <code>docs/explicacoes/build.mjs</code> a partir de <code>docs/explicacoes/src/</code>. Para mudar um texto, edite a fonte e rode o build.</footer>
   </main>
 </div>
-<script type="application/json" id="indice">[{"t":"Motores","g":"Grupo","s":"Como o código calcula cada mês. Cada motor é uma pasta de src/engine/, em TypeScript puro, sem interface.","h":"motores.html"},{"t":"Telas","g":"Grupo","s":"O que o jogador vê e toca. Cada tela é uma rota em src/app/.","h":"telas.html"},{"t":"Sistemas de jogo","g":"Grupo","s":"Como o jogador experimenta cada parte do jogo. Cada sistema se apoia em um ou mais motores.","h":"sistemas.html"},{"t":"Congresso","g":"Grupo","s":"No jogo, você é o Presidente da República. Para aprovar reformas, impostos e orçamentos, precisa do aval de deputados e senadores: é o presidencialismo de coalizão.","h":"congresso.html"},{"t":"Camadas técnicas","g":"Grupo","s":"Estado da interface, banco de dados, globo 3D e dados de conteúdo. O motor não depende de nenhuma delas.","h":"tecnico.html"},{"t":"Tecnologias","g":"Grupo","s":"As linguagens, os frameworks, as bibliotecas e as ferramentas do projeto, com o papel de cada uma. As versões vêm do package.json.","h":"tecnologias.html"},{"t":"Fases do roadmap","g":"Grupo","s":"Onde cada fase está hoje, segundo o roadmap do projeto.","h":"fases.html"},{"t":"Features futuras","g":"Grupo","s":"Ideias e funcionalidades planejadas, separadas por categoria. Cada feature tem um post-it para anotar o que quiser.","h":"features.html"},{"t":"Orquestração do mês","g":"Motores","s":"Avança o jogo um mês: ordem de cálculo, estado inicial, decisões, sementes e migração de saves.","h":"motor-orquestra.html"},{"t":"Economia","g":"Motores","s":"Atividade, inflação, Banco Central, contas públicas, dívida e setor externo.","h":"motor-economia.html"},{"t":"Congresso (motor)","g":"Motores","s":"Blocos, votação, relatores, presidentes das Casas, ministérios e negociação.","h":"motor-congresso.html"},{"t":"Propostas","g":"Motores","s":"Tramitação de cada proposta, da entrada na pauta até a execução.","h":"motor-propostas.html"},{"t":"Política","g":"Motores","s":"Opinião pública e aprovação do presidente, com a lua de mel no início do mandato.","h":"motor-politica.html"},{"t":"Regiões","g":"Motores","s":"As 27 UFs recebem uma distribuição do agregado nacional, sem motor macroeconômico próprio.","h":"motor-regioes.html"},{"t":"Políticas públicas (motor)","g":"Motores","s":"Catálogo de políticas, diretrizes ministeriais e carteira de projetos.","h":"motor-politicas.html"},{"t":"Sociedade (motor)","g":"Motores","s":"Setores, quintis de renda, renda real, salário mínimo, desemprego e pobreza.","h":"motor-sociedade.html"},{"t":"Eventos (motor)","g":"Motores","s":"Gatilhos, escolhas, cadeias com atraso e marcas que guardam a memória da campanha.","h":"motor-eventos.html"},{"t":"Notícias (motor)","g":"Motores","s":"Manchetes geradas pelo motor, cada uma com a causa que a originou.","h":"motor-noticias.html"},{"t":"Eleições (motor)","g":"Motores","s":"Pleitos, mandatos, memória curta do eleitor e vedações do ano eleitoral.","h":"motor-eleicoes.html"},{"t":"Relatório","g":"Motores","s":"Relatório mensal com “Por que mudou?”, mesa de despacho e relatório de legado.","h":"motor-relatorio.html"},{"t":"Simulação","g":"Motores","s":"Estratégias-robô e campanhas automáticas, usadas para calibrar e testar.","h":"motor-simulacao.html"},{"t":"Painel (a mesa do jogo)","g":"Telas","s":"A casa do jogo: o globo do Brasil com HUD, trilhos de folhas, doca de subtelas e o botão Encerrar o mês.","h":"tela-painel.html"},{"t":"Gabinete (subtela)","g":"Telas","s":"A agenda presidencial do mês: decisões com mesa de despacho, políticas públicas, marcas de governo e ações de agenda.","h":"tela-gabinete.html"},{"t":"Economia (subtela)","g":"Telas","s":"Painel com todos os indicadores econômicos, projeção anual e ícones que levam às outras áreas, como os impostos.","h":"tela-economia.html"},{"t":"Congresso (subtela)","g":"Telas","s":"Hemiciclo, Mesas e pauta, propostas em tramitação, blocos, ministérios e negociações.","h":"tela-congresso.html"},{"t":"Notícias (subtela)","g":"Telas","s":"Mesa 3D com o jornal do mês e o notebook das redes sociais.","h":"tela-noticias.html"},{"t":"Legado (subtela)","g":"Telas","s":"Relatório de fim de campanha: o que o governo deixou ao país.","h":"tela-legado.html"},{"t":"Novo jogo","g":"Telas","s":"Criação de uma campanha a partir de um cenário e de uma dificuldade.","h":"tela-novo-jogo.html"},{"t":"Carregar jogo","g":"Telas","s":"Lista as partidas salvas e retoma uma delas.","h":"tela-carregar-jogo.html"},{"t":"Configurações","g":"Telas","s":"Preferências do jogo, como o tamanho do texto.","h":"tela-configuracoes.html"},{"t":"Vitrine de design","g":"Telas","s":"Tela de desenvolvimento com os componentes base: cards, indicadores, alertas e botões.","h":"tela-vitrine.html"},{"t":"Campanha de 4 anos","g":"Sistemas de jogo","s":"A partida dura o número de meses definido pelo cenário, com decisões mensais e um fim por eleição ou derrota.","h":"sis-campanha.html"},{"t":"Economia (sistema)","g":"Sistemas de jogo","s":"Como a economia aparece para o jogador: indicadores, causas e as escolhas que a movem.","h":"sis-economia.html"},{"t":"Impostos","g":"Sistemas de jogo","s":"Os 14 tributos-tronco, cada um aberto em alavancas que o jogador mexe, alterados por despacho na Agenda: decreto ou projeto de lei, em quatro fases. Inclui a pauta de estados e municípios, os incentivos e as receitas não tributárias.","h":"sis-impostos.html"},{"t":"Mudanças grandes","g":"Sistemas de jogo","s":"Jogadas de grande porte: mudanças constitucionais, destino do dinheiro, indicações ao PGR e ao STF, combate à corrupção, incentivos e os índices demográficos do país, com opções para o número de cidades e de nascimentos.","h":"sis-mudancas-grandes.html"},{"t":"Federação","g":"Sistemas de jogo","s":"As decisões federais têm efeitos diferentes em cada um dos 27 estados.","h":"sis-federacao.html"},{"t":"Políticas públicas (jogador)","g":"Sistemas de jogo","s":"Você escolhe políticas de rotina, diretrizes e projetos, e eles aparecem no legado.","h":"sis-politicas.html"},{"t":"Sociedade (jogador)","g":"Sistemas de jogo","s":"Como as decisões chegam às pessoas: renda por quintil, salário mínimo, desemprego e pobreza.","h":"sis-sociedade.html"},{"t":"Eventos e personagens","g":"Sistemas de jogo","s":"Eventos com escolhas, cadeias como CPI, TCU e impeachment, e prestígio de personagens.","h":"sis-eventos.html"},{"t":"Notícias (jogador)","g":"Sistemas de jogo","s":"Manchetes com tom e causa, no jornal do mês e nas redes sociais do notebook.","h":"sis-noticias.html"},{"t":"Eleições e mandatos","g":"Sistemas de jogo","s":"Ao fim do mandato há eleição; a reeleição depende do cenário.","h":"sis-eleicoes.html"},{"t":"Globo 3D","g":"Sistemas de jogo","s":"Mapa interativo do Brasil: relevo, zoom até os estados e mapa de calor por indicador.","h":"sis-globo.html"},{"t":"Estrutura do Congresso","g":"Congresso","s":"O Poder Legislativo é bicameral: duas Casas, com papéis diferentes.","h":"cong-estrutura.html"},{"t":"Tramitação de uma lei","g":"Congresso","s":"Quando você envia uma proposta pelo Gabinete, ela passa por etapas realistas.","h":"cong-tramitacao.html"},{"t":"Como os blocos votam","g":"Congresso","s":"Cada bloco calcula uma pontuação de apoio para cada proposta. Ela soma vários fatores.","h":"cong-apoio.html"},{"t":"Ferramentas de negociação","g":"Congresso","s":"Na subtela Congresso, você tem ações diretas para virar votos. Cada ação gasta uma das suas ações de agenda mensais.","h":"cong-arsenal.html"},{"t":"Conexões com o resto do jogo","g":"Congresso","s":"O Congresso não fica isolado: o que acontece nele mexe na economia, na popularidade e no impeachment.","h":"cong-conexoes.html"},{"t":"Modo Casual","g":"Congresso","s":"A dificuldade Casual tem proteções para quem está aprendendo. As regras abaixo foram conferidas no código.","h":"cong-casual.html"},{"t":"Resumo para guardar","g":"Congresso","s":"Os elementos mais importantes do Congresso e o que acontece se você ignorá-los.","h":"cong-resumo.html"},{"t":"Estado da interface","g":"Camadas técnicas","s":"Store Zustand que liga a interface ao motor e guarda a partida atual.","h":"tec-estado.html"},{"t":"Banco de dados","g":"Camadas técnicas","s":"SQLite com migrações versionadas: o estado e o histórico da partida ficam aqui.","h":"tec-banco.html"},{"t":"Globo (camada técnica)","g":"Camadas técnicas","s":"Renderização 3D com three.js e React Three Fiber, com quadtree, LOD e cache.","h":"tec-globo.html"},{"t":"Dados de conteúdo","g":"Camadas técnicas","s":"Cenários, políticas e eventos em JSON, validados com Zod.","h":"tec-dados.html"},{"t":"Linguagens","g":"Tecnologias","s":"Cinco linguagens, cada uma numa parte diferente: TypeScript no app e no motor, Python só na preparação de dados, GLSL nos shaders do globo, JSON para o conteúdo e HTML, CSS e JavaScript para este site.","h":"stk-linguagens.html"},{"t":"Expo e Expo Router","g":"Tecnologias","s":"Expo é a plataforma que roda, empacota e gera a versão web do app. Expo Router organiza as telas como arquivos dentro de src/app/.","h":"stk-expo.html"},{"t":"React e React Native","g":"Tecnologias","s":"React descreve a interface como componentes. React Native transforma esses componentes em telas nativas no Android e no iPhone. react-native-web leva o mesmo código ao navegador.","h":"stk-react.html"},{"t":"Zustand e Zod","g":"Tecnologias","s":"Zustand guarda o estado que a interface usa. Zod valida o conteúdo do jogo antes de ele entrar na partida.","h":"stk-estado.html"},{"t":"Bibliotecas de interface, gesto e animação","g":"Tecnologias","s":"Bibliotecas que dão comportamento às telas: animação, gestos, área segura do aparelho, ícones e imagens.","h":"stk-componentes.html"},{"t":"SQLite: app e testes","g":"Tecnologias","s":"SQLite guarda a partida no aparelho. Nos testes, a mesma base roda pelo módulo SQLite embutido no Node, sem precisar do aparelho.","h":"stk-banco.html"},{"t":"Globo 3D: three, R3F e shaders","g":"Tecnologias","s":"O globo usa three.js, biblioteca de gráficos 3D sobre WebGL, ligada ao React pelo @react-three/fiber. No aparelho, o WebGL vem do expo-gl.","h":"stk-globo.html"},{"t":"Pipeline de dados (Python)","g":"Tecnologias","s":"Um pipeline em Python baixa dados públicos e transforma o resultado nos arquivos que o globo carrega. Roda na máquina de desenvolvimento, nunca no aparelho.","h":"stk-dados.html"},{"t":"Testes e simulações (Vitest)","g":"Tecnologias","s":"Vitest roda os testes do motor, do banco e da lógica de tela. As simulações rodam o motor com estratégias-robô e muitas sementes, para testar o equilíbrio do jogo.","h":"stk-testes.html"},{"t":"Qualidade: TypeScript, ESLint e Prettier","g":"Tecnologias","s":"Três ferramentas checam o código antes de ele entrar: o compilador de tipos, o ESLint e o Prettier. O comando npm run check roda as três e os testes.","h":"stk-qualidade.html"},{"t":"Integração contínua (GitHub Actions)","g":"Tecnologias","s":"A cada push na main e a cada pull request, o GitHub roda a mesma checagem do npm run check em um servidor limpo, com Node 22.","h":"stk-ci.html"},{"t":"npm, Metro e app.json","g":"Tecnologias","s":"npm instala e fixa as dependências. Metro empacota o app. app.json define o que o Expo gera. Os scripts do package.json reúnem os comandos do dia a dia.","h":"stk-ferramentas.html"},{"t":"Este site de documentação","g":"Tecnologias","s":"Páginas de HTML, CSS e JavaScript puros, geradas por um script em Node. Não tem framework nem dependências externas e funciona sem internet.","h":"stk-site.html"},{"t":"Regras que as tecnologias respeitam","g":"Tecnologias","s":"Algumas escolhas técnicas valem para o projeto inteiro. Elas explicam por que o motor é separado e por que o jogo funciona offline.","h":"stk-regras.html"}]</script>
+<script type="application/json" id="indice">[{"t":"Motores","g":"Grupo","s":"Como o código calcula cada mês. Cada motor é uma pasta de src/engine/, em TypeScript puro, sem interface.","h":"motores.html"},{"t":"Telas","g":"Grupo","s":"O que o jogador vê e toca. Cada tela é uma rota em src/app/.","h":"telas.html"},{"t":"Sistemas de jogo","g":"Grupo","s":"Como o jogador experimenta cada parte do jogo. Cada sistema se apoia em um ou mais motores.","h":"sistemas.html"},{"t":"Congresso","g":"Grupo","s":"No jogo, você é o Presidente da República. Para aprovar reformas, impostos e orçamentos, precisa do aval de deputados e senadores: é o presidencialismo de coalizão.","h":"congresso.html"},{"t":"Camadas técnicas","g":"Grupo","s":"Estado da interface, banco de dados, globo 3D e dados de conteúdo. O motor não depende de nenhuma delas.","h":"tecnico.html"},{"t":"Tecnologias","g":"Grupo","s":"As linguagens, os frameworks, as bibliotecas e as ferramentas do projeto, com o papel de cada uma. As versões vêm do package.json.","h":"tecnologias.html"},{"t":"Fases do roadmap","g":"Grupo","s":"Onde cada fase está hoje, segundo o roadmap do projeto.","h":"fases.html"},{"t":"Features futuras","g":"Grupo","s":"Ideias e funcionalidades planejadas, separadas por categoria. Cada feature tem um post-it para anotar o que quiser.","h":"features.html"},{"t":"Orquestração do mês","g":"Motores","s":"Avança o jogo um mês: função pura, pipeline de 15 etapas, triagem constitucional, rastreabilidade contábil, PRNG estável e migração de saves.","h":"motor-orquestra.html"},{"t":"Economia","g":"Motores","s":"Atividade, inflação, Banco Central, contas públicas, dívida e setor externo.","h":"motor-economia.html"},{"t":"Congresso (motor)","g":"Motores","s":"Blocos, votação, relatores, presidentes das Casas, ministérios e negociação.","h":"motor-congresso.html"},{"t":"Propostas","g":"Motores","s":"Tramitação de cada proposta, da entrada na pauta até a execução.","h":"motor-propostas.html"},{"t":"Política","g":"Motores","s":"Opinião pública e aprovação do presidente, com a lua de mel no início do mandato.","h":"motor-politica.html"},{"t":"Regiões","g":"Motores","s":"As 27 UFs recebem uma distribuição do agregado nacional, sem motor macroeconômico próprio.","h":"motor-regioes.html"},{"t":"Políticas públicas (motor)","g":"Motores","s":"Catálogo de políticas, diretrizes ministeriais e carteira de projetos.","h":"motor-politicas.html"},{"t":"Sociedade (motor)","g":"Motores","s":"Setores, quintis de renda, renda real, salário mínimo, desemprego e pobreza.","h":"motor-sociedade.html"},{"t":"Eventos (motor)","g":"Motores","s":"Gatilhos, escolhas, cadeias com atraso e marcas que guardam a memória da campanha.","h":"motor-eventos.html"},{"t":"Notícias (motor)","g":"Motores","s":"Manchetes geradas pelo motor, cada uma com a causa que a originou.","h":"motor-noticias.html"},{"t":"Eleições (motor)","g":"Motores","s":"Pleitos, mandatos, memória curta do eleitor e vedações do ano eleitoral.","h":"motor-eleicoes.html"},{"t":"Relatório","g":"Motores","s":"Relatório mensal com “Por que mudou?”, mesa de despacho e relatório de legado.","h":"motor-relatorio.html"},{"t":"Simulação","g":"Motores","s":"Estratégias-robô e campanhas automáticas, usadas para calibrar e testar.","h":"motor-simulacao.html"},{"t":"Painel (a mesa do jogo)","g":"Telas","s":"A casa do jogo: o globo do Brasil com HUD, trilhos de folhas, doca de subtelas e o botão Encerrar o mês.","h":"tela-painel.html"},{"t":"Gabinete (subtela)","g":"Telas","s":"A agenda presidencial do mês: decisões com mesa de despacho, políticas públicas, marcas de governo e ações de agenda.","h":"tela-gabinete.html"},{"t":"Economia (subtela)","g":"Telas","s":"Painel com todos os indicadores econômicos, projeção anual e ícones que levam às outras áreas, como os impostos.","h":"tela-economia.html"},{"t":"Congresso (subtela)","g":"Telas","s":"Hemiciclo, Mesas e pauta, propostas em tramitação, blocos, ministérios e negociações.","h":"tela-congresso.html"},{"t":"Notícias (subtela)","g":"Telas","s":"Mesa 3D com o jornal do mês e o notebook das redes sociais.","h":"tela-noticias.html"},{"t":"Legado (subtela)","g":"Telas","s":"Relatório de fim de campanha: o que o governo deixou ao país.","h":"tela-legado.html"},{"t":"Novo jogo","g":"Telas","s":"Criação de uma campanha a partir de um cenário e de uma dificuldade.","h":"tela-novo-jogo.html"},{"t":"Carregar jogo","g":"Telas","s":"Lista as partidas salvas e retoma uma delas.","h":"tela-carregar-jogo.html"},{"t":"Configurações","g":"Telas","s":"Preferências do jogo, como o tamanho do texto.","h":"tela-configuracoes.html"},{"t":"Vitrine de design","g":"Telas","s":"Tela de desenvolvimento com os componentes base: cards, indicadores, alertas e botões.","h":"tela-vitrine.html"},{"t":"Campanha de 4 a 8 anos","g":"Sistemas de jogo","s":"A partida dura o número de meses definido pelo cenário (até 96 meses com reeleição no padrão atual), com decisões mensais e um fim por eleição, mandato ou derrota.","h":"sis-campanha.html"},{"t":"Economia (sistema)","g":"Sistemas de jogo","s":"Como a economia aparece para o jogador: indicadores, causas e as escolhas que a movem.","h":"sis-economia.html"},{"t":"Impostos","g":"Sistemas de jogo","s":"Os 14 tributos-tronco, cada um aberto em alavancas que o jogador mexe, alterados por despacho na Agenda: decreto ou projeto de lei, em quatro fases. Inclui a pauta de estados e municípios, os incentivos e as receitas não tributárias.","h":"sis-impostos.html"},{"t":"Mudanças grandes","g":"Sistemas de jogo","s":"Jogadas de grande porte: mudanças constitucionais, destino do dinheiro, indicações ao PGR e ao STF, combate à corrupção, incentivos e os índices demográficos do país, com opções para o número de cidades e de nascimentos.","h":"sis-mudancas-grandes.html"},{"t":"Federação","g":"Sistemas de jogo","s":"As decisões federais têm efeitos diferentes em cada um dos 27 estados.","h":"sis-federacao.html"},{"t":"Políticas públicas (jogador)","g":"Sistemas de jogo","s":"Você escolhe políticas de rotina, diretrizes e projetos, e eles aparecem no legado.","h":"sis-politicas.html"},{"t":"Sociedade (jogador)","g":"Sistemas de jogo","s":"Como as decisões chegam às pessoas: renda por quintil, salário mínimo, desemprego e pobreza.","h":"sis-sociedade.html"},{"t":"Eventos e personagens","g":"Sistemas de jogo","s":"Eventos com escolhas, cadeias como CPI, TCU e impeachment, e prestígio de personagens.","h":"sis-eventos.html"},{"t":"Notícias (jogador)","g":"Sistemas de jogo","s":"Manchetes com tom e causa, no jornal do mês e nas redes sociais do notebook.","h":"sis-noticias.html"},{"t":"Eleições e mandatos","g":"Sistemas de jogo","s":"Ao fim do mandato há eleição; a reeleição depende do cenário.","h":"sis-eleicoes.html"},{"t":"Globo 3D","g":"Sistemas de jogo","s":"Mapa interativo do Brasil: relevo, zoom até os estados e mapa de calor por indicador.","h":"sis-globo.html"},{"t":"Estrutura do Congresso","g":"Congresso","s":"O Poder Legislativo é bicameral: duas Casas, com papéis diferentes.","h":"cong-estrutura.html"},{"t":"Tramitação de uma lei","g":"Congresso","s":"Quando você envia uma proposta pelo Gabinete, ela passa por etapas realistas.","h":"cong-tramitacao.html"},{"t":"Como os blocos votam","g":"Congresso","s":"Cada bloco calcula uma pontuação de apoio para cada proposta. Ela soma vários fatores.","h":"cong-apoio.html"},{"t":"Ferramentas de negociação","g":"Congresso","s":"Na subtela Congresso, você tem ações diretas para virar votos. Cada ação gasta uma das suas ações de agenda mensais.","h":"cong-arsenal.html"},{"t":"Conexões com o resto do jogo","g":"Congresso","s":"O Congresso não fica isolado: o que acontece nele mexe na economia, na popularidade e no impeachment.","h":"cong-conexoes.html"},{"t":"Modo Casual","g":"Congresso","s":"A dificuldade Casual tem proteções para quem está aprendendo. As regras abaixo foram conferidas no código.","h":"cong-casual.html"},{"t":"Resumo para guardar","g":"Congresso","s":"Os elementos mais importantes do Congresso e o que acontece se você ignorá-los.","h":"cong-resumo.html"},{"t":"Estado da interface","g":"Camadas técnicas","s":"Store Zustand que liga a interface ao motor e guarda a partida atual.","h":"tec-estado.html"},{"t":"Banco de dados","g":"Camadas técnicas","s":"SQLite com migrações versionadas: o estado e o histórico da partida ficam aqui.","h":"tec-banco.html"},{"t":"Globo (camada técnica)","g":"Camadas técnicas","s":"Renderização 3D com three.js e React Three Fiber, com quadtree, LOD e cache.","h":"tec-globo.html"},{"t":"Dados de conteúdo","g":"Camadas técnicas","s":"Cenários, políticas e eventos em JSON, validados com Zod.","h":"tec-dados.html"},{"t":"Linguagens","g":"Tecnologias","s":"Cinco linguagens, cada uma numa parte diferente: TypeScript no app e no motor, Python só na preparação de dados, GLSL nos shaders do globo, JSON para o conteúdo e HTML, CSS e JavaScript para este site.","h":"stk-linguagens.html"},{"t":"Expo e Expo Router","g":"Tecnologias","s":"Expo é a plataforma que roda, empacota e gera a versão web do app. Expo Router organiza as telas como arquivos dentro de src/app/.","h":"stk-expo.html"},{"t":"React e React Native","g":"Tecnologias","s":"React descreve a interface como componentes. React Native transforma esses componentes em telas nativas no Android e no iPhone. react-native-web leva o mesmo código ao navegador.","h":"stk-react.html"},{"t":"Zustand e Zod","g":"Tecnologias","s":"Zustand guarda o estado que a interface usa. Zod valida o conteúdo do jogo antes de ele entrar na partida.","h":"stk-estado.html"},{"t":"Bibliotecas de interface, gesto e animação","g":"Tecnologias","s":"Bibliotecas que dão comportamento às telas: animação, gestos, área segura do aparelho, ícones e imagens.","h":"stk-componentes.html"},{"t":"SQLite: app e testes","g":"Tecnologias","s":"SQLite guarda a partida no aparelho. Nos testes, a mesma base roda pelo módulo SQLite embutido no Node, sem precisar do aparelho.","h":"stk-banco.html"},{"t":"Globo 3D: three, R3F e shaders","g":"Tecnologias","s":"O globo usa three.js, biblioteca de gráficos 3D sobre WebGL, ligada ao React pelo @react-three/fiber. No aparelho, o WebGL vem do expo-gl.","h":"stk-globo.html"},{"t":"Pipeline de dados (Python)","g":"Tecnologias","s":"Um pipeline em Python baixa dados públicos e transforma o resultado nos arquivos que o globo carrega. Roda na máquina de desenvolvimento, nunca no aparelho.","h":"stk-dados.html"},{"t":"Testes e simulações (Vitest)","g":"Tecnologias","s":"Vitest roda os testes do motor, do banco e da lógica de tela. As simulações rodam o motor com estratégias-robô e muitas sementes, para testar o equilíbrio do jogo.","h":"stk-testes.html"},{"t":"Qualidade: TypeScript, ESLint e Prettier","g":"Tecnologias","s":"Três ferramentas checam o código antes de ele entrar: o compilador de tipos, o ESLint e o Prettier. O comando npm run check roda as três e os testes.","h":"stk-qualidade.html"},{"t":"Integração contínua (GitHub Actions)","g":"Tecnologias","s":"A cada push na main e a cada pull request, o GitHub roda a mesma checagem do npm run check em um servidor limpo, com Node 22.","h":"stk-ci.html"},{"t":"npm, Metro e app.json","g":"Tecnologias","s":"npm instala e fixa as dependências. Metro empacota o app. app.json define o que o Expo gera. Os scripts do package.json reúnem os comandos do dia a dia.","h":"stk-ferramentas.html"},{"t":"Este site de documentação","g":"Tecnologias","s":"Páginas de HTML, CSS e JavaScript puros, geradas por um script em Node. Não tem framework nem dependências externas e funciona sem internet.","h":"stk-site.html"},{"t":"Regras que as tecnologias respeitam","g":"Tecnologias","s":"Algumas escolhas técnicas valem para o projeto inteiro. Elas explicam por que o motor é separado e por que o jogo funciona offline.","h":"stk-regras.html"}]</script>
 </body>
 </html>

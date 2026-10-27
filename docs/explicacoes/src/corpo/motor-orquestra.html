@@ -1,0 +1,404 @@
+<h3>1. Visão geral: função pura e determinismo</h3>
+<p>O coração de toda a simulação do <strong>Brasil Simulator</strong> é a função <code>advanceMonth</code>, localizada em <code>src/engine/advanceMonth.ts</code>. Diferente de arquiteturas tradicionais de jogos que mantêm estado mutável em memória ou espalham regras em múltiplos subsistemas com efeitos colaterais, o motor do jogo opera sob um modelo funcional estrito:</p>
+
+<div class="formula">
+  advanceMonth(state: GameState, input: MonthInput, content: GameContent, steps?: readonly MonthStep[]): MonthResult
+</div>
+
+<p>Essa assinatura estabelece regras arquiteturais inegociáveis para qualquer linha de código em <code>src/engine/</code>:</p>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="meta">Pureza estrita</div>
+    <h4>Sem efeitos colaterais nem I/O</h4>
+    <p>A função recebe o estado atual, a entrada do jogador e o conteúdo do cenário, devolvendo um <strong>novo estado</strong> e um <strong>relatório do mês</strong>. Nenhuma propriedade dos objetos de entrada é modificada. O motor não acessa disco, banco de dados SQLite, rede ou chamadas de log em código de produção.</p>
+  </div>
+  <div class="card">
+    <div class="meta">Determinismo de plataforma</div>
+    <h4>Mesma entrada, idêntica saída</h4>
+    <p>A mesma tripla de estado, escolhas do jogador e semente aleatória gera exatamente os mesmos números em qualquer ambiente. A execução é matematicamente idêntica rodando no motor <strong>Hermes</strong> de um celular Android ou iOS e no <strong>V8</strong> dos testes automatizados em Node.js no computador.</p>
+  </div>
+  <div class="card">
+    <div class="meta">Calendário contínuo</div>
+    <h4>Tempo como inteiro indexado</h4>
+    <p>É estritamente proibido o uso de <code>Date.now()</code> ou <code>new Date()</code> no motor. O tempo é modelado como um índice inteiro contínuo <code>monthIndex</code> (onde <code>0</code> equivale a janeiro de 2027), convertido para ano e mês civil pelas funções puras de <code>src/engine/calendar.ts</code>.</p>
+  </div>
+  <div class="card">
+    <div class="meta">Aleatoriedade controlada</div>
+    <h4>PRNG encapsulado no estado</h4>
+    <p>O uso de <code>Math.random()</code> é proibido. Toda a aleatoriedade decorre de um gerador pseudoaleatório com semente serializado no próprio <code>GameState.rng</code>. Salvar e carregar uma partida retoma a sequência exata de sorteios futuros sem qualquer desvio estatístico.</p>
+  </div>
+</div>
+
+<div class="callout ok">
+  <strong>Contrato de imutabilidade defensiva</strong>
+  Todas as decisões aceitas do jogador são clonadas pelo motor através de <code>copyDecision</code> antes de ingressarem no histórico <code>decisionLog</code>. Isso garante que alterações posteriores feitas pela interface do usuário ou pelas camadas de apresentação nunca corrompam o histórico de simulação.
+</div>
+
+<h3>2. O pipeline mensal: as 15 etapas sequenciais</h3>
+<p>O processamento de um turno avança através de uma cadeia ordenada de 15 etapas padronizadas (<code>DEFAULT_STEPS</code>). Cada etapa é uma função pura do tipo <code>MonthStep</code> que recebe o estado acumulado da etapa anterior e o contexto de execução, produzindo o estado atualizado e as contribuições explicativas geradas naquele estágio.</p>
+
+<div class="flow" aria-label="Pipeline de etapas do mês">
+  <div class="step stage">
+    <b>1. Resolução de eventos pendentes (<code>resolveEventsStep</code>)</b>
+    <span>Aplica as escolhas do jogador aos eventos que estavam aguardando resposta na caixa de entrada do mês anterior.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>2. Gabinete ministerial (<code>cabinetStep</code>)</b>
+    <span>Calcula a eficiência das pastas com ministros técnicos e os ganhos de apoio ou desgastes de aliança de ministros indicados por blocos parlamentares.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>3. Propostas legislativas (<code>proposalsStep</code>)</b>
+    <span>Insere novas propostas aceitas na fila de tramitação, processa sanções, vetos presidenciais e eventuais intervenções judiciais do STF.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>4. Congresso Nacional (<code>congressStep</code>)</b>
+    <span>Mede a ocupação da pauta, sorteia relatores, aplica desidratações de texto e pendura de jabutis, verifica o pedágio de emendas e processa votações na Câmara e no Senado.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>5. Políticas públicas (<code>publicPoliciesStep</code>)</b>
+    <span>Atualiza as rotinas ministeriais ativas, deduz gastos discricionários fixados nas diretrizes e acompanha as marcas prioritárias de governo.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>6. Perfil ideológico do governo (<code>governmentProfileStep</code>)</b>
+    <span>Atualiza a média móvel das posições do governo nos eixos econômico e social [−1, 1], conforme as políticas e reformas apoiadas ou vetadas.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>7. Evolução climática (<code>climateEvolutionStep</code>)</b>
+    <span>Evolui o ciclo ENSO (El Niño / La Niña), atualiza anomalias de precipitação e seca nas 27 UFs e calcula o choque de oferta agregado antes da economia.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>8. Motor econômico (<code>economyStep</code>)</b>
+    <span>Calcula PIB potencial, hiato do produto, inflação IPCA, reunião do Copom/Selic, câmbio, contas públicas (receitas, despesas obrigatórias e discricionárias), superávit primário e dívida pública.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>9. Sociedade e bem-estar (<code>societyStep</code>)</b>
+    <span>Distribui a renda real pelas classes A a E e quintis da população, apura o impacto do salário mínimo, taxa de pobreza e índice de desigualdade de Gini.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>10. Opinião pública e política (<code>opinionStep</code>)</b>
+    <span>Calcula a aprovação presidencial e o capital político a partir dos indicadores econômicos e sociais, amortecidos pela curva de lua de mel.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>11. Sistema eleitoral (<code>electionsStep</code>)</b>
+    <span>Calcula a intenção de voto com base na memória ponderada do eleitor (janela móvel de até 24 meses) e apura os pleitos municipais ou gerais nos meses de eleição.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>12. Distribuição federativa (<code>regionsStep</code>)</b>
+    <span>Distribui os totais nacionais entre as 27 UFs: atividade econômica estadual, desemprego local, aprovação regional e danos do clima por unidade da federação.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>13. Transição de governadores (<code>governorTurnoverStep</code>)</b>
+    <span>Processa a posse dos governadores eleitos após a eleição geral, redefinindo as relações políticas estaduais para a nova gestão.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step stage">
+    <b>14. Resultado eleitoral regional (<code>electionResultStep</code>)</b>
+    <span>Consolida a distribuição de votos por UF na eleição geral, apurando a votação simulada sem consumir novos sorteios de PRNG.</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="step end">
+    <b>15. Sorteio de novos eventos (<code>triggerEventsStep</code>)</b>
+    <span>Verifica gatilhos e sorteia novos eventos baseando-se no estado final estabilizado do mês, enviando-os para a caixa de entrada do próximo turno.</span>
+  </div>
+</div>
+
+<h3>3. A lógica das dependências e da ordenação causal</h3>
+<p>A sequência das etapas não é arbitrária; ela reflete contratos de causa e efeito indispensáveis para o realismo institucional e a estabilidade matemática da simulação:</p>
+
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>Relação de ordem</th>
+        <th>Por que ocorre nesta posição?</th>
+        <th>O que aconteceria se a ordem fosse invertida?</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Eventos e Gabinete antes do Congresso</strong></td>
+        <td>Respostas a crises emergenciais e trocas ministeriais alteram a relação com os partidos e o capital político imediatamente, determinando a base de apoio parlamentar.</td>
+        <td>Votações em plenário usariam o apoio da bancada desatualizado, ignorando a nomeação ou demissão feita no mesmo turno.</td>
+      </tr>
+      <tr>
+        <td><strong>Congresso e Políticas antes da Economia</strong></td>
+        <td>Propostas legislativas aprovadas, sancionadas ou vetadas no mês (novos tributos, tetos de despesas, auxílios) alteram a legislação e os parâmetros orçamentários.</td>
+        <td>O motor econômico fecharia o resultado fiscal com as regras antigas, gerando defasagem artificial de um mês nas contas da União.</td>
+      </tr>
+      <tr>
+        <td><strong>Clima antes da Economia</strong></td>
+        <td>Eventos climáticos extremos (secas em bacias hidroelétricas e polos agrícolas) configuram choques exógenos de oferta que afetam a safra, os preços de alimentos e a energia.</td>
+        <td>O cálculo do PIB e da inflação do IPCA não capturaria o impacto imediato das quebras de safra na curva de Phillips do mesmo mês.</td>
+      </tr>
+      <tr>
+        <td><strong>Economia antes de Sociedade e Opinião</strong></td>
+        <td>O bem-estar das famílias (renda real, linha de pobreza) e a popularidade do Presidente dependem das variáveis de resultado da economia: desemprego, inflação e transferências.</td>
+        <td>A aprovação popular reagiria aos números defasados do mês anterior, quebrando a causalidade direta entre choques econômicos e avaliação do governo.</td>
+      </tr>
+      <tr>
+        <td><strong>Eleições antes de Regiões</strong> (Contrato PR #9)</td>
+        <td>A apuração da intenção de voto nacional e o impacto do pleito no ânimo cívico consolidam o vetor de aprovação antes que ele seja repartido federativamente.</td>
+        <td>A distribuição de indicadores regionais utilizaria uma média nacional desatualizada, violando o fechamento da Invariante 9.</td>
+      </tr>
+      <tr>
+        <td><strong>Posse de Governadores após Regiões</strong> (Contrato PR #9)</td>
+        <td>A transição dos executivos estaduais (<code>governorTurnoverStep</code>) ocorre após a apuração regional do mês para que o novo governador inicie com a relação política limpa.</td>
+        <td>O novo mandatário estadual seria injustamente penalizado pela evolução econômica e pelo humor popular do mês anterior, período em que ainda não governava.</td>
+      </tr>
+      <tr>
+        <td><strong>Novos Eventos por último</strong></td>
+        <td>O sorteador de eventos (<code>triggerEventsStep</code>) precisa examinar o estado consolidado ao final do mês (nível de dívida, inflação acumulada, tensão social e escândalos).</td>
+        <td>Eventos de crise econômica seriam sorteados sem detectar que o governo acabou de estourar o limite de despesas ou atingir inflação recorde no mesmo turno.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>4. Triagem de agenda e travas institucionais (<code>screenInput</code>)</h3>
+<p>Antes de executar qualquer etapa, <code>advanceMonth</code> submete os dados enviados pelo jogador à função de triagem <code>screenInput</code>. O Presidente possui um recurso restrito: o total de <strong>ações de agenda por mês</strong> (<code>resources.agendaActionsPerMonth</code>). A triagem valida a viabilidade jurídica e orçamentária de cada decisão.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="meta">Prioridade absoluta</div>
+    <h4>Respostas a eventos primeiro</h4>
+    <p>As escolhas enviadas para eventos pendentes consom ações de agenda antes de qualquer proposta de governo. Se o jogador tiver poucas ações, responder a crises graves consome a cota, impedindo novos projetos de lei no mesmo mês.</p>
+  </div>
+  <div class="card">
+    <div class="meta">Integridade do catálogo</div>
+    <h4>Custo oficial inviolável</h4>
+    <p>O custo de agenda de cada política ou ação é extraído exclusivamente das definições estáticas do catálogo (<code>content.policies</code> e <code>AGENDA_ACTIONS</code>). Qualquer custo arbitrário ou adulterado enviado pela interface é descartado.</p>
+  </div>
+</div>
+
+<h4>Travas constitucionais e eleitorais</h4>
+<p>A triagem implementa de forma rigorosa as restrições da legislação brasileira:</p>
+
+<div class="callout warn">
+  <strong>Trava Constitucional: Vedação de Reedição de MP (CF art. 62 §10)</strong>
+  A Constituição proíbe a reedição, na mesma sessão legislativa (ano civil), de Medida Provisória rejeitada ou que tenha perdido a eficácia por decurso de prazo (caducidade). A função <code>reissueBarredPolicies</code> rastreia o histórico de propostas do ano corrente. Se o jogador tentar reenviar a mesma MP rejeitada no mesmo ano, a decisão é bloqueada sumariamente com o motivo <code>reedicao_vedada</code>.
+</div>
+
+<div class="callout danger">
+  <strong>Vedação Eleitoral: Proibição de Novos Benefícios (Lei 9.504/1997 art. 73 §10)</strong>
+  Nos <strong>3 meses que antecedem as eleições municipais e gerais</strong>, a legislação eleitoral proíbe a criação ou distribuição gratuita de novos benefícios sociais.
+  <ul class="bullets">
+    <li>A função <code>isNovoBeneficio</code> identifica se a proposta expande despesas obrigatórias, salário mínimo real ou transferências diretas de renda.</li>
+    <li>Se o período estiver ativo (<code>vedacaoAtiva</code>), a política é rejeitada com o código <code>vedacao_eleitoral</code>.</li>
+    <li>O jogador pode forçar a aprovação declarando a quebra intencional via <code>decision.params.vedacao_bypass = true</code>. Nesse caso, a proposta tramita, mas o motor agenda penalidades mensais na intenção de voto e risco de multas graves de popularidade.</li>
+    <li>No modo de dificuldade <em>Casual</em>, essa restrição é desativada para simplificar o aprendizado.</li>
+  </ul>
+</div>
+
+<p>Além dessas regras, a triagem confere se a proposta já está em tramitação (<code>ja_em_andamento</code>), se a ação sobre aquele alvo já foi realizada no mês (<code>acao_repetida</code>), se a política pertence ao cenário e se há saldo suficiente de ações de agenda (<code>sem_acoes_de_agenda</code>).</p>
+
+<h3>5. Rastreabilidade contábil: "Por que mudou?" e a Invariante 3</h3>
+<p>Nenhum indicador do jogo varia como uma "caixa preta". Toda movimentação sofrida pelos indicadores nacionais (inflação, PIB, desemprego, aprovação, etc.) deve gerar uma ou mais estruturas de rastreamento denominadas <code>Contribution</code>:</p>
+
+<div class="formula">
+  interface Contribution { indicator: IndicatorKey | 'votingIntention'; cause: string; delta: number; }
+</div>
+
+<p>Ao término de cada etapa, a função <code>applyContributions</code> aplica os deltas calculados aos indicadores do <code>GameState</code>. Essa mecânica sustenta a <strong>Invariante 3</strong> de <code>src/engine/invariants.ts</code>:</p>
+
+<div class="callout ok">
+  <strong>Invariante 3 (ECONOMIC_MODEL.md §7.3): Conservação de variações</strong>
+  Para cada indicador de resultado do jogo, a diferença entre o valor final e o valor inicial do turno deve ser <strong>rigorosamente igual à soma de todas as contribuições registradas no relatório mensal</strong>:
+  <br><br>
+  <code>| (next.indicators[k] - prev.indicators[k]) - Σ contributions[k] | &lt; 1e-9</code>
+  <br><br>
+  Se uma etapa alterar um indicador sem registrar a contribuição correspondente, ou se a soma divergir por mais de 0,000000001, a bateria de testes quebra imediatamente. Isso assegura que a subtela de Economia e os relatórios sempre consigam explicar ao jogador as causas exatas de cada movimento.
+</div>
+
+<h3>6. Gerador pseudoaleatório determinístico (RNG)</h3>
+<p>O motor não depende de geradores do sistema operacional. O módulo <code>src/engine/rng.ts</code> implementa o algoritmo <strong>sfc32</strong> (<em>Small Fast Chaotic</em> de Chris Doty-Humphrey), com estado interno mantido em quatro palavras de 32 bits sem sinal: <code>[a, b, c, d]</code>.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="meta">Inicialização segura</div>
+    <h4>splitmix32 e avalanche</h4>
+    <p>A função <code>seedRng(seed)</code> utiliza o gerador <strong>splitmix32</strong> combinado com o finalizador de 32 bits do <strong>MurmurHash3</strong> (função <code>mix32</code>) para dispersar a semente inicial nas quatro palavras de estado, descartando as primeiras 15 iterações para garantir dispersão estatística completa.</p>
+  </div>
+  <div class="card">
+    <div class="meta">Subsubsistemas isolados</div>
+    <h4>Sementes derivadas (sal estável)</h4>
+    <p>A função <code>deriveSeed(seed, salt)</code> permite que subsistemas paralelos — como a simulação do clima — recebam um gerador PRNG próprio a partir da semente da campanha. Isso garante que a evolução do clima nunca consuma números aleatórios da linha do tempo da política ou do Congresso.</p>
+  </div>
+</div>
+
+<h4>Por que Irwin-Hall em vez de Box-Muller?</h4>
+<p>Para gerar números com distribuição normal (usados em ruídos de mercado e choques de produtividade), a maioria dos motores gráficos e jogos usa a transformada de Box-Muller. No entanto, Box-Muller utiliza <code>Math.log()</code> e <code>Math.cos()</code>, que dependem das funções transcendentais da biblioteca C (libm) do sistema operacional, variando no último bit entre processadores ARM e x86 ou entre os motores Hermes e V8.</p>
+
+<p>Por essa razão, o <strong>Brasil Simulator</strong> adota a <strong>aproximação de Irwin-Hall com 12 uniformes</strong>:</p>
+
+<div class="formula">
+  normal() = (Σ_{i=1}^{12} float()) - 6
+</div>
+
+<p>Essa fórmula tem média exata <code>0</code>, desvio-padrão unitário <code>1</code> e opera estritamente com adições e divisões de ponto flutuante padrão IEEE 754, garantindo reproducibilidade matemática absoluta entre celulares e computadores.</p>
+
+<h3>7. Fila de impulsos com defasagem (<code>ScheduledImpulse</code>) e poda</h3>
+<p>Na teoria macroeconômica, medidas fiscais e reformas estruturais não surtem efeito instantâneo. Uma obra de infraestrutura leva meses para ser executada e uma reforma tributária possui regras de transição. O motor utiliza uma fila de efeitos agendados (<code>ScheduledImpulse</code>), gerenciada por <code>src/engine/impulses.ts</code>:</p>
+
+<div class="formula">
+  interface ScheduledImpulse { id: string; target: ImpulseTarget; startMonth: number; endMonth: number | null; delta: number; source?: string; }
+</div>
+
+<ul class="bullets">
+  <li><strong>Ativação temporal:</strong> a função <code>activeImpulses(impulses, monthIndex, targets)</code> filtra apenas os impulsos que atendem à condição <code>startMonth &le; monthIndex && (endMonth === null || endMonth &ge; monthIndex)</code>.</li>
+  <li><strong>Agregação linear:</strong> a função <code>sumActive</code> calcula o impacto líquido acumulado sobre um alvo no mês corrente.</li>
+  <li><strong>Poda automática (<code>pruneImpulses</code>):</strong> ao fim de cada mês, <code>advanceMonth</code> remove todos os impulsos temporários cujo prazo já expirou (<code>endMonth &lt; nextMonth</code>). Isso evita o crescimento infinito da memória e mantém o arquivo de save do banco de dados compacto.</li>
+</ul>
+
+<h3>8. Garantia contábil via invariantes de simulação</h3>
+<p>O arquivo <code>src/engine/invariants.ts</code> executa uma auditoria completa após cada avanço de mês durante testes de integração e simulações com bots automatizados. Nenhuma release é aprovada se houver violação das identidades contábeis estabelecidas em <code>ECONOMIC_MODEL.md §7</code>:</p>
+
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>Invariante</th>
+        <th>Regra auditada</th>
+        <th>Tolerância</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>§7.1 Primário do mês</strong></td>
+        <td>O resultado primário mensal deve ser rigorosamente igual à receita líquida menos a despesa primária total (<code>revenue - primarySpending</code>).</td>
+        <td><code>1e-9</code></td>
+      </tr>
+      <tr>
+        <td><strong>§7.2 Dinâmica da dívida</strong></td>
+        <td>A dívida pública bruta do final do mês deve fechar com a dívida anterior somada aos juros apropriados menos o primário do mês e o ajuste patrimonial de estoque.</td>
+        <td><code>1e-9</code></td>
+      </tr>
+      <tr>
+        <td><strong>§7.3 Contribuições</strong></td>
+        <td>A variação mensal de todo indicador quantitativo deve equivaler à soma exata das contribuições registradas no relatório.</td>
+        <td><code>1e-9</code></td>
+      </tr>
+      <tr>
+        <td><strong>§7.4 Limite de despesas</strong></td>
+        <td>A despesa primária sujeita ao arcabouço fiscal não pode ultrapassar o teto vigente somado às exceções e créditos extraordinários legalmente autorizados.</td>
+        <td><code>1e-9</code></td>
+      </tr>
+      <tr>
+        <td><strong>§7.5 Domínio físico</strong></td>
+        <td>Taxa de desemprego deve estar em <code>(0, 1)</code>, aprovação em <code>[0, 1]</code>, Selic &ge; 0, credibilidade em <code>[0, 1]</code> e capital político em <code>[0, 100]</code>.</td>
+        <td>Exato</td>
+      </tr>
+      <tr>
+        <td><strong>§7.6 Finitude</strong></td>
+        <td>Varredura recursiva completa de todas as propriedades numéricas do estado para certificar ausência de <code>NaN</code> ou <code>Infinity</code>.</td>
+        <td>Exato</td>
+      </tr>
+      <tr>
+        <td><strong>§7.9 Federação</strong></td>
+        <td>As participações das 27 UFs no PIB devem somar exatamente <code>1.0</code>, e as médias ponderadas de aprovação e desemprego estaduais devem bater os agregados nacionais.</td>
+        <td><code>1e-9</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>9. Migração progressiva de saves em cascata (<code>upgrade.ts</code>)</h3>
+<p>Conforme estabelecido nas regras de engenharia (<code>AI_INSTRUCTIONS.md §3</code>), campanhas salvas em versões anteriores do motor <strong>nunca são rejeitadas nem descartadas</strong>. O arquivo <code>src/engine/upgrade.ts</code> implementa uma escada de migração progressiva através de <code>upgradeGameState</code>:</p>
+
+<div class="chain">
+  <span class="node">v1</span><span class="sep">→</span>
+  <span class="node">v2</span><span class="sep">→</span>
+  <span class="node">v3</span><span class="sep">→</span>
+  <span class="node">v4</span><span class="sep">→</span>
+  <span class="node">v5</span><span class="sep">→</span>
+  <span class="node">v6</span><span class="sep">→</span>
+  <span class="node">v7</span><span class="sep">→</span>
+  <span class="node">v8</span><span class="sep">→</span>
+  <span class="node">v9</span><span class="sep">→</span>
+  <span class="node">v10</span><span class="sep">→</span>
+  <span class="node">v11</span><span class="sep">→</span>
+  <span class="node good">v12</span>
+</div>
+
+<p>Se o save possuir versão superior à conhecida pelo aplicativo, é lançado o erro explícito <code>SaveTooNewError</code>. Caso contrário, cada migração individual injeta os blocos e campos novos de forma neutra, determinística e sem consumir sorteios do PRNG:</p>
+
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>Migração</th>
+        <th>Campos e estruturas introduzidos</th>
+        <th>Estratégia de compatibilidade</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>v1 → v2</code></td>
+        <td>Economia básica, Congresso, propostas, fila de impulsos e controle de eventos.</td>
+        <td>Injeta valores econômicos padrão provisórios; blocos parlamentares herdam relações do cenário.</td>
+      </tr>
+      <tr>
+        <td><code>v2 → v3</code></td>
+        <td>Níveis de preço e PIB potencial, setor externo, pressão sobre o Banco Central e partição fiscal por grupos.</td>
+        <td>Normaliza índices de nível em <code>1.0</code> e calcula despesas obrigatórias a partir da receita do próprio save.</td>
+      </tr>
+      <tr>
+        <td><code>v3 → v4</code></td>
+        <td>Gabinete de ministros, etapas de tramitação, relatores sorteados, jabutis, sanção/veto e ações no STF.</td>
+        <td>Propostas em tramitação reiniciam a pauta na Câmara; projetos já concluídos recebem a etapa final (4).</td>
+      </tr>
+      <tr>
+        <td><code>v4 → v5</code></td>
+        <td>Federação (27 UFs) e adesão de estados a políticas nacionais.</td>
+        <td>Lista de UFs inicializada vazia para ser gerada pelas participações estruturais no mês subsequente.</td>
+      </tr>
+      <tr>
+        <td><code>v5 → v6</code></td>
+        <td>Sociedade (classes A a E, quintis de renda) e estrutura de políticas públicas.</td>
+        <td>Gera a sociedade inicial compatível com o nível de PIB e emprego já existente no save.</td>
+      </tr>
+      <tr>
+        <td><code>v6 → v7</code></td>
+        <td>Marcas e flags de eventos, cadeias agendadas, prestígio de personagens e arquivo de notícias.</td>
+        <td>Listas iniciadas vazias, preservando contadores e histórico de eventos disparados.</td>
+      </tr>
+      <tr>
+        <td><code>v7 → v8</code></td>
+        <td>Estado eleitoral (<code>politics</code>), intenção de voto e memória curta do eleitor.</td>
+        <td>Campo criado dinamicamente no primeiro mês processado se o cenário possuir eleições.</td>
+      </tr>
+      <tr>
+        <td><code>v8 → v9</code></td>
+        <td>Renomeação de "pontos de agenda" para "ações de agenda" (<code>resources.agendaActionsPerMonth</code>).</td>
+        <td>Migração semântica de propriedade, preservando o valor numérico acumulado.</td>
+      </tr>
+      <tr>
+        <td><code>v9 → v10</code></td>
+        <td>Perfil ideológico do governo (<code>government.profile</code>).</td>
+        <td>Inicia com perfil neutro <code>{ economic: 0, social: 0 }</code>, sem distorcer o posicionamento das UFs.</td>
+      </tr>
+      <tr>
+        <td><code>v10 → v11</code></td>
+        <td>Módulo climático nacional e estadual (<code>climate</code>).</td>
+        <td>Inicia neutro (ENSO 0, chuva e seca zeradas). O PRNG do clima é derivado da semente original do save (<code>seed</code>) com sal fixo.</td>
+      </tr>
+      <tr>
+        <td><code>v11 → v12</code></td>
+        <td>Identidade única (<code>instanceId</code>) e localização geográfica (<code>location</code>) de eventos pendentes.</td>
+        <td>Eventos legados recebem <code>instanceId = eventId#mês</code> e localização nacional, sem inventar sorteios retrospectivos.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

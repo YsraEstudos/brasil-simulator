@@ -266,4 +266,84 @@
       janela.querySelector('.janela-fechar').focus();
     });
   });
+
+  // Gavetas laterais (Drawers deslizantes à direita) acionadas por [data-gaveta="id-da-gaveta"]
+  function inicializarGavetas() {
+    var overlay = document.getElementById('gaveta-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'gaveta-overlay';
+      overlay.className = 'gaveta-overlay';
+      overlay.hidden = true;
+      document.body.appendChild(overlay);
+    }
+
+    function fecharTodasGavetas() {
+      var gavetas = document.querySelectorAll('.gaveta-lateral.aberto');
+      gavetas.forEach(function (gaveta) {
+        gaveta.classList.remove('aberto');
+        setTimeout(function () {
+          if (!gaveta.classList.contains('aberto')) {
+            gaveta.hidden = true;
+          }
+        }, 320);
+      });
+      overlay.classList.remove('aberto');
+      setTimeout(function () {
+        if (!overlay.classList.contains('aberto')) {
+          overlay.hidden = true;
+        }
+      }, 320);
+      document.body.classList.remove('gaveta-ativa');
+    }
+
+    function abrirGaveta(id) {
+      var gaveta = document.getElementById(id);
+      if (!gaveta) return;
+      // Garante overlay visível
+      overlay.hidden = false;
+      overlay.offsetHeight;
+      overlay.classList.add('aberto');
+
+      gaveta.hidden = false;
+      gaveta.offsetHeight; // Força reflow para transição CSS suave
+      gaveta.classList.add('aberto');
+      document.body.classList.add('gaveta-ativa');
+
+      var botaoFechar = gaveta.querySelector('.gaveta-fechar');
+      if (botaoFechar) botaoFechar.focus();
+    }
+
+    document.addEventListener('click', function (e) {
+      var gatilho = e.target.closest ? e.target.closest('[data-gaveta]') : null;
+      if (gatilho) {
+        e.preventDefault();
+        var id = gatilho.getAttribute('data-gaveta');
+        abrirGaveta(id);
+        return;
+      }
+
+      if (e.target.closest && e.target.closest('[data-fecha-gaveta], .gaveta-fechar')) {
+        e.preventDefault();
+        fecharTodasGavetas();
+        return;
+      }
+
+      if (e.target === overlay) {
+        fecharTodasGavetas();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        var aberta = document.querySelector('.gaveta-lateral.aberto');
+        if (aberta) {
+          e.preventDefault();
+          fecharTodasGavetas();
+        }
+      }
+    });
+  }
+
+  inicializarGavetas();
 })();

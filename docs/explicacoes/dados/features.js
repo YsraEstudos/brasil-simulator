@@ -722,6 +722,157 @@ window.FEATURES_DADOS = {
       ]
     },
     {
+      "id": "cat-redes-sociais",
+      "nome": "Redes Sociais",
+      "features": [
+        {
+          "id": "feat-redes-x",
+          "titulo": "Feed de Notícias & Debates Rápidos (Inspirado no X / Twitter)",
+          "descricao": "Rede voltada para a elite política, jornalistas e militância. Postagens curtas de texto, threads, Trending Topics e guerra de narrativas em tempo real.",
+          "concluida": false,
+          "cor": "amarelo",
+          "tamanho": "g",
+          "itens": [
+            {
+              "id": "it-rx-1",
+              "texto": "Feed dinâmico com postagens em tempo real de ministros, bancadas aliadas, oposição e imprensa",
+              "feito": false
+            },
+            {
+              "id": "it-rx-2",
+              "texto": "Trending Topics: ranking dinâmico dos 10 assuntos mais comentados nacionalmente e por estado",
+              "feito": false
+            },
+            {
+              "id": "it-rx-3",
+              "texto": "Ação de Publicação: tom institucional, ataque/combate, descontraído/meme ou fato novo",
+              "feito": false
+            },
+            {
+              "id": "it-rx-4",
+              "texto": "Mecânica de Ratio e Cancelamento: post mal calibrado gera tempestade de críticas e perda de valência",
+              "feito": false
+            },
+            {
+              "id": "it-rx-5",
+              "texto": "Militância coordenada: apoiadores fervorosos sobem hashtags e rebatem críticas de adversários",
+              "feito": false
+            }
+          ],
+          "html": "<p><b>O papel do X (antigo Twitter) na política nacional:</b> onde a bolha política, os jornalistas, os parlamentares e a militância partidária se encontram minuto a minuto para disputar a narrativa pública.</p><h4>Mecânicas no jogo</h4><ul><li><b>Feed dinâmico em tempo real:</b> o jogador acompanha publicações instantâneas de deputados da base, adversários ferrenhos, ministros e veículos de imprensa reagindo a votações e decisões presidenciais.</li><li><b>Trending Topics (Assuntos do Momento):</b> lista dos 10 tópicos mais comentados do país e filtros por estado (ex.: <i>#VotaReforma</i>, <i>#CriseNaSaúde</i>, <i>#EscandaloDosMinisterios</i>, <i>#PreçoDaGasolina</i>). Subir uma hashtag governista ajuda a pautar a imprensa.</li><li><b>Ação de Publicação:</b> o candidato/presidente pode postar escolhendo o tom:<ul><li><i>Comunicado Institucional:</i> postura sóbria, ganha respeito institucional e estabiliza crises.</li><li><i>Ataque / Combate:</i> fustiga rivais e empolga a militância radical, mas eleva a rejeição entre moderados.</li><li><i>Descontraído / Meme:</i> humaniza a figura pública e quebra o gelo com eleitores jovens.</li><li><i>Fato Novo:</i> lança um anúncio surpresa antes da cobertura do Jornal Nacional.</li></ul></li><li><b>Gafes, Ratio e Cancelamento:</b> declarações polêmicas ou contradições passadas podem receber o infame <i>Ratio</i> (quando as respostas críticas superam os likes), gerando manchete negativa no jornal do mês e perda imediata de valência.</li><li><b>Militância Coordenada:</b> eleitores leais e influenciadores alinhados defendem o candidato em massa nos comentários, amortecendo ataques adversários.</li></ul><h4>Impacto no Motor Eleitoral</h4><p>O X não é a rede mais populosa, mas é o epicentro da formação de opinião. Movimentações fortes no X afetam a <b>Reputação (Valência)</b>, a pressão sobre os líderes partidários no Congresso e as manchetes da imprensa tradicional.</p>"
+        },
+        {
+          "id": "feat-redes-instagram",
+          "titulo": "Feed Visual, Stories & Vídeos Curtos (Inspirado no Instagram / Reels)",
+          "descricao": "Rede de alcance de massa para humanização do candidato. Fotos de comícios, bastidores da campanha, pílulas verticais (Reels) e lives.",
+          "concluida": false,
+          "cor": "amarelo",
+          "tamanho": "g",
+          "itens": [
+            {
+              "id": "it-insta-1",
+              "texto": "Feed de fotos e carrosséis: multidões em comícios, propostas em infográficos e fotos humanizadas",
+              "feito": false
+            },
+            {
+              "id": "it-insta-2",
+              "texto": "Stories de bastidores: registros do dia a dia (café na feira, bastidores) geram bônus de proximidade",
+              "feito": false
+            },
+            {
+              "id": "it-insta-3",
+              "texto": "Produção de Reels e Shorts: vídeos verticais curtos com legendas dinâmicas e cortes rápidos de discursos",
+              "feito": false
+            },
+            {
+              "id": "it-insta-4",
+              "texto": "Transmissões ao vivo (Lives): diálogo direto com os cidadãos (alto carisma, risco de gafes ao vivo)",
+              "feito": false
+            },
+            {
+              "id": "it-insta-5",
+              "texto": "Algoritmo de recomendação: retenção nos primeiros 3 segundos entrega o vídeo para eleitores indecisos",
+              "feito": false
+            }
+          ],
+          "html": "<p><b>O papel do Instagram / Reels na campanha:</b> o canal direto para furar a bolha de Brasília e conversar com as famílias, jovens e o eleitor comum que não lê colunas de política.</p><h4>Mecânicas no jogo</h4><ul><li><b>Feed Visual & Carrosséis:</b> publicação de fotos de comícios com multidões, carrosséis explicativos de propostas populares (com design simples) e registros humanizados do candidato comendo pastel na feira ou ao lado da família.</li><li><b>Stories do Dia a Dia (Conteúdo Efêmero):</b> pequenos vídeos gravados com celular no carro ou bastidores de reuniões. Concedem bônus temporário de proximidade e carisma com eleitores indecisos a cada turno.</li><li><b>Produção de Vídeos Verticais (Reels & Shorts):</b> edição de cortes dinâmicos de discursos inflamados, respostas certeiras em debates e trechos de entrevistas.<ul><li><i>Algoritmo de Retenção:</i> vídeos com cortes ágeis e legendas chamativas têm chance de furar a bolha, sendo entregues para milhões de eleitores que ainda não seguiam o perfil.</li><li><i>Música e Trend:</i> uso de áudios em alta para multiplicar o alcance orgânico entre o público jovem.</li></ul></li><li><b>Transmissões ao Vivo (Lives de Campanha):</b> o candidato abre uma live para dialogar sem filtro com a população.<ul><li><i>Alto Carisma:</i> se o candidato tem boa oratória, a live bate recordes de audiência e gera sentimento de autenticidade.</li><li><i>Risco de Gafe:</i> ao vivo não tem edição; caso o candidato se exalte ou erre dados essenciais, o trecho é recortado pela oposição imediatamente.</li></ul></li></ul><h4>Impacto no Motor Eleitoral</h4><p>O Instagram e os vídeos curtos são a principal alavanca para subir o <b>Reconhecimento (% do eleitorado nacional que sabe quem você é)</b> e amenizar a taxa de rejeição através da empatia visual.</p>"
+        },
+        {
+          "id": "feat-redes-metricas",
+          "titulo": "Painel de Métricas & Analytics (Social Dashboard)",
+          "descricao": "Central de dados digitais: acompanhamento de seguidores por estado, taxa de engajamento, alcance orgânico vs pago e termômetro de sentimento.",
+          "concluida": false,
+          "cor": "amarelo",
+          "tamanho": "g",
+          "itens": [
+            {
+              "id": "it-met-1",
+              "texto": "Contador de seguidores por rede e curva de crescimento comparada aos rivais na corrida eleitoral",
+              "feito": false
+            },
+            {
+              "id": "it-met-2",
+              "texto": "Métricas de engajamento: curtidas, compartilhamentos, comentários e taxa média de retenção de vídeo",
+              "feito": false
+            },
+            {
+              "id": "it-met-3",
+              "texto": "Tráfego pago eleitoral (Impulsionamento): investimento financeiro com segmentação estadual e trava do TSE",
+              "feito": false
+            },
+            {
+              "id": "it-met-4",
+              "texto": "Termômetro de sentimento: divisão do público em Apoiadores Fervorosos, Neutros Curiosos e Rejeição/Hate",
+              "feito": false
+            },
+            {
+              "id": "it-met-5",
+              "texto": "Mapa de calor digital: visualização de penetração digital por UF para calibrar viagens e comícios",
+              "feito": false
+            }
+          ],
+          "html": "<p><b>Central de Inteligência Digital (Social Dashboard):</b> substitui palpites e achismos por métricas analíticas em tempo real sobre o alcance e a recepção da campanha.</p><h4>Indicadores Monitorados</h4><ul><li><b>Volume de Seguidores:</b> contagem em tempo real de seguidores no X e no Instagram, com gráfico de evolução mensal e comparativo direto contra os candidatos rivais na corrida eleitoral.</li><li><b>Taxas de Engajamento:</b> cálculo de likes, comentários, compartilhamentos e taxa média de retenção nos vídeos (quantos % assistiram até o final).</li><li><b>Termômetro de Sentimento da Comunidade:</b><ul><li><i>Apoiadores Fervorosos (Verde):</i> eleitores engajados que compartilham e defendem a candidatura voluntariamente.</li><li><i>Neutros / Curiosos (Cinza/Azul):</i> eleitores sem partido definido que assistiram aos vídeos; público-alvo de conversão.</li><li><i>Rejeição / Hate (Vermelho):</i> volume de comentários negativos, ataques de opositores e detratores.</li></ul></li><li><b>Tráfego Pago & Impulsionamento Eleitoral:</b> injeção de recursos (Fundo Partidário ou Dinheiro Próprio) para impulsionar postagens.<ul><li><i>Segmentação Geográfica:</i> impulsionar anúncios apenas nos estados onde o candidato é desconhecido (ex.: focar no Nordeste ou Sul).</li><li><i>Trava TSE:</i> prestação de contas automática; o jogo bloqueia impulsionamentos acima do teto legal e veta impulsionamento anônimo.</li></ul></li><li><b>Mapa de Calor Digital:</b> visualização no mapa do Brasil de onde vem a maior parte da sua audiência online vs onde o candidato ainda é um ilustre desconhecido.</li></ul><h4>Conversão em Votos</h4><p>Seguidores digitais não são votos automáticos na urna, mas compõem a base de multiplicadores de votos e elevam o piso de viabilidade eleitoral na pré-campanha.</p>"
+        },
+        {
+          "id": "feat-redes-producao",
+          "titulo": "Estúdio de Criação, Equipe Digital & Viralização",
+          "descricao": "Ações de agenda para gravar vídeos, contratação de assessoria digital, memes, gestão de crises e conversão em Reconhecimento eleitoral.",
+          "concluida": false,
+          "cor": "amarelo",
+          "tamanho": "g",
+          "itens": [
+            {
+              "id": "it-prod-1",
+              "texto": "Ação de agenda Gravar Conteúdo: gasta tempo do candidato para produzir podcasts, entrevistas e pílulas",
+              "feito": false
+            },
+            {
+              "id": "it-prod-2",
+              "texto": "Contratação de equipe digital: da equipe voluntária/amadora à agência de marquetagem de elite",
+              "feito": false
+            },
+            {
+              "id": "it-prod-3",
+              "texto": "Gatilhos de viralização procedural: temas quentes do mês geram bônus de tração de até 5x no algoritmo",
+              "feito": false
+            },
+            {
+              "id": "it-prod-4",
+              "texto": "Gabinete de desmentidos e contenção de crises: combater boatos antes que contaminem a TV aberta",
+              "feito": false
+            },
+            {
+              "id": "it-prod-5",
+              "texto": "Vantagem por perfil: o perfil Deputado Digital / Influencer já começa com estúdio próprio e bônus de tração",
+              "feito": false
+            }
+          ],
+          "html": "<p><b>A Fábrica de Conteúdo Digital:</b> estruturação profissional da máquina de comunicação da campanha para transformar presença online em capital político real.</p><h4>Mecânicas no jogo</h4><ul><li><b>Ação de Agenda Gravar Conteúdo:</b> gravar podcasts, pílulas de vídeo e sabatinas consome blocos da agenda mensal do candidato, competindo com reuniões no Congresso ou viagens de palanque.</li><li><b>Níveis de Estrutura de Marketing Digital:</b><ul><li><i>Estrutura Amadora (Custo zero):</i> voluntários e assessores imediatos gravam no celular. Produção irregular, baixa qualidade técnica e risco elevado de gafes.</li><li><i>Equipe Digital Profissional (R$ 80.000/mês):</i> videomakers dedicados, editores de corte rápido, roteiristas de pílulas e monitoramento contínuo de tendências.</li><li><i>Agência de Elite & Marqueteiro Estrela (R$ 350.000/mês):</i> estúdio cinematográfico, análise preditiva com inteligência de dados, produção de narrativas de alta persuasão e blindagem de imagem.</li></ul></li><li><b>Gatilhos Procedurais de Viralização:</b> quando um evento do mês estoura (ex.: alta dos alimentos, operação policial, desastre climático), o candidato pode lançar uma resposta rápida. Respostas ágeis recebem bônus de tração de até 5x no algoritmo.</li><li><b>Gabinete de Crise & Desmentidos:</b> equipe de checagem para publicar contraprovas e notas ágeis antes que um boato viralize a ponto de ir para o horário eleitoral na TV.</li><li><b>Sinergia com Perfil de Candidatura:</b><ul><li><i>Deputado Digital / Influencer:</i> começa já com estúdio próprio montado, milhões de seguidores herdados e bônus passivo de +40% no alcance de todas as postagens digitais com custo zero.</li><li><i>Líder Sindical / Popular:</i> começa com baixa presença digital, mas suas postagens ganham forte tração orgânica em grupos comunitários e sindicais.</li><li><i>Empresário / Faria Lima:</i> pode contratar a agência de elite logo no primeiro mês graças ao seu patrimônio inicial de autofinanciamento.</li></ul></li></ul>"
+        }
+      ],
+      "pastas": []
+    },
+    {
       "id": "cat-mvi7h9m71",
       "nome": "Ideais a se condiderar",
       "features": [],
