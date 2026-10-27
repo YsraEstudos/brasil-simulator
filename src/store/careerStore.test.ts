@@ -81,11 +81,14 @@ describe('store com a partida que começa na corrida (PLANO_CAMPANHA.md §2.3)',
     expect(atPosse.state.career).toMatchObject({ stage: 'governo', turnIndex: PRE_TURNS });
     expect(atPosse.lastReport!.notes).toContain(INAUGURATION_NOTE);
     expect(atPosse.baseline).toEqual(atPosse.state);
+    // Na posse não há mês anterior de governo: nada de variação contra nov–dez/2026.
+    expect(atPosse.previous).toBeUndefined();
 
     // Retomar imediatamente depois da posse e depois de um mês de governo: a base continua sendo a posse.
     app = await launchApp();
     await app.getState().continueCampaign(id);
     expect(app.getState().active!.baseline).toEqual(atPosse.state);
+    expect(app.getState().active!.previous).toBeUndefined();
     await app.getState().endMonth();
     app = await launchApp();
     await app.getState().continueCampaign(id);

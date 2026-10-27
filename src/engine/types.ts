@@ -7,12 +7,15 @@ import type { Calibration } from './economy/calibration';
 import type { Rng, RngState } from './rng';
 import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
+import type { CampaignFinance, ExpandedFinance, ScheduledReceipt, FinanceExpenditure } from './career/finance';
+import type { DebtCommitment } from './career/commitments';
+import type { IllicitState } from './career/illicit';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 13;
+export const STATE_SCHEMA_VERSION = 15;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.9.0';
+export const ENGINE_VERSION = '0.10.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -451,6 +454,10 @@ export interface NewsItem {
   /** `${monthIndex}_${ordem}` */
   id: string;
   monthIndex: number;
+  /** Referência civil anterior à posse, quando a notícia veio da carreira. */
+  careerPeriod?: string;
+  /** Identidade do turno quando a partida tem carreira. */
+  turnIndex?: number;
   kind: NewsKind;
   tone: NewsTone;
   headline: string;
@@ -526,12 +533,18 @@ export type DecisionRejection =
   | 'teto_legal';
 
 /** Parcela de uma variação, com causa, para o "Por que mudou?" (ECONOMIC_MODEL.md §1.6). */
+/**
+ * Pseudo-indicadores só de relatório: `'votingIntention'` (Fase 08) e `'careerRecognition'`, o reconhecimento
+ * nacional do candidato antes da posse (PLANO_CAMPANHA.md Fase C2, média das UFs pela população).
+ */
+export type ReportOnlyIndicator = 'votingIntention' | 'careerRecognition';
+
 export interface Contribution {
   /**
    * Indicador `Indicators` de destino ou o pseudo-indicador `'votingIntention'` (Fase 08): a intenção de voto
    * não pertence ao `Indicators`; contribuições para ela servem apenas ao relatório ("Por que mudou?").
    */
-  indicator: IndicatorKey | 'votingIntention';
+  indicator: IndicatorKey | ReportOnlyIndicator;
   /** ID da causa: proposta, choque, Banco Central, tendência… */
   cause: string;
   delta: number;
@@ -733,13 +746,65 @@ export interface CareerState {
   startPoint: CareerStartPoint;
   /** Perfil de candidato do cenário (`Scenario.career.profiles`). */
   profileId: string;
+  /** Caixa de campanha opcional, mantido no save. */
+  finance?: CampaignFinance;
+  /** Contabilidade de três bolsos quando o cenário habilita a expansão. */
+  expandedFinance?: ExpandedFinance;
+  illicit?: IllicitState & {
+    balance: number;
+    pending: { turn: number; amount: number }[];
+    closedBalance?: number;
+    cancelledPending?: number;
+  };
+  commitments?: DebtCommitment[];
   stage: CareerStage;
   /** Turno que está para ser jogado. */
   turnIndex: number;
-  /** Reconhecimento por UF, 0–1 (Fase C2 o faz evoluir; aqui só o valor inicial do perfil). */
+  /** Reconhecimento do jogador por UF, 0–1 (Fase C2: decaimento e crescimento orgânico a cada turno). */
   recognition: Record<string, number>;
-  /** Valência nacional, −1…1. */
+  /** Valência nacional do jogador, −1…1. */
   valence: number;
+  /** Adversários na disputa (Fase C2, D-C17), na ordem do cenário, sem o do bloco do jogador. */
+  opponents: CareerCandidateState[];
+  /** Pesquisa mais recente (Fase C2); as anteriores ficam nos relatórios. Ausente antes da primeira. */
+  poll?: CareerPoll;
+}
+
+/** Adversário antes da posse: identidade pelo bloco (`elections.candidatos`), reconhecimento por UF e valência. */
+export interface CareerCandidateState {
+  blocId: string;
+  recognition: Record<string, number>;
+  valence: number;
+}
+
+/** Faixa do reconhecimento estimado no mapa (PLANO_CAMPANHA.md I8). */
+export type RecognitionBand = 'desconhecido' | 'pouco_conhecido' | 'conhecido' | 'muito_conhecido';
+
+/** Intenção estimada de um candidato: `'jogador'` ou o bloco do adversário. */
+export interface PollIntention {
+  candidateId: string;
+  share: number;
+}
+
+/**
+ * Pesquisa persistida (PLANO_CAMPANHA.md Fase C2): criada na última etapa do turno, com sorteio por chave; reabrir
+ * a tela ou retomar o save mostra a mesma. Parcelas sobre quem vai votar (comparecimento): candidatos, indecisos e
+ * brancos/nulos somam 1. Os valores internos do motor nunca vão para a tela, só esta estimativa.
+ */
+export interface CareerPoll {
+  /** Turno em que foi feita. */
+  turnIndex: number;
+  /** "AAAA-MM": mês de referência (o último coberto pelo turno). */
+  month: string;
+  scope: 'nacional';
+  /** Margem de erro divulgada (fração). */
+  margin: number;
+  /** Jogador primeiro, depois os adversários na ordem do estado. */
+  intentions: PollIntention[];
+  undecided: number;
+  blankNull: number;
+  /** Faixa do reconhecimento estimado do jogador por UF. */
+  recognitionBands: Record<string, RecognitionBand>;
 }
 
 /** Turno pré-posse no relatório: o estágio jogado e os meses do calendário civil que ele cobriu. */
@@ -749,6 +814,23 @@ export interface CareerTurnReport {
   from: string;
   /** "AAAA-MM"; igual a `from` num turno de um mês. */
   to: string;
+  /** Pesquisa feita no turno (Fase C2); ausente nos turnos sem pesquisa (transição). */
+  poll?: CareerPoll;
+  /** Posição financeira no encerramento deste turno, em R$ mil. */
+  finance?: CampaignFinance & { expenditures: FinanceExpenditure[]; receipts: { turn: number; amount: number }[] };
+  expandedFinance?: ExpandedFinance & {
+    expenditures: FinanceExpenditure[];
+    receipts: ScheduledReceipt[];
+    personalContribution: number;
+  };
+  illicit?: {
+    volume: number;
+    exposure: number;
+    hazard: number;
+    discovered: boolean;
+    balance: number;
+    investigations: number;
+  };
 }
 
 /**
@@ -819,6 +901,8 @@ export interface MonthReport {
   career?: CareerTurnReport;
   accepted: Decision[];
   rejected: { decision: Decision; reason: DecisionRejection }[];
+  /** Sequência original de triagem quando a ordem de envio afeta reservas financeiras. */
+  decisionOrder?: { decision: Decision; accepted: boolean; reason: DecisionRejection | null }[];
   /** Variação de cada indicador no mês, decomposta por causa. */
   contributions: Contribution[];
   proposalChanges: ProposalChange[];

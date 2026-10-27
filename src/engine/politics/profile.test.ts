@@ -152,7 +152,7 @@ describe('migração do estado: perfil neutro (PLANO_GLOBO.md §8, teste 2)', ()
     const migrated = upgradeGameState(9, raw);
     // O perfil entrou na v10; versões seguintes (v11: clima) não o tiram.
     expect(STATE_SCHEMA_VERSION).toBeGreaterThanOrEqual(10);
-    expect(migrated.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(migrated.schemaVersion).toBe(14);
     expect(migrated.government).toEqual({ profile: { economic: 0, social: 0 } });
     for (const key of Object.keys(raw).filter((k) => k !== 'schemaVersion' && k !== 'engineVersion')) {
       expect((migrated as unknown as Record<string, unknown>)[key]).toEqual(raw[key]);

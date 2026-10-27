@@ -274,6 +274,11 @@ export const careerProfileSchema = z
     id: contentIdSchema,
     name: z.string().min(1),
     description: z.string().min(1),
+    /**
+     * Bloco do partido do candidato (PLANO_CAMPANHA.md Fase C2, D-C17): o jogador ocupa a vaga desse bloco na
+     * disputa, e o adversário listado para o bloco sai dela. A ideologia do bloco orienta o alinhamento por UF.
+     */
+    blocId: contentIdSchema,
     /** Reconhecimento nacional inicial, 0–1. */
     recognition: unitInterval,
     /** Valência nacional (imagem entre quem conhece), −1…1. */
@@ -293,6 +298,23 @@ export const careerProfileSchema = z
 export type CareerProfile = z.infer<typeof careerProfileSchema>;
 
 /**
+ * Adversário simples da eleição antes da posse (PLANO_CAMPANHA.md Fase C2, D-C17 opção a): a **identidade** (nome) é
+ * a de `elections.candidatos` do mesmo bloco; aqui ficam só os dados de campanha. Valores `FICTICIO` até a calibração.
+ */
+export const careerOpponentSchema = z
+  .object({
+    blocId: contentIdSchema,
+    /** Reconhecimento nacional inicial, 0–1. */
+    recognition: unitInterval,
+    /** Valência nacional, −1…1. */
+    valence: axis,
+    territorialBase: z.record(ufIdSchema, unitInterval),
+    dataStatus: dataStatusSchema,
+  })
+  .strict();
+export type CareerOpponent = z.infer<typeof careerOpponentSchema>;
+
+/**
  * Carreira antes da posse (PLANO_CAMPANHA.md, Fase C1). Ausente = o jogo só começa na posse, como sempre. Cada ponto
  * de partida é opcional; um nome desconhecido é recusado (`.strict()`).
  */
@@ -302,6 +324,62 @@ export const scenarioCareerSchema = z
       .object({ pre_campanha: careerStartPointSchema.optional(), corrida: careerStartPointSchema.optional() })
       .strict(),
     profiles: z.array(careerProfileSchema).min(1),
+    /** Caixa eleitoral em R$ mil; ausente desliga a contabilidade da carreira. */
+    finance: z
+      .object({
+        initialBalance: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+        spendingLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+        spendingLimitStatus: dataStatusSchema.optional(),
+        dataStatus: dataStatusSchema,
+        expanded: z
+          .object({
+            personalAvailable: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            personalLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            debtLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            debtDeadline: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            illicit: z
+              .object({
+                decay: z.number().min(0).lt(1).optional(),
+                sensitivity: z.number().min(0).optional(),
+                maxHazard: z.number().min(0).max(1).optional(),
+                monthlyLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+              })
+              .strict()
+              .optional(),
+            installments: z
+              .array(
+                z
+                  .object({
+                    turn: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+                    amount: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+                    pocket: z.enum(['party', 'donations']),
+                  })
+                  .strict(),
+              )
+              .optional(),
+          })
+          .strict()
+          .optional(),
+        /** Catálogo de custos em R$ mil; só incluir ações que tenham execução no motor. */
+        costs: z
+          .array(
+            z
+              .object({
+                id: contentIdSchema,
+                cost: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+                pockets: z
+                  .array(z.enum(['personal', 'party', 'donations', 'illicit']))
+                  .min(1)
+                  .optional(),
+              })
+              .strict(),
+          )
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    /** Adversários por bloco; o do bloco do perfil escolhido sai da disputa (o jogador ocupa a vaga). */
+    opponents: z.array(careerOpponentSchema).min(1),
     dataStatus: dataStatusSchema,
   })
   .strict();
@@ -508,28 +586,89 @@ export const scenarioSchema = z
         }
       }
     }
-    if (s.career) checkCareer(s.career, s.regions?.ufs.map((u) => u.id) ?? [], ctx);
+    if (s.career) checkCareer(s, s.career, ctx);
   });
 
 /**
  * Regras do bloco `career` que dependem do resto do cenário: UFs da base territorial existem no cenário, ids de
- * perfil únicos e turnos de cada ponto de partida contíguos, em ordem e terminando no mês anterior à posse.
+ * perfil únicos, turnos de cada ponto de partida contíguos, em ordem e terminando no mês anterior à posse, e a
+ * disputa (Fase C2): blocos existentes, adversário com identidade em `elections.candidatos`, no máximo um por bloco e
+ * pelo menos dois candidatos (jogador incluído) para cada perfil.
  */
-function checkCareer(career: ScenarioCareer, ufIds: readonly string[], ctx: z.RefinementCtx) {
-  const known = new Set(ufIds);
+function checkCareer(
+  s: { blocs: readonly Bloc[]; regions?: ScenarioRegions; elections?: ScenarioElections },
+  career: ScenarioCareer,
+  ctx: z.RefinementCtx,
+) {
+  const costIds = new Set<string>();
+  for (const [index, cost] of (career.finance?.costs ?? []).entries()) {
+    if (cost.id !== 'arrecadar_doacoes') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'finance', 'costs', index, 'id'],
+        message: `ação de carreira sem execução: ${cost.id}`,
+      });
+    }
+    if (costIds.has(cost.id))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'finance', 'costs', index, 'id'],
+        message: `custo repetido: ${cost.id}`,
+      });
+    costIds.add(cost.id);
+  }
+  const known = new Set(s.regions?.ufs.map((u) => u.id) ?? []);
+  const blocIds = new Set(s.blocs.map((b) => b.id));
+  const named = new Set(s.elections?.candidatos?.map((c) => c.blocId) ?? []);
+  const checkBase = (base: Record<string, number>, path: (string | number)[]) => {
+    for (const uf of Object.keys(base)) {
+      if (!known.has(uf)) ctx.addIssue({ code: 'custom', path, message: `UF inexistente no cenário: ${uf}` });
+    }
+  };
   const seen = new Set<string>();
+  if (career.finance?.expanded && career.finance.expanded.personalLimit > career.finance.spendingLimit / 10) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['career', 'finance', 'expanded', 'personalLimit'],
+      message: 'limite pessoal excede 10% do teto de campanha',
+    });
+  }
   for (const p of career.profiles) {
     if (seen.has(p.id)) ctx.addIssue({ code: 'custom', path: ['career', 'profiles'], message: `id repetido: ${p.id}` });
     seen.add(p.id);
-    for (const uf of Object.keys(p.territorialBase)) {
-      if (!known.has(uf)) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['career', 'profiles', p.id, 'territorialBase'],
-          message: `UF inexistente no cenário: ${uf}`,
-        });
-      }
+    if (career.finance?.expanded && career.finance.expanded.personalAvailable > p.wealth * p.liquidity) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'finance', 'expanded', 'personalAvailable'],
+        message: `liquidez insuficiente no perfil ${p.id}`,
+      });
     }
+    checkBase(p.territorialBase, ['career', 'profiles', p.id, 'territorialBase']);
+    if (!blocIds.has(p.blocId)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'profiles', p.id, 'blocId'],
+        message: `bloco inexistente: ${p.blocId}`,
+      });
+    }
+    if (career.opponents.filter((o) => o.blocId !== p.blocId).length < 1) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'profiles', p.id],
+        message: 'a disputa precisa de pelo menos dois candidatos, com o jogador',
+      });
+    }
+  }
+  const seenOpponents = new Set<string>();
+  for (const [i, o] of career.opponents.entries()) {
+    const path = ['career', 'opponents', i];
+    if (seenOpponents.has(o.blocId))
+      ctx.addIssue({ code: 'custom', path, message: `adversário repetido: ${o.blocId}` });
+    seenOpponents.add(o.blocId);
+    if (!named.has(o.blocId)) {
+      ctx.addIssue({ code: 'custom', path, message: `adversário sem candidato em elections.candidatos: ${o.blocId}` });
+    }
+    checkBase(o.territorialBase, [...path, 'territorialBase']);
   }
   for (const [point, spec] of Object.entries(career.startPoints)) {
     if (!spec) continue;

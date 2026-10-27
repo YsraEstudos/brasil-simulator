@@ -87,7 +87,7 @@ describe('estado climático inicial (PLANO_GLOBO.md §6.1, D-G6)', () => {
     expect(state.climate.rng).toEqual(climateRngState(42));
     expect(checkClimate(state.climate)).toEqual([]);
     expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
-    expect(STATE_SCHEMA_VERSION).toBe(13);
+    expect(STATE_SCHEMA_VERSION).toBe(15);
   });
 
   it('a lista de UFs coincide com as do cenário com dados regionais e com a climatologia', () => {
@@ -158,7 +158,7 @@ describe('atualização v10 → v11: clima neutro em todo save (PLANO_GLOBO.md �
     const original = structuredClone(raw);
     const migrated = upgradeGameState(10, raw);
     expect(raw).toEqual(original);
-    expect(migrated.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(migrated.schemaVersion).toBe(14);
     expect(migrated.engineVersion).toBe(ENGINE_VERSION);
     expect(migrated.climate).toEqual(initialClimate(5));
     expect(migrated.climate.rng).toEqual(climateRngState(5));
@@ -197,7 +197,7 @@ describe('atualização v10 → v11: clima neutro em todo save (PLANO_GLOBO.md �
   it('os saves reais mais antigos (v2 a v7) atualizam e ganham clima neutro derivado da própria semente', () => {
     for (const [version, save] of FIXTURES) {
       const state = upgradeGameState(version, structuredClone(save) as unknown);
-      expect(state.schemaVersion, `v${version}`).toBe(STATE_SCHEMA_VERSION);
+      expect(state.schemaVersion, `v${version}`).toBe(14);
       expect(state.climate, `v${version}`).toEqual(initialClimate(save.seed));
       expect(checkClimate(state.climate), `v${version}`).toEqual([]);
       expect(state.rng, `v${version}`).toEqual(save.rng);

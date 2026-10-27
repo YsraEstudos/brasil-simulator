@@ -1,8 +1,9 @@
 import {
   alignmentView,
+  inaugurationTurnIndex,
   isPreInauguration,
   turnIndexOf,
-  type CareerStage,
+  type PreInaugurationStage,
   type CareerStartPoint,
   type CareerTurnReport,
   populationShares,
@@ -32,7 +33,8 @@ export const REPORT_RETENTION_MONTHS = 12;
 
 /**
  * Quantos snapshots completos do estado ficam no banco, contando o atual (ECONOMIC_MODEL.md §11). Os turnos mais
- * antigos ficam só em `indicator_history`. 13 = o turno atual e os 12 anteriores (comparações de 12 meses).
+ * antigos ficam só em `indicator_history`. 13 = o turno atual e os 12 anteriores (comparações de 12 meses). O
+ * snapshot do turno da posse nunca sai: é a base do "na posse" ao retomar a partida.
  */
 export const SNAPSHOT_RETENTION_MONTHS = 13;
 
@@ -90,7 +92,7 @@ export interface CampaignSummary {
   /** Turno atual (PLANO_CAMPANHA.md §2.3); igual a `currentMonth` na partida que começa na posse. */
   currentTurn: number;
   /** Estágio da carreira no turno atual; `null` = governo (inclusive na partida que começa na posse). */
-  stage: CareerStage | null;
+  stage: PreInaugurationStage | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -123,7 +125,7 @@ export interface CareerSummaryTurn extends CareerTurnReport {
 }
 
 /** Estágio gravado na linha da campanha: `null` para governo. */
-const stageColumn = (state: GameState): CareerStage | null =>
+const stageColumn = (state: GameState): PreInaugurationStage | null =>
   state.career && state.career.stage !== 'governo' ? state.career.stage : null;
 
 /** Cria a campanha e grava o estado inicial (turno 0) e, se a partida começa antes da posse, o resumo vazio. */
@@ -178,7 +180,7 @@ export async function recordMonth(
   // Turno processado e turno seguinte: na partida que começa na posse, os próprios meses.
   const turn = report.turnIndex ?? report.monthIndex;
   const nextTurn = turnIndexOf(state);
-  const rows: { decision: Decision; accepted: boolean; reason: string | null }[] = [
+  const rows: { decision: Decision; accepted: boolean; reason: string | null }[] = report.decisionOrder ?? [
     ...report.accepted.map((decision) => ({ decision, accepted: true, reason: null })),
     ...report.rejected.map((r) => ({ decision: r.decision, accepted: false, reason: r.reason })),
   ];
@@ -256,9 +258,11 @@ export async function recordMonth(
       turn - (REPORT_RETENTION_MONTHS - 1),
     ]);
     await insertSnapshot(db, campaignId, state, options.content);
-    await db.run('DELETE FROM snapshots WHERE campaign_id = ? AND turn_index < ?', [
+    // -1 antes da posse: nenhum turno a poupar.
+    await db.run('DELETE FROM snapshots WHERE campaign_id = ? AND turn_index < ? AND turn_index <> ?', [
       campaignId,
       nextTurn - (SNAPSHOT_RETENTION_MONTHS - 1),
+      inaugurationTurnIndex(state) ?? -1,
     ]);
   });
 }
@@ -466,7 +470,7 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     status: 'ativa' | 'encerrada';
     current_month: number;
     current_turn: number;
-    stage: CareerStage | null;
+    stage: PreInaugurationStage | null;
     created_at: string;
     updated_at: string;
   }>('SELECT * FROM campaigns ORDER BY updated_at DESC, id');

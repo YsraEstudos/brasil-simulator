@@ -12,6 +12,21 @@ export {
   PRE_INAUGURATION_STEPS,
   turnIndexOf,
 } from './career';
+export { CAREER_PARAMS, careerParam } from './career/calibration';
+export { keySalt } from './career/draw';
+export {
+  aggregateTallies,
+  apportion,
+  fillWithCaps,
+  tallyUf,
+  validShares,
+  validVotes,
+  type BallotOption,
+  type Tally,
+} from './career/electorate';
+export { ballotOptions, candidateIdentities, PLAYER_CANDIDATE_ID, type CandidateIdentity } from './career/opponents';
+export { currentPollView, recognitionBand, tallyCareer, takePoll, ufElectorates } from './career/polls';
+export { nationalRecognition, RECOGNITION_CAUSES } from './career/viability';
 export {
   calendarAt,
   keyOfCalendar,

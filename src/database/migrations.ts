@@ -181,9 +181,10 @@ export const MIGRATIONS: readonly Migration[] = [
 
       -- current_month continua sendo o mês do mandato (rótulos); current_turn é a trava do recordMonth. stage: estágio
       -- da carreira do turno atual (NULL = governo, inclusive nas partidas que começam na posse).
-      ALTER TABLE campaigns ADD COLUMN current_turn INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE campaigns ADD COLUMN current_turn INTEGER NOT NULL DEFAULT 0 CHECK (current_turn >= 0);
       UPDATE campaigns SET current_turn = current_month;
-      ALTER TABLE campaigns ADD COLUMN stage TEXT;
+      ALTER TABLE campaigns ADD COLUMN stage TEXT
+        CHECK (stage IS NULL OR stage IN ('pre_campanha', 'convencao', 'corrida', 'eleicao', 'transicao'));
 
       -- Resumo compacto da pré-campanha (PLANO_CAMPANHA.md §2.3, item 3): fora da retenção, a partida inteira. As séries
       -- de governo (indicator_history, regional_indicator_history, election_results) continuam por mês do mandato e

@@ -1232,6 +1232,21 @@
   },
   "career": {
     "dataStatus": "FICTICIO",
+    "finance": {
+      "initialBalance": 10000,
+      "spendingLimit": 88944,
+      "spendingLimitStatus": "PROVISORIO",
+      "dataStatus": "FICTICIO",
+      "expanded": {
+        "personalAvailable": 750,
+        "personalLimit": 750,
+        "debtLimit": 1000,
+        "debtDeadline": 6,
+        "installments": [{ "turn": 1, "amount": 1000, "pocket": "party" }],
+        "illicit": { "decay": 0.5, "sensitivity": 0.0002, "maxHazard": 0.35, "monthlyLimit": 1000 }
+      },
+      "costs": [{ "id": "arrecadar_doacoes", "cost": 200, "pockets": ["party", "donations", "illicit"] }]
+    },
     "startPoints": {
       "corrida": {
         "turns": [
@@ -1246,6 +1261,7 @@
       {
         "id": "ex_governador",
         "name": "Ex-governador",
+        "blocId": "centro",
         "description": "Governou um estado do Sudeste por dois mandatos: conhecido na própria região, pouco lembrado no resto do país.",
         "recognition": 0.3,
         "valence": 0.1,
@@ -1254,6 +1270,43 @@
         "liquidity": 0.3,
         "fundraisingCapacity": 800,
         "territorialBase": { "MG": 0.5, "ES": 0.25, "RJ": 0.15, "SP": 0.1 },
+        "dataStatus": "FICTICIO"
+      }
+    ],
+    "opponents": [
+      {
+        "blocId": "esquerda",
+        "recognition": 0.55,
+        "valence": 0.05,
+        "territorialBase": { "BA": 0.3, "PE": 0.3, "CE": 0.25, "MA": 0.2, "PI": 0.2 },
+        "dataStatus": "FICTICIO"
+      },
+      {
+        "blocId": "centro_esquerda",
+        "recognition": 0.3,
+        "valence": 0.1,
+        "territorialBase": { "RS": 0.35, "SC": 0.1, "PR": 0.1 },
+        "dataStatus": "FICTICIO"
+      },
+      {
+        "blocId": "centro",
+        "recognition": 0.35,
+        "valence": 0.05,
+        "territorialBase": { "PA": 0.3, "AM": 0.25, "TO": 0.15 },
+        "dataStatus": "FICTICIO"
+      },
+      {
+        "blocId": "centro_direita",
+        "recognition": 0.3,
+        "valence": 0.1,
+        "territorialBase": { "SP": 0.3, "RJ": 0.1 },
+        "dataStatus": "FICTICIO"
+      },
+      {
+        "blocId": "direita",
+        "recognition": 0.5,
+        "valence": 0,
+        "territorialBase": { "SC": 0.3, "MT": 0.3, "GO": 0.25, "RO": 0.25 },
         "dataStatus": "FICTICIO"
       }
     ]

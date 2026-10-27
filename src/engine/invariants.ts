@@ -1,3 +1,5 @@
+import { isPreInauguration, turnIndexOf } from './career';
+import { nationalRecognition } from './career/viability';
 import { checkClimate } from './climate/climate';
 import { MEMORY_MONTHS } from './elections/elections';
 import { populationShares, regionsOf } from './regions/regions';
@@ -135,9 +137,12 @@ export function checkInvariants(
     }
   }
 
-  // Tempo anda exatamente um mês
-  if (next.monthIndex !== prev.monthIndex + 1)
-    errors.push(`mês não avançou 1: ${prev.monthIndex} → ${next.monthIndex}`);
+  // Tempo anda exatamente um turno; o mês do mandato anda junto, salvo antes da posse, quando fica parado
+  // (PLANO_CAMPANHA.md §2.3).
+  if (turnIndexOf(next) !== turnIndexOf(prev) + 1)
+    errors.push(`turno não avançou 1: ${turnIndexOf(prev)} → ${turnIndexOf(next)}`);
+  const expectedMonth = isPreInauguration(prev) ? prev.monthIndex : prev.monthIndex + 1;
+  if (next.monthIndex !== expectedMonth) errors.push(`mês não avançou 1: ${prev.monthIndex} → ${next.monthIndex}`);
 
   // §7.3: soma das contribuições = variação total de cada indicador
   for (const key of Object.keys(ind) as IndicatorKey[]) {
@@ -167,6 +172,8 @@ export function checkInvariants(
     }
   }
 
+  if (next.career) errors.push(...checkCareer(prev, next, report, content));
+
   // Perfil ideológico (PLANO_GLOBO.md §5.1): média móvel de posições em [−1, 1], logo sempre dentro dos eixos.
   const profile = next.government.profile;
   if (!(Math.abs(profile.economic) <= 1 && Math.abs(profile.social) <= 1)) {
@@ -178,5 +185,115 @@ export function checkInvariants(
 
   if (next.society !== prev.society) errors.push(...checkSociety(next.society, next));
   errors.push(...checkPublicPolicies(next));
+  return errors;
+}
+
+/**
+ * Carreira antes da posse (PLANO_CAMPANHA.md Fase C2, tarefa C2.5): reconhecimento em [0, 1] e valência em [−1, 1]
+ * para todos os candidatos; pesquisa com parcelas não negativas que somam 1; e, com o conteúdo (população das UFs),
+ * a variação do reconhecimento nacional do jogador igual à soma das contribuições `'careerRecognition'` (§7.3).
+ */
+function checkCareer(
+  prev: GameState,
+  next: GameState,
+  report: MonthReport,
+  content?: Pick<GameContent, 'scenario'>,
+): string[] {
+  const errors: string[] = [];
+  const career = next.career!;
+  const moneyValid = (value: number) => Number.isSafeInteger(value) && value >= 0;
+  const simple = career.finance;
+  if (simple) {
+    if (!moneyValid(simple.balance) || !moneyValid(simple.spent) || !moneyValid(simple.spendingLimit))
+      errors.push('carreira: saldo ou gasto financeiro inválido');
+    if (simple.spent > simple.spendingLimit) errors.push('carreira: teto financeiro ultrapassado');
+    const previous = prev.career?.finance;
+    const accounting = report.career?.finance;
+    if (previous && accounting && previous.closedBalance === undefined) {
+      const receipts = accounting.receipts.reduce((sum, item) => sum + item.amount, 0);
+      const paid = accounting.expenditures.reduce((sum, item) => sum + item.paid, 0);
+      if ((simple.closedBalance ?? simple.balance) !== previous.balance + receipts - paid)
+        errors.push('carreira: conservação do caixa simples violada');
+    }
+  }
+  const finance = career.expandedFinance;
+  if (finance) {
+    if (Object.values(finance.pockets).some((value) => !moneyValid(value)) || !moneyValid(finance.personalAvailable))
+      errors.push('carreira: saldo financeiro inválido');
+    if (
+      ![
+        finance.spent,
+        finance.spendingLimit,
+        finance.debt,
+        finance.debtLimit,
+        finance.personalLimit,
+        finance.personalContributed,
+      ].every(moneyValid)
+    )
+      errors.push('carreira: gasto ou limite financeiro inválido');
+    if (
+      finance.spent > finance.spendingLimit ||
+      finance.personalContributed > finance.personalLimit ||
+      finance.debt > finance.debtLimit
+    )
+      errors.push('carreira: teto financeiro ultrapassado');
+    if (finance.scheduled.some((item) => !moneyValid(item.amount) || !moneyValid(item.turn)))
+      errors.push('carreira: parcela financeira inválida');
+    const previous = prev.career?.expandedFinance;
+    const accounting = report.career?.expandedFinance;
+    if (previous && accounting && !previous.closure) {
+      const finalPockets = finance.closure?.remaining ?? finance.pockets;
+      for (const pocket of ['personal', 'party', 'donations'] as const) {
+        const receipts = accounting.receipts
+          .filter((item) => item.pocket === pocket)
+          .reduce((sum, item) => sum + item.amount, 0);
+        const personal = pocket === 'personal' ? accounting.personalContribution : 0;
+        const paid = accounting.expenditures
+          .filter((item) => item.pocket === pocket)
+          .reduce((sum, item) => sum + item.paid, 0);
+        if (finalPockets[pocket] !== previous.pockets[pocket] + receipts + personal - paid)
+          errors.push(`carreira: conservação do bolso ${pocket} violada`);
+      }
+      const contractedDebt = accounting.expenditures.reduce((sum, item) => sum + item.debt, 0);
+      if ((finance.closure?.debt ?? finance.debt) !== previous.debt + contractedDebt)
+        errors.push('carreira: conservação da dívida violada');
+    }
+  }
+  if (
+    career.illicit &&
+    (!moneyValid(career.illicit.balance) ||
+      !Number.isFinite(career.illicit.exposure) ||
+      career.illicit.exposure < 0 ||
+      career.illicit.pending.some((item) => !moneyValid(item.amount) || !moneyValid(item.turn)))
+  )
+    errors.push('carreira: saldo ou exposição de caixa 2 inválido');
+  if (next.difficulty === 'casual' && career.illicit) errors.push('carreira: caixa 2 indisponível no Casual');
+  const candidates = [
+    { id: 'jogador', recognition: career.recognition, valence: career.valence },
+    ...(career.opponents ?? []).map((o) => ({ id: o.blocId, recognition: o.recognition, valence: o.valence })),
+  ];
+  for (const c of candidates) {
+    if (!(Math.abs(c.valence) <= 1)) errors.push(`carreira: valência de ${c.id} fora de [−1, 1]: ${c.valence}`);
+    for (const [uf, r] of Object.entries(c.recognition)) {
+      if (!(r >= 0 && r <= 1)) errors.push(`carreira: reconhecimento de ${c.id} em ${uf} fora de [0, 1]: ${r}`);
+    }
+  }
+  const poll = career.poll;
+  if (poll) {
+    const parts = [...poll.intentions.map((i) => i.share), poll.undecided, poll.blankNull];
+    if (parts.some((x) => !(x >= 0))) errors.push('carreira: pesquisa com parcela negativa');
+    const total = parts.reduce((s, x) => s + x, 0);
+    if (Math.abs(total - 1) > EPSILON) errors.push(`carreira: parcelas da pesquisa somam ${total}, não 1`);
+  }
+  const ufs = content?.scenario.regions?.ufs ?? [];
+  if (prev.career && ufs.length > 0) {
+    const delta = nationalRecognition(career.recognition, ufs) - nationalRecognition(prev.career.recognition, ufs);
+    const explained = report.contributions
+      .filter((c) => c.indicator === 'careerRecognition')
+      .reduce((s, c) => s + c.delta, 0);
+    if (Math.abs(delta - explained) > EPSILON) {
+      errors.push(`careerRecognition: variação ${delta} ≠ soma das contribuições ${explained}`);
+    }
+  }
   return errors;
 }

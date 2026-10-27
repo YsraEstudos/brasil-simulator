@@ -91,6 +91,19 @@ describe('carreira no banco (PLANO_CAMPANHA.md §2.3)', () => {
     expect(resumed.rng).toEqual(results.at(-1)!.state.rng);
   });
 
+  it('a pesquisa é a mesma ao retomar o save, no estado e no relatório do turno (PLANO_CAMPANHA.md Fase C2)', async () => {
+    await createCampaign(db, { id: 'c1', name: 'Corrida', scenarioVersion: '0.8.0', state: start(), content });
+    const results = await playResuming(2, () => []);
+    const resumed = await loadLatestState(db, 'c1');
+    expect(resumed.career!.poll).toEqual(results[1].state.career!.poll);
+    expect((await loadReport(db, 'c1', 0))!.career!.poll).toEqual(results[0].report.career!.poll);
+    expect((await loadReport(db, 'c1', 1))!.career!.poll).toEqual(resumed.career!.poll);
+    // Jogar o turno seguinte a partir do save dá a mesma pesquisa que sem reiniciar.
+    const fromSave = advanceMonth(resumed, { decisions: [] }, content);
+    const direct = advanceMonth(results[1].state, { decisions: [] }, content);
+    expect(fromSave.state.career!.poll).toEqual(direct.state.career!.poll);
+  });
+
   it('recusa gravar o mesmo turno duas vezes (o mês do mandato parado não colide)', async () => {
     const s0 = start();
     await createCampaign(db, { id: 'c1', name: 'Corrida', scenarioVersion: '0.8.0', state: s0, content });
@@ -134,10 +147,12 @@ describe('carreira no banco (PLANO_CAMPANHA.md §2.3)', () => {
     );
     expect(reports[0].turn_index).toBe(total - REPORT_RETENTION_MONTHS);
     expect(reports[0].turn_index).toBeGreaterThanOrEqual(PRE_TURNS);
-    const firstSnap = await db.first<{ t: number }>(
-      "SELECT MIN(turn_index) AS t FROM snapshots WHERE campaign_id = 'c1'",
+    // Dos turnos antigos só sobra o da posse (base do "na posse"); os da campanha saem todos.
+    const snaps = await db.all<{ turn_index: number }>(
+      "SELECT turn_index FROM snapshots WHERE campaign_id = 'c1' ORDER BY turn_index",
     );
-    expect(firstSnap!.t).toBeGreaterThan(PRE_TURNS);
+    expect(snaps[0].turn_index).toBe(PRE_TURNS);
+    expect(snaps[1].turn_index).toBeGreaterThan(PRE_TURNS + 1);
 
     const summary = await loadCareerSummary(db, 'c1');
     expect(summary).toMatchObject({ startPoint: 'corrida', profileId: 'ex_governador' });
@@ -185,4 +200,100 @@ describe('carreira no banco (PLANO_CAMPANHA.md §2.3)', () => {
     }
     expect(notes).toEqual([[], [], [], [], ['ativo:0.01'], []]);
   });
+});
+
+// PLANO_CAMPANHA.md Fase C3: finanças persistidas no estado, relatório e resumo durável.
+it('guarda caixa e sobra ao retomar após a transição', async () => {
+  const db = openNodeDatabase();
+  await migrate(db);
+  let state = start();
+  await createCampaign(db, { id: 'c1', name: 'Corrida', scenarioVersion: '0.8.0', state, content });
+  for (let i = 0; i < PRE_TURNS; i++) {
+    const result = advanceMonth(state, { decisions: [] }, content);
+    await recordMonth(db, 'c1', result, { content });
+    state = await loadLatestState(db, 'c1');
+  }
+  expect(state.career!.expandedFinance?.closure?.remaining.party).toBe(11000);
+  expect((await loadReport(db, 'c1', PRE_TURNS - 1))!.career!.expandedFinance?.closure?.remaining.party).toBe(11000);
+  const summary = await loadCareerSummary(db, 'c1');
+  expect(summary!.turns.at(-1)!.expandedFinance?.closure?.remaining.party).toBe(11000);
+});
+
+// PLANO_CAMPANHA.md §4.1: a ordem original sobrevive à gravação mesmo com rejeições intermediárias.
+it('persiste as decisões financeiras na ordem enviada', async () => {
+  const db = openNodeDatabase();
+  await migrate(db);
+  const configured = {
+    ...content,
+    scenario: {
+      ...content.scenario,
+      career: {
+        ...content.scenario.career!,
+        finance: {
+          initialBalance: 100,
+          spendingLimit: 200,
+          dataStatus: 'FICTICIO' as const,
+          costs: [
+            { id: 'acao_a', cost: 70 },
+            { id: 'acao_b', cost: 31 },
+            { id: 'acao_c', cost: 30 },
+          ],
+        },
+      },
+    },
+  };
+  const state = createInitialState({ content: configured, difficulty: 'estrategica', seed: 1, startPoint: 'corrida' });
+  await createCampaign(db, { id: 'c1', name: 'Ordem', scenarioVersion: '0.8.0', state, content: configured });
+  const decisions = ['acao_a', 'acao_b', 'acao_c'].map((policyId) => ({ policyId, agendaCost: 0 }));
+  const result = advanceMonth(state, { decisions }, configured);
+  await recordMonth(db, 'c1', result, { content: configured });
+  const rows = await db.all<{ policy_id: string; accepted: number }>(
+    "SELECT policy_id, accepted FROM decisions WHERE campaign_id = 'c1' ORDER BY position",
+  );
+  expect(rows).toEqual([
+    { policy_id: 'acao_a', accepted: 1 },
+    { policy_id: 'acao_b', accepted: 0 },
+    { policy_id: 'acao_c', accepted: 1 },
+  ]);
+});
+
+// PLANO_CAMPANHA.md Fase C3: descoberta e notícia sobrevivem ao salvamento e à retomada.
+it('persiste investigação de campanha e sua data anterior à posse', async () => {
+  const db = openNodeDatabase();
+  await migrate(db);
+  const configured = {
+    ...content,
+    scenario: {
+      ...content.scenario,
+      career: {
+        ...content.scenario.career!,
+        finance: {
+          initialBalance: 0,
+          spendingLimit: 1000,
+          dataStatus: 'FICTICIO' as const,
+          expanded: {
+            personalAvailable: 100,
+            personalLimit: 100,
+            debtLimit: 0,
+            debtDeadline: 4,
+            illicit: { decay: 0.5, sensitivity: 100, maxHazard: 1, monthlyLimit: 100 },
+          },
+        },
+      },
+    },
+  };
+  const state = createInitialState({ content: configured, difficulty: 'estrategica', seed: 11, startPoint: 'corrida' });
+  await createCampaign(db, { id: 'c1', name: 'Fiscalização', scenarioVersion: '0.8.0', state, content: configured });
+  const result = advanceMonth(
+    state,
+    { decisions: [{ policyId: 'usar_caixa_dois', agendaCost: 0, params: { valor: 10 } }] },
+    configured,
+  );
+  await recordMonth(db, 'c1', result, { content: configured });
+  const resumed = await loadLatestState(db, 'c1');
+  expect(resumed.career!.illicit!.investigations).toBe(1);
+  expect(resumed.events.news).toContainEqual(
+    expect.objectContaining({ sourceId: 'caixa_dois', careerPeriod: '2026-08', turnIndex: 0 }),
+  );
+  expect((await loadCareerSummary(db, 'c1'))!.turns[0].illicit).toMatchObject({ discovered: true, volume: 10 });
 });

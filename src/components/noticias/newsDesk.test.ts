@@ -255,3 +255,14 @@ describe('modelos de texto das redes', () => {
     expect(fill('“{h}” — {c} {tag}', item)).toBe('“Dólar a R$ 6 e $& e {c}” — o câmbio subiu #Economia');
   });
 });
+
+// PLANO_CAMPANHA.md Fase C3: notícia de campanha mantém o calendário anterior à posse.
+it('separa notícias pré-posse da edição de janeiro do governo', () => {
+  const editions = buildEditions([
+    item('career_0', 0, { careerPeriod: '2026-08' }),
+    item('career_1', 0, { careerPeriod: '2026-09' }),
+    item('0_0', 0),
+  ]);
+  expect(editions.map((edition) => edition.label)).toEqual(['Janeiro de 2027', 'Setembro de 2026', 'Agosto de 2026']);
+  expect(editions.map((edition) => edition.items.length)).toEqual([1, 1, 1]);
+});

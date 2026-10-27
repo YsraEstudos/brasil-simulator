@@ -40,11 +40,21 @@ export const SUPPORT_CANDIDATE_ACTION_ID = 'apoiar_candidato';
 export const DIRECTIVE_ACTION_ID = 'definir_diretriz';
 /** Marca de governo por proposta: proposalId, name. */
 export const BRAND_ACTION_ID = 'marcar_governo';
+/** Pagamento de obrigação privada de campanha, sem ação de agenda. */
+export const PAY_CAMPAIGN_DEBT = 'pagar_divida_campanha';
 
 export const SANCTION_CHOICES = ['sancionar', 'vetar_acrescimos', 'vetar_total'] as const;
 export type SanctionChoice = (typeof SANCTION_CHOICES)[number];
 
 export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
+  [PAY_CAMPAIGN_DEBT]: {
+    id: PAY_CAMPAIGN_DEBT,
+    name: 'Pagar dívida de campanha',
+    summary: 'Paga compromisso eleitoral com recursos pessoais.',
+    agendaCost: 0,
+    targetParams: ['indice'],
+    listed: false,
+  },
   [DIRECTIVE_ACTION_ID]: {
     id: DIRECTIVE_ACTION_ID,
     name: 'Definir diretriz do ministério',

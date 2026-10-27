@@ -1,8 +1,10 @@
 # Plano — Carreira de 4 a 8 anos (Camadas 1 a 5)
 
-Versão 0.5 do documento • 27/10/2026 • 🟨 Fase C0 (auditoria) e Fase C1 (entrega M1.1) feitas a pedido do autor; as decisões continuam com o autor
+Versão 0.6 do documento • 27/10/2026 • 🟨 Fases C0, C1 (M1.1) e C2 (parte M1.2) feitas a pedido do autor; as decisões continuam com o autor
 v0.2: incorpora comentários de revisão de 27/10/2026 (persistência, percurso inicial, modelo eleitoral, posse, divisão da Fase C6, saves).
 v0.3: incorpora a segunda revisão de 27/10/2026, na ordem de prioridade dela — M1 como sequência de entregas (§3.1), ações entre os turnos eleitorais (D-C15) e calendário fechado (§2.4), contabilidade dos eleitores (Fase C2), vitória do adversário no 1º turno (Fase C5), visibilidade e persistência das pesquisas (Fase C2), retenção, linha de base da posse e relógio da fila (§2.3), contratos de ordem e de sorteio (§4.1), Fase C6 separável com contratos de integração; e ajustes menores (nomenclatura, notícias, estimativas, D-C10).
+
+v0.6: o autor pediu a Fase C2. Implementadas as tarefas M1.2 (C2.1–C2.5): as escolhas tomadas e o que ficou de fora estão em §5, Fase C2, "Implementação".
 
 v0.5: Fase C0 feita, com as tarefas C0.1 a C0.5 e o protocolo e a estimativa no papel da C0.6. O resultado e as decisões que faltam estão em §5, Fase C0, "Resultado"; as fontes do §8 estão no [DATA_SOURCES.md](DATA_SOURCES.md) §6.
 
@@ -410,6 +412,62 @@ Persistência das pesquisas:
 
 **Estimativa (esforço).** Motor 2–3; testes 1.
 
+#### Implementação (27/10/2026, tarefas M1.2 C2.1–C2.5)
+
+**Escolhas tomadas para implementar** (recomendações do §7, registradas aqui; o autor pode revê-las):
+
+- **D-C17 = opção (a).** O nome de cada adversário vem de `elections.candidatos`. Os dados de campanha ficam em `career.opponents` (reconhecimento, valência, base territorial; `FICTICIO`). O perfil ganhou `blocId`: o jogador ocupa a vaga desse bloco, e o adversário do bloco sai da disputa. O Zod recusa:
+  - adversário sem nome em `elections.candidatos`;
+  - adversário repetido;
+  - perfil que fique com menos de dois candidatos na disputa, contando o jogador.
+- **D-C16 = estado inválido.** `tallyUf` recusa `abstencao + brancos_nulos ≥ 1`, e `validShares` recusa nenhum voto válido. As duas recusas são erros com motivo, sem divisão por zero. As faixas da calibração mantêm a soma abaixo de 1.
+- **D-C10 = sem teto pela rejeição.** Só vale o teto de elegibilidade do passo 4.
+- **D-C11 = sorteio por chave.** A pesquisa sorteia com `keyedRng(semente, ['career', 'poll', turno])`, que usa o sal FNV-1a de `career/draw.ts` e o `deriveSeed`. O PRNG principal não é tocado antes da posse.
+- **Opinião entre quem conhece.** A partir da utilidade u = `valencia_escala` · valência + `alinhamento_peso` · alinhamento:
+  - aprovação = (1 − `neutros`) · σ(`opiniao_escala` · u), e a rejeição é o resto de quem não é neutro;
+  - o alinhamento vale de −1 a 1 e mede a distância entre a ideologia do bloco e o `lean` da UF;
+  - teto = R · (1 − rejeição);
+  - peso = teto · e^u.
+- **Reconhecimento (I10).** A cada mês coberto pelo turno, nesta ordem:
+  1. o esquecimento puxa o valor para o piso (`ostracismo_taxa`, `ostracismo_piso`);
+  2. o crescimento orgânico o empurra para 1 (`organico_campanha` na corrida e na eleição; `organico_pre_campanha` antes delas).
+
+  A transição não muda o reconhecimento. Os adversários seguem a mesma regra (adversários simples, sem ações).
+- **Pesquisa.** É a última etapa de cada turno pré-posse, exceto na transição. Mostra a intenção sobre o comparecimento: candidatos, indecisos e brancos/nulos, somando 1. O erro de amostra é `ruido_nacional` em cada parcela, com renormalização. Cada UF recebe uma faixa de reconhecimento com erro `ruido_uf`, e a margem divulgada é `pesquisa_margem`. A pesquisa atual fica em `CareerState.poll`, e a de cada turno, em `MonthReport.career.poll`.
+- **Eleitorado.** São 156.454.011 eleitores, repartidos entre as UFs pela população (`PROVISORIO`). A abstenção e os brancos e nulos usam os números de 2022 registrados no [DATA_SOURCES.md](DATA_SOURCES.md) §6.
+- **Versão do estado 14**, sem função de atualização (§4, saves antes do lançamento).
+
+**Entregue:**
+- **Motor:** `src/engine/career/` com `calibration.ts` (`CAREER_PARAMS`, todos lidos pelo motor), `draw.ts`, `viability.ts`, `electorate.ts`, `opponents.ts` e `polls.ts`. As etapas `viabilityStep` e `pollStep` entraram em `PRE_INAUGURATION_STEPS`.
+- **Relatório:** pseudo-indicador `'careerRecognition'`, que só aparece no relatório.
+- **Invariantes:**
+  - reconhecimento em [0, 1] e valência em [−1, 1];
+  - pesquisa soma 1;
+  - variação do reconhecimento nacional igual à soma das contribuições;
+  - o tempo anda um turno, e o mês do mandato fica parado antes da posse.
+- **Interface:** o trilho "Eleições" aparece antes da posse e mostra a pesquisa (`CareerPollCard`):
+  - intenção, do mais ao menos citado, com data e margem;
+  - faixas por UF;
+  - "Por que mudou?" em texto, com as causas na direção da variação e sem coeficientes.
+- **Duas lacunas da Fase C1, corrigidas:**
+  - o relatório agora abre depois de um turno pré-posse (a mesa compara o turno, não o mês do mandato);
+  - o título do relatório usa o rótulo da campanha ("Resumo de Setembro de 2026").
+- **Testes:**
+  - o exemplo dos 100 mil eleitores e o D-C16;
+  - as propriedades: partição, teto, nacional = soma das UFs, percentuais;
+  - monotonicidade na partição e na cadeia inteira;
+  - a mesma pesquisa ao refazer o turno, ao recalcular e ao retomar do banco;
+  - abrir a tela não muda o estado;
+  - fronteiras das faixas e regras do Zod.
+
+**Não entregue nesta fase:**
+- C2.6 (Exp): transbordo regional e base territorial dinâmica.
+- Parâmetros da lista proposta que nenhuma regra usa ainda: `transferencia_*` e `abstencao_2t` (2º turno, Fase C5) e `pesquisa_atraso`.
+- Pesquisa por UF (só a nacional) e mapa 2D das faixas (Fase C4).
+- Ações de campanha que mexam no reconhecimento ou na valência (Fase C4).
+- Eleição de fato: a partição em modo `eleicao` existe e está testada, mas ninguém a chama ainda (Fase C5). Todo jogador continua chegando à posse.
+- Estratégia-robô `sim:*` para a corrida.
+
 ---
 
 ### Fase C3 — Finanças de campanha
@@ -455,6 +513,23 @@ Persistência das pesquisas:
 | C3.5 | Caixa 2 | Exp | `src/engine/career/illicit.ts` **(proposto)** |
 
 **Testes exigidos.** Conservação em inteiros; saldo nunca negativo sem dívida escolhida; teto global sobre o contratado; fronteiras (saldo exato aceito, 1 unidade acima rejeitada; duas ações que juntas excedem → a segunda é rejeitada e a reserva da rejeitada é liberada); estabilidade do sorteio por chave (contrato 2); permutação só de ações independentes (contrato 3); trajetórias do caixa 2; sem deriva de arredondamento em 96 turnos.
+
+**Implementação em verificação (27/10/2026).** O motor oferece caixa simples ou três bolsos por configuração do cenário, reserva na ordem, parcelas, aporte, arrecadação com recebimento no turno seguinte e contratação explícita por dívida. O fechamento registra as sobras e, fora do Casual, gera um compromisso pagável com patrimônio pessoal; uma dívida vencida produz cobrança de capital político. O caixa 2 fica fora do Casual, tem teto de entrada, exposição e um sorteio por turno; descoberta inicia investigação e notícia, sem condenação automática. A folha eleitoral mostra as escolhas e o risco; o relatório e o resumo persistido registram a contabilidade. O estado é v15 e o motor 0.10.0, sem migração nova de saves.
+
+**Limites atuais.** O cenário usa repasses, riscos e custos `FICTICIO`, ainda sem calibração com prestações de contas. O teto de R$ 88.944 mil é uma aproximação conservadora `PROVISORIO` do limite do primeiro turno; a C5 precisa definir a regra de segundo turno. As doações são agregadas e não simulam a renda ou o limite de cada doador individual; a renda de arrecadação é uma simplificação de jogo. Os outros arquétipos e efeitos eleitorais são da C4; a eleição, resultado e possível cassação são da C5. A investigação registra a ocorrência, mas não condena nem cassa. Compromissos implementam inicialmente dívida com estados pendente, cumprido e expirado; negociação, cancelamento e conflitos entre cargos continuam sem modelagem. A homologação em aparelho, a sessão com pessoas e a calibração completa continuam pendentes.
+
+**Protocolo de diagnóstico financeiro (pré-registro).** Executar 20 sementes por estratégia com a mesma dificuldade, saldo inicial, calendário e objetivo de terminar com recursos disponíveis: (1) sem decisões, (2) arrecadação limpa em cada turno possível, (3) a mesma arrecadação mais uma entrada de caixa 2 por turno possível. Registrar recusas, sobras oficiais, caixa 2, dívidas, investigações e um intervalo de Wilson de 95% para a proporção de campanhas com investigação. Critérios de integridade: zero violações das invariantes e determinismo por semente. São robôs de diagnóstico, não prova de melhor estratégia, calibração eleitoral ou homologação com pessoas; o resultado não mede vitórias, pois a eleição da C5 ainda não existe.
+
+**Ampliação pré-registrada do diagnóstico.** Comparar também arrecadação limpa financiada por dívida com a estratégia limpa paga à vista. Em ambas, o objetivo é o valor final líquido (sobras oficiais e ilícitas + patrimônio pessoal disponível − dívida); ambas começam com os mesmos recursos e informação. O robô com caixa 2 faz a mesma arrecadação e usa a verba ilícita disponível quando permitida. Reportar a melhor das duas estratégias limpas testadas, sem extrapolar para o conjunto de todas as estratégias possíveis.
+**Resultado exploratório (27/10/2026).** `npx vitest run --config vitest.balance.config.mts scripts/sim/careerFinance.sim.ts`: 20 sementes por estratégia, sem violações e com determinismo. Sobra oficial média em R$ mil: inerte 11.000; limpa 12.800; caixa 2 12.800, além de 1.500 de sobra ilícita média. Dívida e recusas médias: 0 nos três robôs. Investigação: 0/20 nas duas estratégias sem caixa 2 e 5/20 com caixa 2 (intervalo de Wilson de 95%: 11,2%–46,9%). Amostra pequena e roteiro fixo; não mede vitória eleitoral, não prova a melhor estratégia limpa nem substitui balanceamento e homologação.
+**Resultado da ampliação (27/10/2026).** Em R$ mil de valor líquido médio: inerte 11.750; limpa à vista 13.550; limpa com dívida 13.550; caixa 2 15.050. A melhor das duas estratégias limpas testadas empatou em 13.550; caixa 2 teve 5/20 campanhas com investigação (IC95% de Wilson 11,2%–46,9%). As investigações ainda não têm as consequências da C5, portanto essa vantagem financeira é um sinal de balanceamento pendente, não uma recomendação nem avaliação de vitória. Foram observadas zero recusas e zero violações nas quatro estratégias, 20 sementes por estratégia.
+**Trajetórias ilustrativas de caixa 2 (`FICTICIO`).** Condição hipotética sem descoberta; δ = 0,5, λ = 0,01 e teto de perigo = 0,30. Não são previsões de trajetórias futuras que dependam de decisões.
+
+| Trajetória | Exposição inicial | Volumes por turno | Exposição antes da fiscalização | Perigo por turno aproximado |
+| --- | ---: | --- | --- | --- |
+| Constante | 20 | 10; 10; 10 | 20; 20; 20 | 18,1%; 18,1%; 18,1% |
+| Crescente | 0 | 5; 10; 15 | 5; 12,5; 21,25 | 4,9%; 11,8%; 19,1% |
+| Decrescente | 0 | 15; 5; 0 | 15; 12,5; 6,25 | 13,9%; 11,8%; 6,1% |
 
 **Estimativa (esforço).** M1: motor 1. Expansão: motor 2; conteúdo 1; testes 1.
 
@@ -783,6 +858,8 @@ Em ordem de prioridade. Nenhuma está tomada.
 ## 8. Fontes a verificar
 
 **Conferido em 27/10/2026 (Fase C0, tarefa C0.4)**: os resultados, com link e data, estão no [DATA_SOURCES.md](DATA_SOURCES.md) §6. Os valores de 2026 tirados da imprensa (FEFC e teto de gastos) e a ordem de grandeza do comparecimento ficam `PROVISORIO`. A ADI 4650 não foi reconferida na fonte primária, e os custos de campanha ficam para a Fase C3. Cada registro vai para [DATA_SOURCES.md](DATA_SOURCES.md) §6 com: link direto da fonte primária e data da consulta; versão e data da regra aplicável ao cenário (eleição de 2026, posse em 2027); dispositivo ou trecho; conclusão e simplificação adotada; responsável; e decisão registrada quando a fonte não vira mecânica diretamente.
+
+**Complemento C3:** a pesquisa posterior está no mesmo documento. O TSE informa o FEFC de 2026 e a manutenção do teto de 2022; o STF confirma a vedação de doações empresariais. Os arquivos de despesas foram identificados, mas ainda não analisados, e os custos de jogo continuam fictícios. O anexo com os valores de 2026 não foi acessado diretamente.
 
 | Item | O que verificar | Dispositivo provável (a confirmar) | Usado em |
 | --- | --- | --- | --- |

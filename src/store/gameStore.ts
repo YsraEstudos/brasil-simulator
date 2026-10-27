@@ -346,7 +346,8 @@ export function createGameStore(deps: GameStoreDeps) {
           const state = await loadLatestState(d, id);
           // Turno anterior pelo índice do turno (PLANO_CAMPANHA.md §2.3), não pelo mês do mandato.
           const turn = turnIndexOf(state);
-          const previous = turn > 0 ? (await loadStateAt(d, id, turn - 1))?.indicators : undefined;
+          // Comparação com o mês anterior só dentro do mandato: na posse e antes dela não há mês anterior de governo.
+          const previous = state.monthIndex > 0 ? (await loadStateAt(d, id, turn - 1))?.indicators : undefined;
           const lastReport = turn > 0 ? ((await loadReport(d, id, turn - 1)) ?? undefined) : undefined;
           // A posse vem do snapshot do turno da posse no save, e não do cenário embutido (que pode ter sido
           // recalibrado) nem do primeiro turno da partida, que pode ser da campanha. Antes da posse não há base.
@@ -433,7 +434,7 @@ export function createGameStore(deps: GameStoreDeps) {
               ...active,
               state: result.state,
               baseline: active.baseline ?? (justInaugurated ? result.state : undefined),
-              previous: active.state.indicators,
+              previous: result.state.monthIndex > 0 ? active.state.indicators : undefined,
               lastReport: result.report,
               finished,
             },

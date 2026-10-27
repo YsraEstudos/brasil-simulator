@@ -185,11 +185,12 @@ describe('resumo da campanha', () => {
 
 // PLANO_CAMPANHA.md Fase C1 (tarefa C1.7): entrada mínima com o ponto de partida 'corrida'.
 describe('pontos de partida no NOVO JOGO', () => {
-  it('o cenário padrão oferece posse e corrida; o texto diz que a campanha ainda não tem ações', () => {
+  it('o cenário padrão oferece posse e corrida com escolhas financeiras e transição provisória', () => {
     const views = startPointViews('brasil_2027_01_v080');
     expect(views.map((v) => v.id)).toEqual(['posse', 'corrida']);
     expect(views[1].description).toContain('agosto de 2026');
-    expect(views[1].description).toContain('ainda não têm ações');
+    expect(views[1].description).toContain('finanças de campanha');
+    expect(views[1].description).toContain('eleição ainda não é disputada');
     expect(startPointViews('prototipo_ficticio').map((v) => v.id)).toEqual(['posse']);
   });
 

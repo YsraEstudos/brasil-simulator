@@ -126,7 +126,7 @@ export function createInitialState(c: NewCampaign): GameState {
     government: { profile: presetProfile(c.profile ?? DEFAULT_PROFILE_PRESET) },
     climate: initialClimate(c.seed),
     ...(c.startPoint && c.startPoint !== 'posse'
-      ? { career: createCareerState(c.content, c.startPoint, c.careerProfileId) }
+      ? { career: createCareerState(c.content, c.startPoint, c.careerProfileId, c.difficulty) }
       : {}),
   };
   return { ...state, society: initialSocietyForGame(state), regions: { ufs: initialRegions(state, c.content).ufs } };
