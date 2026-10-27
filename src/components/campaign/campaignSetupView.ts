@@ -245,7 +245,7 @@ export function startPointViews(scenarioId: string): StartPointView[] {
       description:
         `Começa em ${startLabel(first.from)}, como ${profile.name.toLowerCase()}, e chega à posse em janeiro de 2027. ` +
         (scenario.career?.finance?.expanded
-          ? 'Inclui finanças de campanha; a eleição ainda não é disputada nesta versão.'
+          ? 'Inclui ações de campanha, um debate na TV e finanças de campanha; a eleição ainda não é disputada nesta versão.'
           : 'Versão inicial: a eleição ainda não é disputada nesta versão.'),
     };
   });

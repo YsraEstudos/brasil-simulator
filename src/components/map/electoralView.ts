@@ -13,6 +13,7 @@ import {
   type GameContent,
   type GameState,
   type IdeologyPoint,
+  type RecognitionBand,
 } from '@/engine';
 
 /**
@@ -22,10 +23,30 @@ import {
  * 3D e mapa 2D) recebem os mesmos valores pelo `RegionalMapViewModel`.
  */
 
-/** As camadas eleitorais novas (a "Relação com o governador" já existia e é uma camada de indicador comum). */
-export type ElectoralLayerId = 'inclinacao' | 'intencao' | 'resultado';
+/**
+ * As camadas eleitorais novas (a "Relação com o governador" já existia e é uma camada de indicador comum). O
+ * `reconhecimento` é o do candidato antes da posse (PLANO_CAMPANHA.md Fase C4, tarefa C4.3): a faixa estimada pela
+ * última pesquisa, nunca o valor interno.
+ */
+export type ElectoralLayerId = 'inclinacao' | 'intencao' | 'resultado' | 'reconhecimento';
 
-export const ELECTORAL_LAYER_IDS: readonly ElectoralLayerId[] = ['inclinacao', 'intencao', 'resultado'];
+export const ELECTORAL_LAYER_IDS: readonly ElectoralLayerId[] = [
+  'inclinacao',
+  'intencao',
+  'resultado',
+  'reconhecimento',
+];
+
+/** Valor da UF na camada Reconhecimento: 0 = sem pesquisa; 1 … 4 = da faixa "desconhecido" à "muito conhecido". */
+export const RECOGNITION_BAND_VALUE: Readonly<Record<RecognitionBand, number>> = {
+  desconhecido: 1,
+  pouco_conhecido: 2,
+  conhecido: 3,
+  muito_conhecido: 4,
+};
+
+/** Faixas da camada Reconhecimento na ordem das cores (a primeira é "sem pesquisa"). */
+export const RECOGNITION_LEGEND = ['sem pesquisa', 'desconhecido', 'pouco conhecido', 'conhecido', 'muito conhecido'];
 
 export function isElectoralLayer(id: string): id is ElectoralLayerId {
   return (ELECTORAL_LAYER_IDS as readonly string[]).includes(id);
@@ -37,6 +58,12 @@ export const BADGE_RESULT = 'resultado';
 export const BADGE_PROVISIONAL = 'dado provisório';
 
 const MONTH_ABBR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+/** "2026-09" → "set/2026" (mês civil da pesquisa da campanha). */
+export function pollMonthLabel(key: string): string {
+  const [year, month] = key.split('-').map(Number);
+  return `${MONTH_ABBR[month - 1]}/${year}`;
+}
 
 /** 45 → "out/2030" (o mês do jogo em que a eleição geral acontece). */
 export function electionDate(monthIndex: number): string {
@@ -73,6 +100,12 @@ export function electoralValues(
       return regionalVoteIntention(state, content)?.ufs ?? {};
     case 'resultado':
       return election ? decidingRound(election).ufs : {};
+    case 'reconhecimento': {
+      const bands = state.career?.poll?.recognitionBands ?? {};
+      return Object.fromEntries(
+        regionsOf(content).map((u) => [u.id, bands[u.id] ? RECOGNITION_BAND_VALUE[bands[u.id]] : 0]),
+      );
+    }
   }
 }
 
@@ -103,6 +136,7 @@ export function badgeText(layer: string, election: ElectionResult | null): strin
   if (layer === 'intencao') return BADGE_ESTIMATE;
   if (layer === 'resultado') return election ? `${BADGE_RESULT} · ${electionDate(election.monthIndex)}` : BADGE_RESULT;
   if (layer === 'inclinacao') return BADGE_PROVISIONAL;
+  if (layer === 'reconhecimento') return BADGE_ESTIMATE;
   return null;
 }
 
@@ -151,6 +185,19 @@ export function buildUfElectoralView(
       rows,
       notes: [
         'Dado do cenário, provisório e sem partidos nem pessoas reais. Não muda durante a partida; é com ele que se mede o alinhamento com o perfil do governo.',
+      ],
+    };
+  }
+
+  if (layer === 'reconhecimento') {
+    const poll = state.career?.poll;
+    const band = poll?.recognitionBands[ufId];
+    if (!poll || !band) return null;
+    return {
+      badge: BADGE_ESTIMATE,
+      rows: [{ label: 'Seu reconhecimento no estado', value: RECOGNITION_LEGEND[RECOGNITION_BAND_VALUE[band]] }],
+      notes: [
+        `Faixa estimada pela pesquisa de ${pollMonthLabel(poll.month)}, com erro de amostra: o valor de verdade pode estar na faixa vizinha. Ações de campanha e o debate aumentam o reconhecimento; o tempo longe do noticiário o reduz.`,
       ],
     };
   }

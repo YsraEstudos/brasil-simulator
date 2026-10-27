@@ -48,6 +48,11 @@ const WHY_TEXT: Record<string, { up: string; down: string }> = {
     up: 'Você voltou ao noticiário e deixou de ser esquecido.',
     down: 'O tempo longe do noticiário contribuiu para reduzir seu reconhecimento.',
   },
+  // Ações e debate (Fase C4): só puxam para cima.
+  'acao:comicio_nacional': { up: 'O comício nacional ampliou seu reconhecimento.', down: '' },
+  'acao:caravana_regional': { up: 'A caravana tornou você mais conhecido no estado visitado.', down: '' },
+  'acao:mobilizar_militancia': { up: 'A militância divulgou a candidatura onde o partido é forte.', down: '' },
+  debate: { up: 'O debate na TV deixou você mais conhecido.', down: '' },
 };
 
 /** Monta a leitura; `null` antes da primeira pesquisa ou sem carreira. */
@@ -85,7 +90,7 @@ export function careerPollViewModel(
     .filter((c) => c.delta * net > 0)
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
     .map((c) => WHY_TEXT[c.cause]?.[c.delta > 0 ? 'up' : 'down'])
-    .filter((t): t is string => t !== undefined);
+    .filter((t): t is string => t !== undefined && t !== '');
   return {
     title: 'Pesquisa nacional',
     subtitle: `${careerTurnLabel({ from: poll.month })} · intenção de voto entre quem vai votar`,

@@ -4,6 +4,7 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import { Button, Card, Text } from '@/components/ui';
 import { MIN_TOUCH, Radius, Spacing } from '@/constants/theme';
 import type { Decision, GameContent, GameState, MonthReport } from '@/engine/types';
+import { CAREER_ACTIONS, isCareerAction } from '@/engine/career/actions';
 import { DEBT_CHARGE } from '@/engine/career/commitments';
 import { resolveIllicitCalibration } from '@/engine/career/illicit';
 import { useTheme } from '@/hooks/use-theme';
@@ -103,7 +104,9 @@ export function CareerFinanceCard({
             };
             return (
               <Text key={`${decision.policyId}-${index}`}>
-                {index + 1}. {names[decision.policyId] ?? 'Outra decisão'}
+                {index + 1}.{' '}
+                {names[decision.policyId] ??
+                  (isCareerAction(decision.policyId) ? CAREER_ACTIONS[decision.policyId].name : 'Outra decisão')}
               </Text>
             );
           })}

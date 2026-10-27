@@ -1,4 +1,4 @@
-import { badgeText, electoralValues, isElectoralLayer } from '@/components/map/electoralView';
+import { badgeText, electoralValues, isElectoralLayer, RECOGNITION_LEGEND } from '@/components/map/electoralView';
 import { formatNumber, formatPercent, formatPointsDelta } from '@/components/ui/format';
 import {
   alignmentView,
@@ -32,7 +32,8 @@ export type MapIndicator =
   | 'seca'
   | 'inclinacao'
   | 'intencao'
-  | 'resultado';
+  | 'resultado'
+  | 'reconhecimento';
 
 /**
  * Natureza do selo de uma camada eleitoral (PLANO_GLOBO.md §5.3): `estimate` = palpite do jogo, nunca resultado;
@@ -90,6 +91,13 @@ export const LEAN_PALETTE = ['#7b52c9', '#b49be0', '#9a9893', '#e3b96a', '#c9852
 export const VOTE_PALETTE = ['#347f75', '#499d91', '#68b8ab', '#97d2c7', '#cdeee9'] as const;
 /** Faixas do voto no governo: < 30%, 30–40%, 40–50%, 50–60% (maioria absoluta começa na quarta) e ≥ 60%. */
 export const VOTE_EDGES = [0.3, 0.4, 0.5, 0.6] as const;
+/**
+ * Cores do reconhecimento do candidato (Fase C4): cinza "sem pesquisa" e depois um âmbar sequencial, do escuro
+ * (desconhecido) ao claro (muito conhecido); fora do azul e do vermelho de melhor/pior e das cores de partido.
+ */
+export const RECOGNITION_PALETTE = ['#5c5b57', '#6f4a17', '#9c6a22', '#cf9636', '#f4cb7a'] as const;
+/** Valores 0 … 4 (`RECOGNITION_BAND_VALUE`): cada faixa numa cor. */
+export const RECOGNITION_EDGES = [1, 2, 3, 4] as const;
 
 export const MAP_INDICATORS: readonly MapIndicatorSpec[] = [
   {
@@ -199,6 +207,18 @@ export const MAP_INDICATORS: readonly MapIndicatorSpec[] = [
     badge: 'result',
     group: 'eleitoral',
   },
+  {
+    id: 'reconhecimento',
+    label: 'Seu reconhecimento',
+    scale: 'sequential',
+    goodWhen: 'up',
+    step: 1,
+    legend: 'Seu reconhecimento por estado, em faixas da última pesquisa da campanha (estimativa)',
+    palette: RECOGNITION_PALETTE,
+    edges: RECOGNITION_EDGES,
+    badge: 'estimate',
+    group: 'eleitoral',
+  },
 ];
 
 /**
@@ -206,10 +226,12 @@ export const MAP_INDICATORS: readonly MapIndicatorSpec[] = [
  * v0.7.0 não a têm); a Intenção e o Resultado precisam das eleições do cenário. Sem isso, somem da lista. O Resultado
  * continua na lista mesmo antes da primeira eleição — a tela o mostra desabilitado, com o porquê.
  */
-export function availableIndicators(content: GameContent): readonly MapIndicatorSpec[] {
+export function availableIndicators(content: GameContent, preInauguration = false): readonly MapIndicatorSpec[] {
   const lean = hasLean(regionsOf(content));
   const elections = content.scenario.elections !== undefined && regionsOf(content).length > 0;
   return MAP_INDICATORS.filter((m) => {
+    // O reconhecimento do candidato só existe antes da posse (PLANO_CAMPANHA.md Fase C4).
+    if (m.id === 'reconhecimento') return preInauguration && regionsOf(content).length > 0;
     if (m.id === 'alinhamento' || m.id === 'inclinacao') return lean;
     if (m.id === 'intencao' || m.id === 'resultado') return elections;
     return true;
@@ -270,6 +292,7 @@ export function ufValue(
     case 'inclinacao':
     case 'intencao':
     case 'resultado':
+    case 'reconhecimento':
       return electoral;
   }
 }
@@ -301,6 +324,7 @@ export function binColor(spec: MapIndicatorSpec, index: number): string {
 /** Rótulos das faixas da legenda, da primeira à última cor. */
 export function legendLabels(spec: MapIndicatorSpec): string[] {
   if (spec.id === 'seca') return ['sem seca', 'leve', 'moderada', 'forte', 'severa'];
+  if (spec.id === 'reconhecimento') return [...RECOGNITION_LEGEND];
   if (spec.id === 'intencao' || spec.id === 'resultado') return ['< 30%', '30–40%', '40–50%', '50–60%', '≥ 60%'];
   if (spec.scale === 'sequential') return ['< 0,5', '0,5–0,75', '0,75–1', '1–1,5', '> 1,5'];
   const worse = spec.goodWhen === 'up' ? 'abaixo' : 'acima';
@@ -314,6 +338,7 @@ export function legendLabels(spec: MapIndicatorSpec): string[] {
 
 /** Texto do valor na lista e no cartão. */
 export function numericLegendLabels(spec: MapIndicatorSpec): string[] {
+  if (spec.id === 'reconhecimento') return [...RECOGNITION_LEGEND];
   if (spec.scale === 'sequential') {
     const edges = spec.edges ?? RENT_EDGES;
     const show = (v: number) => formatValue(spec.id, v);
@@ -358,6 +383,8 @@ export function formatValue(id: MapIndicator, value: number): string {
     case 'intencao':
     case 'resultado':
       return formatPercent(value, 1);
+    case 'reconhecimento':
+      return RECOGNITION_LEGEND[Math.max(0, Math.min(4, Math.round(value)))];
   }
 }
 
@@ -419,7 +446,7 @@ export const MIN_SHOWN = 0.0005;
  * fotografia do mês da eleição: nenhuma das duas é explicada pelas causas do mês corrente.
  */
 export function hasWhy(id: MapIndicator): boolean {
-  return id !== 'inclinacao' && id !== 'resultado';
+  return id !== 'inclinacao' && id !== 'resultado' && id !== 'reconhecimento';
 }
 
 /**

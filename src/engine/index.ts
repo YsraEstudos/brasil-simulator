@@ -12,7 +12,23 @@ export {
   PRE_INAUGURATION_STEPS,
   turnIndexOf,
 } from './career';
+export {
+  attackRisk,
+  CAREER_ACTIONS,
+  careerActionsPerTurn,
+  isCareerAction,
+  type CareerActionSpec,
+  type CareerArchetype,
+} from './career/actions';
 export { CAREER_PARAMS, careerParam } from './career/calibration';
+export {
+  DEBATE_ACTION_ID,
+  DEBATE_POSTURES,
+  debateOfTurn,
+  debateOptions,
+  DEFAULT_DEBATE_POSTURE,
+  type DebateOption,
+} from './career/debate';
 export { keySalt } from './career/draw';
 export {
   aggregateTallies,

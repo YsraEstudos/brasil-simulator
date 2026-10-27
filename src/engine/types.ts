@@ -15,7 +15,7 @@ import type { IllicitState } from './career/illicit';
 export const STATE_SCHEMA_VERSION = 15;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.10.0';
+export const ENGINE_VERSION = '0.11.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -534,10 +534,11 @@ export type DecisionRejection =
 
 /** Parcela de uma variação, com causa, para o "Por que mudou?" (ECONOMIC_MODEL.md §1.6). */
 /**
- * Pseudo-indicadores só de relatório: `'votingIntention'` (Fase 08) e `'careerRecognition'`, o reconhecimento
- * nacional do candidato antes da posse (PLANO_CAMPANHA.md Fase C2, média das UFs pela população).
+ * Pseudo-indicadores só de relatório: `'votingIntention'` (Fase 08); `'careerRecognition'`, o reconhecimento nacional
+ * do candidato antes da posse (PLANO_CAMPANHA.md Fase C2, média das UFs pela população); e `'careerValence'`, a
+ * valência do jogador (Fase C4).
  */
-export type ReportOnlyIndicator = 'votingIntention' | 'careerRecognition';
+export type ReportOnlyIndicator = 'votingIntention' | 'careerRecognition' | 'careerValence';
 
 export interface Contribution {
   /**
@@ -831,6 +832,35 @@ export interface CareerTurnReport {
     balance: number;
     investigations: number;
   };
+  /** Ações de campanha aceitas e o que cada uma fez (Fase C4), na ordem de envio. */
+  actions?: CareerActionOutcome[];
+  /** Debate do turno (Fase C4); ausente nos turnos sem debate. */
+  debate?: CareerDebateOutcome;
+}
+
+/** O que uma ação de campanha fez no turno (PLANO_CAMPANHA.md Fase C4, tarefa C4.1). */
+export interface CareerActionOutcome {
+  actionId: string;
+  /** UF da caravana ou bloco do adversário atacado. */
+  target?: string;
+  /** Ataque: deu certo ou virou bumerangue (sorteio por chave). */
+  result?: 'sucesso' | 'bumerangue';
+  /** Variação do reconhecimento nacional do jogador. */
+  recognitionDelta: number;
+  /** Variação da valência do jogador. */
+  valenceDelta: number;
+  /** Variação da valência do adversário atacado. */
+  targetValenceDelta?: number;
+}
+
+/** Postura no debate (PLANO_CAMPANHA.md Fase C4, tarefa C4.2). */
+export type DebatePosture = 'propositiva' | 'tecnica' | 'ataque';
+
+/** O que o debate do turno fez; `automatic` = o jogador não marcou postura e valeu a padrão. */
+export interface CareerDebateOutcome extends CareerActionOutcome {
+  debateId: string;
+  posture: DebatePosture;
+  automatic: boolean;
 }
 
 /**
@@ -965,6 +995,10 @@ export type ReportDraft = Pick<
   governorChanges?: string[];
   /** Resultado simulado por UF (preenchido por `electionResultStep`, depois da posse dos governadores). */
   electionResult?: ElectionResult;
+  /** Ações de campanha aplicadas no turno pré-posse (preenchido por `campaignStep`, Fase C4). */
+  careerActions?: CareerActionOutcome[];
+  /** Debate do turno pré-posse (preenchido por `campaignStep`, Fase C4). */
+  careerDebate?: CareerDebateOutcome;
 };
 
 export interface StepContext {
