@@ -6,6 +6,7 @@ import { DEFAULT_PROFILE_PRESET, presetProfile, type ProfilePresetId } from './p
 import { initialClimate } from './climate/climate';
 import { initialRegions } from './regions/regions';
 import { seedRng } from './rng';
+import { createCareerState } from './career';
 import { initialSociety, initialSocietyForGame } from './society/society';
 import { initialPublicPolicies } from './publicPolicies/types';
 import {
@@ -19,6 +20,7 @@ import {
   type GameState,
   type Indicators,
   type RevenueGroup,
+  type StartPoint,
 } from './types';
 
 /** Ações de agenda por mês, por dificuldade (GAME_DESIGN.md §6). */
@@ -84,6 +86,13 @@ export interface NewCampaign {
    * nem muda regras: só o ponto de partida do perfil do governo.
    */
   profile?: ProfilePresetId;
+  /**
+   * Ponto de partida (PLANO_CAMPANHA.md Fase C1); padrão `'posse'`, a partida de sempre. Os demais exigem o bloco
+   * `career` do cenário; o estado do governo nasce igual ao da posse e fica congelado até ela (D-C12).
+   */
+  startPoint?: StartPoint;
+  /** Perfil de candidato (`Scenario.career.profiles`); padrão: o primeiro. Ignorado na posse. */
+  careerProfileId?: string;
 }
 
 export function createInitialState(c: NewCampaign): GameState {
@@ -116,6 +125,9 @@ export function createInitialState(c: NewCampaign): GameState {
     publicPolicies: initialPublicPolicies(),
     government: { profile: presetProfile(c.profile ?? DEFAULT_PROFILE_PRESET) },
     climate: initialClimate(c.seed),
+    ...(c.startPoint && c.startPoint !== 'posse'
+      ? { career: createCareerState(c.content, c.startPoint, c.careerProfileId) }
+      : {}),
   };
   return { ...state, society: initialSocietyForGame(state), regions: { ufs: initialRegions(state, c.content).ufs } };
 }

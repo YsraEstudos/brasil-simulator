@@ -1,16 +1,20 @@
 import {
   ADVICE_PARAMS,
   AGENDA_ACTIONS_PER_MONTH,
+  careerProfile,
+  careerSchedule,
   DEFAULT_CALIBRATION,
   describeProfile,
   PROFILE_PRESETS,
   type Difficulty,
   type ProfilePresetId,
+  type StartPoint,
 } from '@/engine';
 import {
   isKnownScenario,
   parseSeedInput,
   normalizeCampaignName,
+  startPointsOf,
   type CampaignSetupForm,
   type ScenarioOption,
 } from '@/store/campaignSetup';
@@ -211,6 +215,47 @@ export const SCENARIO_KIND_LABEL: Record<ScenarioOption['kind'], string> = {
   experimental: 'Experimental',
 };
 
+export interface StartPointView {
+  id: StartPoint;
+  name: string;
+  description: string;
+}
+
+const START_POINT_NAME: Record<StartPoint, string> = {
+  posse: 'Posse',
+  corrida: 'Corrida eleitoral',
+  pre_campanha: 'Pré-campanha',
+};
+
+/**
+ * Pontos de partida do cenário (PLANO_CAMPANHA.md Fase C1, entrada mínima): a posse e os da carreira, com o mês de
+ * início e o perfil de candidato lidos do próprio cenário. A versão atual da campanha ainda não tem ações próprias, e
+ * o texto diz isso.
+ */
+export function startPointViews(scenarioId: string): StartPointView[] {
+  const scenario = isKnownScenario(scenarioId) ? SCENARIOS[scenarioId] : undefined;
+  return startPointsOf(scenarioId).map((id) => {
+    if (id === 'posse' || !scenario) {
+      return { id, name: START_POINT_NAME[id], description: 'Começa no primeiro dia do mandato, já eleito.' };
+    }
+    const first = careerSchedule({ scenario }, id)[0];
+    const profile = careerProfile({ scenario });
+    return {
+      id,
+      name: START_POINT_NAME[id],
+      description:
+        `Começa em ${startLabel(first.from)}, como ${profile.name.toLowerCase()}, e chega à posse em janeiro de 2027. ` +
+        'Versão inicial: os turnos da campanha ainda não têm ações próprias.',
+    };
+  });
+}
+
+/** Texto do botão de criar: tomar posse ou começar a campanha. */
+export function createActionLabel(startPoint: StartPoint | undefined, busy: boolean): string {
+  if (startPoint === undefined || startPoint === 'posse') return busy ? 'TOMANDO POSSE…' : 'TOMAR POSSE';
+  return busy ? 'INICIANDO A CAMPANHA…' : 'INICIAR A CAMPANHA';
+}
+
 export interface SetupSummary {
   name: string | null;
   difficulty: string;
@@ -219,6 +264,7 @@ export interface SetupSummary {
   version: string;
   /** Perfil ideológico inicial do governo (nome e posição nos eixos). */
   profile: string;
+  startPoint: string;
   duration: string;
   seed: string;
 }
@@ -236,6 +282,7 @@ export function setupSummary(form: CampaignSetupForm): SetupSummary {
     scenario: scenario ? scenarioTitle(scenario) : '—',
     version: scenario ? `v${scenario.version}` : '—',
     profile: profileSummary(form.profileId),
+    startPoint: START_POINT_NAME[form.startPoint ?? 'posse'],
     duration: scenario ? `até ${durationLabel(campaignMonths(form.scenarioId))}` : '—',
     seed: !seed.ok ? 'Inválida' : seed.value === null ? 'Aleatória' : String(seed.value),
   };

@@ -28,6 +28,8 @@ import {
   advanceMonth,
   campaignOutcome,
   createInitialState,
+  inaugurationTurnIndex,
+  turnIndexOf,
   type Decision,
   type ElectionResult,
   type GameState,
@@ -70,11 +72,12 @@ export interface ActiveCampaign {
   name: string;
   state: GameState;
   /**
-   * Estado da posse (mês 0): a base do "na posse" no mapa. Vem do próprio save, porque o cenário embutido pode
-   * ter sido recalibrado depois da criação da campanha; ausente quando a retenção de snapshots apagou o mês 0.
+   * Estado da posse (mês 0 do mandato): a base do "na posse" no mapa. Vem do próprio save, porque o cenário embutido
+   * pode ter sido recalibrado depois da criação da campanha; ausente antes da posse (partida que começa na campanha,
+   * PLANO_CAMPANHA.md §2.3) e quando a retenção de snapshots apagou o turno da posse.
    */
   baseline?: GameState;
-  /** Indicadores do mês anterior (para mostrar a variação). */
+  /** Indicadores do turno anterior (para mostrar a variação). */
   previous?: Indicators;
   lastReport?: MonthReport;
   finished: boolean;
@@ -282,7 +285,7 @@ export function createGameStore(deps: GameStoreDeps) {
           return { ok: false, reason: 'falha', error: 'O banco de dados ainda não está pronto.' };
         }
         const d = db;
-        const { name, difficulty, scenarioId, profileId } = checked.input;
+        const { name, difficulty, scenarioId, profileId, startPoint } = checked.input;
         set({ busy: true, error: undefined });
 
         // Um único `finally` devolve `busy` a falso: nenhuma exceção, prevista ou não, trava a store.
@@ -298,6 +301,7 @@ export function createGameStore(deps: GameStoreDeps) {
               difficulty,
               seed,
               profile: profileId,
+              startPoint,
             });
             await createCampaign(d, {
               id,
@@ -306,7 +310,8 @@ export function createGameStore(deps: GameStoreDeps) {
               state,
               content: loadContent(scenario.id),
             });
-            created = { id, name, state, baseline: state, finished: false };
+            const baseline = inaugurationTurnIndex(state) === null ? undefined : state;
+            created = { id, name, state, baseline, finished: false };
           } catch (e) {
             // Nada foi gravado (a transação desfaz tudo): a campanha anterior e o rascunho continuam como estavam. O
             // erro vai no resultado, para a tela de NOVO JOGO; o `error` global ficaria velho na Presidência e em
@@ -339,12 +344,15 @@ export function createGameStore(deps: GameStoreDeps) {
         return run(async (d) => {
           const summary = (await listCampaigns(d)).find((c) => c.id === id);
           const state = await loadLatestState(d, id);
-          const previous =
-            state.monthIndex > 0 ? (await loadStateAt(d, id, state.monthIndex - 1))?.indicators : undefined;
-          const lastReport =
-            state.monthIndex > 0 ? ((await loadReport(d, id, state.monthIndex - 1)) ?? undefined) : undefined;
-          // A posse vem do snapshot do mês 0 do save, e não do cenário embutido (que pode ter sido recalibrado).
-          const baseline = state.monthIndex > 0 ? ((await loadStateAt(d, id, 0)) ?? undefined) : state;
+          // Turno anterior pelo índice do turno (PLANO_CAMPANHA.md §2.3), não pelo mês do mandato.
+          const turn = turnIndexOf(state);
+          const previous = turn > 0 ? (await loadStateAt(d, id, turn - 1))?.indicators : undefined;
+          const lastReport = turn > 0 ? ((await loadReport(d, id, turn - 1)) ?? undefined) : undefined;
+          // A posse vem do snapshot do turno da posse no save, e não do cenário embutido (que pode ter sido
+          // recalibrado) nem do primeiro turno da partida, que pode ser da campanha. Antes da posse não há base.
+          const posse = inaugurationTurnIndex(state);
+          const baseline =
+            posse === null ? undefined : posse === turn ? state : ((await loadStateAt(d, id, posse)) ?? undefined);
           // Saves anteriores à gravação atômica podem ter o último mês com status "ativa": corrige ao carregar.
           const finished = summary?.status === 'encerrada' || isFinished(state);
           if (finished && summary?.status !== 'encerrada') {
@@ -418,10 +426,13 @@ export function createGameStore(deps: GameStoreDeps) {
           const result = advanceMonth(active.state, input ?? draftInput(get().draft, content), content);
           const finished = isFinished(result.state);
           await recordMonth(d, active.id, result, { finish: finished, content });
+          // O turno que acabou de começar é a posse: ele passa a ser a base do "na posse".
+          const justInaugurated = inaugurationTurnIndex(result.state) === turnIndexOf(result.state);
           set({
             active: {
               ...active,
               state: result.state,
+              baseline: active.baseline ?? (justInaugurated ? result.state : undefined),
               previous: active.state.indicators,
               lastReport: result.report,
               finished,

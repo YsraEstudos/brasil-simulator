@@ -167,6 +167,33 @@ export const MIGRATIONS: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 7,
+    name: 'identidade_do_turno',
+    sql: `
+      -- PLANO_CAMPANHA.md §2.3 (D-C1, índice sequencial): a partida pode começar antes da posse, quando o mês do mandato
+      -- ainda não anda. O que identifica cada turno salvo passa a ser o índice sequencial do turno (turn_index). Numa
+      -- partida que começa na posse ele é o próprio mês do mandato, então os dados existentes já estão certos.
+      ALTER TABLE snapshots RENAME COLUMN month_index TO turn_index;
+      ALTER TABLE month_reports RENAME COLUMN month_index TO turn_index;
+      ALTER TABLE decisions RENAME COLUMN month_index TO turn_index;
+      ALTER TABLE events RENAME COLUMN month_index TO turn_index;
+
+      -- current_month continua sendo o mês do mandato (rótulos); current_turn é a trava do recordMonth. stage: estágio
+      -- da carreira do turno atual (NULL = governo, inclusive nas partidas que começam na posse).
+      ALTER TABLE campaigns ADD COLUMN current_turn INTEGER NOT NULL DEFAULT 0;
+      UPDATE campaigns SET current_turn = current_month;
+      ALTER TABLE campaigns ADD COLUMN stage TEXT;
+
+      -- Resumo compacto da pré-campanha (PLANO_CAMPANHA.md §2.3, item 3): fora da retenção, a partida inteira. As séries
+      -- de governo (indicator_history, regional_indicator_history, election_results) continuam por mês do mandato e
+      -- não recebem turnos anteriores à posse.
+      CREATE TABLE career_summaries (
+        campaign_id  TEXT PRIMARY KEY REFERENCES campaigns(id) ON DELETE CASCADE,
+        summary_json TEXT NOT NULL
+      );
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
