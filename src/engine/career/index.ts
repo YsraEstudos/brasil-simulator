@@ -15,9 +15,14 @@ import type {
 } from '../types';
 import { createRng } from '../rng';
 
+import { createOpponents } from './opponents';
+import { pollStep } from './polls';
+import { initialRecognition, viabilityStep } from './viability';
+
 /**
  * Carreira antes da posse (PLANO_CAMPANHA.md, Fase C1 / entrega M1.1): identidade dos turnos, despacho por estágio e
- * transição mínima de estágio. Ainda sem regras de campanha (viabilidade, finanças, eleição: Fases C2–C5).
+ * transição mínima de estágio. Fase C2: viabilidade, adversários e pesquisas (módulos vizinhos). Ainda sem ações,
+ * finanças e eleição (Fases C3–C5).
  */
 
 /** Índice sequencial do turno a ser jogado (PLANO_CAMPANHA.md §2.3): chave de banco, retenção e store. */
@@ -64,7 +69,8 @@ export function careerProfile(content: Pick<GameContent, 'scenario'>, profileId?
 
 /**
  * Estado inicial da carreira. Reconhecimento por UF = combinação do nacional com a base territorial do perfil,
- * 1 − (1 − R)(1 − base): nunca passa de 1 e não precisa de coeficiente.
+ * 1 − (1 − R)(1 − base): nunca passa de 1 e não precisa de coeficiente. Os adversários (Fase C2) seguem a mesma
+ * regra; ainda não há pesquisa (a primeira sai no fim do primeiro turno).
  */
 export function createCareerState(
   content: Pick<GameContent, 'scenario'>,
@@ -73,18 +79,14 @@ export function createCareerState(
 ): CareerState {
   const schedule = careerSchedule(content, startPoint);
   const profile = careerProfile(content, profileId);
-  const recognition: Record<string, number> = {};
-  for (const uf of content.scenario.regions?.ufs ?? []) {
-    const base = profile.territorialBase[uf.id] ?? 0;
-    recognition[uf.id] = 1 - (1 - profile.recognition) * (1 - base);
-  }
   return {
     startPoint,
     profileId: profile.id,
     stage: schedule[0].stage,
     turnIndex: 0,
-    recognition,
+    recognition: initialRecognition(content.scenario.regions?.ufs ?? [], profile.recognition, profile.territorialBase),
     valence: profile.valence,
+    opponents: createOpponents(content, profile),
   };
 }
 
@@ -99,11 +101,12 @@ export function currentCareerTurn(
 }
 
 /**
- * Etapas de um turno pré-posse, na ordem (esqueleto da Fase C1). As Fases C2–C5 acrescentam aqui viabilidade,
- * pesquisas, finanças e eleição; nenhuma etapa de governo roda antes da posse. Os indicadores de governo não mudam
- * antes da posse: contribuições destas etapas são só de relatório (pseudo-indicadores, como `'votingIntention'`).
+ * Etapas de um turno pré-posse, na ordem: viabilidade (Fase C2) e, por último, a pesquisa (PLANO_CAMPANHA.md Fase C2,
+ * "etapa definida do turno"). As Fases C3–C5 acrescentam finanças, ações e eleição antes da pesquisa; nenhuma etapa
+ * de governo roda antes da posse. Os indicadores de governo não mudam antes da posse: contribuições destas etapas são
+ * só de relatório (pseudo-indicador `'careerRecognition'`).
  */
-export const PRE_INAUGURATION_STEPS: readonly MonthStep[] = [];
+export const PRE_INAUGURATION_STEPS: readonly MonthStep[] = [viabilityStep, pollStep];
 
 /** Nota do relatório no turno em que a campanha termina e o próximo é a posse. */
 export const INAUGURATION_NOTE = 'Fim da campanha: o próximo turno é a posse, em janeiro de 2027.';
@@ -151,17 +154,19 @@ export function advanceCareerTurn(
   const nextTurn = career.turnIndex + 1;
   const nextStage: CareerStage = nextTurn < schedule.length ? schedule[nextTurn].stage : 'governo';
   if (nextStage === 'governo') draft.notes.push(INAUGURATION_NOTE);
+  const after = current.career ?? career;
+  const poll = after.poll?.turnIndex === career.turnIndex ? after.poll : undefined;
   const next: GameState = {
     ...current,
     rng: rng.state(),
-    career: { ...(current.career ?? career), stage: nextStage, turnIndex: nextTurn },
+    career: { ...after, stage: nextStage, turnIndex: nextTurn },
   };
   return {
     state: next,
     report: {
       monthIndex: state.monthIndex,
       turnIndex: career.turnIndex,
-      career: { stage: turn.stage, from: turn.from, to: turn.to ?? turn.from },
+      career: { stage: turn.stage, from: turn.from, to: turn.to ?? turn.from, ...(poll ? { poll } : {}) },
       accepted: [],
       rejected,
       contributions,

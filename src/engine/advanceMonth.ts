@@ -213,8 +213,8 @@ function copyDecision(d: Decision): Decision {
 function applyContributions(indicators: Indicators, contributions: readonly Contribution[]): Indicators {
   const next = { ...indicators };
   for (const c of contributions) {
-    // 'votingIntention' (Fase 08) é report-only: a intenção não pertence ao `Indicators`.
-    if (c.indicator === 'votingIntention') continue;
+    // Pseudo-indicadores (`ReportOnlyIndicator`) são report-only: não pertencem ao `Indicators`.
+    if (c.indicator === 'votingIntention' || c.indicator === 'careerRecognition') continue;
     next[c.indicator] += c.delta;
   }
   return next;

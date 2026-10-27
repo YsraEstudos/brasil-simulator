@@ -136,6 +136,7 @@ recusados.
 | Resultado simulado por UF da eleição geral (fotografia gravada no banco, sem sorteio novo) / intenção de voto estimada por UF | `ElectionResult` (`MonthReport.electionResult`, tabela `election_results`) / `regionalVoteIntention` |
 | Prevenção climática (força do programa em `Policy.prevention`; proteção = fração do dano evitada por UF; nunca muda a chuva) / visita e obra no mapa | `prevention` / `preventionOf` (`ImpulseTarget` `clima.prevencao_seca`, `clima.prevencao_cheia`) / marcadores `visit` e `work` (`projectUfs`) |
 | Carreira antes da posse (estágio, perfil de candidato, ponto de partida) | `GameState.career` (`CareerState`, `CareerStage`, `StartPoint`); cenário `Scenario.career` ([PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)) |
+| Reconhecimento / adversário / pesquisa da campanha / faixa do mapa / partição do eleitorado / sorteio por chave | `CareerState.recognition` (pseudo-indicador `'careerRecognition'`) / `CareerCandidateState` (`career.opponents`) / `CareerPoll` (`CareerState.poll`) / `RecognitionBand` / `tallyUf` (`Tally`) / `keyedRng` (`career/draw.ts`) |
 | Índice do turno (identidade de cada turno salvo; = `monthIndex` na partida que começa na posse) / turno da posse | `turnIndexOf(state)` (coluna `turn_index`) / `inaugurationTurnIndex(state)` |
 
 ---

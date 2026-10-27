@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
 
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campaign/labels';
+import { CareerPollCard } from '@/components/campaign/CareerPollCard';
+import { careerPollViewModel } from '@/components/campaign/careerPollView';
 import { ElectionsCard } from '@/components/campaign/ElectionsCard';
 import { EventInbox } from '@/components/campaign/EventInbox';
 import {
@@ -26,8 +28,10 @@ import type { IndicatorPoint } from '@/database/campaignRepository';
 import {
   indicatorsFromScenario,
   initialRegions,
+  isPreInauguration,
   SANCTION_ACTION_ID,
   toCalendar,
+  turnIndexOf,
   type Decision,
   type ElectionResult,
   type IndicatorKey,
@@ -387,7 +391,10 @@ export function PainelScreen() {
   const pendingCount = playing ? inboxCount(active.state, content, draft) : 0;
 
   // Eleições só entram no trilho na janela eleitoral; os selos da doca vêm do estado (funções puras em `mesaNav`).
-  const showElections = playing && electionsRelevant(content.scenario.elections, active.state.monthIndex);
+  // Antes da posse (PLANO_CAMPANHA.md Fase C2) o trilho eleitoral mostra a pesquisa da campanha.
+  const preInauguration = playing && isPreInauguration(active.state);
+  const showElections =
+    playing && (preInauguration || electionsRelevant(content.scenario.elections, active.state.monthIndex));
   const seenNewsMonth = seenNews && seenNews.id === activeId ? seenNews.month : null;
   const dockBadges: Readonly<Partial<Record<DockRoute, number>>> = playing
     ? { '/congresso': congressBadge(active.state), '/noticias': newsBadge(active.state, seenNewsMonth) }
@@ -476,12 +483,14 @@ export function PainelScreen() {
    * operação em curso) deixa tudo como está.
    */
   const endMonth = async () => {
-    const before = gameStore.getState().active?.state.monthIndex;
+    // Compara o turno, não o mês do mandato: antes da posse o mês fica parado (PLANO_CAMPANHA.md §2.3).
+    const beforeState = gameStore.getState().active?.state;
+    const before = beforeState ? turnIndexOf(beforeState) : undefined;
     // O resultado vem do estado, não do `ok`: se o mês foi gravado e só a releitura da lista falhou, ele avançou.
     // Falha antes de gravar: o mês fica, o rascunho também, e o aviso da mesa pede para tentar de novo.
     await gameStore.getState().endMonth();
     const after = gameStore.getState().active;
-    const outcome = endMonthOutcome(before, after?.state.monthIndex, after?.finished ?? false);
+    const outcome = endMonthOutcome(before, after ? turnIndexOf(after.state) : undefined, after?.finished ?? false);
     setEndMonthFailed(outcome === 'nada' && gameStore.getState().error !== undefined);
     if (outcome === 'relatorio') setSheet('relatorio');
     else if (outcome === 'legado') go('/legado');
@@ -601,6 +610,9 @@ export function PainelScreen() {
           />
         );
       case 'eleicoes':
+        if (active && isPreInauguration(active.state)) {
+          return <CareerPollCard view={careerPollViewModel(active.state, content, active.lastReport)} />;
+        }
         return active && content.scenario.elections ? (
           <ElectionsCard
             state={active.state}

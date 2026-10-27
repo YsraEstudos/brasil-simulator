@@ -1,8 +1,10 @@
 # Plano — Carreira de 4 a 8 anos (Camadas 1 a 5)
 
-Versão 0.5 do documento • 27/10/2026 • 🟨 Fase C0 (auditoria) e Fase C1 (entrega M1.1) feitas a pedido do autor; as decisões continuam com o autor
+Versão 0.6 do documento • 27/10/2026 • 🟨 Fases C0, C1 (M1.1) e C2 (parte M1.2) feitas a pedido do autor; as decisões continuam com o autor
 v0.2: incorpora comentários de revisão de 27/10/2026 (persistência, percurso inicial, modelo eleitoral, posse, divisão da Fase C6, saves).
 v0.3: incorpora a segunda revisão de 27/10/2026, na ordem de prioridade dela — M1 como sequência de entregas (§3.1), ações entre os turnos eleitorais (D-C15) e calendário fechado (§2.4), contabilidade dos eleitores (Fase C2), vitória do adversário no 1º turno (Fase C5), visibilidade e persistência das pesquisas (Fase C2), retenção, linha de base da posse e relógio da fila (§2.3), contratos de ordem e de sorteio (§4.1), Fase C6 separável com contratos de integração; e ajustes menores (nomenclatura, notícias, estimativas, D-C10).
+
+v0.6: o autor pediu a Fase C2. Implementadas as tarefas M1.2 (C2.1–C2.5): as escolhas tomadas e o que ficou de fora estão em §5, Fase C2, "Implementação".
 
 v0.5: Fase C0 feita, com as tarefas C0.1 a C0.5 e o protocolo e a estimativa no papel da C0.6. O resultado e as decisões que faltam estão em §5, Fase C0, "Resultado"; as fontes do §8 estão no [DATA_SOURCES.md](DATA_SOURCES.md) §6.
 
@@ -409,6 +411,62 @@ Persistência das pesquisas:
 **Testes exigidos.** O exemplo dos 100 mil eleitores; nenhum voto válido (D-C16); propriedades (partição soma E; nenhum candidato acima do teto de elegibilidade; nacional = soma das UFs sem perda; percentuais sobre válidos somam 100%); monotonicidade nas condições acima; pesquisa idêntica ao reabrir e ao retomar; abrir a tela não muda o estado do PRNG; fronteiras das faixas do mapa.
 
 **Estimativa (esforço).** Motor 2–3; testes 1.
+
+#### Implementação (27/10/2026, tarefas M1.2 C2.1–C2.5)
+
+**Escolhas tomadas para implementar** (recomendações do §7, registradas aqui; o autor pode revê-las):
+
+- **D-C17 = opção (a).** O nome de cada adversário vem de `elections.candidatos`. Os dados de campanha ficam em `career.opponents` (reconhecimento, valência, base territorial; `FICTICIO`). O perfil ganhou `blocId`: o jogador ocupa a vaga desse bloco, e o adversário do bloco sai da disputa. O Zod recusa:
+  - adversário sem nome em `elections.candidatos`;
+  - adversário repetido;
+  - perfil que fique com menos de dois candidatos na disputa, contando o jogador.
+- **D-C16 = estado inválido.** `tallyUf` recusa `abstencao + brancos_nulos ≥ 1`, e `validShares` recusa nenhum voto válido. As duas recusas são erros com motivo, sem divisão por zero. As faixas da calibração mantêm a soma abaixo de 1.
+- **D-C10 = sem teto pela rejeição.** Só vale o teto de elegibilidade do passo 4.
+- **D-C11 = sorteio por chave.** A pesquisa sorteia com `keyedRng(semente, ['career', 'poll', turno])`, que usa o sal FNV-1a de `career/draw.ts` e o `deriveSeed`. O PRNG principal não é tocado antes da posse.
+- **Opinião entre quem conhece.** A partir da utilidade u = `valencia_escala` · valência + `alinhamento_peso` · alinhamento:
+  - aprovação = (1 − `neutros`) · σ(`opiniao_escala` · u), e a rejeição é o resto de quem não é neutro;
+  - o alinhamento vale de −1 a 1 e mede a distância entre a ideologia do bloco e o `lean` da UF;
+  - teto = R · (1 − rejeição);
+  - peso = teto · e^u.
+- **Reconhecimento (I10).** A cada mês coberto pelo turno, nesta ordem:
+  1. o esquecimento puxa o valor para o piso (`ostracismo_taxa`, `ostracismo_piso`);
+  2. o crescimento orgânico o empurra para 1 (`organico_campanha` na corrida e na eleição; `organico_pre_campanha` antes delas).
+
+  A transição não muda o reconhecimento. Os adversários seguem a mesma regra (adversários simples, sem ações).
+- **Pesquisa.** É a última etapa de cada turno pré-posse, exceto na transição. Mostra a intenção sobre o comparecimento: candidatos, indecisos e brancos/nulos, somando 1. O erro de amostra é `ruido_nacional` em cada parcela, com renormalização. Cada UF recebe uma faixa de reconhecimento com erro `ruido_uf`, e a margem divulgada é `pesquisa_margem`. A pesquisa atual fica em `CareerState.poll`, e a de cada turno, em `MonthReport.career.poll`.
+- **Eleitorado.** São 156.454.011 eleitores, repartidos entre as UFs pela população (`PROVISORIO`). A abstenção e os brancos e nulos usam os números de 2022 registrados no [DATA_SOURCES.md](DATA_SOURCES.md) §6.
+- **Versão do estado 14**, sem função de atualização (§4, saves antes do lançamento).
+
+**Entregue:**
+- **Motor:** `src/engine/career/` com `calibration.ts` (`CAREER_PARAMS`, todos lidos pelo motor), `draw.ts`, `viability.ts`, `electorate.ts`, `opponents.ts` e `polls.ts`. As etapas `viabilityStep` e `pollStep` entraram em `PRE_INAUGURATION_STEPS`.
+- **Relatório:** pseudo-indicador `'careerRecognition'`, que só aparece no relatório.
+- **Invariantes:**
+  - reconhecimento em [0, 1] e valência em [−1, 1];
+  - pesquisa soma 1;
+  - variação do reconhecimento nacional igual à soma das contribuições;
+  - o tempo anda um turno, e o mês do mandato fica parado antes da posse.
+- **Interface:** o trilho "Eleições" aparece antes da posse e mostra a pesquisa (`CareerPollCard`):
+  - intenção, do mais ao menos citado, com data e margem;
+  - faixas por UF;
+  - "Por que mudou?" em texto, com as causas na direção da variação e sem coeficientes.
+- **Duas lacunas da Fase C1, corrigidas:**
+  - o relatório agora abre depois de um turno pré-posse (a mesa compara o turno, não o mês do mandato);
+  - o título do relatório usa o rótulo da campanha ("Resumo de Setembro de 2026").
+- **Testes:**
+  - o exemplo dos 100 mil eleitores e o D-C16;
+  - as propriedades: partição, teto, nacional = soma das UFs, percentuais;
+  - monotonicidade na partição e na cadeia inteira;
+  - a mesma pesquisa ao refazer o turno, ao recalcular e ao retomar do banco;
+  - abrir a tela não muda o estado;
+  - fronteiras das faixas e regras do Zod.
+
+**Não entregue nesta fase:**
+- C2.6 (Exp): transbordo regional e base territorial dinâmica.
+- Parâmetros da lista proposta que nenhuma regra usa ainda: `transferencia_*` e `abstencao_2t` (2º turno, Fase C5) e `pesquisa_atraso`.
+- Pesquisa por UF (só a nacional) e mapa 2D das faixas (Fase C4).
+- Ações de campanha que mexam no reconhecimento ou na valência (Fase C4).
+- Eleição de fato: a partição em modo `eleicao` existe e está testada, mas ninguém a chama ainda (Fase C5). Todo jogador continua chegando à posse.
+- Estratégia-robô `sim:*` para a corrida.
 
 ---
 

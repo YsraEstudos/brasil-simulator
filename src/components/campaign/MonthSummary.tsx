@@ -4,7 +4,7 @@ import { Alert, Card, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { AGENDA_ACTIONS, pct, type GameContent, type MonthReport, type ProposalChange } from '@/engine';
 
-import { monthLabel, PROPOSAL_STATUS_LABEL, REJECTION_REASON_LABEL } from './labels';
+import { careerTurnLabel, monthLabel, PROPOSAL_STATUS_LABEL, REJECTION_REASON_LABEL } from './labels';
 
 /** Resumo do último mês encerrado: Copom, propostas, avisos e decisões recusadas (GAME_DESIGN.md §4.2). */
 export function MonthSummary({ report, content }: { report: MonthReport; content: GameContent }) {
@@ -20,7 +20,7 @@ export function MonthSummary({ report, content }: { report: MonthReport; content
   const nothingElse = report.proposalChanges.length === 0 && report.rejected.length === 0 && report.notes.length === 0;
 
   return (
-    <Card title={`Resumo de ${monthLabel(report.monthIndex)}`}>
+    <Card title={`Resumo de ${report.career ? careerTurnLabel(report.career) : monthLabel(report.monthIndex)}`}>
       {copomText && <Text variant="body">{copomText}</Text>}
 
       {report.proposalChanges.length > 0 && (

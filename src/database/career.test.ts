@@ -91,6 +91,19 @@ describe('carreira no banco (PLANO_CAMPANHA.md §2.3)', () => {
     expect(resumed.rng).toEqual(results.at(-1)!.state.rng);
   });
 
+  it('a pesquisa é a mesma ao retomar o save, no estado e no relatório do turno (PLANO_CAMPANHA.md Fase C2)', async () => {
+    await createCampaign(db, { id: 'c1', name: 'Corrida', scenarioVersion: '0.8.0', state: start(), content });
+    const results = await playResuming(2, () => []);
+    const resumed = await loadLatestState(db, 'c1');
+    expect(resumed.career!.poll).toEqual(results[1].state.career!.poll);
+    expect((await loadReport(db, 'c1', 0))!.career!.poll).toEqual(results[0].report.career!.poll);
+    expect((await loadReport(db, 'c1', 1))!.career!.poll).toEqual(resumed.career!.poll);
+    // Jogar o turno seguinte a partir do save dá a mesma pesquisa que sem reiniciar.
+    const fromSave = advanceMonth(resumed, { decisions: [] }, content);
+    const direct = advanceMonth(results[1].state, { decisions: [] }, content);
+    expect(fromSave.state.career!.poll).toEqual(direct.state.career!.poll);
+  });
+
   it('recusa gravar o mesmo turno duas vezes (o mês do mandato parado não colide)', async () => {
     const s0 = start();
     await createCampaign(db, { id: 'c1', name: 'Corrida', scenarioVersion: '0.8.0', state: s0, content });

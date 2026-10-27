@@ -90,11 +90,11 @@ describe('estado inicial da carreira (PLANO_CAMPANHA.md Fase C1)', () => {
 describe('turnos antes da posse e transição mínima (PLANO_CAMPANHA.md Fase C1, tarefa C1.6)', () => {
   it('percorre o calendário fechado do §2.4 e passa a governo no turno da posse', () => {
     const results = play(corrida(), PRE_TURNS);
-    expect(results.map((r) => r.report.career)).toEqual([
-      { stage: 'corrida', from: '2026-08', to: '2026-08' },
-      { stage: 'corrida', from: '2026-09', to: '2026-09' },
-      { stage: 'eleicao', from: '2026-10', to: '2026-10' },
-      { stage: 'transicao', from: '2026-11', to: '2026-12' },
+    expect(results.map((r) => r.report.career && { ...r.report.career, poll: undefined })).toEqual([
+      { stage: 'corrida', from: '2026-08', to: '2026-08', poll: undefined },
+      { stage: 'corrida', from: '2026-09', to: '2026-09', poll: undefined },
+      { stage: 'eleicao', from: '2026-10', to: '2026-10', poll: undefined },
+      { stage: 'transicao', from: '2026-11', to: '2026-12', poll: undefined },
     ]);
     expect(results.map((r) => r.report.turnIndex)).toEqual([0, 1, 2, 3]);
     expect(results.every((r) => r.report.monthIndex === 0 && r.state.monthIndex === 0)).toBe(true);
@@ -111,7 +111,8 @@ describe('turnos antes da posse e transição mínima (PLANO_CAMPANHA.md Fase C1
     const [first] = play(start, 1);
     expect(withoutCareer(first.state)).toEqual(withoutCareer(start));
     expect(first.state.rng).toEqual(start.rng);
-    expect(first.report.contributions).toEqual([]);
+    // Fase C2: as contribuições pré-posse são só do pseudo-indicador de relatório (reconhecimento do candidato).
+    expect(first.report.contributions.every((c) => c.indicator === 'careerRecognition')).toBe(true);
   });
 
   it('decisões de governo antes da posse são recusadas com fora_do_estagio', () => {

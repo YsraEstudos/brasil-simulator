@@ -9,7 +9,7 @@ import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 13;
+export const STATE_SCHEMA_VERSION = 14;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
 export const ENGINE_VERSION = '0.9.0';
@@ -526,12 +526,18 @@ export type DecisionRejection =
   | 'teto_legal';
 
 /** Parcela de uma variação, com causa, para o "Por que mudou?" (ECONOMIC_MODEL.md §1.6). */
+/**
+ * Pseudo-indicadores só de relatório: `'votingIntention'` (Fase 08) e `'careerRecognition'`, o reconhecimento
+ * nacional do candidato antes da posse (PLANO_CAMPANHA.md Fase C2, média das UFs pela população).
+ */
+export type ReportOnlyIndicator = 'votingIntention' | 'careerRecognition';
+
 export interface Contribution {
   /**
    * Indicador `Indicators` de destino ou o pseudo-indicador `'votingIntention'` (Fase 08): a intenção de voto
    * não pertence ao `Indicators`; contribuições para ela servem apenas ao relatório ("Por que mudou?").
    */
-  indicator: IndicatorKey | 'votingIntention';
+  indicator: IndicatorKey | ReportOnlyIndicator;
   /** ID da causa: proposta, choque, Banco Central, tendência… */
   cause: string;
   delta: number;
@@ -736,10 +742,51 @@ export interface CareerState {
   stage: CareerStage;
   /** Turno que está para ser jogado. */
   turnIndex: number;
-  /** Reconhecimento por UF, 0–1 (Fase C2 o faz evoluir; aqui só o valor inicial do perfil). */
+  /** Reconhecimento do jogador por UF, 0–1 (Fase C2: decaimento e crescimento orgânico a cada turno). */
   recognition: Record<string, number>;
-  /** Valência nacional, −1…1. */
+  /** Valência nacional do jogador, −1…1. */
   valence: number;
+  /** Adversários na disputa (Fase C2, D-C17), na ordem do cenário, sem o do bloco do jogador. */
+  opponents: CareerCandidateState[];
+  /** Pesquisa mais recente (Fase C2); as anteriores ficam nos relatórios. Ausente antes da primeira. */
+  poll?: CareerPoll;
+}
+
+/** Adversário antes da posse: identidade pelo bloco (`elections.candidatos`), reconhecimento por UF e valência. */
+export interface CareerCandidateState {
+  blocId: string;
+  recognition: Record<string, number>;
+  valence: number;
+}
+
+/** Faixa do reconhecimento estimado no mapa (PLANO_CAMPANHA.md I8). */
+export type RecognitionBand = 'desconhecido' | 'pouco_conhecido' | 'conhecido' | 'muito_conhecido';
+
+/** Intenção estimada de um candidato: `'jogador'` ou o bloco do adversário. */
+export interface PollIntention {
+  candidateId: string;
+  share: number;
+}
+
+/**
+ * Pesquisa persistida (PLANO_CAMPANHA.md Fase C2): criada na última etapa do turno, com sorteio por chave; reabrir
+ * a tela ou retomar o save mostra a mesma. Parcelas sobre quem vai votar (comparecimento): candidatos, indecisos e
+ * brancos/nulos somam 1. Os valores internos do motor nunca vão para a tela, só esta estimativa.
+ */
+export interface CareerPoll {
+  /** Turno em que foi feita. */
+  turnIndex: number;
+  /** "AAAA-MM": mês de referência (o último coberto pelo turno). */
+  month: string;
+  scope: 'nacional';
+  /** Margem de erro divulgada (fração). */
+  margin: number;
+  /** Jogador primeiro, depois os adversários na ordem do estado. */
+  intentions: PollIntention[];
+  undecided: number;
+  blankNull: number;
+  /** Faixa do reconhecimento estimado do jogador por UF. */
+  recognitionBands: Record<string, RecognitionBand>;
 }
 
 /** Turno pré-posse no relatório: o estágio jogado e os meses do calendário civil que ele cobriu. */
@@ -749,6 +796,8 @@ export interface CareerTurnReport {
   from: string;
   /** "AAAA-MM"; igual a `from` num turno de um mês. */
   to: string;
+  /** Pesquisa feita no turno (Fase C2); ausente nos turnos sem pesquisa (transição). */
+  poll?: CareerPoll;
 }
 
 /**
