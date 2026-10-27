@@ -40,6 +40,7 @@ import {
 
 import { draftInput, EMPTY_DRAFT, toggleDecision, toggleEventChoice, type AgendaDraft } from './agendaDraft';
 import {
+  CAMPAIGN_NAME_MAX,
   checkNewCampaignInput,
   DEFAULT_SETUP_PREFS,
   LAST_DIFFICULTY_KEY,
@@ -118,6 +119,11 @@ export interface GameStoreState {
   init(): Promise<void>;
   /** Cria a campanha e só a torna ativa depois de gravada; a anterior continua salva no banco. */
   newCampaign(input: NewCampaignInput): Promise<NewCampaignResult>;
+  /**
+   * Nova tentativa depois da derrota na eleição (PLANO_CAMPANHA.md Fase C5, D-C18): campanha nova com a mesma
+   * dificuldade, o mesmo cenário e o mesmo ponto de partida, e semente nova. A partida perdida continua salva.
+   */
+  retryCareer(): Promise<NewCampaignResult>;
   /** Carrega uma campanha salva; `true` se ela ficou ativa. A já ativa é mantida como está (com o rascunho). */
   continueCampaign(id: string): Promise<boolean>;
   /** Indicadores dos últimos meses gravados (série do Painel); vazio sem partida ou leitura falha. */
@@ -336,6 +342,20 @@ export function createGameStore(deps: GameStoreDeps) {
         } finally {
           set({ busy: false });
         }
+      },
+
+      async retryCareer() {
+        const active = get().active;
+        const career = active?.state.career;
+        if (!active || !career)
+          return { ok: false, reason: 'falha', error: 'Não há campanha eleitoral para recomeçar.' };
+        const suffix = ' · nova tentativa';
+        return get().newCampaign({
+          name: `${active.name.slice(0, CAMPAIGN_NAME_MAX - suffix.length)}${suffix}`,
+          difficulty: active.state.difficulty,
+          scenarioId: active.state.scenarioId,
+          startPoint: career.startPoint,
+        });
       },
 
       async continueCampaign(id) {

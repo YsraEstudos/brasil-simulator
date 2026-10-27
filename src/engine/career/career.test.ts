@@ -36,10 +36,13 @@ function play(state: GameState, n: number, steps = DEFAULT_STEPS): MonthResult[]
   return out;
 }
 
-/** Estado sem os campos da carreira: o que a partida da posse também tem. */
+/**
+ * Estado sem os campos da carreira: o que a partida da posse também tem. Fora da comparação, por lista: o bloco
+ * career e as notícias da campanha (`careerPeriod`, como a da posse, Fase C5).
+ */
 function withoutCareer(s: GameState): Omit<GameState, 'career'> {
   const { career: _career, ...rest } = s;
-  return rest;
+  return { ...rest, events: { ...rest.events, news: (rest.events.news ?? []).filter((n) => !n.careerPeriod) } };
 }
 
 describe('calendário antes da posse (PLANO_CAMPANHA.md Fase C1, tarefa C1.3)', () => {

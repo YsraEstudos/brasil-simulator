@@ -2,6 +2,7 @@ export { advanceMonth, DEFAULT_STEPS } from './advanceMonth';
 export {
   advanceCareerTurn,
   availableStartPoints,
+  careerDefeated,
   careerProfile,
   careerSchedule,
   createCareerState,
@@ -30,6 +31,8 @@ export {
   type DebateOption,
 } from './career/debate';
 export { keySalt } from './career/draw';
+export { ELECTION_NOTES, electedOutcome, runElection, tallyRound } from './career/election';
+export { canReachInauguration, inaugurationNews } from './career/inauguration';
 export {
   aggregateTallies,
   apportion,

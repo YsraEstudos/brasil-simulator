@@ -20,13 +20,14 @@ import { careerActionsPerTurn, isCareerAction, screenCareerAction } from './acti
 import { campaignStep } from './campaignStep';
 import { DEBATE_ACTION_ID, screenDebate } from './debate';
 import { createOpponents } from './opponents';
+import { electedOutcome, electionStep } from './election';
+import { canReachInauguration, closeCampaignAccounts, INAUGURATION_NOTE, inaugurationNews } from './inauguration';
 import { pollStep } from './polls';
 import { initialRecognition, viabilityStep } from './viability';
 import { inspectIllicitTurn, resolveIllicitCalibration } from './illicit';
 import { offsetOfKey } from '../calendar';
 import { appendNews } from '../news';
 import {
-  closeCampaignFinance,
   createCampaignFinance,
   reserveCampaignCosts,
   createExpandedFinance,
@@ -35,7 +36,6 @@ import {
   recordExternalSpend,
   receiveSimpleDue,
   scheduleSimpleReceipt,
-  closeExpandedFinance,
   receiveDue,
   scheduleReceipt,
   type FinancePocket,
@@ -45,7 +45,7 @@ import {
 /**
  * Carreira antes da posse (PLANO_CAMPANHA.md, Fase C1 / entrega M1.1): identidade dos turnos, despacho por estágio e
  * transição mínima de estágio. Fase C2: viabilidade, adversários e pesquisas; Fase C3: finanças; Fase C4: ações e
- * debate (módulos vizinhos). Ainda sem eleição (Fase C5).
+ * debate; Fase C5: eleição, desfecho e posse (módulos vizinhos).
  */
 
 /** Índice sequencial do turno a ser jogado (PLANO_CAMPANHA.md §2.3): chave de banco, retenção e store. */
@@ -147,21 +147,42 @@ export function currentCareerTurn(
 }
 
 /**
- * Etapas de um turno pré-posse, na ordem: ações e debate (Fase C4), viabilidade (Fase C2) e, por último, a pesquisa
- * (PLANO_CAMPANHA.md Fase C2, "etapa definida do turno"). As finanças (Fase C3) são a triagem antes das etapas; a
- * Fase C5 acrescenta a eleição antes da pesquisa. Nenhuma etapa de governo roda antes da posse: contribuições destas
- * etapas são só de relatório (pseudo-indicadores `'careerRecognition'` e `'careerValence'`).
+ * Etapas de um turno pré-posse, na ordem: ações e debate (Fase C4), viabilidade (Fase C2), a eleição no turno dela
+ * (Fase C5) e, por último, a pesquisa (PLANO_CAMPANHA.md Fase C2, "etapa definida do turno"; não roda no turno da
+ * eleição, que já tem o resultado). As finanças (Fase C3) são a triagem antes das etapas. Nenhuma etapa de governo
+ * roda antes da posse: contribuições destas etapas são só de relatório (pseudo-indicadores `'careerRecognition'` e
+ * `'careerValence'`).
  */
-export const PRE_INAUGURATION_STEPS: readonly MonthStep[] = [campaignStep, viabilityStep, pollStep];
+export const PRE_INAUGURATION_STEPS: readonly MonthStep[] = [campaignStep, viabilityStep, electionStep, pollStep];
 
-/** Nota do relatório no turno em que a campanha termina e o próximo é a posse. */
-export const INAUGURATION_NOTE = 'Fim da campanha: o próximo turno é a posse, em janeiro de 2027.';
+export { INAUGURATION_NOTE };
+
+/** A eleição já foi perdida: a partida terminou e não há próximo turno (PLANO_CAMPANHA.md Fase C5). */
+export function careerDefeated(state: Pick<GameState, 'career'>): boolean {
+  const election = state.career?.election;
+  return election !== undefined && !electedOutcome(election.outcome);
+}
+
+/** Soma as contribuições do turno às causas acumuladas da campanha (resumo da Fase C5). */
+function addCauseTotals(
+  totals: CareerState['causeTotals'],
+  contributions: readonly Contribution[],
+): NonNullable<CareerState['causeTotals']> {
+  const next = { recognition: { ...totals?.recognition }, valence: { ...totals?.valence } };
+  for (const c of contributions) {
+    const bucket =
+      c.indicator === 'careerRecognition' ? next.recognition : c.indicator === 'careerValence' ? next.valence : null;
+    if (bucket) bucket[c.cause] = (bucket[c.cause] ?? 0) + c.delta;
+  }
+  return next;
+}
 
 /**
  * Processa um turno pré-posse (despacho do `advanceMonth`). Decisões de governo são recusadas com `fora_do_estagio`;
  * ações de campanha e debate passam pela triagem (estágio, alvo, limite do turno) e pela reserva do custo, na ordem
  * de envio, e a etapa `campaignStep` aplica as aceitas. O mês do mandato não anda; o turno avança e, no fim do calendário do ponto de
- * partida, o estágio passa a `governo` (transição mínima, sem regras de posse — Fase C5). Função pura.
+ * partida, o estágio passa a `governo`: a posse (`inauguration.ts`) encerra as contas da campanha e exige a eleição
+ * ganha. Depois de uma derrota não há próximo turno (erro). Função pura.
  */
 export function advanceCareerTurn(
   state: GameState,
@@ -172,6 +193,7 @@ export function advanceCareerTurn(
   const career = state.career;
   const turn = currentCareerTurn(state, content);
   if (!career || !turn) throw new RangeError('advanceCareerTurn só processa turnos antes da posse');
+  if (careerDefeated(state)) throw new RangeError('a campanha terminou com a derrota na eleição');
 
   const accepted: Decision[] = [];
   const expenditures: FinanceExpenditure[] = [];
@@ -436,43 +458,36 @@ export function advanceCareerTurn(
 
   const schedule = careerSchedule(content, career.startPoint);
   const nextTurn = career.turnIndex + 1;
-  const nextStage: CareerStage = nextTurn < schedule.length ? schedule[nextTurn].stage : 'governo';
-  if (nextStage === 'governo') draft.notes.push(INAUGURATION_NOTE);
   const after = current.career ?? career;
-  const poll = after.poll?.turnIndex === career.turnIndex ? after.poll : undefined;
-  finance = after.finance && nextStage === 'governo' ? closeCampaignFinance(after.finance) : after.finance;
-  expandedFinance = after.expandedFinance;
-  let commitments = after.commitments;
-  if (expandedFinance && nextStage === 'governo') {
-    const deadline = content.scenario.career?.finance?.expanded?.debtDeadline;
-    if (deadline === undefined) throw new RangeError('prazo de dívida ausente');
-    const closed = closeExpandedFinance(expandedFinance, state.difficulty, deadline);
-    expandedFinance = closed.finance;
-    if (closed.commitment) commitments = [...(commitments ?? []), closed.commitment];
+  // Derrota na eleição: a partida termina com o estágio parado na eleição (o turno anda; não há transição nem posse).
+  const nextStage: CareerStage = careerDefeated({ career: after })
+    ? turn.stage
+    : nextTurn < schedule.length
+      ? schedule[nextTurn].stage
+      : 'governo';
+  if (nextStage === 'governo' && !canReachInauguration(after, schedule)) {
+    throw new RangeError('o calendário termina sem eleição ganha: o cenário precisa de um turno de eleição antes');
   }
-  if (illicit && nextStage === 'governo')
-    illicit = {
-      ...illicit,
-      closedBalance: illicit.balance,
-      balance: 0,
-      cancelledPending: illicit.pending.reduce((sum, item) => sum + item.amount, 0),
-      pending: [],
-    };
+  if (nextStage === 'governo') draft.notes.push(INAUGURATION_NOTE);
+  const poll = after.poll?.turnIndex === career.turnIndex ? after.poll : undefined;
+  const closed = nextStage === 'governo' ? closeCampaignAccounts(after, state.difficulty, content) : after;
+  finance = closed.finance;
+  expandedFinance = closed.expandedFinance;
+  illicit = closed.illicit;
   const next: GameState = {
     ...current,
     rng: rng.state(),
     career: {
       ...after,
-      ...(finance ? { finance } : {}),
-      ...(expandedFinance ? { expandedFinance } : {}),
-      ...(commitments ? { commitments } : {}),
-      ...(illicit ? { illicit } : {}),
+      ...closed,
+      causeTotals: addCauseTotals(after.causeTotals, contributions),
       stage: nextStage,
       turnIndex: nextTurn,
     },
   };
+  const withPosse = nextStage === 'governo' ? appendNews(next, [inaugurationNews(career, turn)]) : next;
   const withNews = illicitReport?.discovered
-    ? appendNews(next, [
+    ? appendNews(withPosse, [
         {
           id: `career_${career.turnIndex}_caixa_dois`,
           monthIndex: state.monthIndex,
@@ -485,7 +500,7 @@ export function advanceCareerTurn(
           sourceId: 'caixa_dois',
         },
       ])
-    : next;
+    : withPosse;
   return {
     state: withNews,
     report: {
@@ -503,6 +518,7 @@ export function advanceCareerTurn(
         ...(illicitReport ? { illicit: illicitReport } : {}),
         ...(draft.careerActions ? { actions: draft.careerActions } : {}),
         ...(draft.careerDebate ? { debate: draft.careerDebate } : {}),
+        ...(draft.careerElection ? { election: draft.careerElection } : {}),
       },
       accepted,
       rejected,

@@ -190,7 +190,7 @@ describe('pontos de partida no NOVO JOGO', () => {
     expect(views.map((v) => v.id)).toEqual(['posse', 'corrida']);
     expect(views[1].description).toContain('agosto de 2026');
     expect(views[1].description).toContain('finanças de campanha');
-    expect(views[1].description).toContain('eleição ainda não é disputada');
+    expect(views[1].description).toContain('disputa a eleição de outubro');
     expect(startPointViews('prototipo_ficticio').map((v) => v.id)).toEqual(['posse']);
   });
 

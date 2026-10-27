@@ -12,10 +12,10 @@ import type { DebtCommitment } from './career/commitments';
 import type { IllicitState } from './career/illicit';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 15;
+export const STATE_SCHEMA_VERSION = 16;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.11.0';
+export const ENGINE_VERSION = '0.12.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -769,6 +769,54 @@ export interface CareerState {
   opponents: CareerCandidateState[];
   /** Pesquisa mais recente (Fase C2); as anteriores ficam nos relatórios. Ausente antes da primeira. */
   poll?: CareerPoll;
+  /** Resultado da eleição (Fase C5); ausente antes dela. Derrota encerra a partida (`campaignOutcome`). */
+  election?: CareerElectionResult;
+  /**
+   * Soma, por causa, das variações do reconhecimento nacional e da valência do jogador ao longo da campanha (Fase C5:
+   * "principais fatores" do resumo). Mesmas causas das contribuições do relatório; só turnos antes da posse.
+   */
+  causeTotals?: { recognition: Record<string, number>; valence: Record<string, number> };
+}
+
+/** Desfecho da eleição para o jogador (PLANO_CAMPANHA.md Fase C5, máquina de estados). */
+export type CareerElectionOutcome = 'eleito_1t' | 'eleito_2t' | 'derrotado_1t' | 'derrotado_2t';
+
+/** Apuração de um turno da eleição: votos inteiros, nacional = soma das UFs. */
+export interface CareerElectionRound {
+  /** Candidatos na cédula (`'jogador'` ou o bloco), na ordem das pesquisas. */
+  candidates: string[];
+  /** Votos nacionais, na ordem de `candidates`. */
+  votes: number[];
+  electorate: number;
+  abstention: number;
+  blankNull: number;
+  /** Mais votado em cada UF (empate na UF: o primeiro na ordem da cédula). */
+  ufWinners: Record<string, string>;
+  /** Parcela dos válidos do jogador em cada UF. */
+  playerShareByUf: Record<string, number>;
+}
+
+/** Desempate aplicado (CF art. 77 §5: o mais idoso; idades iguais ou ausentes: sorteio por chave). */
+export interface CareerElectionTiebreak {
+  round: 1 | 2;
+  /** `segundo_lugar`: vaga no 2º turno; `vencedor`: maioria exata no 2º turno. */
+  place: 'segundo_lugar' | 'vencedor';
+  candidates: string[];
+  rule: 'idade' | 'sorteio';
+  winner: string;
+}
+
+/** Resultado da eleição (PLANO_CAMPANHA.md Fase C5, tarefa C5.1). */
+export interface CareerElectionResult {
+  turnIndex: number;
+  /** "AAAA-MM" do turno da eleição. */
+  month: string;
+  first: CareerElectionRound;
+  /** Ausente quando alguém teve a maioria dos válidos no 1º turno. */
+  second?: CareerElectionRound;
+  winner: string;
+  outcome: CareerElectionOutcome;
+  tiebreaks: CareerElectionTiebreak[];
 }
 
 /** Adversário antes da posse: identidade pelo bloco (`elections.candidatos`), reconhecimento por UF e valência. */
@@ -836,6 +884,8 @@ export interface CareerTurnReport {
   actions?: CareerActionOutcome[];
   /** Debate do turno (Fase C4); ausente nos turnos sem debate. */
   debate?: CareerDebateOutcome;
+  /** Eleição apurada no turno (Fase C5). */
+  election?: CareerElectionResult;
 }
 
 /** O que uma ação de campanha fez no turno (PLANO_CAMPANHA.md Fase C4, tarefa C4.1). */
@@ -999,6 +1049,8 @@ export type ReportDraft = Pick<
   careerActions?: CareerActionOutcome[];
   /** Debate do turno pré-posse (preenchido por `campaignStep`, Fase C4). */
   careerDebate?: CareerDebateOutcome;
+  /** Eleição apurada no turno (Fase C5). */
+  careerElection?: CareerElectionResult;
 };
 
 export interface StepContext {

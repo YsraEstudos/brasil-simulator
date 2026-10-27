@@ -77,12 +77,16 @@ export function endMonthControl(input: {
   busy: boolean;
   actionsUsed: number;
   actionsMax: number;
+  /** A partida terminou na eleição, antes da posse (PLANO_CAMPANHA.md Fase C5): o botão leva ao resumo. */
+  campaignLost?: boolean;
 }): EndMonthControl {
   if (!input.hasCampaign) {
     return { mode: 'indisponivel', label: 'Encerrar o mês', caption: 'Inicie uma campanha', disabled: true };
   }
   if (input.finished) {
-    return { mode: 'legado', label: 'Ver legado', caption: 'Campanha encerrada', disabled: false };
+    return input.campaignLost
+      ? { mode: 'legado', label: 'Ver resumo', caption: 'Eleição perdida', disabled: false }
+      : { mode: 'legado', label: 'Ver legado', caption: 'Campanha encerrada', disabled: false };
   }
   return {
     mode: 'encerrar',

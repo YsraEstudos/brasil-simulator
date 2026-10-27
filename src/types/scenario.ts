@@ -311,6 +311,11 @@ export const careerProfileSchema = z
     /** Capacidade de arrecadar por turno, R$ mil. */
     fundraisingCapacity: z.number().int().min(0),
     territorialBase: z.record(ufIdSchema, unitInterval),
+    /**
+     * Idade na eleição (`FICTICIO`), só para o desempate (CF art. 77 §5: o mais idoso; PLANO_CAMPANHA.md Fase C5).
+     * Mínimo de 35 anos para presidente (CF art. 14 §3, VI, a). Ausente: o desempate vai ao sorteio por chave.
+     */
+    age: z.number().int().min(35).max(120).optional(),
     dataStatus: dataStatusSchema,
   })
   .strict();
@@ -328,6 +333,11 @@ export const careerOpponentSchema = z
     /** Valência nacional, −1…1. */
     valence: axis,
     territorialBase: z.record(ufIdSchema, unitInterval),
+    /**
+     * Idade na eleição (`FICTICIO`), só para o desempate (CF art. 77 §5: o mais idoso; PLANO_CAMPANHA.md Fase C5).
+     * Mínimo de 35 anos para presidente (CF art. 14 §3, VI, a). Ausente: o desempate vai ao sorteio por chave.
+     */
+    age: z.number().int().min(35).max(120).optional(),
     dataStatus: dataStatusSchema,
   })
   .strict();

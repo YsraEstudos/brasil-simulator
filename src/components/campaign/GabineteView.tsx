@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { loadContent } from '@/content';
 import { Button, Card, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { isNovoBeneficio, vedacaoAtiva, type Decision } from '@/engine';
+import { careerDefeated, isNovoBeneficio, vedacaoAtiva, type Decision } from '@/engine';
 import type { Policy } from '@/types/policy';
 import { decisionCost, draftCost, fits, gameStore, useGame, type ActiveCampaign } from '@/store';
 
@@ -56,6 +56,16 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
     if (selected.includes(id) || fits(draft, decision, content, actionsMax)) toggleDecision(decision);
   };
 
+  if (finished && careerDefeated(state)) {
+    return (
+      <Card title="A campanha terminou" subtitle="A candidatura perdeu a eleição: não houve mandato.">
+        <Text variant="body" color="textSecondary">
+          O resumo mostra o resultado, o que pesou na disputa e como tentar de novo.
+        </Text>
+        <Button label="Ver o resumo" onPress={() => router.replace('/legado')} block />
+      </Card>
+    );
+  }
   if (finished) {
     return (
       <Card title="A campanha terminou" subtitle="O mandato acabou: não há mais agenda a montar.">

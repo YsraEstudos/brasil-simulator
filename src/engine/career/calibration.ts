@@ -6,7 +6,7 @@ import type { ParamSpec } from '../economy/calibration';
  * (ordens de grandeza registradas no DATA_SOURCES.md §6) ou de jogo, a calibrar por simulação.
  *
  * **Todos os parâmetros são lidos pelo motor** (`career/viability.ts`, `career/electorate.ts`, `career/polls.ts`,
- * `career/actions.ts`, `career/debate.ts`);
+ * `career/actions.ts`, `career/debate.ts`, `career/election.ts`);
  * quem adicionar um parâmetro aqui sem usá-lo deve removê-lo (teste em `career/viability.test.ts`).
  *
  * Unidades: reconhecimento, rejeição e parcelas do eleitorado em fração (0–1); "por mês" quando aplicado a cada mês
@@ -215,6 +215,21 @@ export const CAREER_PARAMS = {
     max: 0.2,
     note: 'postura técnica: ganho de valência por unidade de reconhecimento nacional (rende para quem já é conhecido)',
     basis: JOGO,
+  },
+  // --- eleição (PLANO_CAMPANHA.md Fase C5, tarefa C5.1)
+  abstencao_2t: {
+    value: 0.2059,
+    min: 0.15,
+    max: 0.3,
+    note: 'fração do eleitorado que não comparece ao 2º turno',
+    basis: 'ordem de grandeza do 2º turno presidencial de 2022 (DATA_SOURCES.md §6, 27/10/2026)',
+  },
+  ruido_eleicao: {
+    value: 0.08,
+    min: 0,
+    max: 0.2,
+    note: 'desvio do humor do dia da eleição: fator e^(σ·z) no peso de cada candidato, igual em todas as UFs',
+    basis: `${JOGO}; a pesquisa não acerta o resultado com certeza`,
   },
 } as const satisfies Record<string, ParamSpec>;
 

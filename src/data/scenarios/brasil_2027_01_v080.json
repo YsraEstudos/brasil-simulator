@@ -1276,6 +1276,7 @@
         "liquidity": 0.3,
         "fundraisingCapacity": 800,
         "territorialBase": { "MG": 0.5, "ES": 0.25, "RJ": 0.15, "SP": 0.1 },
+        "age": 58,
         "dataStatus": "FICTICIO"
       }
     ],
@@ -1285,6 +1286,7 @@
         "recognition": 0.55,
         "valence": 0.05,
         "territorialBase": { "BA": 0.3, "PE": 0.3, "CE": 0.25, "MA": 0.2, "PI": 0.2 },
+        "age": 66,
         "dataStatus": "FICTICIO"
       },
       {
@@ -1292,6 +1294,7 @@
         "recognition": 0.3,
         "valence": 0.1,
         "territorialBase": { "RS": 0.35, "SC": 0.1, "PR": 0.1 },
+        "age": 52,
         "dataStatus": "FICTICIO"
       },
       {
@@ -1299,6 +1302,7 @@
         "recognition": 0.35,
         "valence": 0.05,
         "territorialBase": { "PA": 0.3, "AM": 0.25, "TO": 0.15 },
+        "age": 61,
         "dataStatus": "FICTICIO"
       },
       {
@@ -1306,6 +1310,7 @@
         "recognition": 0.3,
         "valence": 0.1,
         "territorialBase": { "SP": 0.3, "RJ": 0.1 },
+        "age": 49,
         "dataStatus": "FICTICIO"
       },
       {
@@ -1313,6 +1318,7 @@
         "recognition": 0.5,
         "valence": 0,
         "territorialBase": { "SC": 0.3, "MT": 0.3, "GO": 0.25, "RO": 0.25 },
+        "age": 57,
         "dataStatus": "FICTICIO"
       }
     ],
