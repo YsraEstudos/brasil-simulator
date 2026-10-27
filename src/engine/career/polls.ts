@@ -110,15 +110,21 @@ export function takePoll(
 }
 
 /**
- * Etapa da pesquisa: a última do turno pré-posse (depois da viabilidade). Não roda na transição (a eleição já
- * passou). Sem contribuições: a pesquisa é uma leitura, não muda o que mede.
+ * Etapa da pesquisa: a última do turno pré-posse (depois da viabilidade). Não roda no turno da eleição (o resultado
+ * substitui a pesquisa, Fase C5) nem na transição. Sem contribuições: a pesquisa é uma leitura, não muda o que mede.
  */
 export const pollStep: MonthStep = (state, ctx) => {
   const career = state.career;
   const turn = career
     ? ctx.content.scenario.career?.startPoints[career.startPoint]?.turns[career.turnIndex]
     : undefined;
-  if (!career || !turn || turn.stage === 'transicao' || (ctx.content.scenario.regions?.ufs.length ?? 0) === 0) {
+  if (
+    !career ||
+    !turn ||
+    turn.stage === 'transicao' ||
+    turn.stage === 'eleicao' ||
+    (ctx.content.scenario.regions?.ufs.length ?? 0) === 0
+  ) {
     return { state, contributions: [] };
   }
   const poll = takePoll(state, career, ctx.content, turn.to ?? turn.from);

@@ -138,6 +138,7 @@ recusados.
 | Carreira antes da posse (estágio, perfil de candidato, ponto de partida) | `GameState.career` (`CareerState`, `CareerStage`, `StartPoint`); cenário `Scenario.career` ([PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)) |
 | Reconhecimento / adversário / pesquisa da campanha / faixa do mapa / partição do eleitorado / sorteio por chave | `CareerState.recognition` (pseudo-indicador `'careerRecognition'`) / `CareerCandidateState` (`career.opponents`) / `CareerPoll` (`CareerState.poll`) / `RecognitionBand` / `tallyUf` (`Tally`) / `keyedRng` (`career/draw.ts`) |
 | Ação de campanha / debate / valência do candidato | `CAREER_ACTIONS` (`career/actions.ts`, ids em `CAREER_ACTION_IDS`) / `participar_debate` (`career/debate.ts`, `career.debates`) / `CareerState.valence` (pseudo-indicador `'careerValence'`) |
+| Eleição da campanha / derrota antes da posse / posse da carreira | `runElection` e `CareerState.election` (`career/election.ts`) / desfecho `derrota_campanha` (`campaignOutcome`, `careerDefeated`) / `career/inauguration.ts` |
 | Índice do turno (identidade de cada turno salvo; = `monthIndex` na partida que começa na posse) / turno da posse | `turnIndexOf(state)` (coluna `turn_index`) / `inaugurationTurnIndex(state)` |
 
 ---

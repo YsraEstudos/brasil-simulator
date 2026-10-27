@@ -243,10 +243,11 @@ export function startPointViews(scenarioId: string): StartPointView[] {
       id,
       name: START_POINT_NAME[id],
       description:
-        `Começa em ${startLabel(first.from)}, como ${profile.name.toLowerCase()}, e chega à posse em janeiro de 2027. ` +
+        `Começa em ${startLabel(first.from)}, como ${profile.name.toLowerCase()}, e disputa a eleição de outubro: ` +
+        'vencendo, toma posse em janeiro de 2027; perdendo, a partida termina com um resumo da campanha. ' +
         (scenario.career?.finance?.expanded
-          ? 'Inclui ações de campanha, um debate na TV e finanças de campanha; a eleição ainda não é disputada nesta versão.'
-          : 'Versão inicial: a eleição ainda não é disputada nesta versão.'),
+          ? 'Inclui ações de campanha, um debate na TV e finanças de campanha.'
+          : 'Inclui ações de campanha e um debate na TV.'),
     };
   });
 }

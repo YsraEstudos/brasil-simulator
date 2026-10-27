@@ -7,6 +7,8 @@ import type { SymbolViewProps } from 'expo-symbols';
 
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campaign/labels';
 import { CareerActionsCard } from '@/components/campaign/CareerActionsCard';
+import { CareerElectionCard } from '@/components/campaign/CareerElectionCard';
+import { careerElectionViewModel } from '@/components/campaign/careerElectionView';
 import { CareerPollCard } from '@/components/campaign/CareerPollCard';
 import { CareerDebtCard, CareerFinanceCard } from '@/components/campaign/CareerFinanceCard';
 import { careerPollViewModel } from '@/components/campaign/careerPollView';
@@ -30,6 +32,7 @@ import type { IndicatorPoint } from '@/database/campaignRepository';
 import {
   indicatorsFromScenario,
   initialRegions,
+  careerDefeated,
   isPreInauguration,
   SANCTION_ACTION_ID,
   toCalendar,
@@ -576,6 +579,7 @@ export function PainelScreen() {
     busy,
     actionsUsed: active ? draftCost(draft, content) : 0,
     actionsMax: active?.state.resources.agendaActionsPerMonth ?? 0,
+    campaignLost: active ? careerDefeated(active.state) : false,
   });
   const endButton = (
     <EndMonthButton
@@ -618,6 +622,24 @@ export function PainelScreen() {
         );
       case 'eleicoes':
         if (active && isPreInauguration(active.state)) {
+          // Depois da eleição (Fase C5): o resultado no lugar das ações e da pesquisa; as contas seguem até a posse.
+          const election = careerElectionViewModel(active.state, content);
+          if (election) {
+            return (
+              <>
+                <CareerElectionCard view={election} />
+                {!active.finished && (
+                  <CareerFinanceCard
+                    state={active.state}
+                    content={content}
+                    report={active.lastReport}
+                    draft={draft}
+                    onToggle={(decision) => gameStore.getState().toggleDecision(decision)}
+                  />
+                )}
+              </>
+            );
+          }
           return (
             <>
               <CareerActionsCard

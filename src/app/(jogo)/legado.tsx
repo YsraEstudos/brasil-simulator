@@ -1,12 +1,17 @@
 import { useMemo } from 'react';
 
+import { CareerCampaignReport } from '@/components/campaign/CareerCampaignReport';
 import { LegacyReport } from '@/components/campaign/LegacyReport';
 import { SubScreen } from '@/components/painel/SubScreen';
 import { Card, Text } from '@/components/ui';
 import { loadContent } from '@/content';
+import { careerDefeated } from '@/engine';
 import type { ActiveCampaign } from '@/store';
 
-/** Legado (GAME_DESIGN.md §7.1): subtela aberta pelo Painel ao fim da campanha; antes disso, só explica quando aparece. */
+/**
+ * Legado (GAME_DESIGN.md §7.1): subtela aberta pelo Painel ao fim da campanha; antes disso, só explica quando aparece.
+ * Derrota na eleição antes da posse: o resumo da campanha no lugar do legado (PLANO_CAMPANHA.md Fase C5).
+ */
 export default function LegadoScreen() {
   return <SubScreen title="Legado" render={(campaign) => <LegadoBody campaign={campaign} />} />;
 }
@@ -24,5 +29,6 @@ function LegadoBody({ campaign }: { campaign: ActiveCampaign }) {
       </Card>
     );
   }
+  if (careerDefeated(state)) return <CareerCampaignReport state={state} content={content} />;
   return <LegacyReport state={state} content={content} />;
 }

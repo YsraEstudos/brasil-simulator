@@ -22,8 +22,10 @@ async function device() {
   const db = openNodeDatabase();
   await migrate(db);
   const keepOpen: SqlDatabase = { ...db, close: async () => {} };
+  // Um gerador para o aparelho todo: reabrir o app não repete os ids das campanhas.
+  const random = fakeRandom();
   return async () => {
-    const store = createGameStore({ openDb: async () => keepOpen, random: fakeRandom() });
+    const store = createGameStore({ openDb: async () => keepOpen, random });
     await store.getState().init();
     return store;
   };
@@ -98,5 +100,47 @@ describe('store com a partida que começa na corrida (PLANO_CAMPANHA.md §2.3)',
     expect(after.previous).toEqual(atPosse.state.indicators);
     expect(after.lastReport).toMatchObject({ turnIndex: PRE_TURNS, monthIndex: 0 });
     expect(app.getState().campaigns).toMatchObject([{ id, currentTurn: PRE_TURNS + 1, currentMonth: 1, stage: null }]);
+  });
+});
+
+describe('derrota na eleição e nova tentativa (PLANO_CAMPANHA.md Fase C5, D-C18)', () => {
+  it('a derrota encerra e sobrevive ao reinício; a nova tentativa começa outra corrida e mantém a perdida', async () => {
+    const launchApp = await device();
+    let app = await launchApp();
+    await app.getState().newCampaign({ name: 'Derrota', difficulty: 'realismo', startPoint: 'corrida' });
+    const id = app.getState().active!.id;
+    const content = loadContent(DEFAULT_SCENARIO_ID);
+    const electionTurn = careerSchedule(content, 'corrida').findIndex((t) => t.stage === 'eleicao');
+    for (let i = 0; i < electionTurn; i++) await app.getState().endMonth();
+
+    // Candidatura enfraquecida antes da eleição (só na memória: o turno gravado a seguir parte deste estado).
+    const active = app.getState().active!;
+    const weak = Object.fromEntries(Object.keys(active.state.career!.recognition).map((uf) => [uf, 0.02]));
+    app.setState({
+      active: {
+        ...active,
+        state: { ...active.state, career: { ...active.state.career!, recognition: weak, valence: -1 } },
+      },
+    });
+    expect(await app.getState().endMonth()).toBe(true);
+    expect(app.getState().active!.finished).toBe(true);
+    expect(app.getState().active!.state.career!.election!.outcome).toMatch(/^derrotado/);
+    // Não há próximo turno.
+    expect(await app.getState().endMonth()).toBe(true);
+    expect(app.getState().active!.state.career!.turnIndex).toBe(electionTurn + 1);
+
+    app = await launchApp();
+    expect(await app.getState().continueCampaign(id)).toBe(true);
+    expect(app.getState().active!.finished).toBe(true);
+    expect(app.getState().campaigns.find((c) => c.id === id)).toMatchObject({ status: 'encerrada' });
+
+    const retry = await app.getState().retryCareer();
+    expect(retry).toMatchObject({ ok: true });
+    const next = app.getState().active!;
+    expect(next.id).not.toBe(id);
+    expect(next.name).toBe('Derrota · nova tentativa');
+    expect(next.state.difficulty).toBe('realismo');
+    expect(next.state.career).toMatchObject({ stage: 'corrida', turnIndex: 0 });
+    expect(app.getState().campaigns.map((c) => c.id)).toEqual(expect.arrayContaining([id, next.id]));
   });
 });

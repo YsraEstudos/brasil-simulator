@@ -30,15 +30,17 @@ function play(state: GameState, n: number): MonthResult[] {
 }
 
 describe('pesquisas (PLANO_CAMPANHA.md Fase C2)', () => {
-  it('cada turno de campanha termina com uma pesquisa no estado e no relatório; a transição não tem', () => {
+  it('cada turno de campanha termina com uma pesquisa no estado e no relatório; a eleição e a transição não têm', () => {
     const results = play(corrida(), PRE_TURNS);
+    let lastPoll = -1;
     for (const [t, r] of results.entries()) {
       const stage = r.report.career!.stage;
-      if (stage === 'transicao') {
+      if (stage === 'transicao' || stage === 'eleicao') {
         expect(r.report.career!.poll).toBeUndefined();
-        // A atual continua sendo a do turno anterior (a da eleição).
-        expect(r.state.career!.poll!.turnIndex).toBe(t - 1);
+        // A atual continua sendo a do último turno de campanha (Fase C5: o resultado substitui a pesquisa).
+        expect(r.state.career!.poll!.turnIndex).toBe(lastPoll);
       } else {
+        lastPoll = t;
         expect(r.report.career!.poll).toEqual(r.state.career!.poll);
         expect(r.state.career!.poll).toMatchObject({ turnIndex: t, scope: 'nacional', month: r.report.career!.to });
       }

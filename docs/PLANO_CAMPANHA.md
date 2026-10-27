@@ -1,8 +1,10 @@
 # Plano — Carreira de 4 a 8 anos (Camadas 1 a 5)
 
-Versão 0.7 do documento • 27/10/2026 • 🟨 Fases C0, C1 (M1.1), C2 e C4 (partes M1.2) feitas a pedido do autor, C3 em verificação; as decisões continuam com o autor
+Versão 0.8 do documento • 27/10/2026 • 🟨 Fases C0, C1 (M1.1), C2 e C4 (partes M1.2) e C5 (parte M1.3) feitas a pedido do autor, C3 em verificação; as decisões continuam com o autor
 v0.2: incorpora comentários de revisão de 27/10/2026 (persistência, percurso inicial, modelo eleitoral, posse, divisão da Fase C6, saves).
 v0.3: incorpora a segunda revisão de 27/10/2026, na ordem de prioridade dela — M1 como sequência de entregas (§3.1), ações entre os turnos eleitorais (D-C15) e calendário fechado (§2.4), contabilidade dos eleitores (Fase C2), vitória do adversário no 1º turno (Fase C5), visibilidade e persistência das pesquisas (Fase C2), retenção, linha de base da posse e relógio da fila (§2.3), contratos de ordem e de sorteio (§4.1), Fase C6 separável com contratos de integração; e ajustes menores (nomenclatura, notícias, estimativas, D-C10).
+
+v0.8: o autor pediu a Fase C5. Implementadas as tarefas M1.3 (C5.1–C5.3): as escolhas tomadas e o que ficou de fora estão em §5, Fase C5, "Implementação".
 
 v0.7: o autor pediu a Fase C4. Implementadas as tarefas M1.2 (C4.1–C4.4): as escolhas tomadas e o que ficou de fora estão em §5, Fase C4, "Implementação".
 
@@ -762,6 +764,64 @@ pre_campanha ──► convencao ──► nao_homologado (desfecho)
 **Testes exigidos.** Adversário eleito no 1º turno com o jogador em segundo → derrota; empates (maioria, 2ª posição, 2º turno); um adversário só; continuidade determinística na posse; retomar imediatamente antes e depois da posse real; persistência após reinício; regressão do ponto `'posse'`; invariantes em todos os turnos; **fluxo integrado do M1 no Maestro**.
 
 **Estimativa (esforço).** M1: motor 1–2; interface 1; testes 1. Expansão: motor 1; conteúdo 0,5.
+
+#### Implementação (27/10/2026, tarefas M1.3 C5.1–C5.3)
+
+**Escolhas tomadas para implementar** (recomendações do §7, registradas aqui; o autor pode revê-las):
+
+- **Regras da eleição (C5.1)**, em `src/engine/career/election.ts`, com a base do CF art. 77 já conferida ([DATA_SOURCES.md](DATA_SOURCES.md) §6):
+  1. quem tem mais da metade dos válidos no 1º turno vence; se for um adversário, o jogador perde, mesmo em segundo;
+  2. senão, os dois mais votados vão ao 2º turno, e vence quem tiver mais válidos; o jogador fora dos dois perde no 1º turno;
+  3. empate na vaga do 2º turno: o mais idoso (§5). O mesmo critério vale para o empate exato no 2º turno, uma simplificação, porque a Constituição não trata esse caso. Idades iguais ou ausentes vão a um sorteio por chave;
+  4. com um adversário só, o 1º turno decide, salvo empate exato.
+- **Apuração.** A partição do eleitorado em modo `eleicao` (Fase C2) dá votos inteiros por UF, e o nacional é a soma das UFs.
+  - **Humor do dia:** o peso de cada candidato é multiplicado por e^(`ruido_eleicao`·z), igual em todas as UFs, com z sorteado pela chave `['career', 'election', turno, rodada]`. A pesquisa, assim, não acerta o resultado com certeza.
+  - **2º turno:** os votos de quem saiu se redistribuem pelos pesos, com o teto de elegibilidade, sem parâmetro `transferencia_*`. A abstenção é `abstencao_2t` (2022, `PROVISORIO`).
+  - **Idade dos candidatos:** campo novo `age`, opcional, no perfil e nos adversários, `FICTICIO` e só para o desempate. O Zod exige ao menos 35 anos (CF art. 14 §3, VI, a, a verificar no §8).
+- **D-C15 = A.** A eleição é apurada no turno de out/2026 (estágio `eleicao`), depois das ações e da viabilidade. Nesse turno não sai pesquisa: o resultado a substitui.
+- **Desfechos.** O resultado fica em `CareerState.election` e no relatório (`CareerTurnReport.election`), com a nota do desfecho.
+  - **Derrota** (`derrotado_1t`, `derrotado_2t`): a partida termina com o desfecho `derrota_campanha` em `campaignOutcome`. O estágio fica parado em `eleicao`, o turno anda, e um novo turno é recusado com erro. A store grava a campanha como encerrada.
+  - **Vitória** (`eleito_1t`, `eleito_2t`): segue para a transição e a posse.
+- **D-C18 = encerrar com resumo e recomeçar (C5.2).** A subtela do legado mostra, no lugar do legado, o resumo da campanha (`careerElectionView.ts`):
+  - resultado nacional por turno e em quantos estados o jogador foi o mais votado;
+  - a última pesquisa contra as urnas;
+  - os principais fatores, as escolhas que mais pesaram e o que não dependeu do jogador, em texto e sem números do motor.
+
+  Os fatores vêm de `CareerState.causeTotals`, a soma por causa das contribuições do reconhecimento e da valência ao longo da campanha. O botão "Tentar de novo com a mesma candidatura" (`retryCareer` na store) cria uma campanha nova com a mesma dificuldade, o mesmo cenário e o mesmo ponto de partida, com semente nova. A partida perdida continua salva.
+- **Posse com continuidade (C5.3)**, em `src/engine/career/inauguration.ts`:
+  - **PRNG:** a posse não chama `createInitialState`. O estado do governo já nasce com a partida (D-C12), e nenhuma etapa antes da posse toca o PRNG principal, então a semente e o estado do PRNG na posse são os da criação (teste);
+  - **linha de base:** o ponto da posse na série, como na Fase C1;
+  - **contas:** o encerramento contábil da Fase C3 saiu do `advanceCareerTurn` para `closeCampaignAccounts`, sem mudar o comportamento;
+  - **exigência:** a posse exige a eleição ganha quando o calendário tem turno de eleição (invariante e erro);
+  - **feed:** começa com a notícia da posse (`sourceId: 'posse'`). O teste de regressão do ponto `'posse'` deixa de fora, por lista, as notícias da campanha.
+- **Invariantes.** Cada rodada é uma partição inteira do eleitorado, o vencedor está na última rodada, o 2º turno tem dois finalistas, o resultado não muda depois de apurado e não há posse sem eleição ganha.
+- **Versão do estado 16** (`election` e `causeTotals`), sem função de atualização; **versão do motor 0.12.0**.
+
+**Entregue:**
+- **Motor:** `src/engine/career/election.ts` (`runElection`, `electionStep` antes da pesquisa), `inauguration.ts`, `careerDefeated`, o desfecho `derrota_campanha` e os parâmetros `abstencao_2t` e `ruido_eleicao`.
+- **Interface:**
+  - cartão do resultado na folha Eleições depois da eleição, no lugar das ações e da pesquisa (`CareerElectionCard`);
+  - resumo da derrota com os botões de recomeçar (`CareerCampaignReport`);
+  - botão da doca "Ver resumo" depois da derrota e aviso no Gabinete;
+  - texto do ponto de partida no NOVO JOGO, que agora fala da eleição.
+- **Testes:**
+  - maioria do jogador; adversário eleito no 1º turno com o jogador em segundo; jogador fora do 2º turno;
+  - empates na vaga, com idade e com sorteio, no 2º turno e com um adversário só;
+  - partição de cada rodada; resultado independente do PRNG principal;
+  - derrota que encerra a partida; posse com o PRNG e a semente da criação; invariante da posse sem eleição ganha;
+  - causas acumuladas iguais à variação;
+  - leitura da tela sem números do motor;
+  - store: derrota que sobrevive ao reinício e nova tentativa. A retomada antes e depois da posse real é a do teste da Fase C1, que agora passa pela eleição.
+
+**Não entregue nesta fase:**
+- **Calibração.** Com o cenário padrão, o perfil do centro vence sem nenhuma ação em 8 de 8 sementes testadas: chega ao 2º turno e ganha com 54% a 56%. A faixa-alvo de chance de vitória (§5.1) ainda não foi definida, e os valores continuam de jogo.
+- C5.4 (convenção e não homologação), C5.5 (cassação) e C5.6 (eventos do vice): expansão. O desfecho `nao_homologado` não existe ainda.
+- **Herança na posse.** Relações políticas ajustadas por coligação, vice e concessões, e compromissos de campanha: não há coligação nem compromissos no M1. O governo começa no estado da posse do cenário, sem modificador herdado da votação (I2).
+- **Gravação do resultado.** O resultado eleitoral pré-posse fica no estado e no resumo compacto da campanha (`career_summaries`), não na tabela `election_results`, que guarda as eleições do mandato.
+- **Teste do Maestro.** Os fluxos de ponta a ponta não existem no repositório. A conferência foi manual, no navegador:
+  - criar a campanha, jogar até a eleição, ver o resultado e chegar à posse (jan/2027);
+  - forçar uma derrota pelo estado da store, ver o resumo e recomeçar.
+- O desempate do 2º turno por idade é uma simplificação a confirmar no §8.
 
 ---
 

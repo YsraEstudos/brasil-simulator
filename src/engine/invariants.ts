@@ -1,4 +1,5 @@
 import { isPreInauguration, turnIndexOf } from './career';
+import { electedOutcome } from './career/election';
 import { nationalRecognition } from './career/viability';
 import { checkClimate } from './climate/climate';
 import { MEMORY_MONTHS } from './elections/elections';
@@ -305,6 +306,25 @@ function checkCareer(
     if (Math.abs(delta - explained) > EPSILON) {
       errors.push(`careerValence: variação ${delta} ≠ soma das contribuições ${explained}`);
     }
+  }
+  // Fase C5: cada rodada da eleição é uma partição inteira do eleitorado, e o vencedor é coerente com os votos.
+  const election = career.election;
+  if (election) {
+    for (const round of election.second ? [election.first, election.second] : [election.first]) {
+      const sum = round.abstention + round.blankNull + round.votes.reduce((s, v) => s + v, 0);
+      if (sum !== round.electorate) errors.push(`carreira: rodada da eleição soma ${sum}, não ${round.electorate}`);
+      if (round.votes.some((v) => !Number.isInteger(v) || v < 0)) errors.push('carreira: voto não inteiro na eleição');
+    }
+    const last = election.second ?? election.first;
+    if (!last.candidates.includes(election.winner)) errors.push('carreira: vencedor fora da última rodada');
+    if (election.second && election.second.candidates.length !== 2)
+      errors.push('carreira: 2º turno sem dois finalistas');
+    if (prev.career?.election && prev.career.election.turnIndex !== election.turnIndex) {
+      errors.push('carreira: resultado da eleição mudou depois de apurado');
+    }
+  }
+  if (career.stage === 'governo' && election && !electedOutcome(election.outcome)) {
+    errors.push('carreira: posse sem eleição ganha');
   }
   return errors;
 }
