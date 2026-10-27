@@ -438,7 +438,8 @@ export const paginas = [
       'src/store/gameStore.ts',
     ],
     pontos: [
-      'Carreira em 5 camadas: da corrida pré-presidencial (Camada 1 em design) aos dois mandatos de governo e ao pós-presidência.',
+      'Carreira em 5 camadas: da corrida pré-presidencial (Camada 1 em design) aos dois mandatos de governo e ao pós-presidência; a Camada 3 (bastidores) existe em parte.',
+      'Ações de agenda por mês: 4 no Casual, 3 no Estratégico e no Realismo.',
       'Duração por cenário: até 96 meses (8 anos / 2 mandatos) no cenário padrão (v0.8.0), ou 48 meses (4 anos) em cenários de mandato único.',
       'Governança mensal: decisões de agenda, encerramento, pipeline de 15 etapas e relatório com "Por que mudou?".',
       'Ciclo eleitoral: eleições municipais (mês 21 e 69), vedações da Lei das Eleições, janela de declaração e eleições gerais (mês 45 e 93).',

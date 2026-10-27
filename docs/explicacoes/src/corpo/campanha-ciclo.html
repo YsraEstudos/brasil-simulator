@@ -107,7 +107,7 @@
       <li><strong>Escalação por Dificuldade:</strong> O patrimônio pessoal varia conforme o nível de dificuldade do jogo:
         <ul style="margin: 4px 0; padding-left: 16px;">
           <li><em>Casual (Mega-Influencer):</em> O Influencer começa com <strong>R$ 7.000.000</strong> (topo do mercado digital/cursos), bancando estúdio e anúncios com folga.</li>
-          <li><em>Estratégica (YouTuber/Deputado Consolidado):</em> O Influencer começa com <strong>R$ 2.500.000</strong>. Tem caixa para a arrancada, mas precisa do Pix dos seguidores para não secar a conta.</li>
+          <li><em>Estratégica (Criador de conteúdo/Deputado Consolidado):</em> O Influencer começa com <strong>R$ 2.500.000</strong>. Tem caixa para a arrancada, mas precisa do Pix dos seguidores para não secar a conta.</li>
           <li><em>Realismo (Ativista de Nicho):</em> O Influencer começa com <strong>R$ 750.000</strong>. Fama alta, mas liquidez enxuta; sofre com desmonetização e depende da militância.</li>
         </ul>
       </li>
@@ -125,7 +125,7 @@
     <p>O Fundo Especial de Financiamento de Campanha (FEFC) divide cerca de R$ 5 bilhões públicos entre as legendas. É o motor pesado da eleição.</p>
     <ul class="bullets" style="font-size:13px;">
       <li><strong>O Cabo de Guerra dos Caciques:</strong> O dinheiro não cai automaticamente. Quem assina o repasse é a Executiva Nacional. Se sua <em>Influência Partidária</em> for baixa (&lt;35%), a cúpula repassa apenas o mínimo legal (R$ 3M a R$ 6M). Para destravar R$ 50M a R$ 70M, é preciso dominar a bancada ou ceder ministérios e a vaga de Vice.</li>
-      <li><strong>Custeio Mensal:</strong> Paga pesquisas de tracking semanais (IPEC/Quaest), sede nacional e banca de advogados eleitorais no TSE.</li>
+      <li><strong>Custeio Mensal:</strong> Paga pesquisas de tracking semanais (instituto de pesquisa), sede nacional e banca de advogados eleitorais no TSE.</li>
     </ul>
   </div>
 </div>
@@ -274,7 +274,7 @@
   <div class="card amarelo">
     <span class="meta">Redes Sociais</span>
     <h4>Vídeos na Internet e Viralização</h4>
-    <p>Produzir conteúdo para TikTok, Instagram e YouTube. Baixo custo financeiro com potencial explosivo entre jovens e periferias. Sorteio de dados: 10% de chance de viral positivo (dobra o reconhecimento) e 10% de gafe que vira meme negativo.</p>
+    <p>Produzir conteúdo para redes de vídeos curtos e redes sociais. Baixo custo financeiro com potencial explosivo entre jovens e periferias. Sorteio de dados: 10% de chance de viral positivo (dobra o reconhecimento) e 10% de gafe que vira meme negativo.</p>
   </div>
   <div class="card amarelo">
     <span class="meta">Mídia Tradicional</span>
@@ -324,7 +324,7 @@
 <h4>2.1 A Dinâmica do Turno Mensal</h4>
 <ul class="bullets">
   <li><strong>Unidade de Tempo:</strong> 1 turno = 1 mês (<code>monthIndex</code> inteiro). A posse em 5/1/2027 segue a EC 111/2021.</li>
-  <li><strong>Ações de Agenda:</strong> Orçamento mensal de ações (3 no modo Casual; 2 no Estratégico/Realismo) gastas na Mesa de Despacho (Gabinete), no plenário (Congresso) ou em visitas oficiais às 27 UFs.</li>
+  <li><strong>Ações de Agenda:</strong> Orçamento mensal de ações (4 no modo Casual; 3 no Estratégico e no Realismo, <code>AGENDA_ACTIONS_PER_MONTH</code>) gastas na Mesa de Despacho (Gabinete), no plenário (Congresso) ou em visitas oficiais às 27 UFs.</li>
   <li><strong>Encerramento e Motor em 15 Etapas:</strong> O botão <em>"Encerrar o mês"</em> roda o pipeline determinístico (<code>advanceMonth</code>) que calcula inflação, PIB, aprovação popular, contas públicas e eventos.</li>
   <li><strong>Relatório de Consequências:</strong> Apresenta o jornal do mês, notificações e o detalhamento de <em>"Por que mudou?"</em> de cada indicador.</li>
 </ul>
@@ -348,7 +348,7 @@
       <tr>
         <td><strong>Meio de Mandato</strong></td>
         <td>Meses 6 a 38 <small>(jul/2027–fev/2030)</small></td>
-        <td>Custo de manutenção da coalizão cresce gradualmente; desgaste normal de governo.</td>
+        <td>Regras normais de governo. <span class="nao-no-codigo">Custo de coalizão crescente com o tempo: não modelado</span>; o que cresce com os anos é o risco de escândalo nas pastas entregues a blocos.</td>
       </tr>
       <tr>
         <td><strong>Eleições Municipais</strong></td>
@@ -358,7 +358,7 @@
       <tr>
         <td><strong>Vedações Eleitorais</strong></td>
         <td>Meses 18–20 e 42–44</td>
-        <td>Lei 9.504/97 art. 73 §10: proibido criar novos benefícios sociais gratuitos no ano eleitoral. Forçar criação exige <code>vedacao_bypass</code> e penaliza intenção de voto com risco de multa.</td>
+        <td>Lei 9.504/97 art. 73 §10 (a lei vale o ano eleitoral inteiro; o jogo simplifica para os 3 meses antes de cada pleito): criar benefício gratuito novo é recusado. Forçar exige <code>vedacao_bypass</code> e penaliza a intenção de voto com risco de multa. O modo Casual não aplica a vedação.</td>
       </tr>
       <tr>
         <td><strong>Janela de Declaração</strong></td>
@@ -384,17 +384,17 @@
   <div class="card">
     <span class="meta">Fim de Jogo</span>
     <h4>Derrota Eleitoral</h4>
-    <p>Perder a disputa pela reeleição no mês 45 encerra a campanha imediatamente como <code>derrota_eleitoral</code>.</p>
+    <p>Se a situação perde a eleição geral do mês 45, a partida termina como <code>derrota_eleitoral</code>: vale tanto para a própria reeleição quanto para o sucessor apoiado.</p>
   </div>
   <div class="card">
     <span class="meta">Encerramento Pacífico</span>
     <h4>Fim de Mandato sem Reeleição</h4>
-    <p>Optar por não se candidatar faz o mandato expirar pacificamente no mês 48 (janeiro/2031, posse do sucessor) como <code>fim_de_mandato</code>.</p>
+    <p>Sem candidatura própria, o mandato termina no mês 48 (janeiro/2031) como <code>fim_de_mandato</code> só se a situação (o sucessor apoiado) vencer; se perder, é <code>derrota_eleitoral</code>.</p>
   </div>
   <div class="card">
     <span class="meta">Fim de Jogo</span>
     <h4>Impeachment</h4>
-    <p>Em qualquer momento do mandato, a autorização por 2/3 da Câmara e condenação por 2/3 do Senado encerra a partida como derrota.</p>
+    <p>Em qualquer momento do mandato, uma cadeia de três eventos (pedido, autorização na Câmara, julgamento no Senado), guiada pela pressão de impeachment, pode terminar em <code>impeachment_condenado</code> e encerrar a partida. Os 2/3 de cada Casa não são contados voto a voto por bancada.</p>
   </div>
 </div>
 
@@ -406,8 +406,8 @@
 <h3><span class="nao-no-codigo">Camada 3: Os Bastidores de Brasília e os Freios da República (Durante o Governo)</span></h3>
 
 <div class="callout amarelo">
-  <strong>Mecânicas Institucionais em Design (NÃO implementadas no código):</strong><br>
-  No código atual, as decisões tramitam de forma institucional. As mecânicas desta camada trazem as pressões reais do presidencialismo de coalizão brasileiro, opções de corrupção, guerras com o STF, CPIs e o Copom.
+  <strong>Mecânicas Institucionais em Design (implementação parcial):</strong><br>
+  Parte desta camada já existe no código: ministérios técnicos ou de bloco com risco de escândalo, emendas como pedágio, liminar do STF por risco jurídico, a cadeia de CPI e de impeachment da Fase 07, o Copom e a ação de pressionar o Banco Central. O resto (estatais, mecânicas ilegais, dossiês, pautas-bomba, indicações ao STF, gaveta de pedidos, feeds de opinião, pronunciamento e diplomacia) ainda é design. As mecânicas desta camada trazem as pressões reais do presidencialismo de coalizão brasileiro, opções de corrupção, guerras com o STF, CPIs e o Copom.
 </div>
 
 <h4>3.1 <span class="nao-no-codigo">A Chave do Cofre das Estatais & Opções de Corrupção</span></h4>
@@ -415,7 +415,7 @@
   <div class="card amarelo">
     <span class="meta">Dilema das Estatais</span>
     <h4>Indicação Técnica vs. Fisiológica</h4>
-    <p>Nomear técnicos em diretorias de estatais (Petrobras, Caixa, BB, Codevasf, Dnit) gera eficiência e aplausos do mercado, mas rende zero votos na base; entregar ao Centrão compra 40 votos fiéis para PECs, mas acumula risco contínuo de Operação da PF.</p>
+    <p>Nomear técnicos em diretorias de estatais (estatal de energia, banco público, estatal de obras) gera eficiência e aplausos do mercado, mas rende zero votos na base; entregar ao Centrão compra 40 votos fiéis para PECs, mas acumula risco contínuo de Operação da PF.</p>
   </div>
   <div class="card amarelo">
     <span class="meta">Mecânica Ilegal</span>
@@ -436,7 +436,7 @@
 
 <h4>3.2 <span class="nao-no-codigo">Dossiês, Chantagem e Pautas-Bomba</span></h4>
 <div class="box-amarelo">
-  <p><strong>Moeda de troca suja (estilo Crusader Kings):</strong> Acumular relatórios do Coaf e investigações secretas para dobrar votos da oposição, com risco de vazamento de áudios gravados no gabinete.</p>
+  <p><strong>Moeda de troca suja:</strong> Acumular relatórios do Coaf e investigações secretas para dobrar votos da oposição, com risco de vazamento de áudios gravados no gabinete.</p>
   <p><strong>Pautas-Bomba:</strong> O Congresso aprova aumentos de 40% para corporações para forçar o presidente a vetar (comprando briga) ou sancionar (cometendo pedalada fiscal).</p>
 </div>
 
@@ -572,7 +572,7 @@
       <!-- 1. Redes Sociais e Vídeos Curtos -->
       <div class="card amarelo" style="margin-bottom: 14px;">
         <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
-          <h5 style="margin: 0 0 4px; font-size: 15px;">1. Vídeos Curtos & Redes Sociais (TikTok, Reels, Shorts)</h5>
+          <h5 style="margin: 0 0 4px; font-size: 15px;">1. Vídeos Curtos & Redes Sociais (rede de vídeos curtos)</h5>
           <span class="nao-no-codigo" style="font-size:11px;">Custo: Quase Zero</span>
         </div>
         <div class="meta" style="margin-bottom: 6px;">Público-alvo: Jovens (16-29 anos), centros urbanos e periferias conectadas</div>
@@ -610,18 +610,18 @@
         <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Agendar participações ao vivo das 07h às 09h nos programas matinais de maior audiência nas rádios do interior de Minas, Nordeste e Centro-Oeste.</p>
         <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
           <li><strong>Penetração Oculta:</strong> No interior do país, mais de 65% dos eleitores começam o dia ouvindo o radialista local antes de abrir redes sociais.</li>
-          <li><strong>Impacto:</strong> Conquista eleitores fiéis e tradicionais que o algoritmo do TikTok não alcança.</li>
+          <li><strong>Impacto:</strong> Conquista eleitores fiéis e tradicionais que o algoritmo das redes de vídeos curtos não alcança.</li>
         </ul>
       </div>
 
       <!-- 4. Podcasts Longos e Sabatinas na Mídia -->
       <div class="card amarelo" style="margin-bottom: 14px;">
         <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
-          <h5 style="margin: 0 0 4px; font-size: 15px;">4. Podcasts Gigantes (Flow, Podpah) & Sabatinas da Imprensa</h5>
+          <h5 style="margin: 0 0 4px; font-size: 15px;">4. Podcasts Gigantes & Sabatinas da Imprensa</h5>
           <span class="nao-no-codigo" style="font-size:11px;">Desbloqueio: &gt; 8% a 12%</span>
         </div>
         <div class="meta" style="margin-bottom: 6px;">Público-alvo: Classe média, universitários, investidores e formadores de opinião</div>
-        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Bate-papos de 2 a 4 horas sem edição em canais com milhões de inscritos e sabatinas ao vivo em estúdios da GloboNews, CNN, UOL e Folha.</p>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Bate-papos de 2 a 4 horas sem edição em canais com milhões de inscritos e sabatinas ao vivo na emissora de notícias 24 h, no portal de notícias e no jornal de grande circulação.</p>
         <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
           <li><strong>Poder da Conversa Longa:</strong> Desmonta a imagem engessada de político tradicional, permitindo explicar reformas econômicas complexas e humanizar sua história de vida.</li>
           <li><strong>Risco de Sabatina:</strong> Jornalistas experientes cavoucam escândalos antigos, bens não declarados e posicionamentos contraditórios do candidato.</li>
@@ -651,7 +651,7 @@
         <div class="meta" style="margin-bottom: 6px;">Público-alvo: Eleitores indecisos, analistas políticos e a militância nas redes</div>
         <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Minigame de confronto direto com cronômetro rígido no estúdio. O jogador escolhe a quem perguntar e se arrisca respostas com frases de efeito.</p>
         <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
-          <li><strong>Botão de Frase de Efeito ("Lacrada"):</strong> Acertar o tom cria cortes virais que circulam nos grupos de WhatsApp por dias; errar o tom soa agressivo e eleva a rejeição entre mulheres e moderados.</li>
+          <li><strong>Botão de Frase de Efeito ("Lacrada"):</strong> Acertar o tom cria cortes virais que circulam nos grupos de aplicativos de mensagem por dias; errar o tom soa agressivo e eleva a rejeição entre mulheres e moderados.</li>
           <li><strong>Direito de Resposta:</strong> Acionar a assessoria jurídica ao vivo para ganhar 1 minuto extra de fala se for ofendido na honra.</li>
         </ul>
       </div>
@@ -663,7 +663,7 @@
           <span class="nao-no-codigo" style="font-size:11px;">Custo: Alto (Fundo Eleitoral)</span>
         </div>
         <div class="meta" style="margin-bottom: 6px;">Público-alvo: Estados específicos onde você é desconhecido (&lt;20%)</div>
-        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Injetar verba do Fundo Eleitoral em anúncios patrocinados no Meta (Instagram/Facebook) e Google/YouTube com filtro por CEP, idade e renda.</p>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Injetar verba do Fundo Eleitoral em anúncios patrocinados na plataforma de anúncios, com filtro por CEP, idade e renda.</p>
         <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
           <li><strong>Ataque aos Estados Vermelhos:</strong> Se você é desconhecido no Rio Grande do Sul ou no Ceará, injeta R$ 3 milhões em vídeos focados nos temas mais sensíveis daquele estado.</li>
           <li><strong>Regras do TSE:</strong> Requer prestação de contas diária, menção explícita ao CNPJ de campanha e respeito ao teto legal de gastos.</li>
@@ -693,9 +693,9 @@
         <div class="meta" style="margin-bottom: 6px;">Público-alvo: Multidões regionais e identificação cultural profunda</div>
         <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Marcar presença física nos maiores acontecimentos culturais e de negócios do calendário nacional:</span></p>
         <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
-          <li><strong>São João de Campina Grande (PB) e Caruaru (PE):</strong> +15% de Reconhecimento no Nordeste com fotos usando chapéu de couro e dançando forró.</li>
-          <li><strong>Agrishow (Ribeirão Preto/SP) e Festa do Peão de Barretos (SP):</strong> Conexão instantânea com o PIB do agronegócio e o eleitor conservador do interior paulista e centro-oeste.</li>
-          <li><strong>Círio de Nazaré (Belém/PA):</strong> A maior procissão religiosa do Brasil, transmitindo respeito à fé e quebrando resistências no Norte.</li>
+          <li><strong>Festa junina do Nordeste:</strong> +15% de Reconhecimento no Nordeste com fotos usando chapéu de couro e dançando forró.</li>
+          <li><strong>Feira do agronegócio e festa de rodeio do interior:</strong> Conexão instantânea com o PIB do agronegócio e o eleitor conservador do interior paulista e centro-oeste.</li>
+          <li><strong>Procissão religiosa no Norte:</strong> Uma grande procissão religiosa, transmitindo respeito à fé e quebrando resistências no Norte.</li>
         </ul>
       </div>
 
@@ -716,7 +716,7 @@
       <!-- Resumo Estratégico no Fim da Gaveta -->
       <div class="box-amarelo" style="margin-top: 18px;">
         <h5 style="margin: 0 0 6px;">Roteiro Ideal de Campanha para Subir o Reconhecimento:</h5>
-        <p style="margin: 0; font-size: 13px;">1. <strong>Início (Meses -24 a -12):</strong> Foque em <em>Redes Sociais (TikTok)</em> e <em>Caravanas de Carro</em> nos estados vizinhos para sair do 0% e pintar o primeiro estado de âmbar.<br>
+        <p style="margin: 0; font-size: 13px;">1. <strong>Início (Meses -24 a -12):</strong> Foque em <em>Redes Sociais (vídeos curtos)</em> e <em>Caravanas de Carro</em> nos estados vizinhos para sair do 0% e pintar o primeiro estado de âmbar.<br>
         2. <strong>Crescimento (Meses -12 a -4):</strong> Ao atingir 12% nas pesquisas, faça <em>Podcasts Gigantes</em> e <em>Rádios Matinais</em> para furar a bolha nacional.<br>
         3. <strong>Reta Final (Meses -3 a 0):</strong> O salto decisivo de 40% para 90% só acontece conquistando <em>Tempo de TV no HGPE</em> com coligações e vencendo os <em>Debates ao Vivo</em>.</p>
       </div>
@@ -759,7 +759,7 @@
       <!-- Regra fundamental da variável -->
       <div class="box-amarelo">
         <h4 style="margin: 0 0 6px;">O Dinheiro como Combustível do Reconhecimento</h4>
-        <p style="margin: 0 0 8px; font-size: 13.5px;">Na corrida eleitoral, o <strong>Reconhecimento não sobe sozinho</strong>. Sem dinheiro, o candidato depende puramente de sorte algorítmica orgânica (+1% a +2% ao mês) e fica preso ao próprio estado. Com caixa farto, é possível comprar anúncios direcionados no Meta/Google nos 26 estados onde você é desconhecido, bancar comitivas de caravanas, contratar marqueteiro estrela e produzir programas de TV de padrão cinematográfico.</p>
+        <p style="margin: 0 0 8px; font-size: 13.5px;">Na corrida eleitoral, o <strong>Reconhecimento não sobe sozinho</strong>. Sem dinheiro, o candidato depende puramente de sorte algorítmica orgânica (+1% a +2% ao mês) e fica preso ao próprio estado. Com caixa farto, é possível comprar anúncios direcionados na plataforma de anúncios nos 26 estados onde você é desconhecido, bancar comitivas de caravanas, contratar marqueteiro estrela e produzir programas de TV de padrão cinematográfico.</p>
         <p style="margin: 0; font-size: 13px;">⚠️ <strong>Custo de Campanha Presidencial:</strong> Uma corrida competitiva ao Planalto consome de <strong>R$ 50 a R$ 90 milhões</strong> em gastos declarados no TSE.</p>
       </div>
 
@@ -796,7 +796,7 @@
                 <tr>
                   <td><strong>Influencer / Deputado Digital</strong></td>
                   <td><strong>R$ 7.000.000</strong> <small>(Mega-coach/cursos)</small></td>
-                  <td><strong>R$ 2.500.000</strong> <small>(YouTuber consolidado)</small></td>
+                  <td><strong>R$ 2.500.000</strong> <small>(criador de conteúdo consolidado)</small></td>
                   <td><strong>R$ 750.000</strong> <small>(Ativista de nicho)</small></td>
                 </tr>
                 <tr>
@@ -845,7 +845,7 @@
               <li><em>Influência &gt; 70%:</em> Você é o líder supremo da legenda. Direciona até <strong>R$ 70 milhões</strong> do Fundão diretamente para a campanha presidencial.</li>
             </ul>
           </li>
-          <li><strong>Fundo Partidário Mensal:</strong> Verba contínua para custear a sede nacional, banca de advogados eleitorais (para derrubar inserções adversárias no TSE) e pesquisas semanais de tracking (IPEC/Quaest/Datafolha).</li>
+          <li><strong>Fundo Partidário Mensal:</strong> Verba contínua para custear a sede nacional, banca de advogados eleitorais (para derrubar inserções adversárias no TSE) e pesquisas semanais de tracking (instituto de pesquisa).</li>
         </ul>
       </div>
 
@@ -895,7 +895,7 @@
           </thead>
           <tbody>
             <tr>
-              <td><strong>Tráfego Pago (Meta / Google)</strong></td>
+              <td><strong>Tráfego Pago (plataforma de anúncios)</strong></td>
               <td>R$ 500k a R$ 2M/mês</td>
               <td>Fundão / Doações</td>
               <td>Fura a bolha nos estados vermelhos (&lt;20%) e acelera a conversão para âmbar.</td>

@@ -1,8 +1,10 @@
 # Plano — Carreira de 4 a 8 anos (Camadas 1 a 5)
 
-Versão 0.4 do documento • 27/10/2026 • 🟨 Fase C1 (entrega M1.1) implementada a pedido do autor; demais decisões em aberto
+Versão 0.5 do documento • 27/10/2026 • 🟨 Fase C0 (auditoria) e Fase C1 (entrega M1.1) feitas a pedido do autor; as decisões continuam com o autor
 v0.2: incorpora comentários de revisão de 27/10/2026 (persistência, percurso inicial, modelo eleitoral, posse, divisão da Fase C6, saves).
 v0.3: incorpora a segunda revisão de 27/10/2026, na ordem de prioridade dela — M1 como sequência de entregas (§3.1), ações entre os turnos eleitorais (D-C15) e calendário fechado (§2.4), contabilidade dos eleitores (Fase C2), vitória do adversário no 1º turno (Fase C5), visibilidade e persistência das pesquisas (Fase C2), retenção, linha de base da posse e relógio da fila (§2.3), contratos de ordem e de sorteio (§4.1), Fase C6 separável com contratos de integração; e ajustes menores (nomenclatura, notícias, estimativas, D-C10).
+
+v0.5: Fase C0 feita, com as tarefas C0.1 a C0.5 e o protocolo e a estimativa no papel da C0.6. O resultado e as decisões que faltam estão em §5, Fase C0, "Resultado"; as fontes do §8 estão no [DATA_SOURCES.md](DATA_SOURCES.md) §6.
 
 v0.4: o autor pediu a implementação da Fase C1. Registro da tarefa C1.0, das escolhas tomadas para implementá-la (D-C1 forma, D-C15, D-C9, D-C12, relógio da fila) e do que ficou de fora (§5, Fase C1, "Implementação").
 
@@ -36,7 +38,7 @@ Coluna **Verificação**: **confirmado** (lido no código, com linha), **parcial
 | Camada 2 §2.1 Ações de agenda | 3 no Casual; 2 no Estratégico e no Realismo | `AGENDA_ACTIONS_PER_MONTH = { casual: 4, estrategica: 3, realismo: 3 }` ([src/engine/state.ts:25-29](../src/engine/state.ts)); [GAME_DESIGN.md](GAME_DESIGN.md) §6 diz 4 / 3 / 2–3 | **Divergente** nos três valores | confirmado |
 | Camada 2 §2.1 Pipeline | 15 etapas | `DEFAULT_STEPS` com 15 etapas ([src/engine/advanceMonth.ts:48-64](../src/engine/advanceMonth.ts)) | Nenhuma | confirmado |
 | Camada 2 §2.2 Lua de mel | Meses 0–5 | `meses_lua_de_mel = 6`, `fator_lua_de_mel = 0,6` ([src/engine/economy/calibration.ts:765-772](../src/engine/economy/calibration.ts)); `t % TERM_MONTHS` ([src/engine/politics/opinion.ts:25](../src/engine/politics/opinion.ts)), vale no 2º mandato | Nenhuma | confirmado |
-| Camada 2 §2.2 Meio de mandato | Custo de coalizão cresce nos meses 6–38 | Nada encontrado por busca (`coaliz`, `coalition`, `manutencao`, `desgaste`); o mais próximo é o risco de escândalo crescente com os anos no cargo ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.5) | Provavelmente ausente; também afirmado em [POLITICAL_RULES.md](POLITICAL_RULES.md) §11.1 | **hipótese** (Fase C0, tarefa C0.2) |
+| Camada 2 §2.2 Meio de mandato | Custo de coalizão cresce nos meses 6–38 | Nada encontrado por busca (`coaliz`, `coalition`, `manutencao`, `desgaste`); o mais próximo é o risco de escândalo crescente com os anos no cargo ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.5) | **Ausente** (C0.2): nenhuma regra desgasta a relação com os blocos ao longo dos meses; [POLITICAL_RULES.md](POLITICAL_RULES.md) §11.1 corrigido | confirmado |
 | Camada 2 §2.2 Municipais | Mês 21 (69) | `mesEleicaoMunicipal: 21` ([src/data/scenarios/brasil_2027_01_v080.json:1199](../src/data/scenarios/brasil_2027_01_v080.json)); `monthOfTerm` ([src/engine/elections/elections.ts:250](../src/engine/elections/elections.ts); [src/engine/calendar.ts:17-19](../src/engine/calendar.ts)) | Nenhuma | confirmado |
 | Camada 2 §2.2 Eleição geral | Mês 45 (93); 2º turno no mesmo passo | `mesEleicaoGeral: 45` ([…v080.json:1200](../src/data/scenarios/brasil_2027_01_v080.json)); `generalElectionMonth` ([src/engine/elections/elections.ts:135-166](../src/engine/elections/elections.ts)) | Nenhuma | confirmado |
 | Camada 2 §2.2 Janela de declaração | Meses 39–44, custo 0 | `janelaDeclaracao` ([…v080.json:1201-1204](../src/data/scenarios/brasil_2027_01_v080.json)); `declarar_reeleicao` com `agendaCost: 0` ([src/engine/actions.ts:36](../src/engine/actions.ts), [:148](../src/engine/actions.ts)) | Nenhuma | confirmado |
@@ -57,7 +59,7 @@ Coluna **Verificação**: **confirmado** (lido no código, com linha), **parcial
 | Camada 1, calendário pré-posse | `toCalendar` lança `RangeError` para `monthIndex < 0` ([src/engine/calendar.ts:26-29](../src/engine/calendar.ts)); o banco exige `month_index >= 0` e usa o mês como chave (§2.3) | Bloqueio de tempo **e** de persistência | confirmado |
 | Camada 3 §3.1 Estatais | Parcial: ministérios técnico/partidário ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.3.1, §6.5) | Estender, não duplicar | parcial (documento lido; código de gabinete não lido linha a linha) |
 | Camada 3 §3.1 Ilícitos | Ausentes; emendas "como pedágio" existem ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.3) | — | parcial |
-| Camada 3 §3.2 Pautas-bomba | Não encontradas | Verificar o conteúdo de `src/data/events/` (tarefa C0.5) | **hipótese** |
+| Camada 3 §3.2 Pautas-bomba | **Ausentes** (C0.5): nenhum dos 55 eventos de `src/data/events/` traz aumento aprovado pelo Congresso nem escolha entre vetar e sancionar. O que há de vizinho: pauta travada (`camara_trava_pauta`, `fase07_pol_camara_cargos`, `fase07_pol_oposicao_obstrui`), liminar do STF sobre emendas (`fase07_pol_stf_suspende`), greve de servidores por reajuste (`greve_servidores`) | A Fase C6 cria a pauta-bomba sobre esses eventos | confirmado |
 | Camada 3 §3.3 STF | Parcial: ADI/liminar por `riscoJuridico` ([POLITICAL_RULES.md](POLITICAL_RULES.md) §8); indicações não modeladas | — | parcial |
 | Camada 3 §3.3 CPI | Parcial: cadeia da Fase 07 ([POLITICAL_RULES.md](POLITICAL_RULES.md) §9); comissão própria = **Fase 09** | — | parcial |
 | Camada 3 §3.3 Gaveta | Parcial: o 1º evento da cadeia de impeachment é o pedido ([POLITICAL_RULES.md](POLITICAL_RULES.md) §10) | Estoque de pedidos é novo | parcial |
@@ -237,6 +239,34 @@ Coluna **Entrega**: M1.1, M1.2, M1.3 ou Exp (§3.1).
 **Critério de conclusão.** D-C1 (direção), D-C2, D-C3, D-C9, D-C13, D-C15 e D-C18 com escolha do autor; build do site sem diferença; §8 com campos preenchidos; protocolo do protótipo registrado.
 
 **Estimativa.** Documentação 0,5–1; protótipo de ritmo 0,5–1.
+
+#### Resultado (27/10/2026)
+
+- **C0.1 — feito.** Fonte do site corrigida: ações 4/3/3; `derrota_eleitoral` também com o sucessor apoiado e `fim_de_mandato` só com vitória da situação; impeachment por cadeia de eventos, sem contagem de 2/3 por bancada; Camada 3 marcada como parcial; vedação de 3 meses (simplificação) e fora do Casual; custo de coalizão "não modelado"; referência a jogo concorrente retirada; marcas, plataformas, institutos, estatais e festas trocados pelos nomes genéricos do §5.3. `node docs/explicacoes/build.mjs` só alterou `sis-campanha.html`.
+- **C0.2 — feito.** O custo de coalizão que cresce com o tempo **não existe** no motor (§1.1); [POLITICAL_RULES.md](POLITICAL_RULES.md) §11.1 corrigido. Criá-lo é proposta para a Camada 2, fora deste plano.
+- **C0.3 — feito.** [POLITICAL_RULES.md](POLITICAL_RULES.md) §11 descreve a vedação como o motor aplica: 3 meses antes de cada pleito, recusa com motivo, quebra com pena e fora do Casual. Registra também que a lei vale o ano inteiro e que as outras condutas vedadas não são modeladas.
+- **C0.4 — feito em parte.** Doze dos 14 itens do §8 foram conferidos e registrados no [DATA_SOURCES.md](DATA_SOURCES.md) §6, com link, data, dispositivo e conclusão.
+  - Dos dez valores e datas, três vêm só da imprensa e ficam `PROVISORIO`: valor do FEFC de 2026, teto de gastos de 2026 e comparecimento de 2022.
+  - A doação de empresa (ADI 4650) foi registrada sem reconferir a fonte primária.
+  - Os custos de campanha ficaram sem verificação (Fase C3).
+  - O calendário confirmado fecha a tabela do §2.4: propaganda a partir de 16/8, 1º turno em 4/10 e 2º turno em 25/10/2026.
+- **C0.5 — feito.** Não há pautas-bomba (§1.2). A coluna Verificação da Camada 2 e a da Camada 3 §3.2 estão atualizadas.
+- **C0.6 — protocolo e estimativa no papel; falta a sessão com pessoas.** Protocolo:
+  1. Duas sessões no papel, uma por ponto de partida: `'corrida'` (5 turnos até a posse) e `'pre_campanha'` (15 turnos).
+  2. A pessoa decide as ações da entrega M1.2 em cada turno, e o mediador anota o tempo e os campos do §5.1.
+  3. Em seguida, uma variante com o 2º turno jogável (D-C15 = B) e outra com recuperação na convenção (D-C4).
+  4. O mediador registra se a escolha extra mudou alguma decisão.
+
+  Estimativa no papel, feita por Claude e ainda não medida com pessoas:
+
+  | Ponto de partida | Turnos com escolha | Minutos por turno | Total até a posse |
+  | --- | --- | --- | --- |
+  | `'corrida'` | 3 (ago, set, out) | 3–5 | 10–15 min |
+  | `'pre_campanha'` | 12 | 3–4 | 40–50 min |
+
+  Na `'corrida'`, o turno nov–dez é condensado. Na `'pre_campanha'`, a estimativa vale se os meses sem escolha forem condensados. Proposta para a D-C13: **corrida até 15 min** e **pré-campanha até 45 min**. Acima disso, condensar turnos. Ainda não há evidência para a D-C15 = B nem para a D-C4: a recomendação fica como está até a sessão com pessoas.
+
+**Decisões que continuam com o autor** (a Fase C0 só fecha com a escolha dele): D-C1 (direção), D-C2, D-C3, D-C9, D-C13, D-C15 e D-C18. Para a D-C1, a D-C15 e a D-C9, a Fase C1 já registrou as escolhas usadas na implementação. Elas valem até o autor rever.
 
 ---
 
@@ -432,7 +462,7 @@ Persistência das pesquisas:
 
 ### Fase C4 — Ações, debates, vice e mapa
 
-**Dependências.** Fase C3 (M1: só C3.1–C3.2).
+**Dependências.** Fase C3 (M1: só C3.1–C3.2). A pesquisa qualitativa (C4.8–C4.10) é expansão, distinta das pesquisas quantitativas da C2: a versão de governo pode ser feita independentemente da pré-campanha, após definir seu custo e financiamento; a versão pré-posse depende das finanças e dados da carreira; reeleição e sucessão dependem de caixa eleitoral próprio e janela de campanha definidos. Nenhuma dessas dependências bloqueia o M1.
 
 **Ações: 5 arquétipos** (nacional amplo; regional direcionado; mobilização partidária; comunicação com risco e retorno; arrecadação/negociação). As 10 formas do documento de origem são **conteúdo** desses arquétipos; ação nova só entra com trade-off que nenhum arquétipo tem.
 
@@ -444,6 +474,65 @@ Persistência das pesquisas:
 
 **Mapa:** 2D e **lista textual** primeiro (faixa estimada e data, §Fase C2), molde em [src/components/map/electoralView.ts:28](../src/components/map/electoralView.ts); rótulos acessíveis, leitor de tela, texto ampliado, alternativa sem gesto preciso. Globo e caravana são acabamento (Fase C8).
 
+#### Pesquisa qualitativa de imagem e opinião (Exp)
+
+**Objetivo.** Permitir a contratação de um grupo focal nacional ou de uma UF para compreender percepções, dúvidas e possíveis motivos de insatisfação sobre a candidatura, o presidente ou o governo. O relatório é confidencial e qualitativo: informa decisões, mas **não altera diretamente aprovação, rejeição ou votos**. É complementar à pesquisa quantitativa da Fase C2; não a substitui nem integra os requisitos de pesquisa do M1.
+
+**Contextos, disponibilidade e custos.**
+
+| Contexto | Disponibilidade e objeto | Agenda | Fonte financeira |
+| --- | --- | --- | --- |
+| Pré-campanha e campanha pré-posse | Imagem da candidatura | **0 pontos** | Caixa oficial da campanha |
+| Presidente em campanha de reeleição | Imagem da candidatura ou do presidente, conforme a escolha | **0 pontos** | Caixa da campanha de reeleição, quando existir |
+| Presidente apoiando sucessor | Imagem do sucessor, do governo ou de ambos, conforme disponibilidade de dados | **0 pontos** | Caixa da campanha do sucessor, quando existir |
+| Governo fora da campanha eleitoral | Percepção do presidente ou do governo | **Proposta: 1 ponto**, sujeita à decisão de design | Recurso governamental ou abstração coerente com o modelo fiscal, ainda a definir |
+| Pós-presidência | Fora do escopo inicial | — | — |
+
+Os recursos de campanha, os do governo e o patrimônio pessoal são distintos: nunca debitar automaticamente a pesquisa do dinheiro pessoal do presidente nem transferir recursos implicitamente entre essas fontes. Reeleição e sucessão só ficam disponíveis quando houver estrutura de campanha e caixa apropriados; não simular um saldo inexistente. Para o governo fora da eleição, definir e registrar o custo financeiro, sua fonte e o efeito fiscal antes da implementação; não criar conta desconectada do modelo existente.
+
+O motor identifica o contexto pelo estado da partida e pela janela eleitoral definida para a funcionalidade, não pela interface. A janela eleitoral é uma decisão específica a definir e não se presume igual à janela de declaração de candidatura. Na contratação, o jogador escolhe o objeto disponível e a abrangência nacional ou UF; antes de confirmar, vê custo, fonte, pontos de agenda e turno de entrega. Contexto, UF, recursos e frequência são validados no motor; em caso de rejeição, informar o motivo e não descontar recursos. Uma pesquisa nacional e uma regional podem revelar temas diferentes.
+
+**Conteúdo e fundamento.** O relatório traz contexto, data e abrangência; leitura geral; até três temas sustentados por dados ou acontecimentos disponíveis; falas fictícias identificadas como ilustrativas; possíveis caminhos de ação sem garantia de resultado; e uma explicação dos limites da leitura qualitativa. Comparações por idade, renda ou outros segmentos só aparecem quando houver dados ou regra de simulação explícita que as sustente; caso contrário, omitir ou explicar a indisponibilidade. Ordenar temas por relevância simulada não autoriza atribuir percentuais precisos de rejeição a causas sem suporte. Aprovação baixa não equivale automaticamente a rejeição eleitoral: sem variável própria, falar de insatisfação ou percepção negativa.
+
+Na pré-posse, usar reconhecimento, percepção, rejeição quando modelada, situação regional, ações, debates, eventos e pesquisas disponíveis. No governo, usar aprovação nacional/regional, indicadores econômicos e sociais, decisões e eventos registrados; não afirmar causalidade além do que os dados permitem.
+
+**Contratos iniciais (propostos; adaptar ao motor vigente):**
+
+```typescript
+type FocusGroupScope = { type: 'national' } | { type: 'state'; uf: string };
+type FocusGroupSubject = 'candidate' | 'president' | 'government' | 'supported_successor';
+
+interface QualitativeFinding {
+  id: string;
+  title: string;
+  description: string;
+  evidenceIds: string[];
+  illustrativeQuote?: string; // fala fictícia e ilustrativa
+}
+
+interface QualitativeSegmentAnalysis {
+  segmentId: string;
+  perception: string;
+  evidenceIds: string[];
+}
+
+interface FocusGroupReport {
+  id: string;
+  turnId: string; // representação final conforme identidade de turno da C1
+  subject: FocusGroupSubject;
+  scope: FocusGroupScope;
+  overallPerception: string;
+  findings: QualitativeFinding[];
+  segments: QualitativeSegmentAnalysis[];
+  possibleActions: string[];
+  limitations: string;
+}
+```
+
+Para a opção “sucessor e governo”, produzir leituras identificadas por objeto, sem fundir evidências de ambos. Os campos propostos não impõem a existência de dados demográficos nem percentuais causais.
+
+**Geração, retenção e interface.** Gerar o resultado uma vez em uma etapa definida do turno; se houver sorteio, usar a chave de contexto e ocorrência do §4.1. Reabrir, navegar ou retomar nunca muda o relatório nem consome sorteios. Definir retenção limitada de relatórios recentes e resumo dos relevantes, escolhendo armazenamento compatível com a política de histórico: `MonthReport` sozinho não garante histórico duradouro, pois o repositório retém 12 relatórios ([src/database/campaignRepository.ts](../src/database/campaignRepository.ts)). Na interface, expor a ação em inteligência/comunicação da campanha ou opinião/comunicação do governo; na reeleição identificar o caixa eleitoral. Exibir relatório acessível em celular, sem depender apenas de cor. Nunca gerar manchete pública automaticamente por ser uma pesquisa confidencial.
+
 | # | Tarefa | Entrega | Arquivos (dono único) |
 | --- | --- | --- | --- |
 | C4.1 | 5 arquétipos e catálogo mínimo | M1.2 | `src/engine/career/actions.ts` **(proposto)**, `src/engine/actions.ts` (ids) |
@@ -453,10 +542,15 @@ Persistência das pesquisas:
 | C4.5 | HGPE | Exp | `src/engine/career/hgpe.ts` **(proposto)** |
 | C4.6 | Vice selecionável | Exp | `src/engine/career/vice.ts` **(proposto)** |
 | C4.7 | Variações de conteúdo e eventos sazonais | Exp | conteúdo em `src/data/` |
+| C4.8 | Pesquisa qualitativa do governo: definir financiamento e custo, gerar relatório fundamentado, persistir e apresentar | Exp; pode anteceder a pré-campanha | motor, repositório/store e interface de governo, arquivos a definir |
+| C4.9 | Integrar pesquisa qualitativa à pré-campanha e ao caixa eleitoral | Exp; depende de C3 e dados de C2 | motor de carreira, finanças e interface da campanha, arquivos a definir |
+| C4.10 | Integrar pesquisa à reeleição e à sucessão | Exp; depende de janela e caixas eleitorais próprios | motor eleitoral, finanças e interface, arquivos a definir |
 
 **Testes exigidos.** Ação fora do estágio rejeitada; debate (tabela de vantagens e escolha padrão); leitor de tela percorre a lista do mapa; **Maestro cobre ações, pesquisa e mapa até o limite da Fase C4** (o fluxo completo é do M1.3); HGPE e vice com os testes da expansão (soma 100%, monotonia nas cadeiras, sem dupla contagem).
 
-**Estimativa (esforço).** M1: motor 1; interface 2. Expansão: motor 1; interface 1; conteúdo 1.
+**Testes da pesquisa qualitativa (por entrega).** Pré-campanha, reeleição e sucessão: custo de agenda zero e débito exclusivamente no caixa eleitoral correspondente; patrimônio pessoal inalterado; contexto ou UF inválidos e saldo insuficiente rejeitados sem desconto parcial. Governo fora da eleição: custo e fonte conforme decisão registrada. A pesquisa não altera diretamente aprovação, rejeição ou intenção; cada tema tem evidência, segmentos sem suporte são omitidos ou indicados como indisponíveis, e falas são fictícias e ilustrativas. Verificar abrangência nacional e UF, confidencialidade sem manchete automática, geração uma vez, estabilidade ao reabrir e após salvar/retomar, e ausência de consumo de PRNG ao navegar. Testar reeleição e sucessão quando seus caixas estiverem implementados; até lá, não marcar esses contextos como entregues.
+
+**Estimativa (esforço).** M1: motor 1; interface 2. Expansão anterior à pesquisa: motor 1; interface 1; conteúdo 1. Pesquisa qualitativa: estimativa adicional a definir após escolher financiamento do governo, retenção e contratos dos caixas de reeleição e sucessão.
 
 ---
 
@@ -688,7 +782,7 @@ Em ordem de prioridade. Nenhuma está tomada.
 
 ## 8. Fontes a verificar
 
-**Nada desta tabela foi verificado.** Cada registro vai para [DATA_SOURCES.md](DATA_SOURCES.md) §6 com: link direto da fonte primária e data da consulta; versão e data da regra aplicável ao cenário (eleição de 2026, posse em 2027); dispositivo ou trecho; conclusão e simplificação adotada; responsável; e decisão registrada quando a fonte não vira mecânica diretamente.
+**Conferido em 27/10/2026 (Fase C0, tarefa C0.4)**: os resultados, com link e data, estão no [DATA_SOURCES.md](DATA_SOURCES.md) §6. Os valores de 2026 tirados da imprensa (FEFC e teto de gastos) e a ordem de grandeza do comparecimento ficam `PROVISORIO`. A ADI 4650 não foi reconferida na fonte primária, e os custos de campanha ficam para a Fase C3. Cada registro vai para [DATA_SOURCES.md](DATA_SOURCES.md) §6 com: link direto da fonte primária e data da consulta; versão e data da regra aplicável ao cenário (eleição de 2026, posse em 2027); dispositivo ou trecho; conclusão e simplificação adotada; responsável; e decisão registrada quando a fonte não vira mecânica diretamente.
 
 | Item | O que verificar | Dispositivo provável (a confirmar) | Usado em |
 | --- | --- | --- | --- |
