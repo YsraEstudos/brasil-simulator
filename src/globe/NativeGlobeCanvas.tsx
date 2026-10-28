@@ -5,7 +5,6 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ComponentProps,
@@ -14,6 +13,9 @@ import {
 } from 'react';
 import { GLView } from 'expo-gl';
 import { PixelRatio, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
+
+// Every createRoot must see the native Three catalogue before its first render.
+extend(THREE as any);
 
 type GLContext =
   NonNullable<ComponentProps<typeof GLView>['onContextCreate']> extends (context: infer T) => void ? T : never;
@@ -82,9 +84,6 @@ export function NativeGlobeCanvas({
   const [unhandledError, setUnhandledError] = useState<Error | null>(null);
   const root = useRef<ReturnType<typeof createRoot> | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
-
-  // createRoot does not register Three.js elements automatically.
-  useMemo(() => extend(THREE as any), []);
 
   const reportFailure = useCallback(
     (value: unknown) => {
