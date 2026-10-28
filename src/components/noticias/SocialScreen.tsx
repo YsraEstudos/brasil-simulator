@@ -7,7 +7,7 @@ import { MIN_TOUCH } from '@/constants/theme';
 import { useScaledStyles } from '@/hooks/use-scaled-styles';
 import type { NewsKind } from '@/engine';
 
-import { compactCount, moodOf, trendsOf, type PostStance, type SocialPost } from './socialFeed';
+import { compactCount, emptySocialMessage, moodOf, trendsOf, type PostStance, type SocialPost } from './socialFeed';
 
 /** Nome da rede social fictícia da mesa. */
 export const SOCIAL_NAME = 'Praça';
@@ -27,11 +27,14 @@ export function SocialScreen({
   posts,
   onBack,
   progress,
+  newsOff,
 }: {
   posts: readonly SocialPost[];
   onBack: () => void;
   /** Quanto a tela já "acendeu" (0–1): as primeiras publicações sobem em cascata junto. */
   progress: SharedValue<number>;
+  /** Módulo de notícias desligado nesta campanha: sem manchetes, ninguém publica nunca. */
+  newsOff: boolean;
 }) {
   const styles = useScaledStyles(baseStyles);
   const [kind, setKind] = useState<NewsKind | null>(null);
@@ -84,11 +87,7 @@ export function SocialScreen({
         contentContainerStyle={styles.list}
         initialNumToRender={6}
         windowSize={5}
-        ListEmptyComponent={
-          <Text style={styles.empty}>
-            Ninguém comentando ainda. As reações chegam com as primeiras manchetes do governo.
-          </Text>
-        }
+        ListEmptyComponent={<Text style={styles.empty}>{emptySocialMessage(newsOff)}</Text>}
       />
     </View>
   );

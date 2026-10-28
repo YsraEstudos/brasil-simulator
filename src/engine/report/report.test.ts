@@ -152,8 +152,16 @@ describe('adviseDecision', () => {
     expect(JSON.stringify(state)).toBe(before);
   });
 
-  it('casual mostra um número; estratégica mostra uma faixa', () => {
-    const casual = adviseDecision(testState(42, 'casual'), TEST_PEC.id, content);
+  it('assistência clara mostra um número; padrão mostra uma faixa', () => {
+    const initial = testState(42, 'casual');
+    const clear = {
+      ...initial,
+      initialCampaignConfiguration: {
+        ...initial.initialCampaignConfiguration,
+        assistance: { informationClarity: 'clara' as const, hints: true },
+      },
+    };
+    const casual = adviseDecision(clear, TEST_PEC.id, content);
     expect(casual.articulacao.text).not.toContain('entre');
     expect(casual.articulacao.text).toContain('cerca de');
 
@@ -201,7 +209,15 @@ describe('mesa de despacho: execução e respostas a eventos (GAME_DESIGN.md §4
   it('o custo do programa por convênio considera só os estados que devem aderir', () => {
     const advice = adviseDecision(state, 'seguranca_cooperacao', real);
     const share = advice.forecast.adhesion ?? 1;
-    const casual = adviseDecision({ ...state, difficulty: 'casual' }, 'seguranca_cooperacao', real);
+    const casual = adviseDecision(
+      {
+        ...state,
+        difficulty: 'casual',
+        initialCampaignConfiguration: { ...state.initialCampaignConfiguration, institutionalRules: 'simplificadas' },
+      },
+      'seguranca_cooperacao',
+      real,
+    );
     expect(advice.forecast.annualFiscalImpact).toBeCloseTo(casual.forecast.annualFiscalImpact * share, 12);
   });
 

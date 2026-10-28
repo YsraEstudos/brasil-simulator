@@ -2,6 +2,7 @@ import { LEGISLATIVE_INSTRUMENTS } from '../../types/policy';
 import type { Instrument, Policy } from '../../types/policy';
 import { CHAMBER_SEATS, SENATE_SEATS } from '../../types/scenario';
 import type { Bloc } from '../../types/scenario';
+import { CHALLENGE_CALIBRATION } from '../campaignConfig';
 import type { Calibration } from '../economy/calibration';
 import { sumActive } from '../impulses';
 import type { Rng } from '../rng';
@@ -326,9 +327,14 @@ export function predictVotes(
 /** Etapa mensal: aplica impulsos `relacao_congresso` ativos às relações de todos os blocos. Sem contribuições. */
 export const congressStep: MonthStep = (state, ctx) => {
   const impulse = sumActive(state.impulses, state.monthIndex, 'relacao_congresso');
+  const stability =
+    ((state.initialCampaignConfiguration?.challenge?.coalitionStability ?? 0.5) - 0.5) *
+    CHALLENGE_CALIBRATION.coalitionMonthly;
   const blocs = ctx.content.scenario.blocs.map((bloc) => ({
     id: bloc.id,
-    governmentRelation: Math.min(RELACAO_MAX, Math.max(RELACAO_MIN, blocRelation(state, bloc) + impulse)),
+    governmentRelation: Math.min(RELACAO_MAX, Math.max(RELACAO_MIN, blocRelation(state, bloc) + impulse + stability)),
   }));
+  if (stability !== 0)
+    ctx.draft.notes.push('As relações no Congresso também variaram conforme a estabilidade da coalizão.');
   return { state: { ...state, congress: { ...state.congress, blocs } }, contributions: [] };
 };

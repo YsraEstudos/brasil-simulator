@@ -5,6 +5,10 @@ Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RU
 
 O percurso eleitoral antes da posse, suas entregas e limitações atuais estão em [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md); as eleições ao longo do mandato seguem o modelo deste documento e de [FASE_08.md](FASE_08.md).
 
+Em Novo Jogo, a situação inicial pode manter as condições do cenário ou aplicar uma hipótese fictícia de pressão externa ou desaceleração; o resumo identifica a escolha. O laboratório permite experimentar ações em uma cópia descartável e recomeçar com a mesma semente, sem alterar a campanha salva.
+
+Os ajustes de desafio permitem variar pressão econômica inicial, oposição, estabilidade da coalizão e frequência de eventos climáticos elegíveis. Seus parâmetros são provisórios e constam de [CALIBRATION.md](CALIBRATION.md). As regras institucionais e a clareza de pesquisas e pareceres são escolhas separadas; a opção institucional simplificada é explicitamente fictícia e não representa todos os procedimentos brasileiros.
+
 ---
 
 ## 1. Visão
@@ -180,6 +184,22 @@ As três dificuldades usam **o mesmo motor**. Elas mudam parâmetros, visibilida
 | Quebra de regras | Permitida, consequências brandas | Permitida, com STF/TCU/impeachment | idem, mais severas |
 
 Detalhes em [POLITICAL_RULES.md](POLITICAL_RULES.md) §1.1. Explicações estão sempre disponíveis, em qualquer modo.
+
+### 6.1 Módulos opcionais
+
+Além da dificuldade, o Novo jogo oferece **módulos opcionais** (PLANO_EXPANSAO_BRASIL_SIMULATOR.md §4 e §6.2). Dificuldade é desafio; módulo é profundidade de apresentação. Cada módulo tem uma classe explícita, e a escolha fica gravada na configuração da campanha — retomar o save ou reiniciar com a mesma semente repõe exatamente a mesma combinação.
+
+| Módulo | Classe | Ligado | Desligado |
+| --- | --- | --- | --- |
+| Clima detalhado | detalhamento | Eventos climáticos com local e severidade | O clima continua evoluindo e alimentando a economia; só os eventos que dependem do detalhe regional deixam de disparar |
+| Notícias do mês | desligável | Manchetes com causa rastreável no relatório | Relatório e indicadores não mudam; só a camada de notícias deixa de ser publicada |
+
+Regras que valem para todos:
+
+- O que **não** está na tabela é núcleo e está sempre ligado. Módulo só entra na tabela se tiver efeito verificável — opção decorativa é proibida.
+- Desligar um aprofundamento **não remove a causa econômica elementar**. O clima sem o módulo detalhado continua evoluindo e movendo a economia; só o evento regional some.
+- Desligar uma camada de apresentação **não toca no motor**: os mesmos sorteios, os mesmos indicadores, o mesmo relatório. Os testes comparam os dois estados mês a mês para provar isso (`src/engine/modules.test.ts`).
+- A escolha é validada na entrada: módulo desconhecido é erro explícito, nunca descarte silencioso.
 
 ---
 
@@ -467,6 +487,7 @@ Jogar os 12 meses, tomar decisões diferentes em duas campanhas, observar conseq
 - Cada proposta tem uma **linha do tempo** com o estado atual e o histórico.
 - Previsões ministeriais aparecem antes da decisão, com faixa de incerteza (§6).
 - O jogo nunca mostra uma "resposta certa".
+- **Verdade, publicação e interpretação são coisas distintas.** O motor guarda a verdade (o estado real); o que o jogador lê é a *publicação* — uma estimativa com fonte fictícia, método e versão, período observado, data e margem quando o método dá margem; a *interpretação* (o texto da interface, a manchete) é o que se faz com a publicação. Pesquisas e manchetes seguem o mesmo contrato (`src/engine/information/`): mesma observação depois de reabrir o save, histórico só-acréscimo (retificação é revisão nova, nunca reescrita) e nenhum número interno do eleitorado ou apuração atravessa para o que é publicado. Ler uma publicação não altera o motor nem consome sorteio.
 
 ---
 

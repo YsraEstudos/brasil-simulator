@@ -12,9 +12,11 @@ import { economyStep } from './economy/economy';
 import { resolveEventsStep, triggerEventsStep } from './events/events';
 import { pruneImpulses } from './impulses';
 import { appendNews, generateNews } from './news';
+import { moduleEnabled } from './modules';
 import { opinionStep } from './politics/opinion';
 import { governmentProfileStep } from './politics/profile';
 import { publicPoliciesStep, reservePublicAction } from './publicPolicies/publicPolicies';
+import { budgetDraftOf, isBudgetPolicy } from './publicPolicies/budgetLaws';
 import { societyStep } from './society/society';
 import { proposalsStep, reissueBarredPolicies } from './proposals/proposals';
 import { regionsStep } from './regions/regions';
@@ -135,7 +137,8 @@ export function advanceMonth(
     ...(draft.electionResult ? { electionResult: draft.electionResult } : {}),
   };
   // Notícias (FASE_07.md): geradas depois dos indicadores e do relatório finais, com causa; o relatório não muda.
-  const news = generateNews({ previous: state, next, report, content });
+  // Módulo desligado: a camada de notícias não é publicada; indicadores e relatório ficam idênticos (§4).
+  const news = moduleEnabled(next, 'noticias') ? generateNews({ previous: state, next, report, content }) : [];
   return { state: appendNews(next, news), report };
 }
 
@@ -202,6 +205,8 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
       const cost = policy ? policy.agendaCost : decision.agendaCost;
       if (!policy || !content.scenario.policies.includes(decision.policyId)) {
         rejected.push({ decision, reason: 'politica_desconhecida' });
+      } else if (isBudgetPolicy(decision.policyId) && !budgetDraftOf(decision, state)) {
+        rejected.push({ decision, reason: 'alvo_invalido' });
       } else if (policy.delivery === 'rotina') {
         rejected.push({ decision, reason: 'alvo_invalido' });
       } else if (sent.has(decision.policyId)) {

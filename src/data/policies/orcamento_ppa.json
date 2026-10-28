@@ -1,0 +1,19 @@
+{
+  "id": "orcamento_ppa",
+  "name": "Plano plurianual",
+  "summary": "Envia ao Congresso uma proposta de prioridade para os quatro anos seguintes. Não autoriza desembolso imediato.",
+  "area": "fiscal",
+  "competence": "federal",
+  "instruments": ["pln"],
+  "agendaCost": 1,
+  "cost": { "annualMillions": 0, "disbursementProfile": [1] },
+  "fundingSources": ["sem_custo"],
+  "timeline": { "planningMonths": 0, "expectedLegislativeMonths": 3, "executionMonths": 1, "maturationMonths": 0 },
+  "conditions": [],
+  "impacts": [{ "channel": "custeio", "magnitude": 0, "lagMonths": 0 }],
+  "risks": [],
+  "affected": { "groups": [], "sectors": [], "regions": ["nacional"] },
+  "position": { "economic": 0, "social": 0 },
+  "salience": 0,
+  "dataStatus": "FICTICIO"
+}

@@ -1,4 +1,6 @@
 import { monthKey, toCalendar } from '../calendar';
+import { usesFormalRules } from '../campaignConfig';
+import { budgetDraftOf, isBudgetPolicy } from '../publicPolicies/budgetLaws';
 import {
   AMENDMENTS_ACTION_ID,
   CONCEDE_ACTION_ID,
@@ -11,6 +13,7 @@ import {
 import { isPartisan, ministryOccupant, policyMinistry } from '../congress/cabinet';
 import { drawFiscalBomb, fiscalBombCostText } from '../congress/fiscalBombs';
 import { advanceCourt } from '../congress/court';
+import { policyCapacity } from '../congress/management';
 import {
   blocSupport,
   expectedYes,
@@ -179,9 +182,9 @@ export const proposalsStep: MonthStep = (state, ctx) => {
 
 /**
  * Agenda os efeitos de uma política executada a partir de `start` (ECONOMIC_MODEL.md §5.11). Condições
- * (POLITICAL_RULES.md §1.1) não se aplicam no Casual; riscos sim. Sorteia exatamente um `chance` por risco
+ * (POLITICAL_RULES.md §1.1) não se aplicam nas regras simplificadas; riscos sim. Sorteia exatamente um `chance` por risco
  * da política (mais um de STF se houver regra quebrada e a política não tiver esse risco), e prazos só
- * quando o risco ocorre. A pasta de bloco (§6.3.1) rende menos, pode atrasar e aumenta o risco de escândalo.
+ * quando o risco ocorre. A capacidade depende do indicado; a pasta de bloco pode atrasar por oposição ideológica.
  */
 export function scheduleImpulses(
   policy: Policy,
@@ -204,10 +207,10 @@ export function scheduleImpulses(
   const occupant = ministry ? ministryOccupant(state, ministry) : null;
   const partisanBloc =
     occupant !== null && isPartisan(occupant) ? ctx.content.scenario.blocs.find((b) => b.id === occupant) : undefined;
-  // Pasta de bloco: parte do resultado se perde (capacidade administrativa menor).
-  const resultFactor = partisanBloc ? 1 - c.perda_execucao_partidaria : 1;
+  // Projetos usam capacidade na carteira; aplicá-la aqui outra vez duplicaria a penalidade.
+  const resultFactor = policy.delivery === 'projeto' ? 1 : policyCapacity(state, ctx.content, policy.area);
 
-  // POLITICAL_RULES.md §2.1: programa por convênio depende da adesão de cada estado (não vale no Casual).
+  // POLITICAL_RULES.md §2.1: nas regras brasileiras, convênio depende da adesão de cada estado.
   const adhesion = stateAdhesion(policy, state, ctx);
   if (adhesion) {
     notes.push(
@@ -253,7 +256,7 @@ export function scheduleImpulses(
 
   // Regras quebradas (POLITICAL_RULES.md §1.1): alimentam a credibilidade e o risco jurídico.
   let ruleFlags = 0;
-  if (state.difficulty !== 'casual') {
+  if (usesFormalRules(state)) {
     if (policy.conditions.includes('anterioridade_anual')) {
       const proximoJaneiro = (Math.floor(t / MESES_POR_ANO) + 1) * MESES_POR_ANO;
       impulses = impulses.map((i) => (isRevenue(i.target) ? adiar(i, proximoJaneiro) : i));
@@ -392,7 +395,7 @@ function stateAdhesion(
   ctx: StepContext,
 ): { adherents: string[]; populationShare: number } | null {
   const ufs = regionsOf(ctx.content);
-  if (!policy.conditions.includes('adesao_estadual') || ufs.length === 0 || state.difficulty === 'casual') return null;
+  if (!policy.conditions.includes('adesao_estadual') || ufs.length === 0 || !usesFormalRules(state)) return null;
   const c = ctx.content.calibration;
   const view = regionsView(state, ctx.content);
   const pop = populationShares(ufs);
@@ -525,9 +528,9 @@ function shiftRelation(run: Run, blocId: string, delta: number): void {
   run.relations.set(blocId, clamp(atual + delta, RELACAO_MIN, RELACAO_MAX));
 }
 
-/** Janeiro é recesso (fora do Casual): a votação passa para fevereiro (POLITICAL_RULES.md §3.3). */
+/** Janeiro é recesso nas regras brasileiras: a votação passa para fevereiro (POLITICAL_RULES.md §3.3). */
 function voteMonthFrom(state: Readonly<GameState>, m: number): number {
-  return state.difficulty !== 'casual' && m % MESES_POR_ANO === 0 ? m + 1 : m;
+  return usesFormalRules(state) && m % MESES_POR_ANO === 0 ? m + 1 : m;
 }
 
 function blocName(run: Run, id: string | null): string {
@@ -698,6 +701,7 @@ function sendPolicy(run: Run, decision: Decision): void {
   const p: Proposal = {
     id: `${policyId}_${run.t}`,
     policyId,
+    ...(isBudgetPolicy(policyId) ? { budgetDraft: budgetDraftOf(decision, run.state) ?? undefined } : {}),
     createdMonth: run.t,
     status: 'em_tramitacao', // substituído pela primeira transição, antes de qualquer contagem
     scale: TEXTO_ORIGINAL,

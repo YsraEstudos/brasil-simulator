@@ -5,6 +5,8 @@ import type {
   EventEffect,
   GameEvent,
 } from '../../types/event';
+import { CHALLENGE_CALIBRATION } from '../campaignConfig';
+import { moduleEnabled } from '../modules';
 import {
   appointMinister,
   applyAppointment,
@@ -298,9 +300,14 @@ export function eventProbability(
 ): number {
   const { probability, probabilityFactor } = event.trigger;
   const base = event.trigger.climate && location ? probability * worstSeverity(location) : probability;
-  if (probabilityFactor === undefined) return base;
-  const factor = Math.min(1, Math.max(0, conditionValue(state, probabilityFactor, content)));
-  return base * factor;
+  const factor =
+    probabilityFactor === undefined ? 1 : Math.min(1, Math.max(0, conditionValue(state, probabilityFactor, content)));
+  const climateFactor = event.trigger.climate
+    ? 1 +
+      ((state.initialCampaignConfiguration?.challenge?.crisisFrequency ?? 0.5) - 0.5) *
+        CHALLENGE_CALIBRATION.climateProbabilitySpread
+    : 1;
+  return Math.min(1, Math.max(0, base * factor * climateFactor));
 }
 
 /**
@@ -413,6 +420,9 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
       flagsAllow(state, event) &&
       trigger.conditions.every((c) => conditionHolds(state, c, ctx.content));
     if (!eligible) continue;
+    // Módulo desligado: o evento que depende do detalhe climático não é elegível e não consome sorteio. O clima
+    // continua evoluindo e alimentando a economia (PLANO_EXPANSAO §4: desligar aprofundamento não remove a causa).
+    if (trigger.climate && !moduleEnabled(state, 'clima_detalhado')) continue;
     // Gatilho climático: sem UF atingida o evento não é elegível (e não consome sorteio).
     const location = trigger.climate ? climateLocation(state, ctx.content, trigger.climate) : undefined;
     if (trigger.climate && !location) continue;

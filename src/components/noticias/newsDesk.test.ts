@@ -9,6 +9,7 @@ import {
   buildEditions,
   editionIndexOf,
   editionPage,
+  emptyEditionMessage,
   leadFontSize,
   mastheadFontSize,
   newspaperColumns,
@@ -17,6 +18,7 @@ import { scaleTypography } from './scaledTypography';
 import {
   buildSocialFeed,
   characterStance,
+  emptySocialMessage,
   fill,
   citizenStance,
   compactCount,
@@ -93,6 +95,19 @@ describe('edições do jornal', () => {
     expect(mastheadFontSize(330, false)).toBeLessThan(25);
     expect(mastheadFontSize(1200, false)).toBe(40);
     expect(mastheadFontSize(1200, true)).toBe(26);
+  });
+});
+
+describe('mensagem do estado vazio com o módulo de notícias', () => {
+  it('desligado explica o silêncio e aponta o relatório; ligado, vale a espera pela primeira edição', () => {
+    const off = 'As notícias estão desligadas nesta campanha. O relatório do mês continua com os fatos.';
+    const on = 'A redação aguarda o primeiro mês de governo. Encerre um mês para a primeira edição chegar à mesa.';
+    expect(emptyEditionMessage(true)).toBe(off);
+    expect(emptyEditionMessage(false)).toBe(on);
+    expect(emptySocialMessage(true)).toBe('As notícias estão desligadas nesta campanha, então esta rede fica vazia.');
+    expect(emptySocialMessage(false)).toBe(
+      'Ninguém comentando ainda. As reações chegam com as primeiras manchetes do governo.',
+    );
   });
 });
 

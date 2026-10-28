@@ -118,8 +118,8 @@ describe('determinismo e independência da semente (PLANO_GLOBO.md §8, testes 1
     for (const preset of ['esquerda', 'liberal', 'conservador'] as const) {
       const other = play(contentV070, preset, 18);
       expect(other.state.rng, preset).toEqual(base.state.rng);
-      const { government: _a, ...restA } = base.state;
-      const { government: _b, ...restB } = other.state;
+      const { government: _a, initialCampaignConfiguration: _configA, ...restA } = base.state;
+      const { government: _b, initialCampaignConfiguration: _configB, ...restB } = other.state;
       expect(restB, preset).toEqual(restA);
     }
   });

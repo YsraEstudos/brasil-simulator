@@ -440,6 +440,7 @@ Persistência das pesquisas:
 
   A transição não muda o reconhecimento. Os adversários seguem a mesma regra (adversários simples, sem ações).
 - **Pesquisa.** É a última etapa de cada turno pré-posse, exceto na transição. Mostra a intenção sobre o comparecimento: candidatos, indecisos e brancos/nulos, somando 1. O erro de amostra é `ruido_nacional` em cada parcela, com renormalização. Cada UF recebe uma faixa de reconhecimento com erro `ruido_uf`, e a margem divulgada é `pesquisa_margem`. A pesquisa atual fica em `CareerState.poll`, e a de cada turno, em `MonthReport.career.poll`.
+- A publicação registra o mês da fotografia e da divulgação, fonte fictícia, versão do método e margem; a fotografia corresponde ao estado no fim do turno, não a uma série medida ao longo de todos os meses do turno.
 - **Eleitorado.** São 156.454.011 eleitores, repartidos entre as UFs pela população (`PROVISORIO`). A abstenção e os brancos e nulos usam os números de 2022 registrados no [DATA_SOURCES.md](DATA_SOURCES.md) §6.
 - **Versão do estado 14**, sem função de atualização (§4, saves antes do lançamento).
 
@@ -738,6 +739,8 @@ pre_campanha ──► convencao ──► nao_homologado (desfecho)
 
 **Depois de uma derrota antes da posse (D-C18).** Proposta para o M1: **encerrar com um resumo útil e oferecer recomeçar** (nova campanha ou nova tentativa com o mesmo perfil), sem modo alternativo. O resumo traz: resultado (nacional e por UF); principais fatores; duas ou três escolhas com efeito relevante; e a separação entre o que foi influência do jogador e o que foi acontecimento externo.
 
+**Tutorial e laboratório:** o tutorial independente oferece oito escolhas de campanha, debate, eleição, dotação, proposta, negociação, crise e gabinete. Depois da eleição, o exercício de governo usa uma situação separada: derrota não se converte em posse. A CPI é uma situação fictícia preparada para ensino. O laboratório, acessível pela ajuda eleitoral ou pelo Congresso, usa uma cópia da campanha e permite testar ações e reiniciar com a mesma semente, sem gravar no banco; exibe recusas e causas do motor. Ainda são necessárias sessões com jogadores e homologação visual em aparelho.
+
 **Interrupção e retomada:** cada transição acontece dentro de um turno gravado numa transação; fechar e reabrir em qualquer estado retoma no mesmo estado.
 
 **Posse: destino de cada dado.** `createInitialState` reinicia o PRNG ([src/engine/state.ts:98](../src/engine/state.ts)); a posse usa uma variante que recebe o estado existente.
@@ -774,7 +777,7 @@ pre_campanha ──► convencao ──► nao_homologado (desfecho)
 - **Regras da eleição (C5.1)**, em `src/engine/career/election.ts`, com a base do CF art. 77 já conferida ([DATA_SOURCES.md](DATA_SOURCES.md) §6):
   1. quem tem mais da metade dos válidos no 1º turno vence; se for um adversário, o jogador perde, mesmo em segundo;
   2. senão, os dois mais votados vão ao 2º turno, e vence quem tiver mais válidos; o jogador fora dos dois perde no 1º turno;
-  3. empate na vaga do 2º turno: o mais idoso (§5). O mesmo critério vale para o empate exato no 2º turno, uma simplificação, porque a Constituição não trata esse caso. Idades iguais ou ausentes vão a um sorteio por chave;
+  3. empate na vaga do 2º turno: o mais idoso (§5). O mesmo critério vale para o empate exato no 2º turno, uma simplificação, porque a Constituição não trata esse caso. Idades iguais vão a sorteio por chave; se alguma idade dos empatados for desconhecida, todos participam do sorteio, sem presumir a idade ausente;
   4. com um adversário só, o 1º turno decide, salvo empate exato.
 - **Apuração.** A partição do eleitorado em modo `eleicao` (Fase C2) dá votos inteiros por UF, e o nacional é a soma das UFs.
   - **Humor do dia:** o peso de cada candidato é multiplicado por e^(`ruido_eleicao`·z), igual em todas as UFs, com z sorteado pela chave `['career', 'election', turno, rodada]`. A pesquisa, assim, não acerta o resultado com certeza.
@@ -790,6 +793,8 @@ pre_campanha ──► convencao ──► nao_homologado (desfecho)
   - os principais fatores, as escolhas que mais pesaram e o que não dependeu do jogador, em texto e sem números do motor.
 
   Os fatores vêm de `CareerState.causeTotals`, a soma por causa das contribuições do reconhecimento e da valência ao longo da campanha. O botão "Tentar de novo com a mesma candidatura" (`retryCareer` na store) cria uma campanha nova com a mesma dificuldade, o mesmo cenário e o mesmo ponto de partida, com semente nova. A partida perdida continua salva.
+
+  Atualização: a configuração original é gravada na campanha, incluindo perfil político, perfil eleitoral, cenário, versão de conteúdo, ponto de partida, dificuldade e semente. O resumo oferece repetição com a mesma semente ou tentativa com outra; a repetição exige conteúdo e motor compatíveis. Isso ainda não representa a configuração avançada completa da expansão.
 - **Posse com continuidade (C5.3)**, em `src/engine/career/inauguration.ts`:
   - **PRNG:** a posse não chama `createInitialState`. O estado do governo já nasce com a partida (D-C12), e nenhuma etapa antes da posse toca o PRNG principal, então a semente e o estado do PRNG na posse são os da criação (teste);
   - **linha de base:** o ponto da posse na série, como na Fase C1;
@@ -941,7 +946,7 @@ Derrotas antes da posse usam o resumo da Fase C5 (não há governo a avaliar). C
 
 #### Trabalho iniciado (27–28/10/2026)
 
-- **C8.2, tutorial inicial:** orientações consultáveis na aba eleitoral explicam ações, pagamento, pesquisa, debate e desfecho do percurso atual. A compreensão e a acessibilidade no aparelho ainda precisam de homologação.
+- **C8.2, tutorial inicial:** orientações consultáveis na aba eleitoral explicam ações, pagamento, pesquisa, debate e desfecho do percurso atual. O tutorial jogável foi revisado em 28/10/2026 (ver "Tutorial jogável" abaixo e [TUTORIAL.md](TUTORIAL.md)). A compreensão e a acessibilidade no aparelho ainda precisam de homologação.
 - **C8.1:** a tela apresenta os pontos e perfis eleitorais existentes no cenário e envia o perfil escolhido ao motor. O cenário oferece posse e corrida, com um único perfil eleitoral; pré-campanha longa e outros perfis dependem da expansão.
 - **C8.3:** o globo recebe a mesma camada de reconhecimento do mapa 2D e mostra uma rota ilustrativa para a UF da última caravana aceita; movimento reduzido posiciona o marcador diretamente no destino. Medição e confirmação visual em aparelho permanecem pendentes.
 - **C8.4:** a investigação em [DIAGNOSTICO_CAMPANHA.md](DIAGNOSTICO_CAMPANHA.md) identificou vantagem central elevada em perfis sintéticos e reduziu provisoriamente o peso do alinhamento de 1 para 0,25, o da mobilização de 0,08 para 0,02 e o do comício de 0,04 para 0,01. Os controles pré-registrados passaram em sementes independentes; a melhor das 27 sequências exploradas venceu 89/100. A comparação pareada com dotação total e gastos controlados passou em 200 sementes, mas cobre uma busca limitada e tem diferenças de liquidez. O diagnóstico financeiro agora para ao ocorrer derrota e distingue saldo aberto de contas encerradas. Não é balanceamento final: faltam perfis reais adicionais e sessões com pessoas.
@@ -949,6 +954,48 @@ Derrotas antes da posse usam o resumo da Fase C5 (não há governo a avaliar). C
 - **C8.5:** os documentos de design e da Fase 08 agora remetem ao percurso pré-posse; corrigida a descrição deste plano como se a implementação ainda não tivesse começado. A revisão completa de coerência permanece pendente. `CALIBRATION.md` é gerado pela simulação econômica; o diagnóstico eleitoral é registrado separadamente.
 
 **Estimativa (esforço).** Interface 2–3; balanceamento 1–2; homologação 1.
+
+#### Expansão R1 — entrada e compreensão (28/10/2026)
+
+Onda R1 do plano de expansão sistêmica (`PLANO_EXPANSAO_BRASIL_SIMULATOR.md`, §4), sobre a base da R0:
+
+- **Configuração completa e versionada (`CampaignConfigV2`).** Tudo o que define o experimento vive em `GameState.initialCampaignConfiguration` e é validado na entrada: dificuldade, cenário e versão de conteúdo, semente, perfil, ponto de partida, situação inicial, desafio, regras institucionais, assistência (clareza e dicas) e módulos opcionais. Módulo desconhecido é erro explícito, não descarte silencioso.
+- **Retry não descarta escolha nenhuma.** `retryCareer('same')` reproduz o estado original byte a byte (mesma configuração e mesma semente); `retryCareer('new')` troca só a semente, preservando perfil, perfil eleitoral, regras, assistência e módulos. O desempate de idade desconhecida usa sorteio por chave, sem inferir juventude pela ausência do dado.
+- **Módulos opcionais** (`src/engine/modules.ts`, ver [GAME_DESIGN.md](GAME_DESIGN.md) §6.1): `clima_detalhado` (detalhamento) e `noticias` (desligável). Desligar um não muda indicador, relatório nem sorteio; o clima continua evoluindo sem os eventos regionais.
+- **Publicações determinísticas** (`src/engine/information/`): pesquisa e manchete passam pelo mesmo contrato de publicação — fonte fictícia, método versionado, período observado, data, margem e histórico só-acréscimo. Serialização canônica garante "mesma observação" depois de reabrir o save.
+- **Testes de aceite da onda:** matriz completa de configuração (3 dificuldades × 2 regras × 3 clarezas × dicas ligadas/desligadas × 3 situações iniciais = 108 combinações) com determinismo, round-trip de JSON e invariantes; replay de 48 e 96 meses direto versus retomado por save JSON no meio; leitura de interface entre meses sem efeito colateral; efeito de cada módulo isolado. Arquivos: `campaignConfigMatrix.test.ts`, `replayDeterminism.test.ts`, `modules.test.ts`, `information/*.test.ts`.
+
+**Pendente na R1:** homologação visual e em aparelho da tela de Novo jogo com os módulos (sem aparelho disponível em 28/10/2026).
+
+#### Expansão R2 — governar melhor (28/10/2026)
+
+Onda R2 do mesmo plano (§4, "Governar melhor"), sobre a R1. A auditoria mostrou que a mecânica já estava no código desde a integração da Fase 06; esta rodada fechou a onda fixando o critério de saída em teste, em vez de presumir que o código integrado estava correto.
+
+- **Competência do ocupante (EX-07).** Cada indicação sorteia competência, experiência e coordenação por chave (pasta, ocupante, semente), sem consumir o PRNG principal; a capacidade é a média das três, entre 0,65 e 1 da referência. Indicado político e técnico têm a mesma distribuição: nada no motor associa "político" a gestão pior. A estimativa aparece na aba do Congresso antes da posse.
+- **Gargalo por etapa (EX-08).** Planejamento, licitação e obra avançam pelo menor entre o ritmo do dinheiro e o da capacidade; o projeto registra qual dos dois o limitou (`bottleneck`), e a interface traduz o rótulo. Capacidade muda **quando** se gasta, não **quanto**: o valor declarado é cobrado uma única vez, então obra lenta não custa mais caro.
+- **Manutenção e depreciação.** Obra em operação cobra manutenção anual como custeio, não como segundo investimento; manutenção muito abaixo do necessário acelera a depreciação do ativo, sem mexer no orçamento da obra.
+- **Compromissos plurianuais (EX-09).** `projectCommitments` distribui o saldo ainda não desembolsado por ano. É leitura pura: não altera dotação, não cria despesa e não serve como autorização orçamentária.
+- **PPA, LDO e LOA (EX-10).** O projeto de lei orçamentária só vira autorização depois da sanção; a LOA aprovada limita a alocação futura do ano, com prioridade declarada, e não transforma autorização em gasto imediato. O calendário federal distingue o PPA herdado do primeiro ano próprio.
+- **Testes de aceite da onda:** `src/engine/publicPolicies/governance.test.ts` fixa os sete critérios — canais de orçamento e capacidade separados; melhor gestão nunca atrasa a mesma obra; capacidade não altera o total desembolsado; recurso adicional só acelera quando o gargalo é o orçamento; compromisso é previsão; indicação política não é incompetência; estoque de capital reconcilia mês a mês. Complementam `publicPolicies.test.ts`, `commitments.test.ts`, `budgetLaws.test.ts` e `budgetCalendar.test.ts`.
+
+**Pendente na R2:** homologação visual e em aparelho dos painéis de gargalo, manutenção, compromissos e leis orçamentárias (mesma limitação de aparelho da R1). A integração em `main` continua fora desta branch, que empilha R1 e R2 sobre a base da R0.
+
+#### Tutorial jogável — diagnóstico e correção (28/10/2026)
+
+Auditoria do tutorial em execução (semente 42, cenário padrão) encontrou nove defeitos de compreensão, não de motor. A correção fecha todos e documenta o desenho em [TUTORIAL.md](TUTORIAL.md):
+
+- **Retorno ao jogador.** O resultado do mês agora abre pelo que ele escolheu; os efeitos são separados entre causas do jogador (`acao:`, `debate`, `diretriz:`, `proposta:`, `acrescimo:` e eventos respondidos) e o resto do mês, agregados por causa e indicador. Antes, a lista começava pelo ruído macro e a escolha sumia.
+- **Números visíveis.** A faixa "Sua situação" mostra caixa do partido, limite de ações, pesquisa com margem e faixas de reconhecimento na campanha; aprovação, espaço fiscal, limite de ações e carteira no governo. Os valores das opções vêm do catálogo, não de texto fixo.
+- **Eleição com dois turnos.** A apuração reutiliza a leitura da Fase C5 (percentuais dos válidos por turno, mais votado e pesquisa contra o resultado), em vez de um desfecho sem números.
+- **Passagem do tempo explícita.** A negociação prepara o período (`pendingAdvance`) e a tela informa quantos meses serão simulados; `advance()` só aplica quando o jogador decide. Antes, sete meses corriam escondidos dentro da escolha de bloco.
+- **Costura campanha → governo.** O exercício de governo começa em posse nova e a tela diz que a eleição anterior não vira posse automática; o resultado eleitoral fica no relatório do passo 3.
+- **Tutorial × laboratório.** O texto separa o exercício guiado e descartável do sandbox fiel; o encerramento aponta para o laboratório (quando há campanha ativa) e para o jogo.
+- **Robustez.** `tutorialContentIssues` confere o cenário antes de abrir as lições; escolha inválida vira mensagem; a negociação sem proposta devolve lição vazia em vez de quebrar a renderização.
+- **Acessibilidade.** Regiões vivas, anúncio da etapa, `accessibilityHint` nas opções e rolagem ao topo ao trocar de passo.
+- **R2 visível.** Um cartão de carteira mostra fase, progresso, gargalo, manutenção e saldo plurianual, e o encerramento remete PPA, LDO e LOA ao Gabinete e ao laboratório.
+- **Persistência e reversão.** O tutorial sobrevive à navegação (cache por cenário), tem "Voltar uma escolha" e "Recomeçar".
+
+**Testes:** `guidedTutorial.test.ts`, `tutorialView.test.ts` e `campaignTutorial.test.ts`. **Pendente:** homologação em aparelho, como nas demais ondas.
 
 ---
 

@@ -191,3 +191,30 @@ export const INSTRUMENT_LABEL: Record<Instrument, string> = {
   convenio: 'Convênio',
   ato_execucao: 'Ato do Executivo',
 };
+
+/** Fases da carteira de projetos (Fase 06), como o jogador as lê. */
+export const PROJECT_PHASE_LABEL: Record<string, string> = {
+  planejamento: 'Planejamento',
+  licenciamento: 'Licenciamento',
+  licitacao: 'Licitação',
+  obra: 'Obra',
+  operacao: 'Operação',
+  cancelado: 'Cancelado',
+};
+
+/** Gargalo registrado pela carteira no último mês (EX-08). */
+export const PROJECT_BOTTLENECK_LABEL: Record<string, string> = {
+  capacidade: 'capacidade de gestão na etapa',
+  orcamento: 'orçamento disponível',
+  suspensao: 'projeto suspenso',
+  cronograma: 'intervalo previsto no cronograma',
+  nenhum: 'nenhum identificado neste mês',
+};
+
+/** "2027-05" → "mai/2027" em textos vindos do motor, sem mudar o dado. */
+export function readableIsoDates(text: string): string {
+  return text.replace(/\b(\d{4})-(\d{2})\b/g, (whole, year: string, month: string) => {
+    const name = MONTHS[Number(month) - 1];
+    return name ? `${name.slice(0, 3).toLowerCase()}/${year}` : whole;
+  });
+}

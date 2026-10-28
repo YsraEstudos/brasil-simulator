@@ -87,7 +87,7 @@ describe('estado climático inicial (PLANO_GLOBO.md §6.1, D-G6)', () => {
     expect(state.climate.rng).toEqual(climateRngState(42));
     expect(checkClimate(state.climate)).toEqual([]);
     expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
-    expect(STATE_SCHEMA_VERSION).toBe(18);
+    expect(STATE_SCHEMA_VERSION).toBe(19);
   });
 
   it('a lista de UFs coincide com as do cenário com dados regionais e com a climatologia', () => {

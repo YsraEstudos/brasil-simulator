@@ -89,6 +89,16 @@ export function leadFontSize(width: number): number {
   return Math.round(Math.min(40, Math.max(22, width * 0.052)));
 }
 
+/**
+ * Mensagem da edição vazia: com o módulo de notícias desligado nesta campanha, o silêncio é explicado e o
+ * jogador é apontado para o relatório do mês; com ele ligado, vale a espera pela primeira edição.
+ */
+export function emptyEditionMessage(newsOff: boolean): string {
+  return newsOff
+    ? 'As notícias estão desligadas nesta campanha. O relatório do mês continua com os fatos.'
+    : 'A redação aguarda o primeiro mês de governo. Encerre um mês para a primeira edição chegar à mesa.';
+}
+
 /** Largura dos dois botões de virar edição e do espaço entre eles e o título, em pixels. */
 const MASTHEAD_BUTTONS = 2 * 44 + 16;
 /** Largura média de um caractere do título em relação ao tamanho da fonte (serifa, negrito). */

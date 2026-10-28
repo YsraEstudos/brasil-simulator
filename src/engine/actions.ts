@@ -133,7 +133,7 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
     id: APPOINT_ACTION_ID,
     name: 'Nomear ministro',
     summary:
-      'Troca o ocupante da pasta. Indicação de bloco rende apoio no Congresso, mas a pasta executa pior e o risco ' +
+      'Troca o ocupante da pasta. Indicação de bloco rende apoio no Congresso, a capacidade depende do indicado e o risco ' +
       'de escândalo cresce com o tempo; demitir ministro de bloco custa capital e a relação com o bloco.',
     agendaCost: 1,
     targetParams: ['ministryId'],

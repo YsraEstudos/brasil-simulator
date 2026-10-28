@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { INSTRUMENT_LABEL, PROPOSAL_STATUS_LABEL, costText, shortMonthLabel } from '@/components/campaign/labels';
@@ -36,6 +37,7 @@ import {
   isClosedGate,
   housePresident,
   legislativeInstrument,
+  managementProfile,
   ministriesOf,
   ministryOccupant,
   ministryScandalChance,
@@ -94,6 +96,12 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
 
   return (
     <>
+      <Button
+        label="Experimentar decisões no laboratório"
+        variant="secondary"
+        onPress={() => router.push('/laboratorio')}
+        block
+      />
       <CongressHemicycle state={state} content={content} actionsUsed={actionsUsed} actionsMax={actionsMax} />
 
       <Card title="Mesas e pauta">
@@ -334,11 +342,15 @@ function MinistriesCard({ state, content, agenda }: { state: GameState; content:
     o === TECHNICAL_MINISTER
       ? 'quadro técnico'
       : `indicação: ${content.scenario.blocs.find((b) => b.id === o)?.name ?? o}`;
+  const managementText = (ministryId: string, occupant: string) => {
+    const p = managementProfile(state.seed, ministryId, occupant);
+    return `Gestão estimada: ${formatPercent(p.capacity, 0)} da referência; competência ${formatPercent(p.competence, 0)}, experiência ${formatPercent(p.experience, 0)} e coordenação ${formatPercent(p.coordination, 0)}. Valores fictícios.`;
+  };
 
   return (
     <Card
       title="Ministérios"
-      subtitle="Pasta entregue a um bloco rende apoio nas votações, mas executa pior, pode travar políticas contrárias ao bloco e acumula risco de escândalo. Demitir indicado custa capital e a relação com o bloco.">
+      subtitle="Um bloco na pasta pode render apoio nas votações e travar políticas contrárias. A capacidade depende do indicado; demitir um indicado custa capital e relação com o bloco.">
       {ministries.map((m: Ministry) => {
         const occupant = ministryOccupant(state, m);
         const risk = ministryScandalChance(state, m, content.calibration);
@@ -350,6 +362,9 @@ function MinistriesCard({ state, content, agenda }: { state: GameState; content:
             <Text variant="label">{m.name}</Text>
             <Text variant="body" color="textSecondary">
               {`${occupantName(occupant)} · peso ${formatPercent(m.weight, 0)}${risk > 0 ? ` · risco de escândalo ${formatPercent(risk, 1)} ao mês` : ''}`}
+            </Text>
+            <Text variant="caption" color="textSecondary">
+              {managementText(m.id, occupant)}
             </Text>
             {pendingOccupant ? (
               <Text variant="caption" color="accent">
@@ -364,16 +379,20 @@ function MinistriesCard({ state, content, agenda }: { state: GameState; content:
             />
             {open === m.id
               ? options.map((o) => (
-                  <ActionButton
-                    key={o}
-                    decision={actionDecision(APPOINT_ACTION_ID, { ministryId: m.id, occupant: o })}
-                    label={
-                      o === TECHNICAL_MINISTER
-                        ? 'Nomear técnico'
-                        : `Entregar ao bloco ${content.scenario.blocs.find((b) => b.id === o)?.name ?? o}`
-                    }
-                    agenda={agenda}
-                  />
+                  <View key={o}>
+                    <ActionButton
+                      decision={actionDecision(APPOINT_ACTION_ID, { ministryId: m.id, occupant: o })}
+                      label={
+                        o === TECHNICAL_MINISTER
+                          ? 'Nomear técnico'
+                          : `Entregar ao bloco ${content.scenario.blocs.find((b) => b.id === o)?.name ?? o}`
+                      }
+                      agenda={agenda}
+                    />
+                    <Text variant="caption" color="textSecondary">
+                      {managementText(m.id, o)}
+                    </Text>
+                  </View>
                 ))
               : null}
           </View>

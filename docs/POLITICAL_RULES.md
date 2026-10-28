@@ -15,12 +15,9 @@ Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/202
 3. Atores autônomos simulados: Câmara, Senado, partidos/blocos, presidentes das Casas, Banco Central, STF (simplificado), TCU (simplificado), governadores, mercado e opinião pública.
 4. Quando a ação é inválida, o jogo explica o motivo e indica o instrumento correto.
 
-### 1.1 Fidelidade às regras por dificuldade (decisão de 13/10/2026)
+### 1.1 Regras institucionais e assistência
 
-| Aspecto | Casual | Estratégica | Realismo Extremo |
-| --- | --- | --- | --- |
-| Regras aplicadas | Simplificadas: sem noventena/anterioridade, compensação da LRF automática, recesso parlamentar ignorado | Completas (quóruns, prazos, LRF, arcabouço, anterioridade, recesso) | Completas, mais regimentos internos, prazos de tramitação reais e calendário orçamentário detalhado |
-| Explicações | Sempre disponíveis em todos os modos: por que uma ação é inválida ou arriscada, e qual o instrumento correto | idem | idem |
+A escolha institucional é independente do desafio. **Brasileiras** aplica os mecanismos existentes de anterioridade, noventena, riscos da LRF, recesso, vedação eleitoral e adesão estadual; não significa que todos os procedimentos legais já estejam simulados. **Simplificadas**, explicitamente fictícias, dispensam essas restrições, eliminam a dívida de campanha na posse e não oferecem caixa 2. O jogador escolhe separadamente clareza da informação e dicas.
 
 **Quebra de regras é permitida, com consequências.** Ações que violam a LRF, o arcabouço, a anterioridade ou a competência de outro ente não são bloqueadas de forma absoluta (exceto o fisicamente impossível, como votar sem quórum). O jogo mostra um **aviso explícito com os riscos** e, se o jogador confirmar, a ação segue marcada com flags de irregularidade que alimentam:
 - `riscoJuridico` (ADI/ADPF e liminares do STF, §8);
@@ -28,7 +25,7 @@ Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/202
 - `pressaoImpeachment` como possível crime de responsabilidade (§10);
 - credibilidade fiscal e prêmio de risco (ECONOMIC_MODEL.md §5.5).
 
-No modo Casual a quebra continua possível e com consequências, mas mais brandas.
+Nas regras brasileiras, a quebra modelada continua sujeita às consequências descritas. As regras simplificadas não representam o processo institucional brasileiro.
 
 ---
 
@@ -58,7 +55,7 @@ Parâmetros em `src/engine/economy/calibration.ts` (seção Federação); distri
 | --- | --- |
 | Governadores | 27 governadores fictícios (cenário v0.4.0), cada um de um bloco e com relação própria com o governo (−100…100). A relação anda até a meta: posição própria do governador + `governador_alinhamento` × relação do bloco dele + `governador_aprovacao` × aprovação do presidente no estado acima da base. Eventos movem governadores de regiões específicas (`governadores.relacao`). |
 | Governador e aprovação local | Governador aliado puxa a aprovação do presidente no estado para cima; hostil, para baixo (`aprovacao_governador`). |
-| Adesão a convênios | Política com a condição `adesao_estadual` (hoje, a cooperação em segurança): no início da execução cada estado adere com probabilidade `adesao_base + adesao_relacao × relação/100`. O gasto e o capital público alcançam só a população dos estados que aderiram e são repartidos só entre eles; substitui o risco genérico de baixa adesão. No Casual todos aderem. A mesa de despacho mostra a adesão esperada. |
+| Adesão a convênios | Política com a condição `adesao_estadual` (hoje, a cooperação em segurança): no início da execução cada estado adere com probabilidade `adesao_base + adesao_relacao × relação/100`. O gasto e o capital público alcançam só a população dos estados que aderiram e são repartidos só entre eles; substitui o risco genérico de baixa adesão. Nas regras simplificadas todos aderem. A mesa de despacho mostra a adesão esperada. |
 | Visita presidencial | Ação de agenda (custo 1, uma por estado por mês): aprovação local `aprovacao_visita` por `meses_visita` meses e `relacao_visita` pontos com o governador. Não muda a aprovação nacional. Enquanto o efeito local dura, a UF visitada ganha um pin de visita no mapa (PR 13; tocar abre o cartão da UF). |
 | Resposta federal à emergência climática (PR 13) | Numa UF em cheia ou seca prolongada **com prevenção ativa nela** (obra de segurança hídrica ou de drenagem em andamento ou pronta, ou dotação da Defesa Civil), a relação com o governador sobe até `prevencao_relacao_max` pontos no mês, proporcional à severidade e à proteção (menos que a visita; volta à meta sozinha). Sem prevenção, nada. A prevenção em si é política comum: os projetos são projetos de lei (votação dos blocos pela `position`, negociação e capital político, §6) e a rotina da Defesa Civil é ato executivo com dotação. Modelo em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.21. |
 | Obras no mapa (PR 13) | Obra da carteira (projeto) só ganha pin em UF que a **política cita** no escopo regional (`regional.scope`); obra nacional ou de macrorregião não tem pin e nenhuma coordenada é inventada. O pin fica na âncora da UF, só enquanto a obra está em andamento. |
@@ -104,6 +101,8 @@ Efetivo das Forças Armadas; criação de cargos e aumento de remuneração na a
 | LOA | Até 31/ago | Receitas e despesas do ano seguinte |
 
 Prazos do ADCT art. 35 §2º. Em jan/2027 vigora a **LOA 2027 votada pelo Congresso anterior**. Se ela não tiver sido aprovada, o jogo aplica a regra de execução provisória prevista na LDO (proporção mensal de despesas). ⚠ Reconferir na LDO 2027 quando aprovada (o PLOA 2027 foi enviado em 31/08/2026).
+
+O painel de planejamento mostra o período previsto de PPA e os prazos federais de envio ao Congresso, em regras associadas aos cenários brasileiros (`federal_2027_v1`). O calendário é informativo: ainda não registra a aprovação das leis, não autoriza despesas e não implementa a tramitação do ciclo. Fonte: [Constituição e ADCT, art. 35 §2º](https://www.planalto.gov.br/ccivil_03/constituicao/constituicaocompilado.htm).
 
 ### 4.2 Regime Fiscal Sustentável (LC 200/2023) — verificado em 13/10/2026
 - **Limite de despesa primária**: cresce em termos reais **70% da variação real da receita** (50% se a meta de primário do ano anterior não tiver sido cumprida), com piso de **0,6%** e teto de **2,5%** de crescimento real.
@@ -203,7 +202,7 @@ Cada ministério relevante tem um ocupante com `origem`: **técnico/aliado** ou 
 | Efeito | Técnico/aliado | Indicação de bloco |
 | --- | --- | --- |
 | Apoio do bloco no Congresso | nenhum ganho direto | `relacaoGoverno_b ↑` e contrapartida em `apoio_b` (§6.2), proporcional ao peso da pasta |
-| Execução do orçamento da pasta | `capacidade_adm` ↑ | `capacidade_adm` ↓ (parte do gasto rende menos) |
+| Execução do orçamento da pasta | Capacidade depende das competências do indicado | Capacidade depende das competências do indicado |
 | Risco de escândalo | baixo | maior, cresce com o tempo no cargo |
 | Agenda da pasta | segue o presidente | pode **travar** políticas contrárias à ideologia do bloco |
 
@@ -236,7 +235,7 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 | Presidência da Casa | Relação com o bloco que preside a Casa abaixo de `limiar_presidente_casa`: a cada votação marcada, chance `prob_nao_pautar` de adiar um mês. |
 | Emendas como pedágio (§6.3) | Votação difícil (PEC, PLP ou "sim" esperado a menos de `folga_votacao_dificil` das cadeiras do exigido) sem emendas liberadas: chance `prob_adiamento_pedagio` de os líderes adiarem. Adiamentos por presidência e pedágio são limitados a `max_adiamentos` por Casa; depois, a votação acontece. |
 | Negociação (ação de agenda, custo 1 cada) | **Negociar com um bloco** (apoio do bloco à proposta + `negociacao_apoio`, saturado; relação melhora; custa capital). **Liberar emendas** (todos apoiam mais, quem cobra emendas mais ainda; despesa `emendas_pedagio` por `emendas_meses` que sai das discricionárias, ECONOMIC_MODEL.md §5.8). **Ceder no texto** (escala × `escala_concessao`, todos apoiam mais). **Pedir urgência** (só PL e PLP, CF art. 64: votação em até 2 meses em cada Casa; o bloco que preside a Câmara não gosta). |
-| Ministérios (§6.3.1) | Cada pasta tem peso e áreas de política. Indicação de bloco: apoio do bloco em todas as votações (`apoio_ministerio` × peso, saturado), relação melhora na nomeação; a política da pasta rende menos (`perda_execucao_partidaria` no capital público e nos ganhos de aprovação), atrasa se o bloco for ideologicamente contrário a ela (`atraso_ministerio_contrario`) e o risco mensal de escândalo cresce com os anos no cargo (`escandalo_base_mes`, `escandalo_por_ano`, saturado). O evento "Escândalo em ministério" só dispara com pasta de bloco, com probabilidade igual a esse risco; a resposta "Demitir" troca o indicado mais antigo por um técnico. Demitir indicado custa capital e a relação com o bloco. |
+| Ministérios (§6.3.1) | Cada pasta tem peso e áreas de política. Indicação de bloco: apoio do bloco em todas as votações (`apoio_ministerio` × peso, saturado), relação melhora na nomeação; a execução depende da competência do indicado, independentemente da origem, e atrasa se o bloco for ideologicamente contrário à política (`atraso_ministerio_contrario`). O risco mensal de escândalo ainda cresce com os anos no cargo (`escandalo_base_mes`, `escandalo_por_ano`, saturado). O evento "Escândalo em ministério" só dispara com pasta de bloco, com probabilidade igual a esse risco; a resposta "Demitir" troca o indicado mais antigo por um técnico. Demitir indicado custa capital e a relação com o bloco. |
 | Medida provisória (§3) | Vigência imediata; se não for convertida em 4 meses (120 dias), perde a eficácia e os efeitos param. A partir do 2º mês (mais de 45 dias) tranca a pauta da Casa em que está: as demais propostas dessa Casa esperam. |
 | Ainda não modelado | Comissões permanentes, emendas de plenário, destaques, obstrução, recesso de julho, convocação extraordinária, CPIs, impeachment e TCU. |
 
@@ -353,13 +352,13 @@ Pedidos de impeachment se acumulam na Câmara, e quem decide é a presidência d
 - 1º turno no primeiro domingo de outubro; 2º turno no último domingo de outubro, se nenhum candidato obtiver maioria absoluta dos votos válidos (CF art. 77).
 - Reeleição para um único período subsequente (CF art. 14 §5º). ✔ 13/10/2026: a PEC 12/2022 (fim da reeleição, mandatos de 5 anos) foi aprovada na CCJ do Senado em mai/2025 e desmembrada, sem aprovação em plenário; mesmo pelo texto da CCJ, o presidente eleito em 2026 ainda poderia disputar a reeleição em 2030. Fica como parâmetro do cenário e candidata a evento/PEC dentro do jogo.
 - Condutas vedadas (Lei 9.504/1997, art. 73): nos 3 meses anteriores à eleição ficam proibidas transferências voluntárias a estados e municípios (salvo obra em andamento e emergência), publicidade institucional e nomeações/demissões de servidores (com exceções); revisão geral de remuneração dos servidores acima da inflação é vedada a partir de 180 dias antes. Em ano eleitoral, programas sociais novos também são restringidos (art. 73 §10). ✔
-- **No jogo (simplificação):** a lei veda o benefício gratuito novo durante todo o ano eleitoral (art. 73 §10); o motor aplica a vedação só nos **3 meses antes de cada pleito** (`VEDACAO_MESES = 3`): meses 18–20 antes da municipal (mês 21) e 42–44 antes da geral (mês 45), e de novo no 2º mandato ([src/engine/elections/vedacao.ts](../src/engine/elections/vedacao.ts)). Conta como benefício novo a política com impacto positivo em transferências, despesa obrigatória ou salário mínimo real; a política é recusada com o motivo `vedacao_eleitoral`. O jogador pode forçar a brecha da emergência (`vedacao_bypass`, regra quebrável, §1.1): a medida passa, mas paga pena na intenção de voto e risco de multa por abuso de poder. A dificuldade Casual não aplica a vedação. As demais condutas vedadas acima (transferências voluntárias, publicidade, nomeações) não são modeladas.
+- **No jogo (simplificação):** a lei veda o benefício gratuito novo durante todo o ano eleitoral (art. 73 §10); o motor aplica a vedação só nos **3 meses antes de cada pleito** (`VEDACAO_MESES = 3`): meses 18–20 antes da municipal (mês 21) e 42–44 antes da geral (mês 45), e de novo no 2º mandato ([src/engine/elections/vedacao.ts](../src/engine/elections/vedacao.ts)). Conta como benefício novo a política com impacto positivo em transferências, despesa obrigatória ou salário mínimo real; a política é recusada com o motivo `vedacao_eleitoral`. O jogador pode forçar a brecha da emergência (`vedacao_bypass`, regra quebrável, §1.1): a medida passa, mas paga pena na intenção de voto e risco de multa por abuso de poder. As regras simplificadas não aplicam a vedação. As demais condutas vedadas acima (transferências voluntárias, publicidade, nomeações) não são modeladas.
 
 ### 11.0 Finanças antes da posse (PLANO_CAMPANHA.md Fase C3)
 
 A corrida dispõe de caixa simples ou de três bolsos configurados pelo cenário. Quantias são R$ mil inteiros; gastos contratados contam para um teto global e as decisões disputam saldo na ordem enviada. Aporte pessoal é limitado pela liquidez e pelo limite do cenário, que não supera 10% do teto; repasses futuros e arrecadação só entram no turno previsto. Doações são agregadas: o jogo não representa rendimentos nem verifica limites de doadores individuais. Repasses, riscos e custos do cenário atual são `FICTICIO`. O teto de R$ 88.944 mil é aproximação conservadora `PROVISORIO` do limite de primeiro turno. Consulte [DATA_SOURCES.md](DATA_SOURCES.md) §6 quanto às fontes e lacunas.
 
-Dívida é uma escolha explícita, limitada e contabilizada no gasto contratado; na posse ela vira compromisso pessoal, exceto no Casual. O pagamento sai do patrimônio pessoal, não do orçamento público. Após o prazo, a cobrança reduz capital político conforme parâmetro `PROVISORIO`, uma vez. Caixa 2 é ficcional, indisponível no Casual e sujeito a exposição e fiscalização por turno; uma descoberta inicia investigação e notícia, não condenação automática. A cassação depende da Fase C5.
+Dívida é uma escolha explícita, limitada e contabilizada no gasto contratado; na posse ela vira compromisso pessoal, exceto nas regras simplificadas. O pagamento sai do patrimônio pessoal, não do orçamento público. Após o prazo, a cobrança reduz capital político conforme parâmetro `PROVISORIO`, uma vez. Caixa 2 é ficcional, indisponível nas regras simplificadas e sujeito a exposição e fiscalização por turno; uma descoberta inicia investigação e notícia, não condenação automática. A cassação depende da Fase C5.
 ### 11.1 Ciclo do mandato (modelo de opinião)
 O peso que o eleitor dá a cada coisa muda ao longo do mandato (parâmetros a calibrar, valores de partida abaixo):
 

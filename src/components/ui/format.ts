@@ -37,6 +37,13 @@ export function formatMoneyMillions(millions: number): string {
   return `R$ ${formatNumber(millions, 0)} mi`;
 }
 
+/** R$ mil (unidade da campanha) → texto curto: 800 → "R$ 800 mil"; 10000 → "R$ 10 mi". */
+export function formatMoneyThousands(thousands: number): string {
+  if (!Number.isFinite(thousands)) return '—';
+  if (Math.abs(thousands) >= 1000) return formatMoneyMillions(thousands / 1000);
+  return `R$ ${formatNumber(thousands, 0)} mil`;
+}
+
 export type Trend = 'up' | 'down' | 'flat';
 export type Sentiment = 'positive' | 'negative' | 'neutral';
 

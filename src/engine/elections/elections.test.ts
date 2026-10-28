@@ -278,7 +278,14 @@ describe('vedação eleitoral (POLITICAL_RULES.md §11.2; FASE_08.md)', () => {
     const at18 = play(newState(), 18);
     expect(vedacaoAtiva(at18, content)).toBe(true);
     expect(vedacaoAtiva(play(newState(), 17), content)).toBe(false);
-    const casual = play(newState(7, 'casual'), 18);
+    const initial = newState(7, 'casual');
+    const casual = play(
+      {
+        ...initial,
+        initialCampaignConfiguration: { ...initial.initialCampaignConfiguration, institutionalRules: 'simplificadas' },
+      },
+      18,
+    );
     expect(vedacaoAtiva(casual, content)).toBe(false);
     expect(vedacaoAtiva(at18, base)).toBe(false);
   });

@@ -3,10 +3,26 @@ import {
   availableStartPoints,
   DEFAULT_PROFILE_PRESET,
   isProfilePresetId,
+  isStartSituationId,
+  DEFAULT_START_SITUATION,
+  DEFAULT_CHALLENGE,
+  challengeSchema,
+  institutionalRulesSchema,
+  DEFAULT_INSTITUTIONAL_RULES,
+  DEFAULT_ASSISTANCE,
+  assistanceSchema,
   PROFILE_PRESETS,
   type Difficulty,
   type ProfilePresetId,
   type StartPoint,
+  type StartSituationId,
+  type ChallengeConfig,
+  type InstitutionalRules,
+  type AssistanceConfig,
+  type ModuleId,
+  isModuleId,
+  normalizeModules,
+  DEFAULT_ENABLED_MODULES,
 } from '@/engine';
 import type { Scenario } from '@/types/scenario';
 
@@ -219,6 +235,12 @@ export interface CampaignSetupForm {
   profileId?: ProfilePresetId;
   /** Ponto de partida; ausente = posse. */
   startPoint?: StartPoint;
+  startSituationId?: StartSituationId;
+  challenge?: ChallengeConfig;
+  institutionalRules?: InstitutionalRules;
+  assistance?: AssistanceConfig;
+  /** Módulos opcionais ligados (ver `engine/modules`); ausente = padrão da campanha nova. */
+  modules?: ModuleId[];
   /** Perfil eleitoral escolhido entre os perfis do cenário. */
   careerProfileId?: string;
   /** Texto do campo de semente (vazio = automática). */
@@ -233,6 +255,11 @@ export interface NewCampaignInput {
   profileId?: ProfilePresetId;
   /** Ponto de partida; ausente = posse. Sem perfil eleitoral explícito, usa o primeiro do cenário. */
   startPoint?: StartPoint;
+  startSituationId?: StartSituationId;
+  challenge?: ChallengeConfig;
+  institutionalRules?: InstitutionalRules;
+  assistance?: AssistanceConfig;
+  modules?: ModuleId[];
   careerProfileId?: string;
   /** Semente da simulação; ausente = sorteada pela store. */
   seed?: number;
@@ -245,6 +272,11 @@ export interface SetupErrors {
   profile?: string;
   careerProfile?: string;
   startPoint?: string;
+  startSituation?: string;
+  challenge?: string;
+  institutionalRules?: string;
+  assistance?: string;
+  modules?: string;
   seed?: string;
 }
 
@@ -268,6 +300,11 @@ export function checkNewCampaignInput(input: {
   scenarioId?: unknown;
   profileId?: unknown;
   startPoint?: unknown;
+  startSituationId?: unknown;
+  challenge?: unknown;
+  institutionalRules?: unknown;
+  assistance?: unknown;
+  modules?: unknown;
   careerProfileId?: unknown;
   seed?: unknown;
 }): SetupCheck {
@@ -278,6 +315,16 @@ export function checkNewCampaignInput(input: {
   const seedOk = seed === null || isValidSeed(seed);
   const profileId = input.profileId ?? DEFAULT_PROFILE;
   const startPoint = input.startPoint ?? DEFAULT_START_POINT;
+  const startSituationId = input.startSituationId ?? DEFAULT_START_SITUATION;
+  const challenge = challengeSchema.safeParse(input.challenge ?? DEFAULT_CHALLENGE);
+  const institutionalRules = institutionalRulesSchema.safeParse(
+    input.institutionalRules ?? DEFAULT_INSTITUTIONAL_RULES,
+  );
+  const assistance = assistanceSchema.safeParse(input.assistance ?? DEFAULT_ASSISTANCE);
+  // Módulo desconhecido é erro, não descarte silencioso: a configuração é o contrato de replay.
+  const modulesInput = input.modules ?? DEFAULT_ENABLED_MODULES;
+  const modulesOk = Array.isArray(modulesInput) && modulesInput.every(isModuleId);
+  const modules = modulesOk ? normalizeModules(modulesInput as ModuleId[]) : [];
   const startOk = isStartPointOf(startPoint, scenarioId);
   const careerProfileId = input.careerProfileId;
   const careerProfileOk =
@@ -292,6 +339,11 @@ export function checkNewCampaignInput(input: {
     isKnownScenario(scenarioId) &&
     isProfilePresetId(profileId) &&
     startOk &&
+    isStartSituationId(startSituationId) &&
+    challenge.success &&
+    institutionalRules.success &&
+    assistance.success &&
+    modulesOk &&
     careerProfileOk &&
     seedOk
   ) {
@@ -303,6 +355,11 @@ export function checkNewCampaignInput(input: {
         scenarioId,
         profileId,
         startPoint,
+        startSituationId,
+        challenge: challenge.data,
+        institutionalRules: institutionalRules.data,
+        assistance: assistance.data,
+        modules,
         seed,
         ...(typeof careerProfileId === 'string' ? { careerProfileId } : {}),
       },
@@ -314,6 +371,11 @@ export function checkNewCampaignInput(input: {
   if (!isKnownScenario(scenarioId)) errors.scenario = 'Escolha um cenário disponível.';
   if (!isProfilePresetId(profileId)) errors.profile = 'Escolha um perfil inicial válido.';
   if (!startOk && isKnownScenario(scenarioId)) errors.startPoint = 'Escolha um ponto de partida deste cenário.';
+  if (!isStartSituationId(startSituationId)) errors.startSituation = 'Escolha uma situação inicial válida.';
+  if (!challenge.success) errors.challenge = 'Ajustes de desafio inválidos.';
+  if (!institutionalRules.success) errors.institutionalRules = 'Escolha regras institucionais válidas.';
+  if (!assistance.success) errors.assistance = 'Escolha opções de assistência válidas.';
+  if (!modulesOk) errors.modules = 'Escolha módulos opcionais válidos.';
   if (!careerProfileOk) errors.careerProfile = 'Escolha um perfil eleitoral válido para este cenário.';
   if (!seedOk) errors.seed = SEED_ERRORS.range;
   return { ok: false, errors };
@@ -328,6 +390,11 @@ export function checkSetupForm(form: CampaignSetupForm): SetupCheck {
     scenarioId: form.scenarioId,
     profileId: form.profileId,
     startPoint: form.startPoint,
+    startSituationId: form.startSituationId,
+    challenge: form.challenge,
+    institutionalRules: form.institutionalRules,
+    assistance: form.assistance,
+    modules: form.modules,
     careerProfileId: form.careerProfileId,
     seed: seed.ok ? (seed.value ?? undefined) : undefined,
   });

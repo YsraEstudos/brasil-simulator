@@ -33,6 +33,7 @@ export function closeCampaignAccounts(
   career: CareerState,
   difficulty: GameState['difficulty'],
   content: Pick<GameContent, 'scenario'>,
+  formalRules = difficulty !== 'casual',
 ): Pick<CareerState, 'finance' | 'expandedFinance' | 'commitments' | 'illicit'> {
   const finance = career.finance ? closeCampaignFinance(career.finance) : undefined;
   let expandedFinance = career.expandedFinance;
@@ -40,7 +41,7 @@ export function closeCampaignAccounts(
   if (expandedFinance) {
     const deadline = content.scenario.career?.finance?.expanded?.debtDeadline;
     if (deadline === undefined) throw new RangeError('prazo de dívida ausente');
-    const closed = closeExpandedFinance(expandedFinance, difficulty, deadline);
+    const closed = closeExpandedFinance(expandedFinance, difficulty, deadline, formalRules);
     expandedFinance = closed.finance;
     if (closed.commitment) commitments = [...(commitments ?? []), closed.commitment];
   }

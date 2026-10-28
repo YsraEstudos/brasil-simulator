@@ -1,5 +1,7 @@
-import { termOf } from '../calendar';
+import { termOf, toCalendar } from '../calendar';
+import { recordBudgetLaws } from './budgetLaws';
 import { climateParam } from '../climate/calibration';
+import { policyCapacity, policyManagement } from '../congress/management';
 import { preventionOf, type Prevention } from '../climate/effects';
 import { annualReview, fiscalStructure, revenueMonth, spendingMonth } from '../economy/fiscal';
 import { BRAND_ACTION_ID, DIRECTIVE_ACTION_ID } from '../actions';
@@ -54,6 +56,9 @@ interface ProjectRun {
   proposal: Proposal | undefined;
   policy: Policy | undefined;
   capacity: number;
+  preparation: number;
+  licensing: number;
+  procurement: number;
 }
 
 /**
@@ -199,6 +204,8 @@ export function checkPublicPolicies(state: GameState): string[] {
       errors.push(`projeto ${project.proposalId}: manutenção inválida`);
     if (!Number.isInteger(project.phaseMonth) || project.phaseMonth < 0)
       errors.push(`projeto ${project.proposalId}: mês inválido`);
+    if (project.phaseEffort !== undefined && !finiteNonNegative(project.phaseEffort))
+      errors.push(`projeto ${project.proposalId}: esforço de fase inválido`);
     if (!Number.isInteger(project.delayMonths) || project.delayMonths < 0)
       errors.push(`projeto ${project.proposalId}: atraso inválido`);
     assets += project.assetMillions;
@@ -221,7 +228,7 @@ export function checkPublicPolicies(state: GameState): string[] {
 
 /** Applies monthly directive and project execution after proposals have run. */
 export const publicPoliciesStep: MonthStep = (input, ctx) => {
-  let state = input as PublicGameState;
+  let state = recordBudgetLaws(input) as PublicGameState;
   // Screening reserves actions only for the batch validator. Apply the accepted decisions here as well so
   // the step remains correct when called directly by a custom pipeline or by a module test.
   for (const decision of ctx.decisions) {
@@ -234,7 +241,13 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
   const t = state.monthIndex;
   let impulses = state.impulses.filter((impulse) => !currentManagedImpulse(impulse, t));
   const preview = budgetPreview({ ...state, impulses } as GameState, ctx.content);
-  let roomMillions = preview.annualRoomMillions;
+  const year = toCalendar(t).year;
+  const loa = [...(publicState.budgetLaws ?? [])]
+    .filter((law) => law.kind === 'loa' && law.year === year && law.annualMillions !== undefined)
+    .sort(
+      (a, b) => b.enactedAt - a.enactedAt || (a.proposalId < b.proposalId ? -1 : a.proposalId > b.proposalId ? 1 : 0),
+    )[0];
+  let roomMillions = Math.min(preview.annualRoomMillions, loa?.annualMillions ?? Infinity);
   const gdpMillions = preview.gdpMillions;
 
   renewDirectives(publicState, t, ctx.draft);
@@ -242,7 +255,25 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
   depreciateAssets(publicState, ctx.content);
 
   const currentDirectives = publicState.directives.filter((directive) => directive.year === yearOf(t));
-  for (const directive of currentDirectives) {
+  const projectRuns = ensureProjects(publicState, proposals, ctx.content, t, state);
+  const allocations = [
+    ...currentDirectives.map((directive) => ({
+      kind: 'directive' as const,
+      directive,
+      area: ctx.content.policies[directive.policyId]?.area,
+    })),
+    ...projectRuns.map((run) => ({ kind: 'project' as const, run, area: run.policy?.area })),
+  ];
+  if (loa) allocations.sort((a, b) => Number(b.area === loa.priority) - Number(a.area === loa.priority));
+  for (const allocation of allocations) {
+    if (allocation.kind === 'project') {
+      const result = processProject(allocation.run, roomMillions, gdpMillions, state, ctx);
+      roomMillions = result.roomMillions;
+      impulses.push(...result.impulses);
+      if (result.transition) ctx.draft.notes.push(result.transition);
+      continue;
+    }
+    const directive = allocation.directive;
     const policy = ctx.content.policies[directive.policyId];
     const ministry = ctx.content.scenario.institutions?.ministries.find((item) => item.id === directive.ministryId);
     if (!policy || policy.delivery !== 'rotina' || !ministry) continue;
@@ -256,14 +287,6 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
     roomMillions -= allocated;
     impulses.push(...routineImpulses(policy, directive, allocated, gdpMillions, t));
     impulses.push(...routinePreventionImpulses(policy, directive, allocated, t));
-  }
-
-  const projectRuns = ensureProjects(publicState, proposals, ctx.content, t, state);
-  for (const run of projectRuns) {
-    const result = processProject(run, roomMillions, gdpMillions, state, ctx);
-    roomMillions = result.roomMillions;
-    impulses.push(...result.impulses);
-    if (result.transition) ctx.draft.notes.push(result.transition);
   }
 
   for (const run of projectRuns)
@@ -486,12 +509,19 @@ function ensureProjects(
     });
     known.add(proposal.id);
   }
-  return publicState.projects.map((project) => ({
-    project,
-    proposal: proposals.find((proposal) => proposal.id === project.proposalId),
-    policy: content.policies[project.policyId],
-    capacity: ministryCapacity(project, content, state),
-  }));
+  return publicState.projects.map((project) => {
+    const policy = content.policies[project.policyId];
+    const management = policy ? policyManagement(state, content, policy.area) : null;
+    return {
+      project,
+      proposal: proposals.find((proposal) => proposal.id === project.proposalId),
+      policy,
+      capacity: ministryCapacity(project, content, state),
+      preparation: management?.competence ?? 1,
+      licensing: management?.coordination ?? 1,
+      procurement: management?.experience ?? 1,
+    };
+  });
 }
 
 function processProject(
@@ -505,12 +535,15 @@ function processProject(
   if (!policy || !proposal || project.phase === 'cancelado' || state.monthIndex < project.startMonth) {
     return { roomMillions, impulses: [], transition: null };
   }
+  project.bottleneck = 'nenhum';
   if (proposal.status === 'abandonada') {
     project.phase = 'cancelado';
     project.phaseMonth = 0;
+    project.phaseEffort = 0;
     return { roomMillions, impulses: [], transition: `Projeto ${policy.name} cancelado.` };
   }
   if (proposal.status === 'suspensa') {
+    project.bottleneck = 'suspensao';
     project.delayMonths += 1;
     return {
       roomMillions,
@@ -527,6 +560,7 @@ function processProject(
       phase = nextPhase(phase);
       project.phase = phase;
       project.phaseMonth = 0;
+      project.phaseEffort = 0;
       transition = `Projeto ${policy.name}: fase ${phase}.`;
       continue;
     }
@@ -542,6 +576,7 @@ function processProject(
     const maintenanceCoverage =
       project.maintenanceMillions > EPSILON ? Math.max(0, Math.min(1, maintenance / project.maintenanceMillions)) : 1;
     if (maintenanceCoverage < 1 - EPSILON) {
+      project.bottleneck = 'orcamento';
       const extraDepreciation = (calibration(ctx.content).dep_kg * (1 - maintenanceCoverage)) / MONTHS_PER_YEAR;
       project.assetMillions = Math.max(0, asset * (1 - extraDepreciation));
     }
@@ -567,42 +602,62 @@ function processProject(
   }
 
   if (phase !== 'obra') {
+    const rate =
+      phase === 'planejamento' ? run.preparation : phase === 'licenciamento' ? run.licensing : run.procurement;
     project.phaseMonth += 1;
-    if (project.phaseMonth >= phaseDuration(phase, policy)) {
+    project.phaseEffort = (project.phaseEffort ?? 0) + rate;
+    if (rate < 1 - EPSILON) {
+      project.bottleneck = 'capacidade';
+      ctx.draft.notes.push(`Projeto ${policy.name}: ${phase} avança conforme a capacidade de gestão da etapa.`);
+    }
+    if (project.phaseEffort >= phaseDuration(phase, policy)) {
       project.phase = nextPhase(phase);
       project.phaseMonth = 0;
+      project.phaseEffort = 0;
       transition = `Projeto ${policy.name}: fase ${project.phase}.`;
     }
     return { roomMillions, impulses: [], transition };
   }
 
   const duration = effectiveConstructionMonths(policy, run.capacity);
+  if (run.capacity < 1 - EPSILON) project.bottleneck = 'capacidade';
   const c = calibration(ctx.content);
   const after = sCurve((project.phaseMonth + 1) / duration, c.curva_s_projetos);
-  const planned = plannedConstructionSpend(project, policy, project.phaseMonth, duration, c.curva_s_projetos);
+  const pastSchedule = project.phaseMonth >= duration;
+  if (pastSchedule && project.spentMillions >= project.budgetMillions - EPSILON) {
+    return { roomMillions, impulses: [], transition: completeProject(project, proposal, policy, state, ctx) };
+  }
+  const planned = pastSchedule
+    ? Math.max(0, project.budgetMillions - project.spentMillions)
+    : plannedConstructionSpend(project, policy, project.phaseMonth, duration, c.curva_s_projetos);
   // A zero profile tranche is an intentional calendar gap. It must not make the
   // project impossible to finish, while a positive tranche with no fiscal room
   // remains blocked until the monthly pool can fund it.
   if (planned <= EPSILON) {
+    project.bottleneck = 'cronograma';
     project.phaseMonth += 1;
     project.delayMonths += 1;
     return { roomMillions, impulses: [], transition };
   }
   // A partially funded tranche keeps its curve index; only the unpaid balance is charged again.
   let paidBefore = 0;
-  for (let month = 0; month < project.phaseMonth; month += 1) {
-    paidBefore += plannedConstructionSpend(project, policy, month, duration, c.curva_s_projetos);
+  if (!pastSchedule) {
+    for (let month = 0; month < project.phaseMonth; month += 1) {
+      paidBefore += plannedConstructionSpend(project, policy, month, duration, c.curva_s_projetos);
+    }
   }
-  const trancheSpent = Math.min(planned, Math.max(0, project.spentMillions - paidBefore));
+  const trancheSpent = pastSchedule ? 0 : Math.min(planned, Math.max(0, project.spentMillions - paidBefore));
   const due = planned - trancheSpent;
   if (due <= EPSILON) {
     project.phaseMonth += 1;
-    project.progress = Math.max(project.progress, Math.min(1, after));
+    const funded = project.budgetMillions > EPSILON ? project.spentMillions / project.budgetMillions : 1;
+    project.progress = Math.max(project.progress, Math.min(1, funded, after));
     return { roomMillions, impulses: [], transition };
   }
   const availableMonthly = roomMillions / MONTHS_PER_YEAR;
   const allocated = Math.min(due, availableMonthly);
   if (allocated <= EPSILON) {
+    project.bottleneck = 'orcamento';
     project.delayMonths += 1;
     ctx.draft.notes.push(`Projeto ${policy.name}: orçamento mensal indisponível; obra atrasada.`);
     return { roomMillions, impulses: [], transition };
@@ -610,7 +665,12 @@ function processProject(
   roomMillions -= allocated * MONTHS_PER_YEAR;
   project.spentMillions = Math.min(project.budgetMillions, project.spentMillions + allocated);
   const share = allocated / due;
-  project.progress = Math.min(1, project.progress + (after - project.progress) * share);
+  if (share < 1 - EPSILON) project.bottleneck = 'orcamento';
+  project.progress = Math.min(
+    1,
+    project.budgetMillions > EPSILON ? project.spentMillions / project.budgetMillions : 1,
+    project.progress + (after - project.progress) * share,
+  );
   if (share >= 1 - EPSILON) project.phaseMonth += 1;
   else project.delayMonths += 1;
   const regional = policyRegional(policy);
@@ -628,32 +688,43 @@ function processProject(
           },
         ]
       : [];
-  if (project.progress >= 1 - EPSILON) {
-    project.progress = 1;
-    project.phase = 'operacao';
-    project.phaseMonth = 0;
-    project.assetMillions =
-      (project.spentMillions / positiveOr(state.economy.priceLevel, 1)) * (policy.project?.efficiency ?? 1);
-    project.maintenanceMillions =
-      project.assetMillions * (policy.project?.annualMaintenanceRate ?? 0) * positiveOr(state.economy.priceLevel, 1);
-    transition = `Projeto ${policy.name}: obra concluída e ativo entrou em operação.`;
-    if (proposal.status === 'em_execucao') {
-      proposal.status = 'concluida';
-      const transitionRecord = {
-        monthIndex: state.monthIndex,
-        status: 'concluida' as const,
-        cause: 'obra_concluida',
-        detail: 'Projeto concluído após 100% de avanço físico.',
-      };
-      proposal.history = [...proposal.history, transitionRecord];
-      ctx.draft.proposalChanges.push({
-        proposalId: proposal.id,
-        policyId: proposal.policyId,
-        transition: transitionRecord,
-      });
-    }
+  if (project.progress >= 1 - EPSILON && project.spentMillions >= project.budgetMillions - EPSILON) {
+    transition = completeProject(project, proposal, policy, state, ctx);
   }
   return { roomMillions, impulses, transition };
+}
+
+function completeProject(
+  project: PublicProject,
+  proposal: Proposal,
+  policy: Policy,
+  state: Readonly<GameState>,
+  ctx: StepContext,
+): string {
+  project.progress = 1;
+  project.phase = 'operacao';
+  project.phaseMonth = 0;
+  project.phaseEffort = 0;
+  project.assetMillions =
+    (project.spentMillions / positiveOr(state.economy.priceLevel, 1)) * (policy.project?.efficiency ?? 1);
+  project.maintenanceMillions =
+    project.assetMillions * (policy.project?.annualMaintenanceRate ?? 0) * positiveOr(state.economy.priceLevel, 1);
+  if (proposal.status === 'em_execucao') {
+    proposal.status = 'concluida';
+    const transitionRecord = {
+      monthIndex: state.monthIndex,
+      status: 'concluida' as const,
+      cause: 'obra_concluida',
+      detail: 'Projeto concluído após 100% de avanço físico.',
+    };
+    proposal.history = [...proposal.history, transitionRecord];
+    ctx.draft.proposalChanges.push({
+      proposalId: proposal.id,
+      policyId: proposal.policyId,
+      transition: transitionRecord,
+    });
+  }
+  return `Projeto ${policy.name}: obra concluída e ativo entrou em operação.`;
 }
 
 function renewDirectives(publicState: PublicPolicyState, month: number, draft: StepContext['draft']): void {
@@ -714,13 +785,7 @@ function sumActiveOferta(state: Readonly<GameState>): number {
 
 function ministryCapacity(project: PublicProject, content: GameContent, state: Readonly<GameState>): number {
   const policy = content.policies[project.policyId];
-  const ministry = content.scenario.institutions?.ministries.find((item) => item.areas.includes(policy?.area ?? ''));
-  if (!ministry) return 1;
-  const cabinet = state.congress.cabinet.find((item) => item.id === ministry.id);
-  const occupant = cabinet?.occupant ?? ministry.occupant;
-  const c = calibration(content);
-  const partisanLoss = c.perda_execucao_partidaria;
-  return occupant === 'tecnico' ? 1 : Math.max(c.capacidade_minima_projetos, 1 - partisanLoss);
+  return policy ? policyCapacity(state, content, policy.area) : 1;
 }
 
 function effectiveConstructionMonths(policy: Policy, capacity: number): number {
@@ -840,6 +905,7 @@ function clonePublicState(publicState: PublicPolicyState): PublicPolicyState {
     projects: publicState.projects.map((project) => ({ ...project })),
     brands: publicState.brands.map((brand) => ({ ...brand })),
     capitalStockMillions: publicState.capitalStockMillions,
+    ...(publicState.budgetLaws ? { budgetLaws: publicState.budgetLaws.map((law) => ({ ...law })) } : {}),
   };
 }
 
