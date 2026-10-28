@@ -955,6 +955,18 @@ Derrotas antes da posse usam o resumo da Fase C5 (não há governo a avaliar). C
 
 **Estimativa (esforço).** Interface 2–3; balanceamento 1–2; homologação 1.
 
+#### Expansão R1 — entrada e compreensão (28/10/2026)
+
+Onda R1 do plano de expansão sistêmica (`PLANO_EXPANSAO_BRASIL_SIMULATOR.md`, §4), sobre a base da R0:
+
+- **Configuração completa e versionada (`CampaignConfigV2`).** Tudo o que define o experimento vive em `GameState.initialCampaignConfiguration` e é validado na entrada: dificuldade, cenário e versão de conteúdo, semente, perfil, ponto de partida, situação inicial, desafio, regras institucionais, assistência (clareza e dicas) e módulos opcionais. Módulo desconhecido é erro explícito, não descarte silencioso.
+- **Retry não descarta escolha nenhuma.** `retryCareer('same')` reproduz o estado original byte a byte (mesma configuração e mesma semente); `retryCareer('new')` troca só a semente, preservando perfil, perfil eleitoral, regras, assistência e módulos. O desempate de idade desconhecida usa sorteio por chave, sem inferir juventude pela ausência do dado.
+- **Módulos opcionais** (`src/engine/modules.ts`, ver [GAME_DESIGN.md](GAME_DESIGN.md) §6.1): `clima_detalhado` (detalhamento) e `noticias` (desligável). Desligar um não muda indicador, relatório nem sorteio; o clima continua evoluindo sem os eventos regionais.
+- **Publicações determinísticas** (`src/engine/information/`): pesquisa e manchete passam pelo mesmo contrato de publicação — fonte fictícia, método versionado, período observado, data, margem e histórico só-acréscimo. Serialização canônica garante "mesma observação" depois de reabrir o save.
+- **Testes de aceite da onda:** matriz completa de configuração (3 dificuldades × 2 regras × 3 clarezas × dicas ligadas/desligadas × 3 situações iniciais = 108 combinações) com determinismo, round-trip de JSON e invariantes; replay de 48 e 96 meses direto versus retomado por save JSON no meio; leitura de interface entre meses sem efeito colateral; efeito de cada módulo isolado. Arquivos: `campaignConfigMatrix.test.ts`, `replayDeterminism.test.ts`, `modules.test.ts`, `information/*.test.ts`.
+
+**Pendente na R1:** homologação visual e em aparelho da tela de Novo jogo com os módulos (sem aparelho disponível em 28/10/2026).
+
 ---
 
 ## 5.1 Testes, simulações, balanceamento e homologação
