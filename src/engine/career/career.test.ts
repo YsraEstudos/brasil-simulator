@@ -149,7 +149,7 @@ describe('turnos antes da posse e transição mínima (PLANO_CAMPANHA.md Fase C1
   });
 
   it('determinismo: mesma semente e mesmos comandos, mesmo resultado', () => {
-    expect(play(corrida(5), PRE_TURNS + 2)).toEqual(play(corrida(5), PRE_TURNS + 2));
+    expect(play(corrida(11), PRE_TURNS + 2)).toEqual(play(corrida(11), PRE_TURNS + 2));
   });
 });
 

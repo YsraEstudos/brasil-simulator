@@ -23,6 +23,7 @@ import { lonLatToVec3, raySphere, tileBounds, vec3ToLonLat, type Vec3 } from './
 import { GlobeLabels, type LabelInsets, type LabelsUpdater } from './GlobeLabels';
 import type { Rect } from './labels';
 import type { GlobeMarker } from './markers';
+import { CaravanMarker } from './CaravanMarker';
 import { lodPixelsPerRadian, selectTiles } from './lod';
 import type { GlobeBudget } from './qualityProfiles';
 import {
@@ -242,6 +243,7 @@ type Props = {
   /** Fim do anel de `pulseKey` (repassado aos rótulos). */
   onPulseDone?: (instanceIds: readonly string[]) => void;
   reduceMotion: boolean;
+  caravan?: { destination: string; key: string } | null;
 };
 
 export function GlobeScene({
@@ -262,6 +264,7 @@ export function GlobeScene({
   pulseKey,
   onPulseDone,
   reduceMotion,
+  caravan,
 }: Props) {
   'use no memo'; // objetos three.js são mutados a cada quadro; fora do React Compiler
   const { camera, gl, size, invalidate } = useThree();
@@ -791,6 +794,14 @@ export function GlobeScene({
       )}
       <group ref={group} />
       <UfFills fills={fills ?? NO_FILLS} invalidate={invalidate} />
+      {caravan && (
+        <CaravanMarker
+          key={caravan.key}
+          destination={caravan.destination}
+          reduceMotion={reduceMotion}
+          drawing={drawing}
+        />
+      )}
       <primitive object={cloudMesh} />
       <primitive object={lights} />
       {highlight && <primitive object={highlight} />}

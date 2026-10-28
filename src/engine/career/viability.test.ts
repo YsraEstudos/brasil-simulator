@@ -68,7 +68,7 @@ describe('viabilidade (PLANO_CAMPANHA.md Fase C2, C2.1)', () => {
   });
 
   it('na campanha oficial o reconhecimento sobe; a variação nacional é a soma das contribuições', () => {
-    let state: GameState = corrida();
+    let state: GameState = corrida(11); // Inclui a transição, após vitória na eleição.
     for (let t = 0; t < PRE_TURNS; t++) {
       const before = nationalRecognition(state.career!.recognition, ufs);
       const r = advanceMonth(state, { decisions: [] }, content);

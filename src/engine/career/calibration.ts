@@ -76,11 +76,11 @@ export const CAREER_PARAMS = {
     basis: JOGO,
   },
   alinhamento_peso: {
-    value: 1,
+    value: 0.25,
     min: 0,
     max: 2,
     note: 'peso do alinhamento entre a ideologia do bloco e a inclinação da UF na utilidade (−1…1)',
-    basis: JOGO,
+    basis: `${JOGO}; ajuste provisório, ver DIAGNOSTICO_CAMPANHA.md`,
   },
   // --- reconhecimento: decaimento antes, crescimento depois, ambos pela distância ao limite (I10)
   ostracismo_taxa: {
@@ -139,11 +139,11 @@ export const CAREER_PARAMS = {
   faixa_alto: { value: 0.75, min: 0.6, max: 0.9, note: 'limite superior da faixa "conhecido"', basis: JOGO },
   // --- ações de campanha (PLANO_CAMPANHA.md Fase C4, tarefa C4.1): fração da distância ao teto ganha no turno
   acao_nacional: {
-    value: 0.04,
+    value: 0.01,
     min: 0.01,
     max: 0.08,
     note: 'comício nacional: fração da distância a 1 ganha pelo reconhecimento em todas as UFs',
-    basis: `${JOGO}; menor que a caravana numa UF, mas no país inteiro`,
+    basis: `${JOGO}; ajuste provisório, ver DIAGNOSTICO_CAMPANHA.md; menor que a caravana numa UF, mas no país inteiro`,
   },
   acao_regional: {
     value: 0.15,
@@ -153,11 +153,11 @@ export const CAREER_PARAMS = {
     basis: JOGO,
   },
   acao_mobilizacao: {
-    value: 0.08,
+    value: 0.02,
     min: 0.02,
     max: 0.15,
     note: 'mobilização da militância: ganho de reconhecimento por unidade de alinhamento positivo da UF',
-    basis: `${JOGO}; só rende onde o bloco do partido é forte`,
+    basis: `${JOGO}; ajuste provisório, ver DIAGNOSTICO_CAMPANHA.md; só rende onde o bloco do partido é forte`,
   },
   ataque_dano: {
     value: 0.08,

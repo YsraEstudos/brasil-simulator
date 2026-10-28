@@ -219,6 +219,8 @@ export interface CampaignSetupForm {
   profileId?: ProfilePresetId;
   /** Ponto de partida; ausente = posse. */
   startPoint?: StartPoint;
+  /** Perfil eleitoral escolhido entre os perfis do cenário. */
+  careerProfileId?: string;
   /** Texto do campo de semente (vazio = automática). */
   seedText: string;
 }
@@ -229,11 +231,9 @@ export interface NewCampaignInput {
   scenarioId?: string;
   /** Perfil ideológico inicial (PLANO_GLOBO.md §5.1); ausente = Centro. Não muda regras nem sorteios. */
   profileId?: ProfilePresetId;
-  /**
-   * Ponto de partida (PLANO_CAMPANHA.md Fase C1); ausente = posse. Os da carreira começam com o primeiro perfil de
-   * candidato do cenário (entrada mínima, M1.1).
-   */
+  /** Ponto de partida; ausente = posse. Sem perfil eleitoral explícito, usa o primeiro do cenário. */
   startPoint?: StartPoint;
+  careerProfileId?: string;
   /** Semente da simulação; ausente = sorteada pela store. */
   seed?: number;
 }
@@ -243,12 +243,19 @@ export interface SetupErrors {
   difficulty?: string;
   scenario?: string;
   profile?: string;
+  careerProfile?: string;
   startPoint?: string;
   seed?: string;
 }
 
 export type SetupCheck =
-  | { ok: true; input: Required<Omit<NewCampaignInput, 'seed'>> & { seed: number | null } }
+  | {
+      ok: true;
+      input: Required<Omit<NewCampaignInput, 'seed' | 'careerProfileId'>> & {
+        seed: number | null;
+        careerProfileId?: string;
+      };
+    }
   | {
       ok: false;
       errors: SetupErrors;
@@ -261,6 +268,7 @@ export function checkNewCampaignInput(input: {
   scenarioId?: unknown;
   profileId?: unknown;
   startPoint?: unknown;
+  careerProfileId?: unknown;
   seed?: unknown;
 }): SetupCheck {
   const name = validateCampaignName(input.name);
@@ -271,15 +279,34 @@ export function checkNewCampaignInput(input: {
   const profileId = input.profileId ?? DEFAULT_PROFILE;
   const startPoint = input.startPoint ?? DEFAULT_START_POINT;
   const startOk = isStartPointOf(startPoint, scenarioId);
+  const careerProfileId = input.careerProfileId;
+  const careerProfileOk =
+    careerProfileId === undefined ||
+    (startPoint !== 'posse' &&
+      isKnownScenario(scenarioId) &&
+      typeof careerProfileId === 'string' &&
+      (SCENARIOS[scenarioId].career?.profiles ?? []).some((profile) => profile.id === careerProfileId));
   if (
     name.ok &&
     isDifficulty(difficulty) &&
     isKnownScenario(scenarioId) &&
     isProfilePresetId(profileId) &&
     startOk &&
+    careerProfileOk &&
     seedOk
   ) {
-    return { ok: true, input: { name: name.value, difficulty, scenarioId, profileId, startPoint, seed } };
+    return {
+      ok: true,
+      input: {
+        name: name.value,
+        difficulty,
+        scenarioId,
+        profileId,
+        startPoint,
+        seed,
+        ...(typeof careerProfileId === 'string' ? { careerProfileId } : {}),
+      },
+    };
   }
   const errors: SetupErrors = {};
   if (!name.ok) errors.name = name.error;
@@ -287,6 +314,7 @@ export function checkNewCampaignInput(input: {
   if (!isKnownScenario(scenarioId)) errors.scenario = 'Escolha um cenário disponível.';
   if (!isProfilePresetId(profileId)) errors.profile = 'Escolha um perfil inicial válido.';
   if (!startOk && isKnownScenario(scenarioId)) errors.startPoint = 'Escolha um ponto de partida deste cenário.';
+  if (!careerProfileOk) errors.careerProfile = 'Escolha um perfil eleitoral válido para este cenário.';
   if (!seedOk) errors.seed = SEED_ERRORS.range;
   return { ok: false, errors };
 }
@@ -300,6 +328,7 @@ export function checkSetupForm(form: CampaignSetupForm): SetupCheck {
     scenarioId: form.scenarioId,
     profileId: form.profileId,
     startPoint: form.startPoint,
+    careerProfileId: form.careerProfileId,
     seed: seed.ok ? (seed.value ?? undefined) : undefined,
   });
   if (seed.ok) return base;

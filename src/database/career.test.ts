@@ -34,7 +34,8 @@ import type { SqlDatabase } from './types';
 
 const content = loadContent(DEFAULT_SCENARIO_ID);
 const PRE_TURNS = careerSchedule(content, 'corrida').length;
-const start = (seed = 3) => createInitialState({ content, difficulty: 'estrategica', seed, startPoint: 'corrida' });
+// Estes testes atravessam a posse; a semente 11 vence sem decisões na calibração atual.
+const start = (seed = 11) => createInitialState({ content, difficulty: 'estrategica', seed, startPoint: 'corrida' });
 
 const count = async (db: SqlDatabase, table: string) =>
   (await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM ${table} WHERE campaign_id = 'c1'`))!.n;

@@ -291,7 +291,7 @@ export function createGameStore(deps: GameStoreDeps) {
           return { ok: false, reason: 'falha', error: 'O banco de dados ainda não está pronto.' };
         }
         const d = db;
-        const { name, difficulty, scenarioId, profileId, startPoint } = checked.input;
+        const { name, difficulty, scenarioId, profileId, startPoint, careerProfileId } = checked.input;
         set({ busy: true, error: undefined });
 
         // Um único `finally` devolve `busy` a falso: nenhuma exceção, prevista ou não, trava a store.
@@ -308,6 +308,7 @@ export function createGameStore(deps: GameStoreDeps) {
               seed,
               profile: profileId,
               startPoint,
+              careerProfileId,
             });
             await createCampaign(d, {
               id,
@@ -355,6 +356,7 @@ export function createGameStore(deps: GameStoreDeps) {
           difficulty: active.state.difficulty,
           scenarioId: active.state.scenarioId,
           startPoint: career.startPoint,
+          careerProfileId: career.profileId,
         });
       },
 

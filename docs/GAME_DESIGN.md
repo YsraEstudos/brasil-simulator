@@ -3,6 +3,8 @@
 Versão 0.6 do documento • 27/10/2026 (Fase C7: depois do mandato, §7.1) • v0.5: 20/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato • v0.3 (Fase 04): negociação e nomeações na agenda, aba Congresso, sanção e veto • v0.4 (Fase 05): mapa da federação e visita a estado • v0.5 (20/10/2026): Painel único — o jogo sem abas, com folhas e subtelas (§4.6)
 Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RULES.md](POLITICAL_RULES.md) · [DATA_SOURCES.md](DATA_SOURCES.md) · [ROADMAP.md](ROADMAP.md) · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)
 
+O percurso eleitoral antes da posse, suas entregas e limitações atuais estão em [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md); as eleições ao longo do mandato seguem o modelo deste documento e de [FASE_08.md](FASE_08.md).
+
 ---
 
 ## 1. Visão
