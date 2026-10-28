@@ -28,6 +28,7 @@ export {
   DIRECTORATE_ACTION_ID,
   DEFEND_CASE_ACTION_ID,
   DRAWER_ACTION_ID,
+  PRONOUNCEMENT_ACTION_ID,
   BRAND_ACTION_ID,
   isAgendaAction,
   NEGOTIATE_ACTION_ID,
@@ -102,6 +103,18 @@ export {
   pendingRequests,
   REQUEST_CAUSE_LABEL,
 } from './congress/drawer';
+export {
+  BAND_LABEL,
+  bandOf,
+  pronouncementGain,
+  recentPronouncements,
+  THERMOMETER_LABEL,
+  thermometers,
+  type Thermometer,
+  type ThermometerBand,
+  type ThermometerFactor,
+  type ThermometerId,
+} from './politics/thermometers';
 export {
   blocRelation,
   blocSupport,

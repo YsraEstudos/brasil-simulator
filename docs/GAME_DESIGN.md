@@ -1,6 +1,6 @@
 # Brasil Simulator — Documento de Design do Jogo (GDD)
 
-Versão 0.5 do documento • 20/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato • v0.3 (Fase 04): negociação e nomeações na agenda, aba Congresso, sanção e veto • v0.4 (Fase 05): mapa da federação e visita a estado • v0.5 (20/10/2026): Painel único — o jogo sem abas, com folhas e subtelas (§4.6)
+Versão 0.6 do documento • 27/10/2026 (Fase C6g: termômetros e pronunciamento, §11.3.4) • v0.5: 20/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato • v0.3 (Fase 04): negociação e nomeações na agenda, aba Congresso, sanção e veto • v0.4 (Fase 05): mapa da federação e visita a estado • v0.5 (20/10/2026): Painel único — o jogo sem abas, com folhas e subtelas (§4.6)
 Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RULES.md](POLITICAL_RULES.md) · [DATA_SOURCES.md](DATA_SOURCES.md) · [ROADMAP.md](ROADMAP.md) · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)
 
 ---
@@ -443,6 +443,21 @@ Status: **PROVISORIO** (forças, custos e prazos). Regras de motor em [ECONOMIC_
 - **O que fazem.** Reduzem o **dano esperado** da seca e das cheias (PIB, alimentos, energia, atividade da UF), não a chuva: o clima continua o mesmo, só uma parte menor dele vira prejuízo. A proteção por UF tem **teto de 60%**, cresce com retornos decrescentes, só vale onde o programa chega e **depende de a obra estar pronta e mantida** (a obra em andamento protege um pouco, a pronta protege na proporção do ativo, que deprecia; a rotina some quando a dotação some e demora 3 meses para fazer efeito). Em "Por que mudou?" aparece "Prevenção reduziu o dano da seca" (e das chuvas, e a pressão nos preços), ao lado do próprio clima.
 - **Custo e política.** Os projetos custam 2 ações de agenda, precisam de espaço no limite de despesas, passam pelo Congresso (o governo precisa de base e capital político) e só andam com orçamento discricionário livre; a rotina custa 1 ação e dotação anual, e a pasta só sustenta uma rotina por vez (disputa com a regularização urbanística e a eficiência do saneamento). Numa UF em emergência climática com prevenção ativa, a relação com o governador melhora um pouco no mês.
 - **No mapa.** O projeto de segurança hídrica mostra um pin de obra em cada estado do semiárido enquanto está em andamento; os demais projetos são nacionais e não têm pin (nenhuma coordenada é inventada: a UF vem do conteúdo da política). O cartão da UF lista as obras, a visita e a proteção atual.
+
+### 11.3.4 Termômetros e pronunciamento (Fase C6g do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md), motor 0.13.0)
+
+Quatro **termômetros** no Gabinete, de 0 (calmo) a 100 (crítico), em faixas: calmo (< 40), normal (< 60), tenso (< 75) e crítico; o estado neutro dá 50, normal. São uma **leitura derivada** dos indicadores do mês, não opinião medida de grupos: cada um vale 50 mais a soma dos fatores, limitado a [0, 100], e o cartão mostra os dois fatores de maior peso. Calculados na hora, todo mês, sem estado próprio e sem sorteio: o mesmo estado dá sempre a mesma leitura. Pesos em [CALIBRATION.md](CALIBRATION.md) (`termo_*`).
+
+| Termômetro | Fatores (pontos somados a 50) |
+| --- | --- |
+| Congresso | − `termo_congresso_relacao` × relação média dos blocos; + `termo_congresso_pauta` por pauta-bomba à espera de sanção ou de sessão do veto (Fase C6c, pela causa `pauta_bomba` no histórico); + `termo_congresso_presidencia` com a presidência da Câmara hostil (Fase C6e) |
+| Ruas | `termo_ruas_aprovacao` × (0,5 − aprovação); `termo_ruas_desemprego` × (desemprego − neutro); `termo_ruas_inflacao` × (inflação 12 meses − meta) |
+| Mercado | `termo_mercado_premio` × (prêmio de risco − base); `termo_mercado_credibilidade` × (0,5 − credibilidade); `termo_mercado_limite` × despesa acima do limite |
+| Instituições | `termo_inst_pressao` × pressão de impeachment; `termo_inst_caso` por caso de escândalo aberto (C6b); `termo_inst_pedido` por pedido na gaveta (C6e); `termo_inst_diretoria` × risco mensal de escândalo nas diretorias (C6a) |
+
+As vagas do STF (Fase C6d) não entram: a C6d está em outro PR e não muda nenhum indicador que os termômetros leem.
+
+**Pronunciamento à nação** (ação de agenda `pronunciamento_nacional`, custo 1, na lista de ações de governo): impulso de aprovação de um mês, `pronunciamento_aprovacao` × 0,5 elevado ao número de pronunciamentos dos últimos `pronunciamento_meses` meses, e de novo pela metade com o termômetro das ruas crítico. O cartão mostra o ganho provável antes de agir. Não muda nenhum indicador da economia.
 
 ### 11.4 Critério de conclusão do protótipo
 Jogar os 12 meses, tomar decisões diferentes em duas campanhas, observar consequências diferentes e explicáveis, e conseguir reiniciar ou retomar a campanha.

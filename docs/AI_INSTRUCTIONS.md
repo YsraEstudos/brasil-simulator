@@ -110,6 +110,7 @@ recusados.
 | Sanção / veto | `sanction` / `veto` |
 | Ministério, gabinete | `ministry`, `cabinet` |
 | Diretoria de estatal / "porteira fechada" (bloco com a diretoria e o ministério) | `directorate` (`congress/directorates.ts`, ação `nomear_diretoria`) / `isClosedGate` |
+| Termômetro (Congresso, ruas, mercado, instituições) / pronunciamento à nação | `thermometers` (`politics/thermometers.ts`, faixas `calmo`, `normal`, `tenso`, `critico`) / ação `pronunciamento_nacional` |
 | Gaveta do impeachment / pedido protocolado, arquivado, aberto | `GameState.impeachmentDrawer` (`congress/drawer.ts`, ação `negociar_gaveta`) / `ImpeachmentRequest`: `na_gaveta`, `arquivado`, `aberto` |
 | Caso de escândalo / investigação, acusação, condenação, arquivado | `ScandalCase` em `GameState.cases` (`congress/cases.ts`, ação `defender_caso`) / `CaseStage`: `investigacao`, `acusacao`, `condenacao`, `arquivado` |
 | Pauta | `pauta` (sem tradução: termo do regimento) |

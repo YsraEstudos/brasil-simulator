@@ -4,6 +4,7 @@ import { Button, Card, formatNumber, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import {
   AGENDA_ACTIONS,
+  PRONOUNCEMENT_ACTION_ID,
   BC_BOARD_SIZE,
   boardShare,
   PRESSURE_ACTION_ID,
@@ -12,6 +13,7 @@ import {
 } from '@/engine';
 
 import { costText } from './labels';
+import { pronouncementContext } from './thermometerView';
 
 export interface AgendaActionsProps {
   state: GameState;
@@ -53,6 +55,11 @@ export function AgendaActions({ state, content, selected, canInclude, onToggle }
               {action.id === PRESSURE_ACTION_ID && (
                 <Text variant="caption" color="warning">
                   {pressureContext(state, content)}
+                </Text>
+              )}
+              {action.id === PRONOUNCEMENT_ACTION_ID && (
+                <Text variant="caption" color="textSecondary">
+                  {pronouncementContext(state, content)}
                 </Text>
               )}
               <Button
