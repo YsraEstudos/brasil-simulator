@@ -137,6 +137,30 @@ rp_t       += custo_rp * n_pressoes_12m
 - **Regra aplicada (Fase 03):** o corte não entra no `i_alvo` (a suavização de 70% e o arredondamento de 25 bp o anulariam sempre); ele é subtraído da Selic já suavizada, em passos de 25 bp (corte abaixo de 12,5 bp não muda a decisão), e a queda total da reunião continua limitada a `max_passo` (ou `max_passo_crise`): a pressão não fura o limite de movimento. A diretoria indicada segue a LC 179/2021: 2, 4, 7 e 9 de 9 membros no 1º, 2º, 3º e 4º ano do mandato. Com `sub_base` 0,6 e autonomia percebida 0,5, o BC resiste nos três primeiros anos e cede 25 bp no quarto. O prêmio de risco sobe `custo_rp` por pressão nos últimos 12 meses (dentro da saturação do §5.5).
 - Teste de sentido obrigatório: em 24 meses, uma estratégia-robô que pressiona o BC todo trimestre deve ter inflação média **maior** e não deve ter crescimento acumulado sistematicamente maior que a mesma estratégia sem pressão.
 
+#### 5.4.2 Análise da pressão (Fase C6f do PLANO_CAMPANHA, 27/10/2026)
+
+Pedido do plano: avaliar a ação existente (apresentação, efeito provável e incerteza) antes de propor mudança. Medição em `scripts/sim/bcPressure.sim.ts` (`npm run sim:bc-pressure`): para cada ano dos dois mandatos, a mesma partida sem decisões segue com e sem **uma** pressão no 2º mês do ano, em 10 sementes. Valores do motor 0.10.0 com a correção abaixo; o corte e a credibilidade são iguais em todas as sementes.
+
+| Ano do mandato | Diretoria indicada | Corte na reunião seguinte | Credibilidade no mês | Prêmio de risco no mês | Inflação 12 meses depois | Selic 12 meses depois |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 2 de 9 | 0 | −0,01 | +7,0 bp | +0,27 p.p. | +20 bp |
+| 2 | 4 de 9 | 0 | −0,01 | +6,8 bp | +0,02 p.p. | +2,5 bp |
+| 3 | 7 de 9 | 0 | −0,01 | +7,0 bp | +0,01 p.p. | +2,5 bp |
+| 4 | 9 de 9 | 25 bp | −0,01 | +6,9 bp | +0,02 p.p. | +2,5 bp |
+| 5 a 8 (2º mandato) | 9 de 9 | 25 bp | −0,01 | +6,6 a +6,8 bp | +0,02 a +0,04 p.p. | −2,5 a +10 bp |
+
+**Conclusões.**
+1. **Não há incerteza no efeito imediato.** A submissão do BC não tem sorteio: com `sub_base` 0,6 e autonomia percebida 0,5, o corte é 0,5% × 0,3 × fração indicada, arredondado a 25 bp. Só passa de meio passo com 9 de 9 indicados. A incerteza real é a do Copom (limite de movimento e piso podem absorver o corte) e o efeito defasado na inflação, sempre desfavorável.
+2. **Nos três primeiros anos a ação é só custo.** O texto anterior dizia que o efeito "depende de quantos diretores este governo já indicou", mas não dizia que, até o 4º ano, o corte é zero. O jogador pagava credibilidade e prêmio sem saber que não ganharia nada.
+3. **Pressão repetida antes da mesma reunião não soma corte** (`pendingCut` é o maior valor, não a soma), mas soma custo. O jogo não avisava.
+4. **Erro de modelo no 2º mandato:** a fração indicada voltava a 2 de 9 no 5º ano. Pela LC 179/2021, os mandatos da diretoria são fixos e escalonados; com o mesmo presidente reeleito, quem sai no 2º mandato é substituído por nova indicação dele, então a diretoria inteira continua indicada por ele.
+
+**Mudanças feitas (com teste):**
+- `boardShare` passa a devolver 9 de 9 em todo o 2º mandato (antes, 2, 4, 7 e 9 de 9 de novo).
+- O cartão da ação mostra o **efeito provável** antes de agir (`pressureForecast`): a diretoria indicada; o corte esperado no Copom seguinte ("nenhum corte" quando o BC resiste, "até 25 pontos-base" quando cede); o custo certo de credibilidade; o aviso de que inflação e juros tendem a subir depois; e, se já houver pressão valendo para a reunião, que repetir não aumenta o corte.
+
+**Não mudado (decisão do autor):** os valores de `sub_base`, `pressao_max`, `autonomia_percebida` e dos custos. Com eles, a ação só rende algo no último ano do 1º mandato e no 2º mandato; se a intenção de design for uma ação útil mais cedo, a alavanca é `pressao_max` ou `sub_base` (faixas em [CALIBRATION.md](CALIBRATION.md)).
+
 ### 5.5 Prêmio de risco e câmbio
 ```
 rp_t = rp_base + sens_divida * max(0, divida_pib_t − limiar_divida)

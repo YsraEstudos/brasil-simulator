@@ -9,6 +9,7 @@ import { checkPublicPolicies } from './publicPolicies/publicPolicies';
 import {
   MANDATORY_GROUPS,
   REVENUE_GROUPS,
+  TECHNICAL_OCCUPANT,
   type GameContent,
   type GameState,
   type IndicatorKey,
@@ -186,6 +187,60 @@ export function checkInvariants(
 
   if (next.society !== prev.society) errors.push(...checkSociety(next.society, next));
   errors.push(...checkPublicPolicies(next));
+
+  // Diretorias de estatais (Fase C6a): cada troca grava um cargo do cenário, um ocupante possível e um mês já vivido.
+  if (content && next.congress.directorates) {
+    const known = new Set((content.scenario.institutions?.directorates ?? []).map((d) => d.id));
+    const blocs = new Set(content.scenario.blocs.map((b) => b.id));
+    const seen = new Set<string>();
+    for (const d of next.congress.directorates) {
+      if (!known.has(d.id)) errors.push(`diretoria fora do cenário: ${d.id}`);
+      if (seen.has(d.id)) errors.push(`diretoria repetida no estado: ${d.id}`);
+      seen.add(d.id);
+      if (d.occupant !== TECHNICAL_OCCUPANT && !blocs.has(d.occupant)) {
+        errors.push(`${d.id}: ocupante inválido ${d.occupant}`);
+      }
+      if (!(d.since >= 0 && d.since <= next.monthIndex)) errors.push(`${d.id}: nomeação no mês ${d.since}`);
+    }
+  }
+
+  // Gaveta do impeachment (Fase C6e): pedidos únicos, decididos depois do protocolo; abrir nunca grava condenação.
+  const requestIds = new Set<string>();
+  for (const r of next.impeachmentDrawer ?? []) {
+    if (requestIds.has(r.id)) errors.push(`pedido de impeachment repetido: ${r.id}`);
+    requestIds.add(r.id);
+    if (r.status !== 'na_gaveta' && !(r.decidedMonth !== undefined && r.decidedMonth >= r.filedMonth)) {
+      errors.push(`${r.id}: pedido decidido sem mês ou antes do protocolo`);
+    }
+  }
+
+  // Casos de escândalo (Fase C6b): ids únicos, exposição não negativa e condenação só depois de uma acusação.
+  const caseIds = new Set<string>();
+  for (const c of next.cases ?? []) {
+    if (caseIds.has(c.id)) errors.push(`caso repetido: ${c.id}`);
+    caseIds.add(c.id);
+    if (!(c.exposure >= 0)) errors.push(`${c.id}: exposição negativa ${c.exposure}`);
+    if (c.stageMonth < c.openedMonth) errors.push(`${c.id}: etapa antes da abertura`);
+    if (c.stage === 'condenacao' && !(c.accusedMonth !== undefined && c.accusedMonth < c.stageMonth)) {
+      errors.push(`${c.id}: condenação sem acusação anterior`);
+    }
+  }
+  // STF (Fase C6d): cada vaga é do calendário do cenário, uma vez só; indicação em sabatina tem mês e perfil.
+  if (content && next.court) {
+    const calendar = new Set((content.scenario.institutions?.supremeCourt?.vacancies ?? []).map((v) => v.id));
+    const seen = new Set<string>();
+    for (const v of next.court.vacancies) {
+      if (!calendar.has(v.id)) errors.push(`vaga do STF fora do calendário: ${v.id}`);
+      if (seen.has(v.id)) errors.push(`vaga do STF repetida: ${v.id}`);
+      seen.add(v.id);
+      if (v.status === 'em_sabatina' && (v.hearingMonth === undefined || !v.nominee)) {
+        errors.push(`${v.id}: sabatina sem mês ou sem indicado`);
+      }
+      if (v.status === 'preenchida' && !(v.nominee && v.lastVote?.approved)) {
+        errors.push(`${v.id}: vaga preenchida sem aprovação do Senado`);
+      }
+    }
+  }
   return errors;
 }
 

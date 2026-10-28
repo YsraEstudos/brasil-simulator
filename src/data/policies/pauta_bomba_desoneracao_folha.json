@@ -1,0 +1,45 @@
+{
+  "id": "pauta_bomba_desoneracao_folha",
+  "name": "Desoneração ampliada da folha de setores selecionados (pauta-bomba)",
+  "summary": "Texto aprovado pelo Congresso por iniciativa própria: amplia a desoneração da folha de pagamento de setores escolhidos, sem compensação na receita. A arrecadação cai de forma permanente e o resultado primário piora. Ficção: valores de ordem de grandeza, sem projeto real.",
+  "area": "tributacao",
+  "competence": "federal",
+  "instruments": ["projeto_lei"],
+  "agendaCost": 0,
+  "cost": {
+    "annualMillions": 15000,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["sem_custo"],
+  "timeline": {
+    "planningMonths": 0,
+    "expectedLegislativeMonths": 1,
+    "executionMonths": 0,
+    "maturationMonths": 0
+  },
+  "conditions": [],
+  "impacts": [
+    {
+      "channel": "desoneracao_renda",
+      "magnitude": 15000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "credibilidade_fiscal",
+      "magnitude": -0.02,
+      "lagMonths": 0
+    }
+  ],
+  "risks": [],
+  "affected": {
+    "groups": ["empresas_beneficiadas", "trabalhadores_formais"],
+    "sectors": ["industria", "servicos"],
+    "regions": ["nacional"]
+  },
+  "position": {
+    "economic": 0.5,
+    "social": 0
+  },
+  "salience": 0,
+  "dataStatus": "FICTICIO"
+}

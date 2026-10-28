@@ -125,6 +125,31 @@ describe('situação jurídica', () => {
     expect(removed.items).toHaveLength(2);
   });
 
+  // PLANO_CAMPANHA.md C6b/C7: a condenação é da diretoria, não automaticamente do presidente.
+  it('registra condenação de diretor sem atribuí-la ao presidente', () => {
+    const s = at(48, { general: { venceu: true } });
+    const withCase: GameState = {
+      ...s,
+      cases: [
+        {
+          id: 'diretoria:a#1',
+          source: 'diretoria',
+          subjectId: 'a',
+          blocId: 'centro',
+          stage: 'condenacao',
+          openedMonth: 1,
+          stageMonth: 3,
+          accusedMonth: 2,
+          exposure: 0,
+        },
+      ],
+    };
+    expect(read(withCase).legal).toMatchObject({
+      level: 'condenacao',
+      items: [{ level: 'condenacao', label: expect.stringMatching(/diretoria/i) }],
+    });
+  });
+
   it('o caixa 2 descoberto na campanha conta como investigação', () => {
     const s = at(48, { general: { venceu: true } });
     const withCase: GameState = {

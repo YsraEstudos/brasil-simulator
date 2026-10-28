@@ -851,6 +851,8 @@ pre_campanha ──► convencao ──► nao_homologado (desfecho)
 
 ---
 
+**Integração das subfases C6 com a campanha (28/10/2026).** As branches C6a–C6g foram combinadas no checkout de integração com C1–C8. O estado combinado usa versão 18; não foi criada atualização de saves antigos. Pauta-bomba, STF, diretorias, casos, gaveta, pressão no BC e termômetros coexistem; a condenação de uma diretoria aparece no legado com texto que não atribui condenação ao presidente. Os resultados dos testes constam no PR de integração, e não substituem homologação em aparelho.
+
 ### Fase C7 — Situação e possibilidades após o mandato (Camada 5)
 
 **Dependências.** Fase C5 e o Legado existente. Seção do Legado, sem meses jogáveis (D-C7); projeções, não destinos definitivos.
