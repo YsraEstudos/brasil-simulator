@@ -13,9 +13,10 @@ import {
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Alert, Card, Text } from '@/components/ui';
+import { Alert, Button, Card, Text } from '@/components/ui';
 import { MaxContentWidth, MIN_TOUCH, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { CHALLENGE_PRESETS, START_SITUATIONS, type ChallengeConfig } from '@/engine';
 import {
   CAMPAIGN_NAME_MAX,
   checkSetupForm,
@@ -30,6 +31,7 @@ import {
 
 import {
   createActionLabel,
+  careerProfileViews,
   difficultyView,
   durationLabel,
   SCENARIO_KIND_LABEL,
@@ -57,6 +59,29 @@ import {
 
 const SCENARIOS = scenarioOptions();
 const PROFILES = profilePresetViews();
+const CHALLENGE_CONTROLS: readonly { key: keyof ChallengeConfig; label: string; detail: string }[] = [
+  {
+    key: 'economicPressure',
+    label: 'Pressão econômica',
+    detail: 'Altera o prêmio de risco inicial, em até 0,2 ponto percentual para cada lado do valor neutro.',
+  },
+  {
+    key: 'oppositionStrength',
+    label: 'Força da oposição',
+    detail: 'Altera relações iniciais com blocos e reconhecimento dos adversários na campanha.',
+  },
+  {
+    key: 'coalitionStability',
+    label: 'Estabilidade da coalizão',
+    detail: 'Altera lentamente as relações com os blocos a cada mês.',
+  },
+  {
+    key: 'crisisFrequency',
+    label: 'Frequência de crises climáticas',
+    detail:
+      'Altera a chance de eventos climáticos elegíveis; não modifica o clima. Só age em cenários com esses eventos.',
+  },
+];
 
 /**
  * NOVO JOGO (rota `/novo-jogo`): nome, dificuldade, cenário, semente opcional e resumo, numa única rolagem. O
@@ -103,6 +128,10 @@ function initialForm(prefs: SetupPrefs): CampaignSetupForm {
     scenarioId: prefs.scenarioId,
     profileId: 'centro',
     startPoint: 'posse',
+    startSituationId: 'normal',
+    challenge: { ...CHALLENGE_PRESETS[prefs.difficulty] },
+    institutionalRules: 'brasileiras',
+    assistance: { informationClarity: 'padrao', hints: true },
     seedText: '',
   };
 }
@@ -174,6 +203,7 @@ function NewCampaignForm({
   const locked = submitting || busy;
 
   const startPoints = startPointViews(form.scenarioId);
+  const careerProfiles = careerProfileViews(form.scenarioId);
 
   const update = (patch: Partial<CampaignSetupForm>) => {
     setForm((f) => ({ ...f, ...patch }));
@@ -183,6 +213,7 @@ function NewCampaignForm({
   const selectScenario = (scenarioId: string) =>
     update({
       scenarioId,
+      careerProfileId: undefined,
       startPoint: startPointViews(scenarioId).some((p) => p.id === form.startPoint) ? form.startPoint : 'posse',
     });
 
@@ -254,6 +285,14 @@ function NewCampaignForm({
             backDisabled={locked}
           />
 
+          <Button
+            label="Experimentar tutorial jogável"
+            variant="secondary"
+            disabled={locked}
+            onPress={() => router.push('/tutorial')}
+            block
+          />
+
           <Animated.View entering={enterAt(0)} layout={LAYOUT}>
             <Card title="Identidade da campanha" subtitle="Como esta partida aparecerá na lista de saves">
               <Text variant="label" color="textSecondary" nativeID="campaign-name-label">
@@ -298,7 +337,9 @@ function NewCampaignForm({
           </Animated.View>
 
           <Animated.View entering={enterAt(1)} layout={LAYOUT}>
-            <Card title="Dificuldade" subtitle="Muda regras e incerteza; a contabilidade do motor é a mesma">
+            <Card
+              title="Dificuldade"
+              subtitle="Muda desafio e previsões; as regras institucionais são escolhidas separadamente">
               <View style={styles.options} accessibilityRole="radiogroup">
                 {DIFFICULTIES.map((id) => {
                   const d = difficultyView(id);
@@ -307,7 +348,7 @@ function NewCampaignForm({
                       key={id}
                       selected={form.difficulty === id}
                       disabled={locked}
-                      onPress={() => update({ difficulty: id })}
+                      onPress={() => update({ difficulty: id, challenge: { ...CHALLENGE_PRESETS[id] } })}
                       accessibilityLabel={`${d.name}, ${d.actionsPerMonth} ações de agenda por mês. ${d.tagline}`}>
                       <View style={styles.optionTitle}>
                         <Text variant="heading" style={styles.flex}>
@@ -348,6 +389,127 @@ function NewCampaignForm({
           </Animated.View>
 
           <Animated.View entering={enterAt(2)} layout={LAYOUT}>
+            <Card title="Assistência" subtitle="A clareza altera pesquisas e pareceres, sem mudar a realidade simulada">
+              <View style={styles.options} accessibilityRole="radiogroup">
+                {(
+                  [
+                    {
+                      id: 'clara',
+                      title: 'Mais clara',
+                      detail: 'Pesquisa com menor ruído e parecer de votação aproximado.',
+                    },
+                    { id: 'padrao', title: 'Padrão', detail: 'Pesquisa e pareceres com incerteza intermediária.' },
+                    {
+                      id: 'incerta',
+                      title: 'Mais incerta',
+                      detail: 'Pesquisa com maior ruído e pareceres com faixa mais ampla e viés.',
+                    },
+                  ] as const
+                ).map((option) => (
+                  <OptionCard
+                    key={option.id}
+                    selected={(form.assistance?.informationClarity ?? 'padrao') === option.id}
+                    disabled={locked}
+                    onPress={() =>
+                      update({ assistance: { ...(form.assistance ?? { hints: true }), informationClarity: option.id } })
+                    }
+                    accessibilityLabel={`${option.title}. ${option.detail}`}>
+                    <Text variant="heading">{option.title}</Text>
+                    <Text variant="caption" color="textSecondary">
+                      {option.detail}
+                    </Text>
+                  </OptionCard>
+                ))}
+              </View>
+              <Button
+                label={
+                  (form.assistance?.hints ?? true)
+                    ? 'Dicas ligadas · tocar para desligar'
+                    : 'Dicas desligadas · tocar para ligar'
+                }
+                variant="secondary"
+                disabled={locked}
+                onPress={() =>
+                  update({
+                    assistance: {
+                      informationClarity: form.assistance?.informationClarity ?? 'padrao',
+                      hints: !(form.assistance?.hints ?? true),
+                    },
+                  })
+                }
+                block
+              />
+            </Card>
+          </Animated.View>
+
+          <Animated.View entering={enterAt(2)} layout={LAYOUT}>
+            <Card title="Regras institucionais" subtitle="A escolha vale para qualquer nível de desafio">
+              <View style={styles.options} accessibilityRole="radiogroup">
+                <OptionCard
+                  selected={form.institutionalRules !== 'simplificadas'}
+                  disabled={locked}
+                  onPress={() => update({ institutionalRules: 'brasileiras' })}
+                  accessibilityLabel="Regras brasileiras: calendário, vedação eleitoral e adesão dos estados são considerados.">
+                  <Text variant="heading">Brasileiras</Text>
+                  <Text variant="caption" color="textSecondary">
+                    Considera calendário legislativo, vedação eleitoral e adesão dos estados.
+                  </Text>
+                </OptionCard>
+                <OptionCard
+                  selected={form.institutionalRules === 'simplificadas'}
+                  disabled={locked}
+                  onPress={() => update({ institutionalRules: 'simplificadas' })}
+                  accessibilityLabel="Regras simplificadas: cenário ficcional com desvios institucionais.">
+                  <Text variant="heading">Simplificadas · ficção</Text>
+                  <Text variant="caption" color="textSecondary">
+                    Remove essas restrições e simplifica regras financeiras de campanha; não representa o processo
+                    brasileiro.
+                  </Text>
+                </OptionCard>
+              </View>
+            </Card>
+          </Animated.View>
+
+          <Animated.View entering={enterAt(2)} layout={LAYOUT}>
+            <Card
+              title="Ajustes de desafio"
+              subtitle="O preset define os valores iniciais; ajuste cada um de 0 a 100. São hipóteses de jogo provisórias.">
+              {CHALLENGE_CONTROLS.map((control) => {
+                const value = form.challenge?.[control.key] ?? 0.5;
+                const change = (delta: number) =>
+                  update({
+                    challenge: {
+                      ...(form.challenge ?? CHALLENGE_PRESETS[form.difficulty]),
+                      [control.key]: Math.max(0, Math.min(1, Math.round((value + delta) * 10) / 10)),
+                    },
+                  });
+                return (
+                  <View key={control.key} style={styles.effects}>
+                    <Text variant="label">{`${control.label}: ${Math.round(value * 100)} de 100`}</Text>
+                    <Text variant="caption" color="textSecondary">
+                      {control.detail}
+                    </Text>
+                    <Button
+                      label={`Diminuir ${control.label}`}
+                      variant="secondary"
+                      disabled={locked || value <= 0}
+                      onPress={() => change(-0.1)}
+                      block
+                    />
+                    <Button
+                      label={`Aumentar ${control.label}`}
+                      variant="secondary"
+                      disabled={locked || value >= 1}
+                      onPress={() => change(0.1)}
+                      block
+                    />
+                  </View>
+                );
+              })}
+            </Card>
+          </Animated.View>
+
+          <Animated.View entering={enterAt(2)} layout={LAYOUT}>
             <Card
               title="Perfil do governo"
               subtitle="Onde o governo começa nos eixos Estado ↔ mercado e progressista ↔ conservador">
@@ -376,6 +538,28 @@ function NewCampaignForm({
                   ? 'O perfil muda com o que o governo decide e mexe na aprovação de cada estado e, pouco, na nacional. Nenhuma posição é premiada em si.'
                   : 'Este cenário não traz a inclinação política dos estados: o perfil é registrado, mas não muda a aprovação.'}
               </Text>
+            </Card>
+          </Animated.View>
+
+          <Animated.View entering={enterAt(3)} layout={LAYOUT}>
+            <Card
+              title="Situação inicial"
+              subtitle="Hipóteses fictícias para variar as condições econômicas da partida">
+              <View style={styles.options} accessibilityRole="radiogroup">
+                {START_SITUATIONS.map((situation) => (
+                  <OptionCard
+                    key={situation.id}
+                    selected={(form.startSituationId ?? 'normal') === situation.id}
+                    disabled={locked}
+                    onPress={() => update({ startSituationId: situation.id })}
+                    accessibilityLabel={`${situation.name}. ${situation.description}`}>
+                    <Text variant="heading">{situation.name}</Text>
+                    <Text variant="caption" color="textSecondary">
+                      {situation.description}
+                    </Text>
+                  </OptionCard>
+                ))}
+              </View>
             </Card>
           </Animated.View>
 
@@ -426,7 +610,29 @@ function NewCampaignForm({
                         key={p.id}
                         selected={(form.startPoint ?? 'posse') === p.id}
                         disabled={locked}
-                        onPress={() => update({ startPoint: p.id })}
+                        onPress={() => update({ startPoint: p.id, careerProfileId: undefined })}
+                        accessibilityLabel={`${p.name}. ${p.description}`}>
+                        <Text variant="heading">{p.name}</Text>
+                        <Text variant="caption" color="textSecondary">
+                          {p.description}
+                        </Text>
+                      </OptionCard>
+                    ))}
+                  </View>
+                </>
+              )}
+              {form.startPoint !== 'posse' && careerProfiles.length > 0 && (
+                <>
+                  <Text variant="label" color="textSecondary">
+                    Perfil do candidato
+                  </Text>
+                  <View style={styles.options} accessibilityRole="radiogroup">
+                    {careerProfiles.map((p) => (
+                      <OptionCard
+                        key={p.id}
+                        selected={(form.careerProfileId ?? careerProfiles[0].id) === p.id}
+                        disabled={locked}
+                        onPress={() => update({ careerProfileId: p.id })}
                         accessibilityLabel={`${p.name}. ${p.description}`}>
                         <Text variant="heading">{p.name}</Text>
                         <Text variant="caption" color="textSecondary">
@@ -491,7 +697,12 @@ function NewCampaignForm({
               <SummaryRow label="Ações de agenda" value={`${summary.actionsPerMonth} por mês`} />
               <SummaryRow label="Perfil inicial" value={summary.profile} />
               <SummaryRow label="Cenário" value={summary.scenario} />
+              <SummaryRow label="Situação inicial" value={summary.startSituation} />
+              <SummaryRow label="Desafio" value={summary.challenge} />
+              <SummaryRow label="Regras" value={summary.institutionalRules} />
+              <SummaryRow label="Assistência" value={summary.assistance} />
               <SummaryRow label="Ponto de partida" value={summary.startPoint} />
+              {summary.careerProfile && <SummaryRow label="Candidato" value={summary.careerProfile} />}
               <SummaryRow label="Versão" value={summary.version} />
               <SummaryRow label="Duração máxima" value={summary.duration} />
               <SummaryRow label="Semente" value={summary.seed} muted={summary.seed === 'Aleatória'} />

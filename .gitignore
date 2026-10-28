@@ -50,3 +50,4 @@ data-raw/
 
 # relatório de cobertura (vitest --coverage)
 coverage/
+.nightshift/

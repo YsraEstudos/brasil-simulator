@@ -33,6 +33,7 @@ export default function RootLayout() {
           <Stack.Screen name="(jogo)" options={{ animation: 'fade' }} />
           {/* Fluxos de campanha fora do jogo: sobem suavemente sobre o menu e voltam a ele. */}
           <Stack.Screen name="novo-jogo" options={{ animation: 'fade_from_bottom' }} />
+          <Stack.Screen name="tutorial" options={{ animation: 'fade_from_bottom' }} />
           <Stack.Screen name="carregar-jogo" options={{ animation: 'fade_from_bottom' }} />
           {/* Ajustes do jogador, abertos pelo menu principal. */}
           <Stack.Screen name="configuracoes" options={{ animation: 'fade_from_bottom' }} />

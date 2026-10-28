@@ -277,7 +277,10 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
       delete resto.career;
       return {
         ...resto,
-        policies: scenario.policies.filter((id) => !PREVENTION_POLICY_IDS.includes(id)),
+        policies: scenario.policies.filter(
+          (id) =>
+            !PREVENTION_POLICY_IDS.includes(id) && !['orcamento_ppa', 'orcamento_ldo', 'orcamento_loa'].includes(id),
+        ),
         regions: {
           meta: { ...scenario.regions?.meta, lean: undefined },
           ufs: scenario.regions?.ufs.map((u) => ({ ...u, lean: undefined })),
@@ -285,6 +288,7 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
       };
     };
     expect(semLean(s)).toEqual(semLean(v070));
+    expect(s.policies).toEqual(expect.arrayContaining(['orcamento_ppa', 'orcamento_ldo', 'orcamento_loa']));
     expect(s.regions?.meta.lean?.status).toBe('PROVISORIO');
     expect(s.regions?.meta.lean?.note?.trim().length ?? 0).toBeGreaterThan(0);
   });

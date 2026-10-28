@@ -24,6 +24,7 @@ import type { SqlDatabase } from '@/database/types';
 import { DEFAULT_PROFILE_3D, type Profile3d } from '@/globe/qualityProfiles';
 import { DEFAULT_DAY_TIME, type DayTimeSetting } from '@/globe/visualClock';
 import { campaignMonths, loadContent, SCENARIOS } from '@/content';
+import { ENGINE_VERSION } from '@/engine/types';
 import {
   advanceMonth,
   campaignOutcome,
@@ -123,7 +124,7 @@ export interface GameStoreState {
    * Nova tentativa depois da derrota na eleição (PLANO_CAMPANHA.md Fase C5, D-C18): campanha nova com a mesma
    * dificuldade, o mesmo cenário e o mesmo ponto de partida, e semente nova. A partida perdida continua salva.
    */
-  retryCareer(): Promise<NewCampaignResult>;
+  retryCareer(mode?: 'same' | 'new'): Promise<NewCampaignResult>;
   /** Carrega uma campanha salva; `true` se ela ficou ativa. A já ativa é mantida como está (com o rascunho). */
   continueCampaign(id: string): Promise<boolean>;
   /** Indicadores dos últimos meses gravados (série do Painel); vazio sem partida ou leitura falha. */
@@ -291,7 +292,18 @@ export function createGameStore(deps: GameStoreDeps) {
           return { ok: false, reason: 'falha', error: 'O banco de dados ainda não está pronto.' };
         }
         const d = db;
-        const { name, difficulty, scenarioId, profileId, startPoint } = checked.input;
+        const {
+          name,
+          difficulty,
+          scenarioId,
+          profileId,
+          startPoint,
+          startSituationId,
+          challenge,
+          institutionalRules,
+          assistance,
+          careerProfileId,
+        } = checked.input;
         set({ busy: true, error: undefined });
 
         // Um único `finally` devolve `busy` a falso: nenhuma exceção, prevista ou não, trava a store.
@@ -308,6 +320,11 @@ export function createGameStore(deps: GameStoreDeps) {
               seed,
               profile: profileId,
               startPoint,
+              startSituationId,
+              challenge,
+              institutionalRules,
+              assistance,
+              careerProfileId,
             });
             await createCampaign(d, {
               id,
@@ -344,17 +361,37 @@ export function createGameStore(deps: GameStoreDeps) {
         }
       },
 
-      async retryCareer() {
+      async retryCareer(mode = 'new') {
         const active = get().active;
         const career = active?.state.career;
         if (!active || !career)
           return { ok: false, reason: 'falha', error: 'Não há campanha eleitoral para recomeçar.' };
+        const config = active.state.initialCampaignConfiguration;
+        if (
+          !config ||
+          active.state.engineVersion !== ENGINE_VERSION ||
+          SCENARIOS[config.scenarioId]?.version !== config.scenarioContentVersion
+        )
+          return {
+            ok: false,
+            reason: 'falha',
+            error: 'A configuração original não está disponível. Comece um novo jogo.',
+          };
+        const randomSeed = mode === 'new' ? Math.floor(deps.random() * 2 ** 31) : config.seed;
+        const seed = mode === 'new' && randomSeed === config.seed ? (randomSeed + 1) >>> 0 : randomSeed;
         const suffix = ' · nova tentativa';
         return get().newCampaign({
           name: `${active.name.slice(0, CAMPAIGN_NAME_MAX - suffix.length)}${suffix}`,
-          difficulty: active.state.difficulty,
-          scenarioId: active.state.scenarioId,
-          startPoint: career.startPoint,
+          difficulty: config.difficulty,
+          scenarioId: config.scenarioId,
+          profileId: config.profileId,
+          startPoint: config.startPoint,
+          startSituationId: config.startSituationId,
+          challenge: config.challenge,
+          institutionalRules: config.institutionalRules,
+          assistance: config.assistance,
+          careerProfileId: config.careerProfileId,
+          seed,
         });
       },
 

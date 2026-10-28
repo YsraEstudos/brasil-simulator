@@ -106,8 +106,8 @@ export function tallyRound(
 }
 
 /**
- * Ordena empatados pelo desempate: o mais idoso primeiro; quem tem a mesma idade (ou nenhuma) é ordenado por um
- * sorteio pela chave. `rule` = `idade` quando a idade bastou para decidir a primeira posição.
+ * Ordena por idade quando todas são conhecidas; caso contrário, sorteia todos os empatados pela chave.
+ * Idades iguais também são ordenadas por sorteio. `rule` indica como foi decidida a primeira posição.
  */
 export function breakTie(
   tied: readonly string[],
@@ -116,9 +116,13 @@ export function breakTie(
   key: (string | number)[],
 ): { order: string[]; rule: 'idade' | 'sorteio' } {
   const rng = keyedRng(seed, key);
-  const lots = Object.fromEntries(tied.map((id) => [id, rng.float()]));
+  const lots = Object.fromEntries([...tied].sort().map((id) => [id, rng.float()]));
+  const compareLots = (a: string, b: string) => lots[a] - lots[b] || (a < b ? -1 : a > b ? 1 : 0);
+  if (tied.some((id) => ages[id] === undefined)) {
+    return { order: [...tied].sort(compareLots), rule: 'sorteio' };
+  }
   const age = (id: string) => ages[id] ?? -1;
-  const order = [...tied].sort((a, b) => age(b) - age(a) || lots[a] - lots[b]);
+  const order = [...tied].sort((a, b) => age(b) - age(a) || compareLots(a, b));
   const decidedByAge = ages[order[0]] !== undefined && age(order[0]) > age(order[1]);
   return { order, rule: decidedByAge ? 'idade' : 'sorteio' };
 }

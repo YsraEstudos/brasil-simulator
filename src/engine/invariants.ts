@@ -1,4 +1,5 @@
 import { isPreInauguration, turnIndexOf } from './career';
+import { usesFormalRules } from './campaignConfig';
 import { electedOutcome } from './career/election';
 import { nationalRecognition } from './career/viability';
 import { checkClimate } from './climate/climate';
@@ -269,7 +270,7 @@ function checkCareer(
       career.illicit.pending.some((item) => !moneyValid(item.amount) || !moneyValid(item.turn)))
   )
     errors.push('carreira: saldo ou exposição de caixa 2 inválido');
-  if (next.difficulty === 'casual' && career.illicit) errors.push('carreira: caixa 2 indisponível no Casual');
+  if (!usesFormalRules(next) && career.illicit) errors.push('carreira: caixa 2 indisponível nas regras simplificadas');
   const candidates = [
     { id: 'jogador', recognition: career.recognition, valence: career.valence },
     ...(career.opponents ?? []).map((o) => ({ id: o.blocId, recognition: o.recognition, valence: o.valence })),

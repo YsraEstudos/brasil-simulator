@@ -158,6 +158,19 @@ describe('empates (CF art. 77 §5: o mais idoso)', () => {
     });
   });
 
+  it('idade desconhecida exige sorteio determinístico entre todos os empatados', () => {
+    const tied = ['a', 'b'];
+    for (let seed = 1; seed <= 40; seed++) {
+      const missing = breakTie(tied, { a: 70 }, seed, ['k']);
+      const unknown = breakTie(tied, {}, seed, ['k']);
+      expect(missing).toEqual(unknown);
+      expect(breakTie(['b', 'a'], {}, seed, ['k'])).toEqual(unknown);
+      expect(missing.rule).toBe('sorteio');
+    }
+    const winners = new Set(Array.from({ length: 40 }, (_, i) => breakTie(tied, {}, i + 1, ['k']).order[0]));
+    expect(winners.size).toBe(2);
+  });
+
   it('o cenário traz a idade de todos os candidatos (sem desempate por sorteio no conteúdo padrão)', () => {
     const career = content.scenario.career!;
     expect(career.profiles.every((p) => p.age !== undefined)).toBe(true);

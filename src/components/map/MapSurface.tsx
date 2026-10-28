@@ -54,6 +54,7 @@ export interface MapSurfaceProps {
   climate?: ClimateMapData | null;
   /** "Nuvens" de Configurações: no globo liga a malha das nuvens (o perfil ainda manda); o 2D esconde os ícones via `viewModel`. */
   clouds?: boolean;
+  caravan?: { destination: string; key: string } | null;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -162,6 +163,7 @@ function MapSurfaceRenderer({
   sky,
   climate,
   clouds,
+  caravan,
   style,
 }: MapSurfaceProps) {
   const [globeFailed, setGlobeFailed] = useState(false);
@@ -221,6 +223,7 @@ function MapSurfaceRenderer({
         markers={viewModel.markers}
         pulseKey={markerPulseKey(viewModel.markers)}
         reduceMotion={reduceMotion}
+        caravan={caravan}
         onMarkerPress={markerPressed}
         onPulseDone={onPulseDone}
       />

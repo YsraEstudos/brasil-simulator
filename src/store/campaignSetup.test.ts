@@ -296,6 +296,10 @@ describe('checkNewCampaignInput', () => {
         scenarioId: DEFAULT_SCENARIO_ID,
         profileId: 'centro',
         startPoint: 'posse',
+        startSituationId: 'normal',
+        challenge: { economicPressure: 0.5, oppositionStrength: 0.5, coalitionStability: 0.5, crisisFrequency: 0.5 },
+        institutionalRules: 'brasileiras',
+        assistance: { informationClarity: 'padrao', hints: true },
         seed: null,
       },
     });
@@ -317,6 +321,10 @@ describe('checkNewCampaignInput', () => {
         scenarioId: 'prototipo_ficticio',
         profileId: 'centro',
         startPoint: 'posse',
+        startSituationId: 'normal',
+        challenge: { economicPressure: 0.5, oppositionStrength: 0.5, coalitionStability: 0.5, crisisFrequency: 0.5 },
+        institutionalRules: 'brasileiras',
+        assistance: { informationClarity: 'padrao', hints: true },
         seed: 7,
       },
     });
@@ -336,6 +344,22 @@ describe('checkNewCampaignInput', () => {
 
     const seed = checkNewCampaignInput({ name: 'X', difficulty: 'casual', seed: SEED_MAX + 1 });
     expect(seed).toEqual({ ok: false, errors: { seed: SEED_ERRORS.range } });
+    const situation = checkNewCampaignInput({ name: 'X', difficulty: 'casual', startSituationId: 'desconhecida' });
+    expect(situation).toEqual({ ok: false, errors: { startSituation: expect.any(String) } });
+    const invalidChallenge = checkNewCampaignInput({
+      name: 'X',
+      difficulty: 'casual',
+      challenge: { economicPressure: 4 },
+    });
+    expect(invalidChallenge).toEqual({ ok: false, errors: { challenge: expect.any(String) } });
+    const invalidRules = checkNewCampaignInput({ name: 'X', difficulty: 'casual', institutionalRules: 'ilegais' });
+    expect(invalidRules).toEqual({ ok: false, errors: { institutionalRules: expect.any(String) } });
+    const invalidAssistance = checkNewCampaignInput({
+      name: 'X',
+      difficulty: 'casual',
+      assistance: { informationClarity: 'padrao', hints: 'yes' },
+    });
+    expect(invalidAssistance).toEqual({ ok: false, errors: { assistance: expect.any(String) } });
   });
 
   // PLANO_GLOBO.md §5.1 (D-G9): perfil inicial escolhido no NOVO JOGO; padrão Centro; id desconhecido é erro.

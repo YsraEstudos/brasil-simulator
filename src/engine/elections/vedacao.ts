@@ -1,14 +1,15 @@
 import type { Policy } from '../../types/policy';
 import type { ScenarioElections } from '../../types/scenario';
 import { monthOfTerm } from '../calendar';
+import { usesFormalRules } from '../campaignConfig';
 import type { GameContent, GameState } from '../types';
 
 /**
  * Vedação eleitoral (Lei 9.504/1997 art. 73 §10, simplificada; POLITICAL_RULES.md §11.2; FASE_08.md): nos 3 meses
  * antes de cada pleito, criar "novo benefício" é vedado. O `screenInput` rejeita a política com o motivo
  * `vedacao_eleitoral`; a quebra declarada (`decision.params.vedacao_bypass = true`) passa e paga as penalidades
- * agendadas em `proposals.ts` (pena na intenção por mês e risco de multa de aprovação). A dificuldade `casual`
- * não aplica a vedação.
+ * agendadas em `proposals.ts` (pena na intenção por mês e risco de multa de aprovação). As regras simplificadas
+ * não aplicam a vedação.
  */
 
 /** Meses antes de cada pleito em que a vedação vale (18–20 para o pleito no 21; 42–44 para o 45). */
@@ -34,9 +35,9 @@ export function inVedacaoWindow(elections: ScenarioElections, termMonth: number)
   );
 }
 
-/** A vedação vale neste mês: cenário com eleições, fora da dificuldade `casual` e na janela de algum pleito. */
+/** A vedação vale neste mês: cenário com eleições, regras brasileiras e janela de algum pleito. */
 export function vedacaoAtiva(state: Readonly<GameState>, content: GameContent): boolean {
   const elections = content.scenario.elections;
-  if (!elections || state.difficulty === 'casual') return false;
+  if (!elections || !usesFormalRules(state)) return false;
   return inVedacaoWindow(elections, monthOfTerm(state.monthIndex));
 }

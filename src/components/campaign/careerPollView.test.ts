@@ -16,6 +16,8 @@ describe('leitura da pesquisa na tela (PLANO_CAMPANHA.md Fase C2)', () => {
     const r = advanceMonth(start(), { decisions: [] }, content);
     const view = careerPollViewModel(r.state, content, r.report)!;
     expect(view.subtitle).toMatch(/^Agosto de 2026/);
+    expect(view.subtitle).toContain('instituto fictício');
+    expect(view.subtitle).toContain('estimativa simulada');
     expect(view.rows.find((row) => row.player)).toMatchObject({ id: 'jogador', label: 'Você' });
     const candidates = r.state.career!.poll!.intentions.map((i) => i.share).sort((a, b) => b - a);
     expect(view.rows.slice(0, -2).map((row) => row.share)).toEqual(candidates.map((x) => `${Math.round(x * 100)}%`));

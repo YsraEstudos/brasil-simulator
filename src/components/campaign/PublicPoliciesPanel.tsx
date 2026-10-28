@@ -5,8 +5,12 @@ import { Button, Card, formatMoneyMillions, formatPercent, Text } from '@/compon
 import { Radius, Spacing } from '@/constants/theme';
 import {
   AGENDA_ACTIONS,
+  budgetCalendar,
+  BUDGET_POLICY_IDS,
+  budgetDraftOf,
   DIRECTIVE_ACTION_ID,
   ministriesOf,
+  projectCommitments,
   toCalendar,
   validateActionTarget,
   type GameContent,
@@ -18,10 +22,11 @@ import { useTheme } from '@/hooks/use-theme';
 import { decisionCost, fits, gameStore, hasDecision, useGame, type AgendaDraft } from '@/store';
 
 import { GovernmentBrands } from './GovernmentBrands';
-import { PROPOSAL_STATUS_LABEL } from './labels';
+import { PROPOSAL_IN_PROGRESS, PROPOSAL_STATUS_LABEL } from './labels';
 import { currentDirective } from './publicPolicyView';
 
 const DIRECTIVE_ACTION = AGENDA_ACTIONS[DIRECTIVE_ACTION_ID];
+const displayDate = (iso: string) => iso.split('-').reverse().join('/');
 
 export interface PublicPoliciesPanelProps {
   state: GameState;
@@ -67,6 +72,7 @@ export function PublicPoliciesPanel({ state, content, actionsMax }: PublicPolici
   const draft = useGame((s) => s.draft);
   const [openMinistryId, setOpenMinistryId] = useState<string | null>(null);
   const publicState: PublicPolicyState = state.publicPolicies;
+  const calendar = budgetCalendar(state.scenarioId, state.monthIndex);
   const directives = publicState.directives;
   const projects = publicState.projects;
   const currentYear = toCalendar(state.monthIndex).year;
@@ -126,6 +132,26 @@ export function PublicPoliciesPanel({ state, content, actionsMax }: PublicPolici
         )}
       </Card>
 
+      {calendar && (
+        <Card
+          title="Calendário de planejamento"
+          subtitle="Prazos de envio das propostas ao Congresso. O calendário não indica aprovação nem autoriza despesas.">
+          <Text>{`PPA previsto para ${calendar.scheduledPpa.from}–${calendar.scheduledPpa.to}.`}</Text>
+          {state.initialCampaignConfiguration?.institutionalRules === 'simplificadas' && (
+            <Text variant="caption" color="textSecondary">
+              Referência brasileira: esta campanha usa regras ficcionais simplificadas.
+            </Text>
+          )}
+          {calendar.proposedPpa && (
+            <Text>{`Projeto do PPA ${calendar.proposedPpa.from}–${calendar.proposedPpa.to}: envio até ${displayDate(calendar.proposedPpa.deadline)}.`}</Text>
+          )}
+          <Text>{`LDO de ${calendar.budgetYear}: envio até ${displayDate(calendar.ldoDeadline)}.`}</Text>
+          <Text>{`LOA de ${calendar.budgetYear}: envio até ${displayDate(calendar.loaDeadline)}.`}</Text>
+        </Card>
+      )}
+      {calendar && content.scenario.policies.includes(BUDGET_POLICY_IDS.ppa) && (
+        <BudgetPlanning state={state} content={content} draft={draft} actionsMax={actionsMax} />
+      )}
       <ProjectWallet
         state={state}
         content={content}
@@ -134,6 +160,93 @@ export function PublicPoliciesPanel({ state, content, actionsMax }: PublicPolici
       />
       <GovernmentBrands state={state} content={content} actionsMax={actionsMax} />
     </View>
+  );
+}
+
+function BudgetPlanning({
+  state,
+  content,
+  draft,
+  actionsMax,
+}: {
+  state: GameState;
+  content: GameContent;
+  draft: AgendaDraft;
+  actionsMax: number;
+}) {
+  const { colors } = useTheme();
+  const [priority, setPriority] = useState<'saude' | 'educacao' | 'infraestrutura'>('saude');
+  const [limitText, setLimitText] = useState('20000');
+  const annualMillions = parseMillions(limitText);
+  const labels = { saude: 'Saúde', educacao: 'Educação', infraestrutura: 'Infraestrutura' } as const;
+  const laws = state.publicPolicies.budgetLaws ?? [];
+  return (
+    <Card
+      title="Propostas de planejamento"
+      subtitle="Escolha a prioridade e envie um projeto ao Congresso; só a sanção produz uma lei.">
+      <Text variant="label">Prioridade da proposta</Text>
+      {(['saude', 'educacao', 'infraestrutura'] as const).map((item) => (
+        <Button
+          key={item}
+          label={labels[item]}
+          variant={priority === item ? 'primary' : 'secondary'}
+          onPress={() => setPriority(item)}
+          block
+        />
+      ))}
+      <Text variant="caption" color="textSecondary">
+        Para a LOA, informe o limite anual de novas alocações da carteira em R$ milhões. O limite não aumenta a folga
+        fiscal nem representa a LOA federal inteira.
+      </Text>
+      <TextInput
+        accessibilityLabel="Limite anual da carteira na LOA, em milhões de reais"
+        keyboardType="decimal-pad"
+        value={limitText}
+        onChangeText={setLimitText}
+        style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+      />
+      {(['ppa', 'ldo', 'loa'] as const).map((kind) => {
+        const policyId = BUDGET_POLICY_IDS[kind];
+        const decision: Decision = {
+          policyId,
+          agendaCost: 1,
+          params: { priority, ...(kind === 'loa' ? { annualMillions } : {}) },
+        };
+        const selected = hasDecision(draft, decision);
+        const valid = budgetDraftOf(decision, state) !== null;
+        const inProgress = state.proposals.some(
+          (proposal) => proposal.policyId === policyId && PROPOSAL_IN_PROGRESS.has(proposal.status),
+        );
+        const available = selected || (!inProgress && valid && fits(draft, decision, content, actionsMax));
+        return (
+          <Button
+            key={kind}
+            label={`${selected ? 'Retirar' : 'Enviar'} ${kind.toUpperCase()} · ${labels[priority]}`}
+            variant={selected ? 'primary' : 'secondary'}
+            disabled={!available}
+            onPress={() => gameStore.getState().toggleDecision(decision)}
+            block
+          />
+        );
+      })}
+      <Text variant="caption" color="textSecondary">
+        Regra simplificada do jogo: a LDO segue a prioridade do PPA vigente, se houver; a LOA exige LDO sancionada e
+        segue sua prioridade. Na falta de recursos, a área priorizada recebe alocação primeiro. Uma proposta em
+        tramitação impede novo envio do mesmo tipo.
+      </Text>
+      {laws.length === 0 ? (
+        <Text variant="caption" color="textSecondary">
+          Nenhuma lei deste ciclo foi sancionada nesta campanha.
+        </Text>
+      ) : (
+        laws.map((law) => (
+          <Text
+            key={law.proposalId}
+            variant="caption"
+            color="textSecondary">{`${law.kind.toUpperCase()} · ${law.year}${law.kind === 'ppa' ? `–${law.year + 3}` : ''} · ${labels[law.priority]}${law.annualMillions !== undefined ? ` · ${formatMoneyMillions(law.annualMillions)}/ano` : ''}`}</Text>
+        ))
+      )}
+    </Card>
   );
 }
 
@@ -252,6 +365,7 @@ function ProjectWallet({
   projects: readonly PublicProject[];
   capitalStockMillions: number;
 }) {
+  const commitments = projectCommitments(state, content);
   return (
     <Card
       title="Carteira de projetos"
@@ -260,6 +374,25 @@ function ProjectWallet({
         Capital público líquido em operação: {formatMoneyMillions(capitalStockMillions)} · manutenção anual:{' '}
         {formatMoneyMillions(projects.reduce((sum, project) => sum + project.maintenanceMillions, 0))}
       </Text>
+      {commitments.length > 0 && (
+        <View>
+          <Text variant="label">Desembolso futuro estimado</Text>
+          <Text variant="caption" color="textSecondary">
+            Distribuição aproximada do saldo, sem prever cortes ou suspensões. Não é despesa executada nem autorização
+            na LOA.
+          </Text>
+          {commitments.some((item) => item.horizonLimited) && (
+            <Text variant="caption" color="textSecondary">
+              Para prazos extremos, o saldo foi distribuído em até 40 anos apenas para apresentação.
+            </Text>
+          )}
+          {commitments.map((item) => (
+            <Text key={`${item.proposalId}-${item.year}`} variant="caption" color="textSecondary">
+              {`${content.policies[item.policyId]?.name ?? item.policyId} · ${item.year}: ${formatMoneyMillions(item.millions)}`}
+            </Text>
+          ))}
+        </View>
+      )}
       {projects.length === 0 ? (
         <Text variant="body" color="textSecondary">
           Nenhum projeto explícito na carteira.
@@ -273,6 +406,13 @@ function ProjectWallet({
             project.delayMonths > 0
               ? ` · atraso ${project.delayMonths} ${project.delayMonths === 1 ? 'mês' : 'meses'}`
               : '';
+          const bottleneck = {
+            capacidade: 'capacidade de gestão na etapa',
+            orcamento: 'orçamento disponível',
+            suspensao: 'projeto suspenso',
+            cronograma: 'intervalo previsto no cronograma',
+            nenhum: 'nenhum identificado neste mês',
+          }[project.bottleneck ?? 'nenhum'];
           return (
             <View key={project.proposalId} style={styles.project}>
               <Text variant="label">{title}</Text>
@@ -282,6 +422,9 @@ function ProjectWallet({
               <Text
                 variant="caption"
                 color="textSecondary">{`${formatMoneyMillions(project.spentMillions)} de ${formatMoneyMillions(project.budgetMillions)} · manutenção anual ${formatMoneyMillions(project.maintenanceMillions)}`}</Text>
+              <Text variant="caption" color="textSecondary">
+                Limitação principal: {bottleneck}.
+              </Text>
             </View>
           );
         })

@@ -31,6 +31,26 @@ export {
   type DebateOption,
 } from './career/debate';
 export { keySalt } from './career/draw';
+export { managementProfile, ministryManagement, policyCapacity } from './congress/management';
+export { projectCommitments, type ProjectCommitment } from './publicPolicies/commitments';
+export { budgetCalendar } from './publicPolicies/budgetCalendar';
+export { BUDGET_POLICY_IDS, budgetDraftOf, isBudgetPolicy } from './publicPolicies/budgetLaws';
+export {
+  START_SITUATIONS,
+  DEFAULT_START_SITUATION,
+  isStartSituationId,
+  challengeSchema,
+  DEFAULT_CHALLENGE,
+  CHALLENGE_PRESETS,
+  institutionalRulesSchema,
+  DEFAULT_INSTITUTIONAL_RULES,
+  assistanceSchema,
+  DEFAULT_ASSISTANCE,
+  type StartSituationId,
+  type ChallengeConfig,
+  type InstitutionalRules,
+  type AssistanceConfig,
+} from './campaignConfig';
 export { ELECTION_NOTES, electedOutcome, runElection, tallyRound } from './career/election';
 export { canReachInauguration, inaugurationNews } from './career/inauguration';
 export {

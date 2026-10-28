@@ -38,10 +38,10 @@ function play(state: GameState, n: number, steps = DEFAULT_STEPS): MonthResult[]
 
 /**
  * Estado sem os campos da carreira: o que a partida da posse também tem. Fora da comparação, por lista: o bloco
- * career e as notícias da campanha (`careerPeriod`, como a da posse, Fase C5).
+ * career, a configuração inicial e as notícias da campanha (`careerPeriod`, como a da posse, Fase C5).
  */
-function withoutCareer(s: GameState): Omit<GameState, 'career'> {
-  const { career: _career, ...rest } = s;
+function withoutCareer(s: GameState): Omit<GameState, 'career' | 'initialCampaignConfiguration'> {
+  const { career: _career, initialCampaignConfiguration: _config, ...rest } = s;
   return { ...rest, events: { ...rest.events, news: (rest.events.news ?? []).filter((n) => !n.careerPeriod) } };
 }
 
@@ -86,7 +86,7 @@ describe('estado inicial da carreira (PLANO_CAMPANHA.md Fase C1)', () => {
   });
 
   it('o governo nasce igual ao da posse (economia congelada até ela, D-C12)', () => {
-    expect(withoutCareer(corrida())).toEqual(posse());
+    expect(withoutCareer(corrida())).toEqual(withoutCareer(posse()));
   });
 });
 
@@ -149,7 +149,7 @@ describe('turnos antes da posse e transição mínima (PLANO_CAMPANHA.md Fase C1
   });
 
   it('determinismo: mesma semente e mesmos comandos, mesmo resultado', () => {
-    expect(play(corrida(5), PRE_TURNS + 2)).toEqual(play(corrida(5), PRE_TURNS + 2));
+    expect(play(corrida(11), PRE_TURNS + 2)).toEqual(play(corrida(11), PRE_TURNS + 2));
   });
 });
 
@@ -164,7 +164,7 @@ describe('regressão do ponto posse (PLANO_CAMPANHA.md §4)', () => {
       const { turnIndex, ...report } = r.report;
       expect(turnIndex).toBe(PRE_TURNS + i);
       expect(report).toEqual(fromInauguration[i].report);
-      expect(withoutCareer(r.state)).toEqual(fromInauguration[i].state);
+      expect(withoutCareer(r.state)).toEqual(withoutCareer(fromInauguration[i].state));
     }
   });
 
@@ -572,7 +572,13 @@ it('fiscaliza o caixa 2 uma vez por turno, registra investigação e o proíbe n
     expect.objectContaining({ sourceId: 'caixa_dois', careerPeriod: '2026-08' }),
   );
   expect(result.state.rng).toEqual(start.rng);
-  const casual = createInitialState({ content: configured, difficulty: 'casual', seed: 11, startPoint: 'corrida' });
+  const casual = createInitialState({
+    content: configured,
+    difficulty: 'casual',
+    seed: 11,
+    startPoint: 'corrida',
+    institutionalRules: 'simplificadas',
+  });
   const denied = advanceMonth(casual, { decisions: [decision] }, configured);
   expect(denied.report.rejected[0].reason).toBe('fora_do_estagio');
   expect(denied.state.career!.illicit).toBeUndefined();

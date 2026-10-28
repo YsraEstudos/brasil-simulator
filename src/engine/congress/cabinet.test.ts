@@ -18,6 +18,7 @@ import {
   partisanMinistries,
 } from './cabinet';
 import { blocSupport } from './congress';
+import { managementProfile } from './management';
 
 const c = DEFAULT_CALIBRATION;
 const content = testContent();
@@ -85,7 +86,7 @@ describe('ministérios técnicos ou partidários (POLITICAL_RULES.md §6.3.1)', 
     expect(cabinetScandalRisk({ ...s1, monthIndex: 25 }, content)).toBeCloseTo(chance(25), 12);
   });
 
-  it('pasta de bloco executa pior: o ganho de aprovação da política rende menos', () => {
+  it('execução acompanha a competência do indicado, independentemente da origem política', () => {
     const politica: Policy = {
       ...TEST_DECREE,
       id: 'teste_social_decreto',
@@ -101,8 +102,32 @@ describe('ministérios técnicos ou partidários (POLITICAL_RULES.md §6.3.1)', 
     const tecnica = mes(testState(), [enviar], ctn).state;
     const partidaria = mes(mes(testState(), [nomear('social', 'centro')], ctn).state, [enviar], ctn).state;
     const ganho = (s: GameState) => s.impulses.find((i) => i.target === 'aprovacao')?.delta ?? 0;
-    expect(ganho(tecnica)).toBeCloseTo(0.02, 12);
-    expect(ganho(partidaria)).toBeCloseTo(0.02 * (1 - c.perda_execucao_partidaria), 12);
+    expect(ganho(tecnica)).toBeCloseTo(0.02 * managementProfile(tecnica.seed, 'social', 'tecnico').capacity, 12);
+    expect(ganho(partidaria)).toBeCloseTo(0.02 * managementProfile(partidaria.seed, 'social', 'centro').capacity, 12);
+  });
+
+  it('competência de indicado não é determinada por ser técnico ou partidário', () => {
+    const politica: Policy = {
+      ...TEST_DECREE,
+      id: 'teste_competencia',
+      area: 'social',
+      position: { economic: 0, social: 0 },
+      impacts: [{ channel: 'aprovacao', magnitude: 0.02, lagMonths: 3 }],
+    };
+    const ctn = testContent({
+      policies: { ...content.policies, [politica.id]: politica },
+      scenario: { ...TEST_SCENARIO, policies: [...TEST_SCENARIO.policies, politica.id] },
+    });
+    const enviar: Decision = { policyId: politica.id, agendaCost: 1 };
+    const ganho = (s: GameState) => s.impulses.find((i) => i.target === 'aprovacao')?.delta ?? 0;
+    const outcomes = Array.from({ length: 32 }, (_, seed) => {
+      const start = testState(seed, 'estrategica', ctn);
+      const technical = mes(start, [enviar], ctn).state;
+      const partisan = mes(mes(start, [nomear('social', 'centro')], ctn).state, [enviar], ctn).state;
+      return ganho(partisan) - ganho(technical);
+    });
+    expect(outcomes.some((difference) => difference > 0)).toBe(true);
+    expect(outcomes.some((difference) => difference < 0)).toBe(true);
   });
 
   it('pasta de bloco contrário à política atrasa a execução', () => {

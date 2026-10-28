@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ADVICE_PARAMS, AGENDA_ACTIONS_PER_MONTH, DEFAULT_CALIBRATION } from '@/engine';
+import { AGENDA_ACTIONS_PER_MONTH, DEFAULT_CALIBRATION } from '@/engine';
 import { DIFFICULTIES } from '@/store/campaignSetup';
 import { campaignMonths, SCENARIOS } from '@/store/scenarios';
 
@@ -48,13 +48,9 @@ describe('efeitos de dificuldade derivados do motor', () => {
     expect(difficultyView('realismo').effects.join('\n')).toContain(`(×${realismo})`);
   });
 
-  it('margens e viés das previsões vêm de ADVICE_PARAMS', () => {
-    const pct = (x: number) => `${Math.round(x * 100)}%`;
-    expect(difficultyView('estrategica').effects.join('\n')).toContain(`±${pct(ADVICE_PARAMS.marginEstrategica)}`);
-    const realismo = difficultyView('realismo').effects.join('\n');
-    expect(realismo).toContain(`±${pct(ADVICE_PARAMS.marginRealismo)}`);
-    expect(realismo).toContain(`viés otimista de ${pct(ADVICE_PARAMS.biasRealismo)}`);
-    expect(difficultyView('casual').effects.join('\n')).toMatch(/sem margem de erro/);
+  it('não associa clareza de pareceres à dificuldade', () => {
+    for (const id of DIFFICULTIES)
+      expect(difficultyView(id).effects.join('\n')).not.toMatch(/previsões|margem de erro/);
   });
 
   it('não promete mecânicas ainda não implementadas', () => {

@@ -4,6 +4,8 @@ Versão 0.3 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/202
 
 > **Status:** todas as equações são **forma reduzida simplificada**. Os parâmetros têm justificativa e faixa testada ([CALIBRATION.md](CALIBRATION.md)), mas continuam `PROVISORIO` até a importação das séries oficiais. Nenhum número deste documento é previsão.
 
+Na criação, situações **FICTÍCIAS** podem alterar a condição inicial: pressão externa acrescenta 0,005 ao prêmio de risco anual; desaceleração reduz o hiato do produto em 0,01. Os indicadores históricos do cenário não são reescritos: a economia reage aos novos estoques nos turnos seguintes. A condição escolhida integra a configuração salva.
+
 ---
 
 ## 1. Princípios
@@ -204,7 +206,7 @@ interface ScheduledImpulse {
 
 - Em cada mês, o motor aplica os impulsos ativos **antes** das equações do §5 e registra cada um como `contribution` com o seu `label`. A auditoria sai de graça: o "Por que mudou?" lê os impulsos consumidos naquele mês.
 - Atrasos, sobrecustos e cancelamentos (§5.10) **reagendam ou removem** impulsos, sempre com causa registrada.
-- **Fase 04 (POLITICAL_RULES.md §6.5, §8):** emendas liberadas como pedágio (`emendas:<proposta>`) e acréscimos do relator (`acrescimo:<proposta>`) entram como `gasto.custeio` e, sob o limite, saem das discricionárias (§5.8), competindo com os programas do governo. Uma liminar do STF retira dos impulsos da proposta a janela suspensa (os que cruzam a janela são divididos); medida declarada inconstitucional perde tudo a partir da liminar. Política de pasta entregue a bloco rende menos: `oferta.potencial` e ganhos de `aprovacao` × (1 − `perda_execucao_partidaria`).
+- **Fase 04 (POLITICAL_RULES.md §6.5, §8):** emendas liberadas como pedágio (`emendas:<proposta>`) e acréscimos do relator (`acrescimo:<proposta>`) entram como `gasto.custeio` e, sob o limite, saem das discricionárias (§5.8), competindo com os programas do governo. Uma liminar do STF retira dos impulsos da proposta a janela suspensa (os que cruzam a janela são divididos); medida declarada inconstitucional perde tudo a partir da liminar. Para políticas que não são projetos, a capacidade do indicado escala `oferta.potencial` e ganhos de `aprovacao`, sem depender da origem política. Para projetos, a capacidade atua no prazo da carteira, sem multiplicar novamente esses efeitos.
 - Efeitos permanentes já estabilizados são consolidados no estado (ex.: incorporados ao `Kg` ou ao potencial) e saem da fila, para ela não crescer sem limite.
 
 ### 5.12 Distribuição regional (Fase 05+)

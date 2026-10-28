@@ -1,6 +1,9 @@
 import { parsePolicy, type Policy } from '@/types/policy';
 
 import contingenciamento from '@/data/policies/contingenciamento.json';
+import orcamentoPpa from '@/data/policies/orcamento_ppa.json';
+import orcamentoLdo from '@/data/policies/orcamento_ldo.json';
+import orcamentoLoa from '@/data/policies/orcamento_loa.json';
 import gastosTributariosRevisao from '@/data/policies/gastos_tributarios_revisao.json';
 import infraestruturaCreditoAdicional from '@/data/policies/infraestrutura_credito_adicional.json';
 import iofCreditoReducao from '@/data/policies/iof_credito_reducao.json';
@@ -48,6 +51,9 @@ import rotinaVigilanciaEpidemiologica from '@/data/policies/rotina_vigilancia_ep
 
 /** Catálogo de políticas (src/data/policies/*.json), validado ao carregar: um JSON inválido é erro de desenvolvimento. */
 const RAW: readonly unknown[] = [
+  orcamentoPpa,
+  orcamentoLdo,
+  orcamentoLoa,
   infraestruturaCreditoAdicional,
   iofCreditoReducao,
   irpfTabela,

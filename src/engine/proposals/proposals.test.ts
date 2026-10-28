@@ -151,10 +151,18 @@ describe('propostas: ciclo de vida (GAME_DESIGN.md §9)', () => {
     expect(transferencia?.endMonth).toBeNull();
   });
 
-  it('janeiro é recesso: votação empurrada para fevereiro, exceto no Casual (POLITICAL_RULES.md §3.3)', () => {
+  it('janeiro é recesso nas regras brasileiras, não nas simplificadas (POLITICAL_RULES.md §3.3)', () => {
     const content = testContent();
     const estrategica = { ...testState(42, 'estrategica'), monthIndex: 11 };
-    const casual = { ...testState(42, 'casual'), monthIndex: 11 };
+    const initial = testState(42, 'casual');
+    const casual = {
+      ...initial,
+      monthIndex: 11,
+      initialCampaignConfiguration: {
+        ...initial.initialCampaignConfiguration,
+        institutionalRules: 'simplificadas' as const,
+      },
+    };
     expect(proposta(passo(estrategica, content, [decisao(TEST_BILL.id)]), TEST_BILL.id).voteMonth).toBe(13);
     expect(proposta(passo(casual, content, [decisao(TEST_BILL.id)]), TEST_BILL.id).voteMonth).toBe(12);
   });

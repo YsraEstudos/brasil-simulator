@@ -95,7 +95,7 @@ describe('triagem das ações (PLANO_CAMPANHA.md Fase C4, testes exigidos)', () 
       'fora_do_estagio',
     );
     expect(screenCareerAction(career, pre, act('mobilizar_militancia'), content, 0, 3, none)).toBeNull();
-    let s = corrida();
+    let s = corrida(11); // A transição exige uma eleição vencida.
     for (let t = 0; t < careerSchedule(content, 'corrida').length - 1; t++) s = turn(s, []).state;
     const r = turn(s, [act('mobilizar_militancia')]);
     expect(reasons(r)).toEqual([['mobilizar_militancia', 'fora_do_estagio']]);

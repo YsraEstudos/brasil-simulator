@@ -9,12 +9,31 @@ export interface MinistryDirective {
 
 export const PROJECT_PHASES = ['planejamento', 'licenciamento', 'licitacao', 'obra', 'operacao'] as const;
 export type ProjectPhase = (typeof PROJECT_PHASES)[number] | 'cancelado';
+export type ProjectBottleneck = 'capacidade' | 'orcamento' | 'suspensao' | 'cronograma' | 'nenhum';
+
+export interface BudgetLawDraft {
+  kind: 'ppa' | 'ldo' | 'loa';
+  year: number;
+  priority: 'saude' | 'educacao' | 'infraestrutura';
+  /** Limite anual para novas alocações da carteira (R$ milhões), apenas para LOA. */
+  annualMillions?: number;
+}
+
+export interface BudgetLaw extends BudgetLawDraft {
+  proposalId: string;
+  enactedAt: number;
+}
 
 export interface PublicProject {
   proposalId: string;
   policyId: string;
   phase: ProjectPhase;
+  /** Meses consumidos na fase atual. */
   phaseMonth: number;
+  /** Trabalho acumulado nas etapas anteriores à obra, em meses equivalentes de capacidade plena. */
+  phaseEffort?: number;
+  /** Principal limitação observada no último processamento da carteira. */
+  bottleneck?: ProjectBottleneck;
   /** Avanço físico da obra, 0–1. */
   progress: number;
   /** Custo total aprovado, incluindo sobrecusto já sorteado. */
@@ -41,6 +60,8 @@ export interface PublicPolicyState {
   brands: GovernmentBrand[];
   /** Soma dos ativos líquidos dos projetos; não inclui o estoque herdado. */
   capitalStockMillions: number;
+  /** Projetos de planejamento efetivamente sancionados ou promulgados após derrubada de veto. */
+  budgetLaws?: BudgetLaw[];
 }
 
 export function initialPublicPolicies(): PublicPolicyState {

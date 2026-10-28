@@ -91,7 +91,11 @@ describe('contratos de políticas da Fase 06', () => {
   it('carrega o catálogo completo e o cenário versionado sem alterar o legado', () => {
     expect(Object.keys(POLICIES).length).toBeGreaterThanOrEqual(30);
     // As políticas de prevenção (PR 13) só entram no v0.8.0: os cenários publicados seguem com o catálogo de antes.
-    const published = Object.values(POLICIES).filter((policy) => !PREVENTION_POLICY_IDS.includes(policy.id));
+    const published = Object.values(POLICIES).filter(
+      (policy) =>
+        !PREVENTION_POLICY_IDS.includes(policy.id) &&
+        !['orcamento_ppa', 'orcamento_ldo', 'orcamento_loa'].includes(policy.id),
+    );
     const current = SCENARIOS.brasil_2027_01_v050;
     const legacy = SCENARIOS[LEGACY_SCENARIO_ID];
     expect(current.id).toBe('brasil_2027_01_v050');

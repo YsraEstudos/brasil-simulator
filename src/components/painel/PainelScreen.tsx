@@ -7,6 +7,7 @@ import type { SymbolViewProps } from 'expo-symbols';
 
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campaign/labels';
 import { CareerActionsCard } from '@/components/campaign/CareerActionsCard';
+import { CampaignTutorialCard } from '@/components/campaign/CampaignTutorialCard';
 import { CareerElectionCard } from '@/components/campaign/CareerElectionCard';
 import { careerElectionViewModel } from '@/components/campaign/careerElectionView';
 import { CareerPollCard } from '@/components/campaign/CareerPollCard';
@@ -49,6 +50,7 @@ import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel
 import { useMapMarkers } from '@/components/map/useMapMarkers';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
+import { caravanDestination } from '@/globe/caravan';
 import type { Profile3d } from '@/globe/qualityProfiles';
 import { draftCost, gameStore, planMapQuality, useGame, type RegionalPoint } from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
@@ -323,6 +325,8 @@ export function PainelScreen() {
   );
   // Marcadores de eventos e notícias com local (um por UF); o pulso dos críticos novos vem marcado em cada um.
   const markers = useMapMarkers(active, content);
+  const caravanTarget =
+    active && isPreInauguration(active.state) ? caravanDestination(active.lastReport?.career?.actions ?? []) : null;
   const baseMapModel = useMemo(
     () =>
       buildRegionalMapViewModel({
@@ -642,6 +646,7 @@ export function PainelScreen() {
           }
           return (
             <>
+              {(active.state.initialCampaignConfiguration?.assistance?.hints ?? true) && <CampaignTutorialCard />}
               <CareerActionsCard
                 state={active.state}
                 content={content}
@@ -865,6 +870,11 @@ export function PainelScreen() {
             sky={sky}
             climate={climateData}
             clouds={mapClouds}
+            caravan={
+              caravanTarget && active
+                ? { destination: caravanTarget, key: `${active.id}:${active.lastReport?.turnIndex}` }
+                : null
+            }
             viewModel={mapModel}
             paused={!focused}
             reservedRects={labelReserve.rects}

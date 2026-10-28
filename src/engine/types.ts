@@ -6,16 +6,17 @@ import type { PRE_INAUGURATION_STAGES, Scenario } from '../types/scenario';
 import type { Calibration } from './economy/calibration';
 import type { Rng, RngState } from './rng';
 import type { SocietyState } from './society/types';
-import type { PublicPolicyState } from './publicPolicies/types';
+import type { BudgetLawDraft, PublicPolicyState } from './publicPolicies/types';
 import type { CampaignFinance, ExpandedFinance, ScheduledReceipt, FinanceExpenditure } from './career/finance';
 import type { DebtCommitment } from './career/commitments';
 import type { IllicitState } from './career/illicit';
+import type { CampaignConfigV1 } from './campaignConfig';
 
-/** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 16;
+/** Versão da estrutura do GameState; política de saves conforme AI_INSTRUCTIONS.md §2.1. */
+export const STATE_SCHEMA_VERSION = 17;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.12.0';
+export const ENGINE_VERSION = '0.13.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -343,6 +344,8 @@ export interface Proposal {
   /** `${policyId}_${createdMonth}` */
   id: string;
   policyId: string;
+  /** Conteúdo do projeto orçamentário submetido; só produz autorização após tramitação. */
+  budgetDraft?: BudgetLawDraft;
   createdMonth: number;
   status: ProposalStatus;
   /** Fração do texto original que sobreviveu (1 = original; < 1 = alterado pelo relator ou cedido pelo governo). */
@@ -700,6 +703,8 @@ export interface GameState {
   scenarioId: string;
   difficulty: Difficulty;
   seed: number;
+  /** Escolhas originais, imutáveis durante a partida, para reproduzir sua criação. */
+  initialCampaignConfiguration: CampaignConfigV1;
   rng: RngState;
   /** Mês que está para ser jogado (0 = jan/2027). */
   monthIndex: number;
@@ -841,6 +846,12 @@ export interface PollIntention {
  * brancos/nulos somam 1. Os valores internos do motor nunca vão para a tela, só esta estimativa.
  */
 export interface CareerPoll {
+  /** Fotografia estimada no fim do período e sua publicação no mesmo mês. */
+  observedPeriod: { from: string; to: string };
+  publishedAt: string;
+  source: 'instituto_ficticio';
+  methodVersion: 'pesquisa_carreira_v2';
+  precision: { margin: number };
   /** Turno em que foi feita. */
   turnIndex: number;
   /** "AAAA-MM": mês de referência (o último coberto pelo turno). */

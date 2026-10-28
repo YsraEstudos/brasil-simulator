@@ -2,6 +2,8 @@
 
 Escopo definido em 16/10/2026. Critério do ROADMAP §2: **mandato completo com eleição no fim: novo ciclo ou encerramento**. Referências: GAME_DESIGN §7, POLITICAL_RULES §11, ECONOMIC_MODEL §5.8. Executada no checkout atual (sem commit nem push automáticos).
 
+Este documento registra as decisões da Fase 08 naquele momento. A eleição anterior à posse e seu estado atual estão em [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md); ela tem modelo próprio e não substitui a eleição durante o mandato descrita aqui.
+
 ## Decisões
 
 - **Cenário novo `brasil_2027_01_v070` v0.7.0** (cópia do v0.6.0 + bloco `elections` + candidatos fictícios por bloco). Cenários e saves antigos não recebem eleições: sem bloco `elections` o motor nunca roda o passo eleitoral, aplica vedação ou muda desfecho. `DEFAULT_SCENARIO_ID` passa a ser o v0.7.0; `campaignMonths(v070) = 96` (dois mandatos), v0.5.0/v0.6.0 continuam em 48.

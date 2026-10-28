@@ -196,11 +196,12 @@ export function payFromPocket(
   };
 }
 
-/** Guarda saldos, cancela promessas futuras e transfere dívida a compromisso, exceto no Casual. */
+/** Guarda saldos, cancela promessas futuras e transfere dívida a compromisso nas regras brasileiras. */
 export function closeExpandedFinance(
   finance: ExpandedFinance,
   difficulty: Difficulty,
   deadline: number,
+  formalRules = difficulty !== 'casual',
 ): { finance: ExpandedFinance; commitment?: DebtCommitment } {
   assertOpen(finance);
   assertAmount(deadline);
@@ -210,9 +211,7 @@ export function closeExpandedFinance(
     assertAmount(cancelledReceipts);
   }
   const commitment =
-    finance.debt > 0 && difficulty !== 'casual'
-      ? debtCommitment('divida_de_campanha', finance.debt, deadline)
-      : undefined;
+    finance.debt > 0 && formalRules ? debtCommitment('divida_de_campanha', finance.debt, deadline) : undefined;
   return {
     finance: {
       ...finance,
