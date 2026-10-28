@@ -34,6 +34,8 @@ export const DIRECTORATE_ACTION_ID = 'nomear_diretoria';
 export const DEFEND_CASE_ACTION_ID = 'defender_caso';
 /** Negociação com a presidência da Câmara para arquivar o pedido mais antigo da gaveta (§10.1, Fase C6e). Sem params. */
 export const DRAWER_ACTION_ID = 'negociar_gaveta';
+/** Pronunciamento à nação em rede nacional (PLANO_CAMPANHA.md Fase C6g). Sem params. */
+export const PRONOUNCEMENT_ACTION_ID = 'pronunciamento_nacional';
 /** Sanção ou veto de projeto aprovado (§7). Params: `proposalId`, `choice` (`SanctionChoice`). */
 export const SANCTION_ACTION_ID = 'sancao';
 /** Visita presidencial a uma UF (POLITICAL_RULES.md §2.1). Params: `uf` (sigla). */
@@ -155,6 +157,16 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
     agendaCost: 1,
     targetParams: [],
     listed: false,
+  },
+  [PRONOUNCEMENT_ACTION_ID]: {
+    id: PRONOUNCEMENT_ACTION_ID,
+    name: 'Pronunciamento à nação',
+    summary:
+      'Fala em rede nacional. Rende um pouco de aprovação no mês, menos a cada pronunciamento recente e menos ainda ' +
+      'com o termômetro das ruas crítico. Não muda indicadores da economia.',
+    agendaCost: 1,
+    targetParams: [],
+    listed: true,
   },
   [SANCTION_ACTION_ID]: {
     id: SANCTION_ACTION_ID,

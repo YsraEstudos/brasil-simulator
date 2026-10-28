@@ -9,6 +9,7 @@ import { isNovoBeneficio, vedacaoAtiva, type Decision } from '@/engine';
 import type { Policy } from '@/types/policy';
 import { decisionCost, draftCost, fits, gameStore, useGame, type ActiveCampaign } from '@/store';
 
+import { ThermometersCard } from './ThermometersCard';
 import { AgendaActions } from './AgendaActions';
 import { DecisionPanel } from './DecisionPanel';
 import { DIFFICULTY } from './labels';
@@ -88,6 +89,8 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
       />
 
       <PublicPoliciesPanel state={state} content={content} actionsMax={actionsMax} />
+
+      <ThermometersCard state={state} content={content} />
 
       <AgendaActions
         state={state}

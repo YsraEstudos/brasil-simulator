@@ -12,6 +12,8 @@ import {
 } from '../types';
 
 import { advanceCases } from './cases';
+import { applyPronouncement } from '../politics/thermometers';
+
 import { advanceDrawer } from './drawer';
 import { appointDirector, directorateSupport, directoratesOf } from './directorates';
 import { allRelations, shiftRelation } from './relations';
@@ -184,5 +186,6 @@ export const cabinetStep: MonthStep = (state, ctx) => {
   }
   // Casos de escândalo (Fase C6b) depois das nomeações: afastar no mês já tira o volume da exposição.
   // Gaveta do impeachment (Fase C6e) depois dos casos: lê as marcas que eles acabaram de gravar.
-  return { state: advanceDrawer(advanceCases(current, ctx), ctx), contributions: [] };
+  // Pronunciamento (Fase C6g) lê os termômetros do começo do mês, antes das demais etapas.
+  return { state: applyPronouncement(advanceDrawer(advanceCases(current, ctx), ctx), ctx), contributions: [] };
 };
