@@ -2,8 +2,8 @@
 
 Saídas:
   assets/globe/world.jpg                 textura mundial (equiretangular, 4096x2048)
-  assets/globe/tiles/{z}/{x}/{y}.jpg     cor estilizada do Brasil (256x256)
-  assets/globe/tiles/{z}/{x}/{y}.png     altitude para deslocamento da malha (65x65, 16 bits em R/G)
+  assets/globe/tiles/{z}/{x}_{y}.jpg     cor estilizada do Brasil (256x256)
+  assets/globe/tiles/{z}/{x}_{y}_height.png altitude para deslocamento da malha (65x65, 16 bits em R/G)
   src/globe/data/tileIndex.ts            manifesto com require() de cada tile (Metro exige requires estáticos)
   src/globe/data/ufs.json                siglas, nomes e contornos simplificados das UFs (para toque/rótulos)
 
@@ -476,7 +476,7 @@ def main() -> None:
         d = OUT_ASSETS / f"tiles/{z}"
         d.mkdir(parents=True, exist_ok=True)
         atlas.save(d / f"{bx}_{by}.jpg", quality=82, optimize=True, progressive=False)
-        encode_heights(hatlas).save(d / f"{bx}_{by}.png", optimize=True)
+        encode_heights(hatlas).save(d / f"{bx}_{by}_height.png", optimize=True)
         print(f"  bloco {i + 1}/{len(blocks)}")
     total = len(tiles)
 
@@ -543,7 +543,9 @@ def write_manifest(tiles, blocks):
     ]
     for z, bx, by in blocks:
         p = f"../../../assets/globe/tiles/{z}/{bx}_{by}"
-        lines.append(f"  '{z}/{bx}/{by}': {{ color: require('{p}.jpg'), height: require('{p}.png') }},")
+        lines.append(
+            f"  '{z}/{bx}/{by}': {{ color: require('{p}.jpg'), height: require('{p}_height.png') }},"
+        )
     lines += ["};", "", "/** Tiles existentes ('z/x/y') e altitude máxima em metros. */", "export const TILE_MAX_HEIGHT: Record<string, number> = {"]
     for z, x, y, mh in tiles:
         lines.append(f"  '{z}/{x}/{y}': {mh:.0f},")
