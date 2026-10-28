@@ -275,6 +275,8 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
       delete resto.id;
       delete resto.version;
       delete resto.career;
+      // Regras tributárias da R3 (PLANO_EXPANSAO EX-11): só o cenário atual as declara.
+      delete resto.taxation;
       const institutions = scenario.institutions && {
         ...scenario.institutions,
         directorates: undefined,

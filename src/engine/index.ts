@@ -134,6 +134,7 @@ export {
   DIRECTIVE_ACTION_ID,
   DIRECTORATE_ACTION_ID,
   DEFEND_CASE_ACTION_ID,
+  FISCALIZE_CASE_ACTION_ID,
   DRAWER_ACTION_ID,
   PRONOUNCEMENT_ACTION_ID,
   NOMINATE_JUSTICE_ACTION_ID,
@@ -196,6 +197,8 @@ export {
 export {
   CASE_FLAGS,
   CASE_STAGE_LABEL,
+  SANCTION_STAGES,
+  caseEvidenceBand,
   caseHazard,
   caseRiskBand,
   casesEnabled,
@@ -375,6 +378,7 @@ export * from './types';
 export { SaveTooNewError, upgradeGameState } from './upgrade';
 export * from './report';
 export * from './society';
+export * from './taxation';
 export * from './publicPolicies/types';
 export { BRANDABLE_STATUSES, currentPrevention, projectUfs } from './publicPolicies/publicPolicies';
 export { drawableEvents, eventsForScenario, hasFlag, standingOf } from './events/events';

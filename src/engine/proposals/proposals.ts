@@ -94,7 +94,8 @@ const UM_MES = 1;
 const HOUSE_NAME: Record<House, string> = { camara: 'Câmara', senado: 'Senado' };
 
 /** Canal de impacto da política → alvo do impulso (ECONOMIC_MODEL.md §5.11). */
-const IMPULSE_TARGET: Record<Policy['impacts'][number]['channel'], ImpulseTarget> = {
+/** Canal de impacto da política → alvo do impulso que a execução agenda (também lido pelas estimativas). */
+export const IMPULSE_TARGET: Record<Policy['impacts'][number]['channel'], ImpulseTarget> = {
   investimento_publico: 'gasto.investimento',
   custeio: 'gasto.custeio',
   transferencia_baixa_renda: 'gasto.transferencia_baixa_renda',

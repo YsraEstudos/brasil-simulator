@@ -13,10 +13,10 @@ import type { IllicitState } from './career/illicit';
 import type { CampaignConfigV2 } from './campaignConfig';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 19;
+export const STATE_SCHEMA_VERSION = 20;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.15.0';
+export const ENGINE_VERSION = '0.16.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -87,6 +87,11 @@ export interface FiscalState {
   revenueByGroup: Record<RevenueGroup, number>;
   /** Arrecadação perdida por retorno decrescente (sonegação, elisão, informalidade), líquida. */
   revenueLoss: number;
+  /**
+   * Do tributo legal à receita líquida, por base (PLANO_EXPANSAO EX-11): `base + policy + cycle − loss − transfers`
+   * é exatamente `revenueByGroup` (invariante em `checkInvariants`).
+   */
+  revenueDetail: Record<RevenueGroup, RevenueBaseDetail>;
   /** Receita líquida acumulada em 12 meses (suavizada), para a revisão anual do limite. */
   revenue12m: number;
   /** `revenue12m` na última revisão do limite (janeiro). */
@@ -97,6 +102,23 @@ export interface FiscalState {
   minimumWageIndex: number;
   /** Postura fiscal à qual a economia já se acomodou (o impulso de demanda é a distância até ela). */
   demandRef: number;
+}
+
+/**
+ * Decomposição da receita de uma base no mês, em fração do PIB anualizada (PLANO_EXPANSAO EX-11). Separa a carga
+ * legal (alíquota × base) da arrecadação efetiva (ciclo e conformidade) e da parte que fica com estados e municípios.
+ */
+export interface RevenueBaseDetail {
+  /** Carga legal do cenário, antes de políticas, ciclo e perda. */
+  base: number;
+  /** Carga legal criada ou retirada por políticas e eventos em vigor (impulsos de receita). */
+  policy: number;
+  /** Variação da arrecadação pelo ciclo econômico (hiato e, nos royalties, termos de troca). */
+  cycle: number;
+  /** Perda de conformidade: sonegação, elisão e informalidade (retorno decrescente da carga). */
+  loss: number;
+  /** Repartição com estados e municípios (FPE, FPM, royalties). */
+  transfers: number;
 }
 
 /** Pressão pública sobre o Banco Central (ECONOMIC_MODEL.md §5.4.1). */
@@ -770,12 +792,20 @@ export interface ImpeachmentRequest {
 }
 
 /**
- * Etapas graduais de um caso (Fase C6b): `investigacao` → `acusacao` → `condenacao`. `arquivado` encerra sem
- * condenação. A condenação só vem depois da acusação, nunca direto da investigação.
+ * Etapas de um caso (Fase C6b; PLANO_EXPANSAO EX-13/14): `investigacao` → `acusacao` → julgamento. O julgamento
+ * termina em `condenacao` (Judiciário), `sancao` (processo administrativo da CGU: afastamento, sem condenação
+ * criminal) ou `absolvido` (prova insuficiente). `arquivado` encerra a investigação inconclusiva. Nenhum desfecho
+ * vem direto da investigação.
  */
-export type CaseStage = 'investigacao' | 'acusacao' | 'condenacao' | 'arquivado';
+export type CaseStage = 'investigacao' | 'acusacao' | 'condenacao' | 'sancao' | 'absolvido' | 'arquivado';
 
-/** Caso aberto por um escândalo com alvo (Fase C6b). Atinge o indicado do bloco, não a Presidência. */
+/**
+ * Caso aberto por um escândalo com alvo (Fase C6b). Atinge o indicado do bloco, não a Presidência.
+ *
+ * Fato e prova são coisas diferentes (PLANO_EXPANSAO F04): `irregular` é a verdade latente, sorteada uma vez na
+ * abertura e nunca mostrada ao jogador; `evidence` é a prova que a investigação já obteve. A exposição mede a
+ * pressão pública sobre o caso, não a culpa.
+ */
 export interface ScandalCase {
   /** `${origem}:${alvo}#${mês de abertura}`, único. */
   id: string;
@@ -796,6 +826,12 @@ export interface ScandalCase {
   exposure: number;
   /** Último mês em que o governo gastou ação para defender o caso. */
   defendedMonth?: number;
+  /** Verdade latente: houve irregularidade. Sorteada por chave na abertura; a interface não a lê. */
+  irregular: boolean;
+  /** Prova obtida pela investigação (0–1). Só a irregularidade real leva a prova acima do teto dos indícios. */
+  evidence: number;
+  /** Último mês em que o governo pediu auditoria da CGU no caso. */
+  auditedMonth?: number;
 }
 
 /** Estágio da carreira (PLANO_CAMPANHA.md Fase C5); `governo` = da posse em diante. */

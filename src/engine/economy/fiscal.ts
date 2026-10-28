@@ -6,6 +6,7 @@ import {
   type GameState,
   type ImpulseTarget,
   type MandatoryGroup,
+  type RevenueBaseDetail,
   type RevenueGroup,
   type ScheduledImpulse,
 } from '../types';
@@ -77,6 +78,18 @@ export function initialFiscal(v: FiscalValues, gdpGrowth: number, gdpGrowthTwoYe
   const revenueByGroup = Object.fromEntries(
     REVENUE_GROUPS.map((g) => [g, structure.baseGross[g] * (1 - structure.transfer[g])]),
   ) as Record<RevenueGroup, number>;
+  const revenueDetail = Object.fromEntries(
+    REVENUE_GROUPS.map((g) => [
+      g,
+      {
+        base: structure.baseGross[g],
+        policy: 0,
+        cycle: 0,
+        loss: 0,
+        transfers: structure.baseGross[g] * structure.transfer[g],
+      },
+    ]),
+  ) as Record<RevenueGroup, RevenueBaseDetail>;
   const fiscal: FiscalState = {
     mandatory,
     linked: s.linked,
@@ -90,6 +103,7 @@ export function initialFiscal(v: FiscalValues, gdpGrowth: number, gdpGrowthTwoYe
     limitExcess: 0,
     revenueByGroup,
     revenueLoss: 0,
+    revenueDetail,
     revenue12m: v.revenue,
     revenue12mAtReview: v.revenue,
     gdpGrowthHistory: [gdpGrowthTwoYearsAgo, gdpGrowth],
@@ -122,6 +136,8 @@ const LOSS_MARGIN: Record<RevenueGroup, ParamName | null> = {
 export interface RevenueMonth {
   total: number;
   byGroup: Record<RevenueGroup, number>;
+  /** Do tributo legal à receita líquida, por base (soma `byGroup`; PLANO_EXPANSAO EX-11). */
+  detail: Record<RevenueGroup, RevenueBaseDetail>;
   /** Arrecadação perdida pelo retorno decrescente, líquida de repartição (≥ 0). */
   loss: number;
   /** Carga sobre a renda acima da margem sem perda (alimenta a saída de capital, §5.7). */
@@ -162,6 +178,7 @@ export function revenueMonth(
   }
 
   const byGroup = {} as Record<RevenueGroup, number>;
+  const detail = {} as Record<RevenueGroup, RevenueBaseDetail>;
   const pieces: Piece[] = [];
   let base = 0;
   let cycleTotal = 0;
@@ -173,6 +190,13 @@ export function revenueMonth(
     const margin = LOSS_MARGIN[g];
     const rate = margin === null ? 0 : lossRate(load[g], structure.baseGross[g], c[margin], c);
     byGroup[g] = kept * load[g] * (1 - rate) * cyc;
+    detail[g] = {
+      base: structure.baseGross[g],
+      policy: load[g] - structure.baseGross[g],
+      cycle: load[g] * (cyc - 1),
+      loss: load[g] * rate * cyc,
+      transfers: structure.transfer[g] * load[g] * (1 - rate) * cyc,
+    };
     base += kept * structure.baseGross[g];
     cycleTotal += kept * structure.baseGross[g] * (cyc - 1);
     loss += kept * load[g] * rate * cyc;
@@ -188,7 +212,7 @@ export function revenueMonth(
 
   const incomeOverload = Math.max(0, load.renda - structure.baseGross.renda - c.margem_carga_renda);
   const total = REVENUE_GROUPS.reduce((s, g) => s + byGroup[g], 0);
-  return { total, byGroup, loss, incomeOverload, base, linkedBase, pieces };
+  return { total, byGroup, detail, loss, incomeOverload, base, linkedBase, pieces };
 }
 
 // ── Revisão anual (janeiro) ─────────────────────────────────────────────────────────────────────────

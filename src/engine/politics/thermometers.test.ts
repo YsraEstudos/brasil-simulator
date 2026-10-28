@@ -76,6 +76,8 @@ describe('termômetros (PLANO_CAMPANHA.md Fase C6g)', () => {
       subjectId: 'x',
       blocId: 'centro',
       stage: 'investigacao',
+      irregular: false,
+      evidence: 0.1,
       openedMonth: 0,
       stageMonth: 0,
       exposure: 1,

@@ -55,6 +55,8 @@ function withCase(content: GameContent, extra: Partial<ScandalCase> = {}): GameS
     openedMonth: 0,
     stageMonth: 0,
     exposure: 1,
+    irregular: true,
+    evidence: 0.9,
     ...extra,
   };
   return {
@@ -81,6 +83,8 @@ describe('abertura do caso (PLANO_CAMPANHA.md Fase C6b)', () => {
         openedMonth: 1,
         stageMonth: 1,
         exposure: DEFAULT_CALIBRATION.caso_exposicao_inicial,
+        irregular: expect.any(Boolean),
+        evidence: DEFAULT_CALIBRATION.caso_prova_inicial,
       },
     ]);
     expect(out.state.events.flags[CASE_FLAGS.investigacao]).toBe(1);
@@ -145,9 +149,9 @@ describe('etapas graduais (PLANO_CAMPANHA.md Fase C6b)', () => {
     ]);
   });
 
-  it('afastar o indicado corta o volume: a exposição cai e o caso é arquivado, sem condenação', () => {
+  it('afastar o indicado corta o volume: a exposição cai e o caso com indícios fracos é arquivado', () => {
     const ctn = contentWith();
-    let s = withCase(ctn);
+    let s = withCase(ctn, { irregular: false, evidence: ctn.calibration.caso_prova_inicial });
     s = advanceMonth(s, { decisions: [nomear('tecnico')] }, ctn, [cabinetStep]).state;
     for (let i = 0; i < 6 && openCases(s).length > 0; i++) {
       s = advanceMonth(s, { decisions: [] }, ctn, [cabinetStep]).state;
@@ -178,7 +182,7 @@ describe('etapas graduais (PLANO_CAMPANHA.md Fase C6b)', () => {
 });
 
 describe('defesa e sorteio (PLANO_CAMPANHA.md Fase C6b)', () => {
-  it('defender custa capital e, com defesa total, segura o caso no mês', () => {
+  it('defender custa capital e, com a prova toda contestada, a acusação não se sustenta no mês', () => {
     const ctn = contentWith({ caso_perigo_max: 1, caso_lambda: 50, caso_defesa: 1 });
     const s = { ...withCase(ctn), monthIndex: 3 };
     const out = advanceMonth(s, { decisions: [defender('diretoria:banco#0')] }, ctn, [cabinetStep]);
@@ -219,7 +223,7 @@ describe('defesa e sorteio (PLANO_CAMPANHA.md Fase C6b)', () => {
     const out = advanceMonth(s0, { decisions: [] }, ctn, [cabinetStep]);
     const broken = { ...out.state, cases: [{ ...caseOf(out.state), stage: 'condenacao' as const }] };
     expect(checkInvariants(s0, broken, out.report, ctn)).toContain(
-      'diretoria:banco#0: condenação sem acusação anterior',
+      'diretoria:banco#0: julgamento sem acusação anterior',
     );
   });
 });

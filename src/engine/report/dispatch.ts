@@ -24,6 +24,7 @@ import { expectedAdhesion, REGION_NAMES, regionalIncidence } from '../regions/re
 import { createRng, seedRng } from '../rng';
 import { fiscalRoom } from '../economy/fiscal';
 import { currentNominalGdpMillions } from '../state';
+import { reformEstimate, type ReformEstimate } from '../taxation/incidence';
 import type { GameContent, GameState, ImpulseTarget, Proposal } from '../types';
 
 import { pct, pp } from './format';
@@ -66,6 +67,8 @@ export interface DispatchAdvice {
     approvalImpact: number;
     /** Fração da população dos estados que devem aderir (programas por convênio); `null` sem adesão. */
     adhesion: number | null;
+    /** Fases e estimativa por quintil da mudança tributária (PLANO_EXPANSAO EX-12); `null` sem tributo. */
+    taxEstimate: ReformEstimate | null;
   };
 }
 
@@ -171,6 +174,26 @@ function fazendaOpinion(
   }
 
   return { text: sentences.join(' '), tone };
+}
+
+/**
+ * Frases da Fazenda sobre uma mudança tributária (PLANO_EXPANSAO EX-12): fases, quando há mais de uma, e a
+ * estimativa por quintil, sempre marcada como estimativa.
+ */
+function taxSentences(estimate: ReformEstimate): string[] {
+  const sentences: string[] = [];
+  if (estimate.phases.length > 1) {
+    const when = (lag: number) => (lag === 0 ? 'na sanção' : `${lag} meses depois`);
+    const list = estimate.phases.map((p) => `${pct(p.annualRevenue, 2)} do PIB ${when(p.lagMonths)}`).join('; ');
+    sentences.push(`Em ${estimate.phases.length} fases: ${list} (antes da anterioridade).`);
+  }
+  const first = estimate.quintiles[0];
+  const last = estimate.quintiles[estimate.quintiles.length - 1];
+  sentences.push(
+    `Estimativa, não resultado: a renda dos 20% mais pobres varia ${pct(first.incomeChange, 2)} e a dos 20% mais ` +
+      `ricos ${pct(last.incomeChange, 2)}.`,
+  );
+  return sentences;
 }
 
 /** Folga da etapa em fração das cadeiras da Casa (compara Câmara e Senado na mesma escala). */
@@ -346,11 +369,19 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
   }
   if (adhesion) articulacao = { text: `${articulacao.text} ${adhesion.text}`, tone: articulacao.tone };
 
+  const taxEstimate = reformEstimate(policy, state, content);
+  const fazenda = fazendaOpinion(state, content, parts, policy);
   return {
-    fazenda: fazendaOpinion(state, content, parts, policy),
+    fazenda: taxEstimate ? { ...fazenda, text: [fazenda.text, ...taxSentences(taxEstimate)].join(' ') } : fazenda,
     articulacao,
     comunicacao: comunicacaoOpinion(state, policy, content, approvalImpact, factors.resultFactor < 1),
-    forecast: { annualFiscalImpact: parts.fiscal, votes, approvalImpact, adhesion: adhesion?.share ?? null },
+    forecast: {
+      annualFiscalImpact: parts.fiscal,
+      votes,
+      approvalImpact,
+      adhesion: adhesion?.share ?? null,
+      taxEstimate,
+    },
   };
 }
 

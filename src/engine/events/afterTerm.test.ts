@@ -137,6 +137,8 @@ describe('situação jurídica', () => {
           subjectId: 'a',
           blocId: 'centro',
           stage: 'condenacao',
+          irregular: true,
+          evidence: 0.9,
           openedMonth: 1,
           stageMonth: 3,
           accusedMonth: 2,

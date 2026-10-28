@@ -6,6 +6,7 @@ import {
   DIRECTIVE_ACTION_ID,
   DIRECTORATE_ACTION_ID,
   DEFEND_CASE_ACTION_ID,
+  FISCALIZE_CASE_ACTION_ID,
   DRAWER_ACTION_ID,
   NOMINATE_JUSTICE_ACTION_ID,
   BRAND_ACTION_ID,
@@ -89,6 +90,7 @@ export function validateActionTarget(
       return directorateOccupant(state, directorate) === occupant ? 'alvo_invalido' : null;
     }
     case DEFEND_CASE_ACTION_ID:
+    case FISCALIZE_CASE_ACTION_ID:
       return openCases(state).some((c) => c.id === params.caseId && c.openedMonth <= state.monthIndex)
         ? null
         : 'alvo_invalido';

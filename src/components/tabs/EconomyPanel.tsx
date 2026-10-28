@@ -1,7 +1,15 @@
 import { monthLabel } from '@/components/campaign/labels';
 import { Card, formatNumber, formatPercent, Text } from '@/components/ui';
 import { loadContent } from '@/content';
-import { MANDATORY_GROUPS, REVENUE_GROUPS, type MandatoryGroup, type RevenueGroup } from '@/engine';
+import {
+  fiscalYear,
+  MANDATORY_GROUPS,
+  subnationalTransitionAt,
+  taxBases,
+  type MandatoryGroup,
+  type RevenueGroup,
+  type TaxBaseRow,
+} from '@/engine';
 import type { ActiveCampaign } from '@/store';
 
 import { signedPercent, StatRow } from './StatRow';
@@ -24,10 +32,26 @@ const MANDATORY_LABEL: Record<MandatoryGroup, string> = {
   outras: 'Demais obrigatórias',
 };
 
+/** Linha de contexto de uma base: do legal ao líquido e a composição em tributos (PLANO_EXPANSAO EX-11). */
+function baseContext(row: TaxBaseRow): string {
+  const d = row.detail;
+  const parts = [`carga legal ${formatPercent(d.base, 2)}`];
+  if (d.policy !== 0) parts.push(`medidas ${signedPercent(d.policy, 2)}`);
+  parts.push(`ciclo ${signedPercent(d.cycle, 2)}`);
+  if (d.loss > 0) parts.push(`perda −${formatPercent(d.loss, 2)}`);
+  if (d.transfers > 0) parts.push(`repasses −${formatPercent(d.transfers, 2)}`);
+  const tributes = row.tributes.map((t) => `${t.name} ${formatPercent(t.share, 0)}`).join(', ');
+  return tributes ? `${parts.join(' · ')}. ${tributes} da carga legal` : parts.join(' · ');
+}
+
 /** Painel da aba Economia (GAME_DESIGN.md §8). Variações só existem para indicadores do protótipo. */
 export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
   const { state, previous, lastReport } = campaign;
-  const { calibration } = loadContent(state.scenarioId);
+  const content = loadContent(state.scenarioId);
+  const { calibration } = content;
+  const bases = taxBases(state, content);
+  const year = fiscalYear(state.monthIndex);
+  const ibs = subnationalTransitionAt(content.scenario.taxation, year);
   const e = state.economy;
   const f = e.fiscal;
   const ind = state.indicators;
@@ -157,10 +181,22 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
         />
       </Card>
 
-      <Card title="Receitas por grupo" subtitle="Líquidas de repasses a estados e municípios, % do PIB">
-        {REVENUE_GROUPS.map((g) => (
-          <StatRow key={g} label={REVENUE_LABEL[g]} value={formatPercent(f.revenueByGroup[g], 1)} context={PER_GDP} />
+      <Card
+        title="Receitas por base"
+        subtitle="Da carga legal ao caixa da União: medidas novas, ciclo, perda de conformidade e repasses a estados e municípios, % do PIB">
+        {bases.map((row) => (
+          <StatRow
+            key={row.group}
+            label={REVENUE_LABEL[row.group]}
+            value={formatPercent(row.net, 1)}
+            context={baseContext(row)}
+          />
         ))}
+        {ibs ? (
+          <Text variant="caption" color="textSecondary">
+            {`Fora do caixa da União, em ${year}: o IBS responde por ${formatPercent(ibs.ibs, 0)} do consumo de estados e municípios e ICMS/ISS pelos outros ${formatPercent(ibs.legacy, 0)} (LC 214/2025).`}
+          </Text>
+        ) : null}
         {f.revenueLoss > 0 && (
           <StatRow
             label="Perda de arrecadação"

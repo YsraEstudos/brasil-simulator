@@ -225,6 +225,105 @@
       }
     }
   },
+  "taxation": {
+    "status": "PROVISORIO",
+    "note": "Placeholder: composição de cada grupo de receita do governo central em tributos, ordem de grandeza do RTN 2024–2025 com a CBS substituindo PIS/Cofins em 2027. Divide só a carga legal do cenário; medidas novas aparecem à parte. Em 2027–2028 o IBS de teste (0,1%) é desprezado.",
+    "legalBasis": "CF arts. 150, 153, 195 e 20 §1º; EC 132/2023 e LC 214/2025 (reforma do consumo).",
+    "tributes": [
+      {
+        "id": "irpf",
+        "name": "IR das pessoas físicas",
+        "group": "renda",
+        "phases": [{ "fromYear": 2027, "share": 0.22 }],
+        "legalBasis": "CF art. 153, III"
+      },
+      {
+        "id": "irpj_irrf",
+        "name": "IR das empresas e retido na fonte",
+        "group": "renda",
+        "phases": [{ "fromYear": 2027, "share": 0.58 }],
+        "legalBasis": "CF art. 153, III"
+      },
+      {
+        "id": "csll",
+        "name": "CSLL",
+        "group": "renda",
+        "phases": [{ "fromYear": 2027, "share": 0.2 }],
+        "legalBasis": "CF art. 195, I, c"
+      },
+      {
+        "id": "contribuicao_previdenciaria",
+        "name": "Contribuições ao RGPS",
+        "group": "folha",
+        "phases": [{ "fromYear": 2027, "share": 1 }],
+        "legalBasis": "CF art. 195, I, a, e II"
+      },
+      {
+        "id": "cbs",
+        "name": "CBS",
+        "group": "consumo",
+        "phases": [{ "fromYear": 2027, "share": 0.84 }],
+        "legalBasis": "CF art. 195, V; LC 214/2025 (substitui PIS/Cofins em 2027)"
+      },
+      {
+        "id": "imposto_seletivo",
+        "name": "Imposto Seletivo",
+        "group": "consumo",
+        "phases": [{ "fromYear": 2027, "share": 0.08 }],
+        "legalBasis": "CF art. 153, VIII; LC 214/2025"
+      },
+      {
+        "id": "ipi_zfm",
+        "name": "IPI residual (Zona Franca)",
+        "group": "consumo",
+        "phases": [{ "fromYear": 2027, "share": 0.08 }],
+        "legalBasis": "CF art. 153, IV; ADCT art. 126"
+      },
+      {
+        "id": "iof",
+        "name": "IOF",
+        "group": "outras",
+        "phases": [{ "fromYear": 2027, "share": 0.45 }],
+        "legalBasis": "CF art. 153, V"
+      },
+      {
+        "id": "comercio_exterior",
+        "name": "Imposto de Importação e demais",
+        "group": "outras",
+        "phases": [{ "fromYear": 2027, "share": 0.35 }],
+        "legalBasis": "CF art. 153, I e II"
+      },
+      {
+        "id": "demais_receitas",
+        "name": "Demais receitas",
+        "group": "outras",
+        "phases": [{ "fromYear": 2027, "share": 0.2 }],
+        "legalBasis": "Leis diversas"
+      },
+      {
+        "id": "royalties_participacoes",
+        "name": "Royalties e participações especiais",
+        "group": "royalties",
+        "phases": [{ "fromYear": 2027, "share": 0.7 }],
+        "legalBasis": "CF art. 20, §1º"
+      },
+      {
+        "id": "dividendos_estatais",
+        "name": "Dividendos de estatais",
+        "group": "royalties",
+        "phases": [{ "fromYear": 2027, "share": 0.3 }],
+        "legalBasis": "Lei 6.404/1976"
+      }
+    ],
+    "subnationalTransition": [
+      { "fromYear": 2027, "ibsShare": 0 },
+      { "fromYear": 2029, "ibsShare": 0.1 },
+      { "fromYear": 2030, "ibsShare": 0.2 },
+      { "fromYear": 2031, "ibsShare": 0.3 },
+      { "fromYear": 2032, "ibsShare": 0.4 },
+      { "fromYear": 2033, "ibsShare": 1 }
+    ]
+  },
   "parameters": {},
   "blocs": [
     {
@@ -1087,6 +1186,8 @@
     "infraestrutura_credito_adicional",
     "iof_credito_reducao",
     "irpf_tabela",
+    "tributacao_dividendos",
+    "imposto_seletivo_ampliacao",
     "contingenciamento",
     "transferencia_renda_ampliacao",
     "seguranca_cooperacao",

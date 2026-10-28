@@ -932,6 +932,8 @@
     "infraestrutura_credito_adicional",
     "iof_credito_reducao",
     "irpf_tabela",
+    "tributacao_dividendos",
+    "imposto_seletivo_ampliacao",
     "contingenciamento",
     "transferencia_renda_ampliacao",
     "seguranca_cooperacao",

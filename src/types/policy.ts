@@ -68,6 +68,20 @@ export const impactChannelSchema = z.enum([
   'credibilidade_fiscal',
 ]);
 
+type ImpactChannel = z.infer<typeof impactChannelSchema>;
+/** Canais que aumentam tributo (PLANO_EXPANSAO EX-12). */
+export const RAISING_TAX_CHANNELS: readonly ImpactChannel[] = [
+  'receita_tributaria',
+  'receita_renda',
+  'receita_consumo',
+];
+/** Canais que mudam tributo, para cima ou para baixo. */
+export const TAX_CHANNELS: readonly ImpactChannel[] = [
+  ...RAISING_TAX_CHANNELS,
+  'desoneracao_renda',
+  'desoneracao_consumo',
+];
+
 export const riskKindSchema = z.enum(['atraso', 'sobrecusto', 'judicializacao', 'baixa_adesao', 'escandalo']);
 
 /** Forma de entrega usada pela carteira explícita da Fase 06. Ausente = política legada. */
@@ -198,6 +212,34 @@ export const policySchema = z
         path: ['timeline', 'expectedLegislativeMonths'],
         message: 'sem instrumento legislativo não há tramitação',
       });
+    }
+    // POLITICAL_RULES.md §5.3 (PLANO_EXPANSAO EX-12): tributo da União só por lei federal ou, nos impostos
+    // regulatórios, por decreto de alíquota (CF art. 153 §1º); aumento por lei respeita anterioridade ou noventena.
+    const taxImpacts = p.impacts.filter((i) => TAX_CHANNELS.includes(i.channel) && i.magnitude !== 0);
+    if (taxImpacts.length > 0) {
+      if (p.competence !== 'federal') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['competence'],
+          message: 'a União só legisla sobre tributo federal; tributo de estado ou município exige acordo federativo',
+        });
+      }
+      if (!legislative && !p.instruments.includes('decreto_aliquota')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['instruments'],
+          message: 'mudança de tributo exige lei (ou decreto de alíquota nos impostos regulatórios)',
+        });
+      }
+      const raises = taxImpacts.some((i) => RAISING_TAX_CHANNELS.includes(i.channel) && i.magnitude > 0);
+      const deferred = p.conditions.includes('anterioridade_anual') || p.conditions.includes('noventena');
+      if (raises && legislative && !deferred) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['conditions'],
+          message: 'aumento de tributo por lei exige anterioridade anual ou noventena (CF art. 150, III)',
+        });
+      }
     }
     // POLITICAL_RULES.md §3.1: MP não trata de orçamento, salvo crédito extraordinário
     if (

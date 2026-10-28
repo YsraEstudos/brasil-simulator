@@ -8,6 +8,8 @@ import gastosTributariosRevisao from '@/data/policies/gastos_tributarios_revisao
 import infraestruturaCreditoAdicional from '@/data/policies/infraestrutura_credito_adicional.json';
 import iofCreditoReducao from '@/data/policies/iof_credito_reducao.json';
 import irpfTabela from '@/data/policies/irpf_tabela.json';
+import impostoSeletivoAmpliacao from '@/data/policies/imposto_seletivo_ampliacao.json';
+import tributacaoDividendos from '@/data/policies/tributacao_dividendos.json';
 import reformaAdministrativa from '@/data/policies/reforma_administrativa.json';
 import reformaPrevidencia from '@/data/policies/reforma_previdencia.json';
 import salarioMinimoValorizacao from '@/data/policies/salario_minimo_valorizacao.json';
@@ -59,6 +61,8 @@ const RAW: readonly unknown[] = [
   infraestruturaCreditoAdicional,
   iofCreditoReducao,
   irpfTabela,
+  tributacaoDividendos,
+  impostoSeletivoAmpliacao,
   contingenciamento,
   transferenciaRendaAmpliacao,
   segurancaCooperacao,

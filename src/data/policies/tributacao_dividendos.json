@@ -1,0 +1,69 @@
+{
+  "id": "tributacao_dividendos",
+  "name": "Tributação de lucros e dividendos com redução do IR das empresas",
+  "summary": "Volta a tributar dividendos na pessoa física e, em contrapartida, reduz o IR das empresas. Entra em duas fases: a maior parte no primeiro exercício e o restante um ano depois. Por força da anterioridade anual, só vale a partir de janeiro do exercício seguinte à sanção.",
+  "area": "tributacao",
+  "competence": "federal",
+  "instruments": ["projeto_lei"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": -25000,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["aumento_receita"],
+  "timeline": {
+    "planningMonths": 1,
+    "expectedLegislativeMonths": 5,
+    "executionMonths": 0,
+    "maturationMonths": 0
+  },
+  "conditions": ["anterioridade_anual"],
+  "impacts": [
+    {
+      "channel": "receita_renda",
+      "magnitude": 20000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "desoneracao_renda",
+      "magnitude": 10000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "receita_renda",
+      "magnitude": 15000,
+      "lagMonths": 12
+    },
+    {
+      "channel": "credibilidade_fiscal",
+      "magnitude": 0.01,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": -0.005,
+      "lagMonths": 0
+    }
+  ],
+  "risks": [
+    {
+      "kind": "judicializacao",
+      "probability": 0.15
+    }
+  ],
+  "affected": {
+    "groups": ["alta_renda", "empresas"],
+    "sectors": ["servicos", "industria"],
+    "regions": ["nacional"]
+  },
+  "regional": {
+    "key": "renda_alta",
+    "scope": [],
+    "boost": {}
+  },
+  "position": {
+    "economic": -0.4,
+    "social": 0
+  },
+  "dataStatus": "PROVISORIO"
+}
