@@ -17,6 +17,7 @@ import type {
   MonthStep,
   UfClimate,
 } from '@/engine/types';
+import { STATE_SCHEMA_VERSION } from '@/engine/types';
 import { upgradeGameState } from '@/engine/upgrade';
 import { parseGameEvent, type EventEffect, type GameEvent } from '@/types/event';
 import { UF_IDS } from '@/types/regions';
@@ -529,7 +530,7 @@ describe('atualização v11 → v12: pendências ganham identidade (AI_INSTRUCTI
     const original = structuredClone(raw);
     const migrated = upgradeGameState(11, raw);
     expect(raw).toEqual(original);
-    expect(migrated.schemaVersion).toBe(12);
+    expect(migrated.schemaVersion).toBe(STATE_SCHEMA_VERSION);
     expect(migrated.events.pending).toEqual([
       { eventId: 'alta_petroleo', monthIndex: 3, instanceId: 'alta_petroleo#3' },
       { eventId: 'seca_safra_energia', monthIndex: 3, instanceId: 'seca_safra_energia#3' },

@@ -178,5 +178,22 @@ export function checkInvariants(
 
   if (next.society !== prev.society) errors.push(...checkSociety(next.society, next));
   errors.push(...checkPublicPolicies(next));
+
+  // STF (Fase C6d): cada vaga é do calendário do cenário, uma vez só; indicação em sabatina tem mês e perfil.
+  if (content && next.court) {
+    const calendar = new Set((content.scenario.institutions?.supremeCourt?.vacancies ?? []).map((v) => v.id));
+    const seen = new Set<string>();
+    for (const v of next.court.vacancies) {
+      if (!calendar.has(v.id)) errors.push(`vaga do STF fora do calendário: ${v.id}`);
+      if (seen.has(v.id)) errors.push(`vaga do STF repetida: ${v.id}`);
+      seen.add(v.id);
+      if (v.status === 'em_sabatina' && (v.hearingMonth === undefined || !v.nominee)) {
+        errors.push(`${v.id}: sabatina sem mês ou sem indicado`);
+      }
+      if (v.status === 'preenchida' && !(v.nominee && v.lastVote?.approved)) {
+        errors.push(`${v.id}: vaga preenchida sem aprovação do Senado`);
+      }
+    }
+  }
   return errors;
 }
