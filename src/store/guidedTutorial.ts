@@ -8,6 +8,7 @@ import {
   createInitialState,
   DEBATE_ACTION_ID,
   DIRECTIVE_ACTION_ID,
+  isCareerAction,
   NEGOTIATE_ACTION_ID,
   type GameContent,
   type GameState,
@@ -65,6 +66,8 @@ interface Checkpoint {
   state: GameState;
   lastResult: MonthResult | null;
   lastChoice: string | null;
+  lastDetail: string | null;
+  lastEffectCause: string | null;
   followupReports: MonthReport[];
   proposalId: string | null;
   pendingAdvance: PendingAdvance | null;
@@ -76,6 +79,13 @@ export interface GuidedTutorialState {
   lastResult: MonthResult | null;
   /** Rótulo da opção escolhida; a tela mostra o que foi escolhido, não só o que aconteceu. */
   lastChoice: string | null;
+  /** Detalhe da opção escolhida (custo, dotação, gestão), para a tela não depender só do relatório. */
+  lastDetail: string | null;
+  /**
+   * Causa que a escolha produz no relatório (`acao:<id>`, `debate`, `diretriz:<pasta>`, `proposta`,
+   * `evento:<id>`). A tela usa isso para não atribuir à escolha atual um efeito do mês anterior.
+   */
+  lastEffectCause: string | null;
   followupReports: MonthReport[];
   pendingAdvance: PendingAdvance | null;
   /** Proposta enviada no passo 5, usada pela negociação e pelo acompanhamento. */
@@ -101,6 +111,24 @@ function initial(content: GameContent, campaign: boolean): GameState {
 
 function decision(id: string, params: Record<string, string | number> = {}): MonthInput {
   return { decisions: [{ policyId: id, agendaCost: 1, params }] };
+}
+
+/** Marca da causa que a escolha produz no relatório; `null` quando a decisão não gera contribuição própria. */
+function choiceTag(input: MonthInput): string | null {
+  const first = input.decisions[0];
+  if (first) {
+    if (first.policyId === DEBATE_ACTION_ID) return 'debate';
+    if (first.policyId === DIRECTIVE_ACTION_ID) {
+      const ministryId = first.params?.ministryId;
+      return typeof ministryId === 'string' ? `diretriz:${ministryId}` : 'diretriz';
+    }
+    if (first.policyId === NEGOTIATE_ACTION_ID) return 'negociacao';
+    if (first.policyId === APPOINT_ACTION_ID) return 'indicacao';
+    if (isCareerAction(first.policyId)) return `acao:${first.policyId}`;
+    return 'proposta';
+  }
+  const eventId = input.eventChoices?.[0]?.eventId;
+  return eventId ? `evento:${eventId}` : null;
 }
 
 function campaignCost(content: GameContent, id: string): number | undefined {
@@ -200,7 +228,7 @@ export function lessonAt(
     ],
     [
       'Lei: enviar uma proposta',
-      'Uma proposta passa pelo Congresso antes da execução. O envio consome uma ação e não garante aprovação.',
+      'Uma proposta passa pelo Congresso antes da execução. O envio consome uma ação e não garante aprovação; se ela virar obra, a carteira mostra fase, gargalo e manutenção.',
       'No jogo: Gabinete › Políticas públicas › Propostas ao Congresso.',
     ],
     [
@@ -326,10 +354,10 @@ export function lessonAt(
       options: [
         proposalOption(
           content,
-          'infraestrutura_credito_adicional',
-          'infra',
-          'Propor crédito para infraestrutura',
-          'Envia um projeto de crédito ao Congresso.',
+          'projeto_conectividade_publica',
+          'conectividade',
+          'Propor conectividade para escolas',
+          'Envia ao Congresso um projeto de conectividade, com licitação e obra rastreáveis.',
         ),
         proposalOption(
           content,
@@ -464,6 +492,8 @@ function checkpointOf(state: GuidedTutorialState): Checkpoint {
     state: state.state,
     lastResult: state.lastResult,
     lastChoice: state.lastChoice,
+    lastDetail: state.lastDetail,
+    lastEffectCause: state.lastEffectCause,
     followupReports: state.followupReports,
     proposalId: state.proposalId,
     pendingAdvance: state.pendingAdvance,
@@ -477,6 +507,8 @@ export function createGuidedTutorial(content: GameContent) {
     state: initial(content, true),
     lastResult: null,
     lastChoice: null,
+    lastDetail: null,
+    lastEffectCause: null,
     followupReports: [],
     pendingAdvance: null,
     proposalId: null,
@@ -490,7 +522,13 @@ export function createGuidedTutorial(content: GameContent) {
       if (!option) throw new RangeError('Escolha de tutorial inválida.');
       const result = advanceMonth(get().state, option.input, content);
       if (result.report.rejected.length > 0) {
-        set({ lastResult: result, lastChoice: option.label, followupReports: [] });
+        set({
+          lastResult: result,
+          lastChoice: option.label,
+          lastDetail: option.detail,
+          lastEffectCause: choiceTag(option.input),
+          followupReports: [],
+        });
         return result;
       }
       const previous = checkpointOf(get());
@@ -508,6 +546,8 @@ export function createGuidedTutorial(content: GameContent) {
         state: nextStep === 3 ? initial(content, false) : result.state,
         lastResult: result,
         lastChoice: option.label,
+        lastDetail: option.detail,
+        lastEffectCause: choiceTag(option.input),
         followupReports: [],
         proposalId,
         pendingAdvance,
@@ -539,6 +579,8 @@ export function createGuidedTutorial(content: GameContent) {
         state: initial(content, true),
         lastResult: null,
         lastChoice: null,
+        lastDetail: null,
+        lastEffectCause: null,
         followupReports: [],
         pendingAdvance: null,
         proposalId: null,
@@ -584,7 +626,7 @@ export function tutorialContentIssues(content: GameContent): string[] {
     need(policy !== undefined && policy.delivery === 'rotina', `rotina ausente: ${id}`);
     need(content.scenario.policies.includes(id), `rotina fora do cenário: ${id}`);
   }
-  for (const id of ['infraestrutura_credito_adicional', 'transferencia_renda_ampliacao']) {
+  for (const id of ['projeto_conectividade_publica', 'transferencia_renda_ampliacao']) {
     need(content.policies[id] !== undefined, `proposta ausente: ${id}`);
     need(content.scenario.policies.includes(id), `proposta fora do cenário: ${id}`);
   }

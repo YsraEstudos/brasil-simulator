@@ -58,7 +58,13 @@ const PLAYER_CAUSE_PREFIXES = ['acao:', 'debate', 'diretriz:', 'proposta:', 'acr
 
 function isPlayerCause(cause: string, answeredEvents: ReadonlySet<string>): boolean {
   if (PLAYER_CAUSE_PREFIXES.some((prefix) => cause.startsWith(prefix))) return true;
-  if (cause.startsWith('evento:')) return answeredEvents.has(cause.slice('evento:'.length));
+  if (cause.startsWith('evento:')) {
+    // A causa do motor é `evento:<id>_<mês>`; o conjunto guarda só o id do evento respondido.
+    const rest = cause.slice('evento:'.length);
+    for (const eventId of answeredEvents) {
+      if (rest === eventId || rest.startsWith(`${eventId}_`)) return true;
+    }
+  }
   return false;
 }
 
@@ -101,6 +107,15 @@ export function effectLine(effect: TutorialEffect): string {
     INDICATOR_META[effect.indicator as IndicatorKey]?.label ??
     effect.indicator;
   return `${effect.label} · ${name} ${formatPointsDelta(effect.delta)}`;
+}
+
+/**
+ * A causa pertence à escolha atual? `diretriz:saude` casa `diretriz:saude:...`; `evento:x` casa
+ * `evento:x_8`; `proposta` casa `proposta:<id>`. Evita atribuir à escolha de agora um efeito do mês anterior.
+ */
+export function matchesChoice(effect: TutorialEffect, cause: string | null): boolean {
+  if (!cause) return false;
+  return effect.cause === cause || effect.cause.startsWith(`${cause}:`) || effect.cause.startsWith(`${cause}_`);
 }
 
 export interface TutorialElection {
@@ -181,6 +196,8 @@ export interface TutorialProject {
   budget: string;
   bottleneck: string;
   maintenance: string;
+  /** Manutenção só é cobrada em operação; antes disso, o cartão não deve sugerir custeio zerado. */
+  operating: boolean;
   commitments: string | null;
 }
 
@@ -196,6 +213,7 @@ export function tutorialProject(state: GameState, content: GameContent, project:
     budget: `${formatMoneyMillions(project.spentMillions)} de ${formatMoneyMillions(project.budgetMillions)}`,
     bottleneck: PROJECT_BOTTLENECK_LABEL[project.bottleneck ?? 'nenhum'],
     maintenance: formatMoneyMillions(project.maintenanceMillions),
+    operating: project.phase === 'operacao',
     commitments:
       total > 0
         ? `${formatMoneyMillions(total)} de saldo previsto em ${commitments.length} ${commitments.length === 1 ? 'ano' : 'anos'}`

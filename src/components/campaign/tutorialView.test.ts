@@ -13,6 +13,7 @@ import type { PublicProject } from '@/engine/publicPolicies/types';
 
 import {
   effectLine,
+  matchesChoice,
   splitEffects,
   tutorialElection,
   tutorialProject,
@@ -43,8 +44,8 @@ describe('leitura do tutorial (PLANO_CAMPANHA.md Fase C8.2)', () => {
           contribution('acao:caravana_regional', 'approval', 0.002, 'Caravana regional'),
           contribution('acao:caravana_regional', 'careerRecognition', 0.05, 'Caravana regional'),
           contribution('debate:propositiva', 'careerValence', 0.01, 'Debate'),
-          contribution('evento:cpi', 'approval', -0.003, 'CPI'),
-          contribution('evento:clima', 'approval', -0.001, 'Clima'),
+          contribution('evento:cpi_8', 'approval', -0.003, 'CPI'),
+          contribution('evento:clima_8', 'approval', -0.001, 'Clima'),
           contribution('choque:petroleo', 'inflation12m', 0.004, 'Petróleo'),
         ],
         [
@@ -58,7 +59,7 @@ describe('leitura do tutorial (PLANO_CAMPANHA.md Fase C8.2)', () => {
       'acao:caravana_regional',
       'debate:propositiva',
       'acao:caravana_regional',
-      'evento:cpi',
+      'evento:cpi_8',
     ]);
     const approval = effects.own.find((effect) => effect.indicator === 'approval')!;
     expect(approval.delta).toBeCloseTo(0.003, 12);
@@ -69,7 +70,18 @@ describe('leitura do tutorial (PLANO_CAMPANHA.md Fase C8.2)', () => {
       'CPI',
     ]);
     // O evento automático não entra como escolha do jogador; o choque e o clima ficam no resto do mês.
-    expect(effects.others.map((effect) => effect.cause).sort()).toEqual(['choque:petroleo', 'evento:clima']);
+    expect(effects.others.map((effect) => effect.cause).sort()).toEqual(['choque:petroleo', 'evento:clima_8']);
+  });
+
+  it('atribui só a causa da escolha atual, não o efeito do mês anterior', () => {
+    const effect = (cause: string): TutorialEffect => ({ cause, indicator: 'approval', label: cause, delta: 0.001 });
+    expect(matchesChoice(effect('acao:caravana_regional'), 'acao:caravana_regional')).toBe(true);
+    expect(matchesChoice(effect('debate:propositiva'), 'debate')).toBe(true);
+    expect(matchesChoice(effect('diretriz:saude:rotina_atencao_basica:0:1'), 'diretriz:saude')).toBe(true);
+    expect(matchesChoice(effect('proposta:projeto_1'), 'proposta')).toBe(true);
+    expect(matchesChoice(effect('evento:cpi_8'), 'evento:cpi')).toBe(true);
+    expect(matchesChoice(effect('diretriz:cidades:rotina_defesa_civil:0:1'), 'diretriz:saude')).toBe(false);
+    expect(matchesChoice(effect('acao:comicio_nacional'), null)).toBe(false);
   });
 
   it('descreve o efeito com o nome público do indicador e o sinal', () => {
@@ -152,6 +164,7 @@ describe('leitura do tutorial (PLANO_CAMPANHA.md Fase C8.2)', () => {
     expect(view.budget).toBe('R$ 300 mi de R$ 900 mi');
     expect(view.bottleneck).toBe('orçamento disponível');
     expect(view.maintenance).toBe('R$ 12 mi');
+    expect(view.operating).toBe(false);
     expect(view.commitments).toMatch(/de saldo previsto em \d+ ano/);
   });
 });

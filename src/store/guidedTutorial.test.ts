@@ -116,6 +116,27 @@ describe('tutorial guiado isolado', () => {
     expect(tutorialContentIssues(content)).toEqual([]);
   });
 
+  it('marca a causa da escolha para a tela não atribuir efeito de outro mês', () => {
+    const tutorial = createGuidedTutorial(content);
+    const tags: string[] = [];
+    for (let step = 0; step < TUTORIAL_STEPS; step++) {
+      if (tutorial.getState().pendingAdvance) tutorial.getState().advance();
+      tutorial.getState().choose(tutorial.getState().lesson()!.options[0]!.id);
+      tags.push(tutorial.getState().lastEffectCause!);
+      expect(tutorial.getState().lastDetail).toBeTruthy();
+    }
+    expect(tags).toEqual([
+      'acao:caravana_regional',
+      'debate',
+      'acao:comicio_nacional',
+      'diretriz:saude',
+      'proposta',
+      'negociacao',
+      'evento:fase07_inst_cpi_instalada',
+      'indicacao',
+    ]);
+  });
+
   it('guarda um tutorial por cenário e permite limpar', () => {
     clearGuidedTutorialCache();
     const first = guidedTutorialFor(content);

@@ -4,7 +4,7 @@ import { AccessibilityInfo, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from 'zustand';
 
-import { Button, Card, Text } from '@/components/ui';
+import { Button, Card, formatMoneyMillions, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { useTheme } from '@/hooks/use-theme';
@@ -17,8 +17,15 @@ import {
   tutorialContentIssues,
 } from '@/store/guidedTutorial';
 
-import { monthLabel, readableIsoDates, REJECTION_REASON_LABEL } from './labels';
-import { effectLine, splitEffects, tutorialElection, tutorialProject, tutorialStatus } from './tutorialView';
+import { monthLabel, PROPOSAL_STATUS_LABEL, readableIsoDates, REJECTION_REASON_LABEL } from './labels';
+import {
+  effectLine,
+  matchesChoice,
+  splitEffects,
+  tutorialElection,
+  tutorialProject,
+  tutorialStatus,
+} from './tutorialView';
 
 /**
  * Tutorial jogável (PLANO_CAMPANHA.md Fase C8.2). A tela mostra, em cada passo: a situação atual (números que a
@@ -34,6 +41,8 @@ export function GuidedTutorialScreen() {
   const state = useStore(tutorial, (store) => store.state);
   const result = useStore(tutorial, (store) => store.lastResult);
   const lastChoice = useStore(tutorial, (store) => store.lastChoice);
+  const lastDetail = useStore(tutorial, (store) => store.lastDetail);
+  const lastEffectCause = useStore(tutorial, (store) => store.lastEffectCause);
   const followups = useStore(tutorial, (store) => store.followupReports);
   const pendingAdvance = useStore(tutorial, (store) => store.pendingAdvance);
   const proposalId = useStore(tutorial, (store) => store.proposalId);
@@ -56,10 +65,12 @@ export function GuidedTutorialScreen() {
 
   const status = tutorialStatus(state, content, result?.report);
   const effects = result ? splitEffects(result.report) : null;
+  const own = effects && lastEffectCause ? effects.own.filter((effect) => matchesChoice(effect, lastEffectCause)) : [];
   const election = result ? tutorialElection(result.state, content) : null;
   const notes = (result?.report.notes ?? []).filter((note) => !(election && note.startsWith('Eleição:')));
   const proposal = proposalId ? state.proposals.find((item) => item.id === proposalId) : undefined;
   const project = state.publicPolicies.projects[0];
+  const directive = step === 4 ? state.publicPolicies.directives.at(-1) : undefined;
 
   const reset = () => {
     clearGuidedTutorialCache();
@@ -116,6 +127,11 @@ export function GuidedTutorialScreen() {
       {result && (
         <View accessibilityLiveRegion="polite">
           <Card title="Resultado do mês anterior" subtitle={lastChoice ? `Você escolheu: ${lastChoice}` : undefined}>
+            {lastDetail && (
+              <Text variant="caption" color="textSecondary">
+                {lastDetail}
+              </Text>
+            )}
             {result.report.rejected.map((item, index) => (
               <Text key={`${item.decision.policyId}-${index}`} color="negative">
                 {`Escolha recusada: ${REJECTION_REASON_LABEL[item.reason]}. Tente a outra alternativa.`}
@@ -156,20 +172,26 @@ export function GuidedTutorialScreen() {
                 </Text>
               );
             })}
-            {effects && effects.own.length > 0 && (
+            {own.length > 0 && (
               <View style={styles.block}>
                 <Text variant="label">O que a sua escolha mudou</Text>
-                {effects.own.slice(0, 6).map((effect) => (
+                {own.slice(0, 6).map((effect) => (
                   <Text key={`${effect.cause}|${effect.indicator}`} variant="caption">
                     {effectLine(effect)}
                   </Text>
                 ))}
-                {effects.own.length > 6 && (
+                {own.length > 6 && (
                   <Text variant="caption" color="textSecondary">
-                    {`e mais ${effects.own.length - 6} efeito${effects.own.length - 6 === 1 ? '' : 's'} da mesma escolha.`}
+                    {`e mais ${own.length - 6} efeito${own.length - 6 === 1 ? '' : 's'} da mesma escolha.`}
                   </Text>
                 )}
               </View>
+            )}
+            {effects && lastEffectCause && own.length === 0 && (
+              <Text variant="caption" color="textSecondary">
+                Esta escolha não muda os indicadores neste mês: o efeito aparece na tramitação, na relação com os blocos
+                ou na execução.
+              </Text>
             )}
             {effects && effects.others.length > 0 && (
               <Text variant="caption" color="textSecondary">
@@ -190,6 +212,24 @@ export function GuidedTutorialScreen() {
             </Text>
           </Card>
         </View>
+      )}
+      {directive && (
+        <Card
+          title="Diretriz registrada"
+          subtitle="A execução começa no mês seguinte e depende do espaço fiscal de cada mês.">
+          <Text>
+            {`${content.policies[directive.policyId]?.name ?? directive.policyId} · ${formatMoneyMillions(directive.annualMillions)}/ano em ${directive.year}`}
+          </Text>
+        </Card>
+      )}
+      {step === 5 && proposal && (
+        <Card
+          title="Proposta enviada"
+          subtitle="A tramitação leva meses; a votação aparece no período, não no mesmo mês.">
+          <Text>
+            {`${content.policies[proposal.policyId]?.name ?? proposal.policyId} · ${PROPOSAL_STATUS_LABEL[proposal.status] ?? proposal.status}`}
+          </Text>
+        </Card>
       )}
       {followups.length > 0 && (
         <Card
@@ -232,7 +272,7 @@ export function GuidedTutorialScreen() {
                   {`${view.phase} · ${view.progress} · ${view.budget}`}
                 </Text>
                 <Text variant="caption" color="textSecondary">
-                  {`Gargalo: ${view.bottleneck} · manutenção ${view.maintenance}/ano`}
+                  {`Gargalo: ${view.bottleneck} · ${view.operating ? `manutenção ${view.maintenance}/ano` : 'manutenção começa na operação'}`}
                 </Text>
                 {view.commitments && (
                   <Text variant="caption" color="textSecondary">
