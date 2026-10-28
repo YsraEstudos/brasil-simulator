@@ -85,7 +85,7 @@ export {
 } from './congress/congress';
 export { currentHouse, pautaOccupancy, pautaSlots, reissueBarredPolicies } from './proposals/proposals';
 export { fiscalRoom } from './economy/fiscal';
-export { BC_BOARD_SIZE, boardShare } from './economy/monetary';
+export { BC_BOARD_SIZE, boardShare, pressureForecast, type PressureForecast } from './economy/monetary';
 export { activeImpulses, isActive, pruneImpulses, sumActive } from './impulses';
 export { checkInvariants } from './invariants';
 export {
