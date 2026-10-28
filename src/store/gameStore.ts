@@ -30,6 +30,7 @@ import {
   createInitialState,
   inaugurationTurnIndex,
   turnIndexOf,
+  PROFILE_PRESETS,
   type Decision,
   type ElectionResult,
   type GameState,
@@ -351,10 +352,16 @@ export function createGameStore(deps: GameStoreDeps) {
         if (!active || !career)
           return { ok: false, reason: 'falha', error: 'Não há campanha eleitoral para recomeçar.' };
         const suffix = ' · nova tentativa';
+        const profileId = PROFILE_PRESETS.find(
+          (preset) =>
+            preset.economic === active.state.government.profile.economic &&
+            preset.social === active.state.government.profile.social,
+        )?.id;
         return get().newCampaign({
           name: `${active.name.slice(0, CAMPAIGN_NAME_MAX - suffix.length)}${suffix}`,
           difficulty: active.state.difficulty,
           scenarioId: active.state.scenarioId,
+          profileId,
           startPoint: career.startPoint,
           careerProfileId: career.profileId,
         });

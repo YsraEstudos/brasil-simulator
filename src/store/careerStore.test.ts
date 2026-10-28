@@ -164,7 +164,15 @@ describe('derrota na eleição e nova tentativa (PLANO_CAMPANHA.md Fase C5, D-C1
   it('a derrota encerra e sobrevive ao reinício; a nova tentativa começa outra corrida e mantém a perdida', async () => {
     const launchApp = await device();
     let app = await launchApp();
-    await app.getState().newCampaign({ name: 'Derrota', difficulty: 'realismo', startPoint: 'corrida' });
+    await app.getState().newCampaign({
+      name: 'Derrota',
+      difficulty: 'realismo',
+      startPoint: 'corrida',
+      profileId: 'esquerda',
+      careerProfileId: 'ex_governador',
+      seed: 123,
+    });
+    const originalProfile = app.getState().active!.state.government.profile;
     const id = app.getState().active!.id;
     const content = loadContent(DEFAULT_SCENARIO_ID);
     const electionTurn = careerSchedule(content, 'corrida').findIndex((t) => t.stage === 'eleicao');
@@ -197,7 +205,8 @@ describe('derrota na eleição e nova tentativa (PLANO_CAMPANHA.md Fase C5, D-C1
     expect(next.id).not.toBe(id);
     expect(next.name).toBe('Derrota · nova tentativa');
     expect(next.state.difficulty).toBe('realismo');
-    expect(next.state.career).toMatchObject({ stage: 'corrida', turnIndex: 0 });
+    expect(next.state.government.profile).toEqual(originalProfile);
+    expect(next.state.career).toMatchObject({ stage: 'corrida', turnIndex: 0, profileId: 'ex_governador' });
     expect(app.getState().campaigns.map((c) => c.id)).toEqual(expect.arrayContaining([id, next.id]));
   });
 });

@@ -116,10 +116,13 @@ export function breakTie(
   key: (string | number)[],
 ): { order: string[]; rule: 'idade' | 'sorteio' } {
   const rng = keyedRng(seed, key);
-  const lots = Object.fromEntries(tied.map((id) => [id, rng.float()]));
-  const age = (id: string) => ages[id] ?? -1;
-  const order = [...tied].sort((a, b) => age(b) - age(a) || lots[a] - lots[b]);
-  const decidedByAge = ages[order[0]] !== undefined && age(order[0]) > age(order[1]);
+  const lots = Object.fromEntries([...tied].sort().map((id) => [id, rng.float()]));
+  const lotteryOrder = [...tied].sort((a, b) => lots[a] - lots[b] || (a < b ? -1 : a > b ? 1 : 0));
+  if (tied.some((id) => ages[id] === undefined)) return { order: lotteryOrder, rule: 'sorteio' };
+
+  const age = (id: string) => ages[id]!;
+  const order = [...tied].sort((a, b) => age(b) - age(a) || lots[a] - lots[b] || (a < b ? -1 : a > b ? 1 : 0));
+  const decidedByAge = age(order[0]) > age(order[1]);
   return { order, rule: decidedByAge ? 'idade' : 'sorteio' };
 }
 
