@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { GameState } from './types';
 import { isProfilePresetId, type ProfilePresetId } from './politics/calibration';
+import { isModuleId, type ModuleId } from './modules';
 
 export const institutionalRulesSchema = z.enum(['brasileiras', 'simplificadas']);
 export type InstitutionalRules = z.infer<typeof institutionalRulesSchema>;
@@ -88,7 +89,7 @@ export const CHALLENGE_CALIBRATION = {
 /** Contrato serializável do experimento inicial, com versão própria. */
 export const campaignConfigSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     scenarioId: z.string().min(1),
     scenarioContentVersion: z.string().min(1),
     difficulty: z.enum(['casual', 'estrategica', 'realismo']),
@@ -100,7 +101,9 @@ export const campaignConfigSchema = z
     institutionalRules: institutionalRulesSchema,
     assistance: assistanceSchema,
     careerProfileId: z.string().min(1).optional(),
+    /** Módulos opcionais ligados (ver modules.ts); o núcleo não é listado e está sempre ligado. */
+    modules: z.array(z.custom<ModuleId>(isModuleId)),
     seed: z.number().int().min(0).max(0xffff_ffff),
   })
   .strict();
-export type CampaignConfigV1 = z.infer<typeof campaignConfigSchema>;
+export type CampaignConfigV2 = z.infer<typeof campaignConfigSchema>;

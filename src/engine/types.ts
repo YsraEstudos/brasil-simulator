@@ -10,7 +10,7 @@ import type { BudgetLawDraft, PublicPolicyState } from './publicPolicies/types';
 import type { CampaignFinance, ExpandedFinance, ScheduledReceipt, FinanceExpenditure } from './career/finance';
 import type { DebtCommitment } from './career/commitments';
 import type { IllicitState } from './career/illicit';
-import type { CampaignConfigV1 } from './campaignConfig';
+import type { CampaignConfigV2 } from './campaignConfig';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
 export const STATE_SCHEMA_VERSION = 19;
@@ -708,7 +708,7 @@ export interface GameState {
   difficulty: Difficulty;
   seed: number;
   /** Escolhas originais, imutáveis durante a partida, para reproduzir sua criação. */
-  initialCampaignConfiguration: CampaignConfigV1;
+  initialCampaignConfiguration: CampaignConfigV2;
   rng: RngState;
   /** Mês que está para ser jogado (0 = jan/2027). */
   monthIndex: number;

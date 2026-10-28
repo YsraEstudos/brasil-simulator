@@ -300,6 +300,7 @@ describe('checkNewCampaignInput', () => {
         challenge: { economicPressure: 0.5, oppositionStrength: 0.5, coalitionStability: 0.5, crisisFrequency: 0.5 },
         institutionalRules: 'brasileiras',
         assistance: { informationClarity: 'padrao', hints: true },
+        modules: ['clima_detalhado', 'noticias'],
         seed: null,
       },
     });
@@ -325,6 +326,7 @@ describe('checkNewCampaignInput', () => {
         challenge: { economicPressure: 0.5, oppositionStrength: 0.5, coalitionStability: 0.5, crisisFrequency: 0.5 },
         institutionalRules: 'brasileiras',
         assistance: { informationClarity: 'padrao', hints: true },
+        modules: ['clima_detalhado', 'noticias'],
         seed: 7,
       },
     });

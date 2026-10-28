@@ -1,4 +1,5 @@
 import type { Scenario } from '../types/scenario';
+import { DEFAULT_ENABLED_MODULES, normalizeModules, type ModuleId } from './modules';
 import {
   assistanceSchema,
   campaignConfigSchema,
@@ -114,6 +115,8 @@ export interface NewCampaign {
   challenge?: ChallengeConfig;
   institutionalRules?: InstitutionalRules;
   assistance?: AssistanceConfig;
+  /** Módulos opcionais ligados; padrão `DEFAULT_ENABLED_MODULES`. O núcleo não é configurável. */
+  modules?: readonly ModuleId[];
 }
 
 export function createInitialState(c: NewCampaign): GameState {
@@ -151,7 +154,7 @@ export function createInitialState(c: NewCampaign): GameState {
     difficulty: c.difficulty,
     seed: c.seed,
     initialCampaignConfiguration: campaignConfigSchema.parse({
-      schemaVersion: 1,
+      schemaVersion: 2,
       scenarioId: scenario.id,
       scenarioContentVersion: scenario.version,
       difficulty: c.difficulty,
@@ -166,6 +169,7 @@ export function createInitialState(c: NewCampaign): GameState {
       challenge,
       institutionalRules,
       assistance,
+      modules: normalizeModules(c.modules ?? DEFAULT_ENABLED_MODULES),
       ...(c.startPoint && c.startPoint !== 'posse'
         ? { careerProfileId: c.careerProfileId ?? scenario.career?.profiles[0]?.id }
         : {}),

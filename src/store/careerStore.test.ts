@@ -174,6 +174,7 @@ describe('derrota na eleição e nova tentativa (PLANO_CAMPANHA.md Fase C5, D-C1
       challenge: { economicPressure: 0.8, oppositionStrength: 0.7, coalitionStability: 0.3, crisisFrequency: 0.2 },
       institutionalRules: 'simplificadas',
       assistance: { informationClarity: 'incerta', hints: false },
+      modules: ['noticias'],
       seed: 123,
     });
     const original = app.getState().active!;
@@ -182,9 +183,12 @@ describe('derrota na eleição e nova tentativa (PLANO_CAMPANHA.md Fase C5, D-C1
     expect(await app.getState().retryCareer('same')).toMatchObject({ ok: true });
     const replay = app.getState().active!.state;
     expect(replay).toEqual(original.state);
+    // Nenhuma escolha do NOVO JOGO é descartada na nova tentativa: os módulos opcionais voltam iguais.
+    expect(replay.initialCampaignConfiguration.modules).toEqual(['noticias']);
     expect(await app.getState().retryCareer('new')).toMatchObject({ ok: true });
     const next = app.getState().active!.state;
     expect(next.seed).not.toBe(original.state.seed);
+    expect(next.initialCampaignConfiguration.modules).toEqual(['noticias']);
     expect(next.government.profile).toEqual(original.state.government.profile);
     expect(next.career?.profileId).toBe('ex_governador');
   });

@@ -51,6 +51,43 @@ export {
   type InstitutionalRules,
   type AssistanceConfig,
 } from './campaignConfig';
+export {
+  DEFAULT_ENABLED_MODULES,
+  enabledModules,
+  isModuleId,
+  MODULE_IDS,
+  MODULES,
+  moduleEnabled,
+  moduleSpec,
+  normalizeModules,
+  type ModuleClass,
+  type ModuleId,
+  type ModuleSpec,
+} from './modules';
+export {
+  buildPublication,
+  canonicalJson,
+  checkPublications,
+  currentRevisionOf,
+  publicationDigest,
+  revisePublication,
+  type JsonObject,
+  type JsonValue,
+  type Publication,
+  type PublicationDraft,
+  type PublicationKind,
+  type PublicationPrecision,
+  type PublicationRevision,
+  type PublicationRevisionDraft,
+  type PublicationSource,
+} from './information/publication';
+export {
+  NEWS_METHOD_VERSION,
+  NEWS_SOURCE,
+  newsPublication,
+  POLL_SOURCE,
+  pollPublication,
+} from './information/adapters';
 export { ELECTION_NOTES, electedOutcome, runElection, tallyRound } from './career/election';
 export { canReachInauguration, inaugurationNews } from './career/inauguration';
 export {

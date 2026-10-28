@@ -13,7 +13,7 @@ describe('situações iniciais', () => {
     const content = loadContent(DEFAULT_SCENARIO_ID);
     const state = createInitialState({ content, difficulty: 'estrategica', seed: 31 });
     const config = state.initialCampaignConfiguration;
-    expect(config.schemaVersion).toBe(1);
+    expect(config.schemaVersion).toBe(2);
     expect(campaignConfigSchema.parse(JSON.parse(JSON.stringify(config)))).toEqual(config);
     expect(
       campaignConfigSchema.safeParse({ ...config, challenge: { ...config.challenge, crisisFrequency: 2 } }).success,

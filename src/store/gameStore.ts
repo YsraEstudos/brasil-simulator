@@ -302,6 +302,7 @@ export function createGameStore(deps: GameStoreDeps) {
           challenge,
           institutionalRules,
           assistance,
+          modules,
           careerProfileId,
         } = checked.input;
         set({ busy: true, error: undefined });
@@ -324,6 +325,7 @@ export function createGameStore(deps: GameStoreDeps) {
               challenge,
               institutionalRules,
               assistance,
+              modules,
               careerProfileId,
             });
             await createCampaign(d, {
@@ -390,6 +392,7 @@ export function createGameStore(deps: GameStoreDeps) {
           challenge: config.challenge,
           institutionalRules: config.institutionalRules,
           assistance: config.assistance,
+          ...(config.modules ? { modules: [...config.modules] } : {}),
           careerProfileId: config.careerProfileId,
           seed,
         });
