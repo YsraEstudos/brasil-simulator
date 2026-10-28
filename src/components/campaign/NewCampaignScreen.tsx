@@ -1,5 +1,5 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   BackHandler,
@@ -485,7 +485,7 @@ function NewCampaignForm({
                     },
                   });
                 return (
-                  <View key={control.key} style={styles.effects}>
+                  <View key={control.key} style={[styles.effects, { borderColor: colors.border }]}>
                     <Text variant="label">{`${control.label}: ${Math.round(value * 100)} de 100`}</Text>
                     <Text variant="caption" color="textSecondary">
                       {control.detail}
@@ -511,16 +511,23 @@ function NewCampaignForm({
           </Animated.View>
 
           <Animated.View entering={enterAt(2)} layout={LAYOUT}>
-            <Card title="Módulos opcionais" subtitle="Desligar o aprofundamento não remove a causa econômica elementar">
-              {MODULES.map((module) => {
+            <Card
+              title="Módulos opcionais"
+              subtitle="Desligar um módulo não apaga o essencial: clima, economia e relatório seguem; o que some é o detalhe.">
+              {MODULES.map((module, index) => {
                 const on = (form.modules ?? DEFAULT_ENABLED_MODULES).includes(module.id);
                 return (
-                  <Fragment key={module.id}>
+                  // O primeiro item não precisa de filete: o subtítulo já fecha a introdução do cartão (o cartão
+                  // "Dificuldade" usa o filete para separar um parágrafo de intro do bloco seguinte; aqui não há
+                  // parágrafo). Dos demais em diante, o filete separa um módulo do outro.
+                  <View
+                    key={module.id}
+                    style={[styles.effects, { borderColor: colors.border }, index === 0 && styles.firstBlock]}>
                     <Button
                       label={`${module.name} · ${on ? 'ligado' : 'desligado'}`}
                       variant="secondary"
                       disabled={locked}
-                      accessibilityHint={module.description}
+                      accessibilityHint={`Toque para ${on ? 'desligar' : 'ligar'}`}
                       onPress={() =>
                         update({
                           modules: on
@@ -533,7 +540,7 @@ function NewCampaignForm({
                     <Text variant="caption" color="textSecondary">
                       {module.description}
                     </Text>
-                  </Fragment>
+                  </View>
                 );
               })}
             </Card>
@@ -856,6 +863,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.one,
     gap: Spacing.one,
   },
+  /** Primeiro item de uma lista de blocos: sem o filete do topo (o subtítulo já fecha a introdução). */
+  firstBlock: { borderTopWidth: 0, paddingTop: 0, marginTop: 0 },
   effectRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
   features: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one, marginTop: Spacing.one },
   chip: {

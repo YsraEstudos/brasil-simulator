@@ -265,7 +265,7 @@ export interface SetupSummary {
   challenge: string;
   institutionalRules: string;
   assistance: string;
-  /** Módulos opcionais ligados; "Só o núcleo" quando nenhum. */
+  /** Módulos opcionais ligados; "Nenhum" quando nenhum. */
   modules: string;
   careerProfile: string | null;
   duration: string;
@@ -299,7 +299,7 @@ export function setupSummary(form: CampaignSetupForm): SetupSummary {
     modules: (() => {
       const on = normalizeModules(form.modules ?? DEFAULT_ENABLED_MODULES);
       const names = MODULES.filter((module) => on.includes(module.id)).map((module) => module.name);
-      return names.length > 0 ? names.join(' · ') : 'Só o núcleo';
+      return names.length > 0 ? names.join(' · ') : 'Nenhum';
     })(),
     careerProfile:
       form.startPoint && form.startPoint !== 'posse'
