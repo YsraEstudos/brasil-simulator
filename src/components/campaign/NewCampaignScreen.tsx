@@ -1,5 +1,5 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   BackHandler,
@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Alert, Button, Card, Text } from '@/components/ui';
 import { MaxContentWidth, MIN_TOUCH, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { CHALLENGE_PRESETS, START_SITUATIONS, type ChallengeConfig } from '@/engine';
+import { CHALLENGE_PRESETS, DEFAULT_ENABLED_MODULES, MODULES, START_SITUATIONS, type ChallengeConfig } from '@/engine';
 import {
   CAMPAIGN_NAME_MAX,
   checkSetupForm,
@@ -132,6 +132,7 @@ function initialForm(prefs: SetupPrefs): CampaignSetupForm {
     challenge: { ...CHALLENGE_PRESETS[prefs.difficulty] },
     institutionalRules: 'brasileiras',
     assistance: { informationClarity: 'padrao', hints: true },
+    modules: [...DEFAULT_ENABLED_MODULES],
     seedText: '',
   };
 }
@@ -510,6 +511,35 @@ function NewCampaignForm({
           </Animated.View>
 
           <Animated.View entering={enterAt(2)} layout={LAYOUT}>
+            <Card title="Módulos opcionais" subtitle="Desligar o aprofundamento não remove a causa econômica elementar">
+              {MODULES.map((module) => {
+                const on = (form.modules ?? DEFAULT_ENABLED_MODULES).includes(module.id);
+                return (
+                  <Fragment key={module.id}>
+                    <Button
+                      label={`${module.name} · ${on ? 'ligado' : 'desligado'}`}
+                      variant="secondary"
+                      disabled={locked}
+                      accessibilityHint={module.description}
+                      onPress={() =>
+                        update({
+                          modules: on
+                            ? (form.modules ?? DEFAULT_ENABLED_MODULES).filter((id) => id !== module.id)
+                            : [...(form.modules ?? DEFAULT_ENABLED_MODULES), module.id],
+                        })
+                      }
+                      block
+                    />
+                    <Text variant="caption" color="textSecondary">
+                      {module.description}
+                    </Text>
+                  </Fragment>
+                );
+              })}
+            </Card>
+          </Animated.View>
+
+          <Animated.View entering={enterAt(2)} layout={LAYOUT}>
             <Card
               title="Perfil do governo"
               subtitle="Onde o governo começa nos eixos Estado ↔ mercado e progressista ↔ conservador">
@@ -701,6 +731,7 @@ function NewCampaignForm({
               <SummaryRow label="Desafio" value={summary.challenge} />
               <SummaryRow label="Regras" value={summary.institutionalRules} />
               <SummaryRow label="Assistência" value={summary.assistance} />
+              <SummaryRow label="Módulos" value={summary.modules} />
               <SummaryRow label="Ponto de partida" value={summary.startPoint} />
               {summary.careerProfile && <SummaryRow label="Candidato" value={summary.careerProfile} />}
               <SummaryRow label="Versão" value={summary.version} />

@@ -2,7 +2,10 @@ import {
   AGENDA_ACTIONS_PER_MONTH,
   careerSchedule,
   DEFAULT_CALIBRATION,
+  DEFAULT_ENABLED_MODULES,
   describeProfile,
+  MODULES,
+  normalizeModules,
   PROFILE_PRESETS,
   START_SITUATIONS,
   DEFAULT_CHALLENGE,
@@ -262,6 +265,8 @@ export interface SetupSummary {
   challenge: string;
   institutionalRules: string;
   assistance: string;
+  /** Módulos opcionais ligados; "Só o núcleo" quando nenhum. */
+  modules: string;
   careerProfile: string | null;
   duration: string;
   seed: string;
@@ -291,6 +296,11 @@ export function setupSummary(form: CampaignSetupForm): SetupSummary {
         ? 'Simplificadas — cenário ficcional'
         : 'Brasileiras — regras institucionais',
     assistance: `${{ clara: 'Mais clara', padrao: 'Padrão', incerta: 'Mais incerta' }[form.assistance?.informationClarity ?? 'padrao']} · dicas ${(form.assistance?.hints ?? true) ? 'ligadas' : 'desligadas'}`,
+    modules: (() => {
+      const on = normalizeModules(form.modules ?? DEFAULT_ENABLED_MODULES);
+      const names = MODULES.filter((module) => on.includes(module.id)).map((module) => module.name);
+      return names.length > 0 ? names.join(' · ') : 'Só o núcleo';
+    })(),
     careerProfile:
       form.startPoint && form.startPoint !== 'posse'
         ? ((scenario?.career?.profiles.find((p) => p.id === form.careerProfileId) ?? scenario?.career?.profiles[0])
