@@ -12,7 +12,7 @@ import { gameStore, hasPendingChoices, isKnownScenario, useGame } from '@/store'
 import { campaignMonths, SCENARIOS } from '@/store/scenarios';
 
 import { durationLabel, scenarioTitle } from './campaignSetupView';
-import { DIFFICULTY, shortMonthLabel } from './labels';
+import { CAREER_STAGE_LABEL, DIFFICULTY, shortMonthLabel } from './labels';
 import { Badge, ConfirmSheet, enterAt, goBack, LAYOUT, PressScale, PrimaryAction, SetupHeader } from './SetupBits';
 
 type Pending = { kind: 'carregar'; campaign: CampaignSummary } | { kind: 'apagar'; campaign: CampaignSummary };
@@ -184,9 +184,12 @@ function SavedItem({
   const scenarioText = scenario
     ? `${scenarioTitle(scenario)} · v${c.scenarioVersion}`
     : `${c.scenarioId} · v${c.scenarioVersion}`;
+  // Antes da posse (PLANO_CAMPANHA.md Fase C1) o mês do mandato ainda não anda: mostra o estágio e o turno.
   const where = done
     ? `Encerrada · ${c.currentMonth} ${c.currentMonth === 1 ? 'mês jogado' : 'meses jogados'}`
-    : `${shortMonthLabel(c.currentMonth)} · mês ${c.currentMonth + 1} de até ${months}`;
+    : c.stage
+      ? `${CAREER_STAGE_LABEL[c.stage]} · turno ${c.currentTurn + 1} · antes da posse`
+      : `${shortMonthLabel(c.currentMonth)} · mês ${c.currentMonth + 1} de até ${months}`;
   const difficulty = DIFFICULTY[c.difficulty]?.name ?? c.difficulty;
 
   return (

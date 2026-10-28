@@ -5,7 +5,7 @@ import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native
 import { Text } from '@/components/ui';
 import { Radius } from '@/constants/theme';
 import type { ProfileHistory } from '@/database/campaignRepository';
-import type { GameContent, GameState } from '@/engine';
+import { turnIndexOf, type GameContent, type GameState } from '@/engine';
 import { gameStore } from '@/store';
 
 import { EmptyNote, LinkRow, SheetHeading } from './HudBits';
@@ -38,8 +38,8 @@ export function ProfileSheet({
   onShowLayer?: () => void;
 }) {
   const [history, setHistory] = useState<ProfileHistory>(NO_HISTORY);
-  // Lido ao abrir a folha (e a cada mês gravado): o plano não guarda histórico próprio.
-  const monthIndex = state.monthIndex;
+  // Lido ao abrir a folha (e a cada turno gravado; na posse o mês do mandato não muda): sem histórico próprio.
+  const turnIndex = turnIndexOf(state);
   useEffect(() => {
     let live = true;
     void gameStore
@@ -51,7 +51,7 @@ export function ProfileSheet({
     return () => {
       live = false;
     };
-  }, [monthIndex]);
+  }, [turnIndex]);
 
   const view = useMemo(() => buildProfileView(state, content, history), [state, content, history]);
 

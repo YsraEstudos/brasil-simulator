@@ -1,4 +1,11 @@
-import { inVedacaoWindow, monthOfTerm, type GameState, type Proposal } from '@/engine';
+import {
+  inVedacaoWindow,
+  inaugurationTurnIndex,
+  monthOfTerm,
+  turnIndexOf,
+  type GameState,
+  type Proposal,
+} from '@/engine';
 import type { ScenarioElections } from '@/types/scenario';
 
 /**
@@ -70,12 +77,16 @@ export function endMonthControl(input: {
   busy: boolean;
   actionsUsed: number;
   actionsMax: number;
+  /** A partida terminou na eleição, antes da posse (PLANO_CAMPANHA.md Fase C5): o botão leva ao resumo. */
+  campaignLost?: boolean;
 }): EndMonthControl {
   if (!input.hasCampaign) {
     return { mode: 'indisponivel', label: 'Encerrar o mês', caption: 'Inicie uma campanha', disabled: true };
   }
   if (input.finished) {
-    return { mode: 'legado', label: 'Ver legado', caption: 'Campanha encerrada', disabled: false };
+    return input.campaignLost
+      ? { mode: 'legado', label: 'Ver resumo', caption: 'Eleição perdida', disabled: false }
+      : { mode: 'legado', label: 'Ver legado', caption: 'Campanha encerrada', disabled: false };
   }
   return {
     mode: 'encerrar',
@@ -136,9 +147,12 @@ export function congressBadge(state: Readonly<GameState>): number {
  * de notícias que ele viu; `null` = nunca abriu). Sem mês processado ainda, ou depois de visto, não há selo.
  */
 export function newsBadge(state: Readonly<GameState>, seenMonth: number | null): number {
-  const latest = state.monthIndex - 1;
+  const latest = turnIndexOf(state) - 1;
   if (latest < 0 || (seenMonth !== null && seenMonth >= latest)) return 0;
-  return state.events.news.filter((n) => n.monthIndex === latest).length;
+  const inauguration = inaugurationTurnIndex(state);
+  return state.events.news.filter(
+    (n) => (n.turnIndex ?? (inauguration === null ? n.monthIndex : n.monthIndex + inauguration)) === latest,
+  ).length;
 }
 
 /**

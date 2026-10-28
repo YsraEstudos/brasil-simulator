@@ -1,7 +1,9 @@
 # Brasil Simulator — Documento de Design do Jogo (GDD)
 
-Versão 0.5 do documento • 20/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato • v0.3 (Fase 04): negociação e nomeações na agenda, aba Congresso, sanção e veto • v0.4 (Fase 05): mapa da federação e visita a estado • v0.5 (20/10/2026): Painel único — o jogo sem abas, com folhas e subtelas (§4.6)
+Versão 0.6 do documento • 27/10/2026 (Fase C7: depois do mandato, §7.1) • v0.5: 20/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (início jan/2027, turno mensal com 3 pontos, 8 decisões e tom confirmados; pressão sobre o BC adicionada) • v0.2: mesa de despacho, capacidade de pauta, diretrizes e marcas de governo, ciclo do mandato • v0.3 (Fase 04): negociação e nomeações na agenda, aba Congresso, sanção e veto • v0.4 (Fase 05): mapa da federação e visita a estado • v0.5 (20/10/2026): Painel único — o jogo sem abas, com folhas e subtelas (§4.6)
 Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RULES.md](POLITICAL_RULES.md) · [DATA_SOURCES.md](DATA_SOURCES.md) · [ROADMAP.md](ROADMAP.md) · [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)
+
+O percurso eleitoral antes da posse, suas entregas e limitações atuais estão em [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md); as eleições ao longo do mandato seguem o modelo deste documento e de [FASE_08.md](FASE_08.md).
 
 ---
 
@@ -194,6 +196,16 @@ Detalhes em [POLITICAL_RULES.md](POLITICAL_RULES.md) §1.1. Explicações estão
 | Fim do protótipo | Encerramento | Na versão 0.1, a campanha termina em dez/2027 |
 
 Toda campanha encerrada gera um **Relatório de Legado**: país recebido vs. país entregue, reformas aprovadas, objetivos cumpridos, pontuação.
+
+**Depois do mandato** (Fase C7 do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)): uma seção do Legado, sem meses jogáveis, que lê o estado final em três aspectos independentes, mais as possibilidades que decorrem deles. São projeções, não destinos.
+
+| Aspecto | Leitura |
+| --- | --- |
+| Influência política | 0 a 100, em faixas baixa (< 40), média (< 60) e alta: 50 mais a aprovação final acima da neutra, a relação média com os blocos e o resultado da eleição geral (sucessor ou reeleição, derrota) ou a condenação no impeachment. Pesos `pos_influencia_*` em [CALIBRATION.md](CALIBRATION.md) |
+| Situação jurídica | nenhuma, investigação, acusação, condenação ou restrição efetiva, pelo item mais grave. CPI aberta ou com relatório pesado, marca de escândalo e caixa 2 descoberto são investigação; denúncia de impeachment aceita ou autorizada, sem arquivamento, é acusação; a condenação no Senado é restrição (inabilitação por 8 anos, CF art. 52, parágrafo único). Marca de CPI ou de escândalo nunca é condenação |
+| Legado de governo | a pontuação de §7.2 em faixas negativo (≤ −0,2), misto e positivo (≥ 0,2), com os indicadores que melhoraram e as propostas aprovadas |
+
+As possibilidades citam a regra que as sustenta: inabilitação até o ano da condenação + 8; depois de dois mandatos seguidos, sem candidatura na eleição seguinte (CF art. 14, §5º); senão, a candidatura volta a ser possível. A derrota antes da posse não tem esta seção: usa o resumo da campanha.
 
 ### 7.2 Objetivos alternativos (escolhidos no início)
 O jogador escolhe de 1 a 3 objetivos de legado. Cada um tem meta mensurável e peso na pontuação final:

@@ -35,7 +35,7 @@ describe('contratos da Fase 06 (AI_INSTRUCTIONS §2.10)', () => {
     delete raw.publicPolicies;
     const original = structuredClone(raw);
     const next = upgradeGameState(5, raw);
-    expect(next.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(next.schemaVersion).toBe(14);
     expect(next).toHaveProperty('society');
     expect(next).toHaveProperty('publicPolicies');
     for (const key of Object.keys(raw).filter((k) => k !== 'schemaVersion' && k !== 'engineVersion')) {

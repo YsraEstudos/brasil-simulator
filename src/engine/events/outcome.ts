@@ -1,4 +1,5 @@
 import { monthOfTerm } from '../calendar';
+import { electedOutcome } from '../career/election';
 import type { GameState } from '../types';
 
 import { hasFlag } from './events';
@@ -7,17 +8,21 @@ import { hasFlag } from './events';
  * Desfecho da campanha (GAME_DESIGN.md §7.1; POLITICAL_RULES.md §10, §11.4; FASE_08.md §5). A condenação no
  * Senado grava a marca `impeachment_condenado` e encerra a campanha como derrota; a eleição geral perdida
  * (`derrota_eleitoral`) e a posse de um sucessor sem candidatura do presidente (`fim_de_mandato`) também
- * encerram. O desfecho é durável: uma vez gravado, a campanha não volta a andar.
+ * encerram. Antes da posse, a eleição perdida pelo candidato (`derrota_campanha`, PLANO_CAMPANHA.md Fase C5) encerra
+ * a partida com o resumo da campanha. O desfecho é durável: uma vez gravado, a campanha não volta a andar.
  */
 
 /** Marca gravada na condenação por crime de responsabilidade. */
 export const IMPEACHMENT_CONVICTION_FLAG = 'impeachment_condenado';
 
 /** Desfechos que encerram a campanha; `null` = a campanha segue. */
-export type CampaignOutcome = 'impeachment' | 'derrota_eleitoral' | 'fim_de_mandato';
+export type CampaignOutcome = 'impeachment' | 'derrota_eleitoral' | 'fim_de_mandato' | 'derrota_campanha';
 
 export function campaignOutcome(state: Readonly<GameState>): CampaignOutcome | null {
+  // Precedência da Fase C7: o impeachment vem antes da derrota antes da posse (a cassação, que viria antes, não existe).
   if (hasFlag(state, IMPEACHMENT_CONVICTION_FLAG)) return 'impeachment';
+  const election = state.career?.election;
+  if (election && !electedOutcome(election.outcome)) return 'derrota_campanha';
   const politics = state.politics;
   if (!politics) return null;
   const geral = politics.eleicao_geral;

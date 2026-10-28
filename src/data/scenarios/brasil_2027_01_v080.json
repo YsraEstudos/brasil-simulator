@@ -298,6 +298,13 @@
       "camara": "centro",
       "senado": "centro"
     },
+    "fiscalBombs": ["pauta_bomba_reajuste_servidores", "pauta_bomba_desoneracao_folha"],
+    "supremeCourt": {
+      "vacancies": [
+        { "id": "stf_vaga_1", "monthIndex": 14, "reason": "aposentadoria_compulsoria" },
+        { "id": "stf_vaga_2", "monthIndex": 33, "reason": "saida_antecipada" }
+      ]
+    },
     "ministries": [
       {
         "id": "fazenda",
@@ -374,6 +381,38 @@
         "name": "Minas e Energia",
         "areas": ["energia"],
         "weight": 0.6,
+        "occupant": "tecnico"
+      }
+    ],
+    "scandalCases": true,
+    "impeachmentDrawer": true,
+    "directorates": [
+      {
+        "id": "diretoria_estatal_energia",
+        "name": "Diretoria da estatal de energia",
+        "ministryId": "minas_energia",
+        "weight": 0.7,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "diretoria_banco_publico",
+        "name": "Diretoria do banco público",
+        "ministryId": "fazenda",
+        "weight": 0.8,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "diretoria_estatal_obras",
+        "name": "Diretoria da estatal de obras",
+        "ministryId": "transportes",
+        "weight": 0.5,
+        "occupant": "tecnico"
+      },
+      {
+        "id": "diretoria_banco_habitacao",
+        "name": "Diretoria do banco público de habitação",
+        "ministryId": "cidades",
+        "weight": 0.5,
         "occupant": "tecnico"
       }
     ]
@@ -1229,5 +1268,99 @@
         "name": "Wagner Castilho"
       }
     ]
+  },
+  "career": {
+    "dataStatus": "FICTICIO",
+    "finance": {
+      "initialBalance": 10000,
+      "spendingLimit": 88944,
+      "spendingLimitStatus": "PROVISORIO",
+      "dataStatus": "FICTICIO",
+      "expanded": {
+        "personalAvailable": 750,
+        "personalLimit": 750,
+        "debtLimit": 1000,
+        "debtDeadline": 6,
+        "installments": [{ "turn": 1, "amount": 1000, "pocket": "party" }],
+        "illicit": { "decay": 0.5, "sensitivity": 0.0002, "maxHazard": 0.35, "monthlyLimit": 1000 }
+      },
+      "costs": [
+        { "id": "comicio_nacional", "cost": 3000, "pockets": ["party", "donations"] },
+        { "id": "caravana_regional", "cost": 800, "pockets": ["party", "donations"] },
+        { "id": "mobilizar_militancia", "cost": 300, "pockets": ["party", "donations"] },
+        { "id": "ataque_adversario", "cost": 500, "pockets": ["party", "donations"] },
+        { "id": "arrecadar_doacoes", "cost": 200, "pockets": ["party", "donations", "illicit"] }
+      ]
+    },
+    "startPoints": {
+      "corrida": {
+        "turns": [
+          { "stage": "corrida", "from": "2026-08" },
+          { "stage": "corrida", "from": "2026-09" },
+          { "stage": "eleicao", "from": "2026-10" },
+          { "stage": "transicao", "from": "2026-11", "to": "2026-12" }
+        ]
+      }
+    },
+    "profiles": [
+      {
+        "id": "ex_governador",
+        "name": "Ex-governador",
+        "blocId": "centro",
+        "description": "Governou um estado do Sudeste por dois mandatos: conhecido na própria região, pouco lembrado no resto do país.",
+        "recognition": 0.3,
+        "valence": 0.1,
+        "partyInfluence": 0.6,
+        "wealth": 2500,
+        "liquidity": 0.3,
+        "fundraisingCapacity": 800,
+        "territorialBase": { "MG": 0.5, "ES": 0.25, "RJ": 0.15, "SP": 0.1 },
+        "age": 58,
+        "dataStatus": "FICTICIO"
+      }
+    ],
+    "opponents": [
+      {
+        "blocId": "esquerda",
+        "recognition": 0.55,
+        "valence": 0.05,
+        "territorialBase": { "BA": 0.3, "PE": 0.3, "CE": 0.25, "MA": 0.2, "PI": 0.2 },
+        "age": 66,
+        "dataStatus": "FICTICIO"
+      },
+      {
+        "blocId": "centro_esquerda",
+        "recognition": 0.3,
+        "valence": 0.1,
+        "territorialBase": { "RS": 0.35, "SC": 0.1, "PR": 0.1 },
+        "age": 52,
+        "dataStatus": "FICTICIO"
+      },
+      {
+        "blocId": "centro",
+        "recognition": 0.35,
+        "valence": 0.05,
+        "territorialBase": { "PA": 0.3, "AM": 0.25, "TO": 0.15 },
+        "age": 61,
+        "dataStatus": "FICTICIO"
+      },
+      {
+        "blocId": "centro_direita",
+        "recognition": 0.3,
+        "valence": 0.1,
+        "territorialBase": { "SP": 0.3, "RJ": 0.1 },
+        "age": 49,
+        "dataStatus": "FICTICIO"
+      },
+      {
+        "blocId": "direita",
+        "recognition": 0.5,
+        "valence": 0,
+        "territorialBase": { "SC": 0.3, "MT": 0.3, "GO": 0.25, "RO": 0.25 },
+        "age": 57,
+        "dataStatus": "FICTICIO"
+      }
+    ],
+    "debates": [{ "id": "debate_tv_setembro", "name": "Debate na TV", "from": "2026-09" }]
   }
 }

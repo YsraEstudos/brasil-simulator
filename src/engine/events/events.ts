@@ -12,6 +12,14 @@ import {
   longestServingPartisan,
   partisanMinistries,
 } from '../congress/cabinet';
+import { CASE_FLAGS, casesEnabled, newCase } from '../congress/cases';
+import {
+  directorateScandalNote,
+  directorateScandalRisk,
+  dismissDirector,
+  partisanDirectorates,
+  riskiestDirectorate,
+} from '../congress/directorates';
 import { meanGovernorRelation } from '../regions/regions';
 import {
   TECHNICAL_OCCUPANT,
@@ -21,6 +29,7 @@ import {
   type GameState,
   type MonthStep,
   type PendingEvent,
+  type ScandalCase,
   type ScheduledEvent,
   type ScheduledImpulse,
   type StepContext,
@@ -149,6 +158,8 @@ export function conditionValue(
     monthIndex: () => state.monthIndex,
     partisanMinistries: () => partisanMinistries(state, content).length,
     cabinetScandalRisk: () => cabinetScandalRisk(state, content),
+    partisanDirectorates: () => partisanDirectorates(state, content).length,
+    directorateScandalRisk: () => directorateScandalRisk(state, content),
     governorRelation: () => meanGovernorRelation(state, content),
     impeachmentPressure: () => impeachmentPressure(state, content),
     characterStanding: () => {
@@ -212,6 +223,13 @@ export const resolveEventsStep: MonthStep = (state, ctx: StepContext) => {
       ...effectsToImpulses(definition.effects, t, `evento:${eventId}_${entry.monthIndex}`, event.title, entry.location),
     );
     if (definition.dismissMinister) dismiss();
+    if (definition.dismissDirector) {
+      const appointment = dismissDirector(current, ctx.content, entry.subjectId);
+      if (appointment) {
+        current = applyAppointment(current, appointment);
+        ctx.draft.notes.push(appointment.note);
+      }
+    }
 
     const flags = { ...memory.flags };
     for (const flag of definition.clearFlags ?? []) delete flags[flag];
@@ -286,6 +304,20 @@ export function eventProbability(
 }
 
 /**
+ * Alvo do evento com `trigger.subject` no estado atual (Fase C6a): a diretoria de bloco de maior risco, com o texto
+ * da causa. `null` = sem alvo, e o evento não dispara. Eventos sem `subject` devolvem `undefined`.
+ */
+function eventSubject(
+  state: Readonly<GameState>,
+  event: GameEvent,
+  content: GameContent,
+): { id: string; note: string } | null | undefined {
+  if (event.trigger.subject !== 'diretoria') return undefined;
+  const directorate = riskiestDirectorate(state, content);
+  return directorate ? { id: directorate.id, note: directorateScandalNote(state, content, directorate) } : null;
+}
+
+/**
  * Coloca um evento na caixa de entrada do mês `n`: pendência, contadores, impulsos de disparo e marcas
  * (`onFireFlags`). Compartilhado pelos encadeados e pelo sorteio.
  */
@@ -297,10 +329,18 @@ function fireEvent(
   impulses: ScheduledImpulse[],
   flags: Record<string, number>,
   location?: EventLocation,
+  subject?: { id: string; note: string },
 ) {
   // O local é gravado aqui, uma vez: a resposta (e os efeitos dela) usa este local, não o clima do dia da resposta.
   const instanceId = eventInstanceId(event.id, n);
-  book.pending.push({ eventId: event.id, monthIndex: n, instanceId, ...(location ? { location } : {}) });
+  book.pending.push({
+    eventId: event.id,
+    monthIndex: n,
+    instanceId,
+    ...(location ? { location } : {}),
+    ...(subject ? { subjectId: subject.id } : {}),
+  });
+  if (subject) ctx.draft.notes.push(subject.note);
   book.lastFired[event.id] = n;
   book.count[event.id] = (book.count[event.id] ?? 0) + 1;
   ctx.draft.eventsFired.push(event.id);
@@ -328,6 +368,16 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
   const flags = { ...state.events.flags };
   const impulses = [...state.impulses];
   const scheduled: ScheduledEvent[] = [];
+  // Escândalo com alvo abre caso em investigação (Fase C6b), quando o cenário liga os casos.
+  const cases: ScandalCase[] = [...(state.cases ?? [])];
+  const opened = (subject?: { id: string }) => {
+    if (!subject || !casesEnabled(ctx.content)) return;
+    const item = newCase(state, ctx.content, subject.id, n);
+    if (!item || cases.some((c) => c.id === item.id)) return;
+    cases.push(item);
+    flags[CASE_FLAGS.investigacao] = n;
+    ctx.draft.notes.push('O escândalo abriu uma investigação. Investigação não é condenação.');
+  };
 
   for (const item of state.events.scheduled) {
     if (item.monthIndex > n) {
@@ -342,8 +392,10 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
     // Na chegada, o encadeado também respeita marcas e condições do gatilho; se não valerem, é descartado.
     const allowed =
       flagsAllow(state, event) && event.trigger.conditions.every((c) => conditionHolds(state, c, ctx.content));
-    if (!allowed) continue;
-    fireEvent(event, n, ctx, book, impulses, flags, item.location);
+    const subject = eventSubject(state, event, ctx.content);
+    if (!allowed || subject === null) continue;
+    fireEvent(event, n, ctx, book, impulses, flags, item.location, subject);
+    opened(subject);
   }
 
   let firedNow = 0;
@@ -364,9 +416,13 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
     // Gatilho climático: sem UF atingida o evento não é elegível (e não consome sorteio).
     const location = trigger.climate ? climateLocation(state, ctx.content, trigger.climate) : undefined;
     if (trigger.climate && !location) continue;
+    // Evento com alvo (Fase C6a): sem alvo no estado, não é elegível (e não consome sorteio).
+    const subject = eventSubject(state, event, ctx.content);
+    if (subject === null) continue;
     if (!ctx.rng.chance(eventProbability(state, event, ctx.content, location))) continue;
 
-    fireEvent(event, n, ctx, book, impulses, flags, location);
+    fireEvent(event, n, ctx, book, impulses, flags, location, subject);
+    opened(subject);
     firedNow += 1;
   }
 
@@ -374,6 +430,7 @@ export const triggerEventsStep: MonthStep = (state, ctx: StepContext) => {
     state: {
       ...state,
       impulses,
+      ...(cases.length > 0 ? { cases } : {}),
       events: {
         ...state.events,
         pending: book.pending,

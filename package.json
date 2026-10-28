@@ -69,9 +69,13 @@
     "format:check": "prettier --check .",
     "sim:globe": "vitest run --config vitest.balance.config.mts scripts/sim/globe.sim.ts",
     "sim:balance": "vitest run --config vitest.balance.config.mts scripts/sim/balance.sim.ts",
+    "sim:career-finance": "vitest run --config vitest.balance.config.mts scripts/sim/careerFinance.sim.ts",
+    "sim:career-election": "vitest run --config vitest.balance.config.mts scripts/sim/careerElection.sim.ts",
+    "sim:career-bias": "vitest run --config vitest.balance.config.mts scripts/sim/careerBias.sim.ts",
     "sim:sensitivity": "vitest run --config vitest.balance.config.mts scripts/sim/sensitivity.sim.ts",
     "sim:reform": "vitest run --config vitest.balance.config.mts scripts/sim/reform.sim.ts",
-    "sim:events": "vitest run --config vitest.balance.config.mts scripts/sim/events.sim.ts"
+    "sim:events": "vitest run --config vitest.balance.config.mts scripts/sim/events.sim.ts",
+    "sim:bc-pressure": "vitest run --config vitest.balance.config.mts scripts/sim/bcPressure.sim.ts"
   },
   "private": true
 }

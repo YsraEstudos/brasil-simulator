@@ -1,4 +1,4 @@
-import { actionKey, AGENDA_ACTIONS, type Decision, type GameContent, type MonthInput } from '@/engine';
+import { actionKey, AGENDA_ACTIONS, isCareerAction, type Decision, type GameContent, type MonthInput } from '@/engine';
 
 /**
  * Rascunho da agenda do mês (GAME_DESIGN.md §4.2–4.3): decisões e respostas a eventos marcadas pelo jogador
@@ -12,8 +12,12 @@ export interface AgendaDraft {
 
 export const EMPTY_DRAFT: AgendaDraft = { decisions: [], eventChoices: {} };
 
-/** Custo em ações: o do catálogo de políticas ou de ações (o motor confere de novo). */
+/**
+ * Custo em ações: o do catálogo de políticas ou de ações; antes da posse, cada ação de campanha ocupa uma das ações
+ * do turno (PLANO_CAMPANHA.md Fase C4). O motor confere de novo.
+ */
 export function decisionCost(decision: Decision, content: GameContent): number {
+  if (isCareerAction(decision.policyId)) return 1;
   return content.policies[decision.policyId]?.agendaCost ?? AGENDA_ACTIONS[decision.policyId]?.agendaCost ?? 0;
 }
 

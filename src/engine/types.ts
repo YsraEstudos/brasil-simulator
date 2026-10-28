@@ -2,19 +2,24 @@ import type { GameEvent } from '../types/event';
 import type { Policy } from '../types/policy';
 import type { RegionalKey, RegionalScope } from '../types/regions';
 import type { Climatology } from '../types/climate';
-import type { Scenario } from '../types/scenario';
+import type { PRE_INAUGURATION_STAGES, Scenario } from '../types/scenario';
 import type { Calibration } from './economy/calibration';
 import type { Rng, RngState } from './rng';
 import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
+import type { CampaignFinance, ExpandedFinance, ScheduledReceipt, FinanceExpenditure } from './career/finance';
+import type { DebtCommitment } from './career/commitments';
+import type { IllicitState } from './career/illicit';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 12;
+export const STATE_SCHEMA_VERSION = 18;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.9.0';
+export const ENGINE_VERSION = '0.14.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
+
+export type PreInaugurationStage = (typeof PRE_INAUGURATION_STAGES)[number];
 
 /**
  * Indicadores do protótipo (GAME_DESIGN.md §8.1). Todos em **fração decimal** (0,045 = 4,5%), nunca
@@ -391,6 +396,8 @@ export interface CongressState {
   blocs: BlocState[];
   /** Ministérios cujo ocupante mudou desde o início; os demais seguem o cenário. */
   cabinet: MinistryState[];
+  /** Diretorias alteradas durante o governo (C6a). */
+  directorates?: MinistryState[];
 }
 
 /**
@@ -419,6 +426,8 @@ export interface PendingEvent {
   instanceId: string;
   /** Local congelado no disparo; ausente = evento nacional (e saves anteriores à v12). */
   location?: EventLocation;
+  /** Diretoria associada ao evento (C6a). */
+  subjectId?: string;
 }
 
 /** Ocorrência de evento que chegou à caixa de entrada no mês, para o relatório (PLANO_GLOBO.md §6.3). */
@@ -449,6 +458,10 @@ export interface NewsItem {
   /** `${monthIndex}_${ordem}` */
   id: string;
   monthIndex: number;
+  /** Referência civil anterior à posse, quando a notícia veio da carreira. */
+  careerPeriod?: string;
+  /** Identidade do turno quando a partida tem carreira. */
+  turnIndex?: number;
   kind: NewsKind;
   tone: NewsTone;
   headline: string;
@@ -515,15 +528,28 @@ export type DecisionRejection =
   /** Novo benefício na janela de vedação eleitoral, sem quebra declarada (Lei 9.504/97 art. 73 §10; Fase 08). */
   | 'vedacao_eleitoral'
   | 'evento_nao_pendente'
-  | 'escolha_invalida';
+  | 'escolha_invalida'
+  /** Decisão que não existe no estágio atual da carreira (ex.: política de governo antes da posse; PLANO_CAMPANHA.md Fase C1). */
+  | 'fora_do_estagio'
+  /** Recursos de campanha insuficientes (PLANO_CAMPANHA.md Fase C3; reservado). */
+  | 'sem_recursos'
+  /** Acima de um teto legal de campanha (PLANO_CAMPANHA.md Fase C3; reservado). */
+  | 'teto_legal';
 
 /** Parcela de uma variação, com causa, para o "Por que mudou?" (ECONOMIC_MODEL.md §1.6). */
+/**
+ * Pseudo-indicadores só de relatório: `'votingIntention'` (Fase 08); `'careerRecognition'`, o reconhecimento nacional
+ * do candidato antes da posse (PLANO_CAMPANHA.md Fase C2, média das UFs pela população); e `'careerValence'`, a
+ * valência do jogador (Fase C4).
+ */
+export type ReportOnlyIndicator = 'votingIntention' | 'careerRecognition' | 'careerValence';
+
 export interface Contribution {
   /**
    * Indicador `Indicators` de destino ou o pseudo-indicador `'votingIntention'` (Fase 08): a intenção de voto
    * não pertence ao `Indicators`; contribuições para ela servem apenas ao relatório ("Por que mudou?").
    */
-  indicator: IndicatorKey | 'votingIntention';
+  indicator: IndicatorKey | ReportOnlyIndicator;
   /** ID da causa: proposta, choque, Banco Central, tendência… */
   cause: string;
   delta: number;
@@ -700,6 +726,281 @@ export interface GameState {
   climate: ClimateState;
   /** Eleições e intenção de voto (Fase 08); cenários sem eleições e saves antigos ficam sem o campo. */
   politics?: PoliticsState;
+  /**
+   * Carreira antes da posse (v13; PLANO_CAMPANHA.md Fase C1). Ausente = partida que começa na posse: o índice do
+   * turno é o próprio `monthIndex` e nada muda no jogo.
+   */
+  career?: CareerState;
+  /**
+   * Vagas do STF abertas no mandato (PLANO_CAMPANHA.md Fase C6d). Ausente até a primeira vaga: antes dela, o estado é
+   * o mesmo com o sistema ligado ou desligado.
+   */
+  court?: CourtState;
+  /**
+   * Casos de escândalo em andamento ou encerrados (PLANO_CAMPANHA.md Fase C6b). Ausente até o primeiro caso: o
+   * estado sem casos é o mesmo com o sistema ligado ou desligado.
+   */
+  cases?: ScandalCase[];
+  /**
+   * Gaveta do impeachment (PLANO_CAMPANHA.md Fase C6e): pedidos protocolados na Câmara. Ausente até o primeiro
+   * pedido: antes dele, o estado é o mesmo com o sistema ligado ou desligado.
+   */
+  impeachmentDrawer?: ImpeachmentRequest[];
+}
+
+/** Situação de um pedido de impeachment na Câmara (Fase C6e). */
+export type ImpeachmentRequestStatus = 'na_gaveta' | 'arquivado' | 'aberto';
+
+/** Pedido de impeachment protocolado (Fase C6e). Abrir um pedido só leva ao 1º evento da cadeia existente (§10). */
+export interface ImpeachmentRequest {
+  /** `pedido#${mês}#${ordem}`, único. */
+  id: string;
+  /** Mês do protocolo. */
+  filedMonth: number;
+  /** Motivo: a marca de escândalo que o motivou ou a pressão do mês. */
+  cause: 'escandalo_investigacao' | 'escandalo_acusacao' | 'escandalo_condenacao' | 'pressao';
+  status: ImpeachmentRequestStatus;
+  /** Mês em que foi arquivado ou aberto. */
+  decidedMonth?: number;
+}
+
+/**
+ * Etapas graduais de um caso (Fase C6b): `investigacao` → `acusacao` → `condenacao`. `arquivado` encerra sem
+ * condenação. A condenação só vem depois da acusação, nunca direto da investigação.
+ */
+export type CaseStage = 'investigacao' | 'acusacao' | 'condenacao' | 'arquivado';
+
+/** Caso aberto por um escândalo com alvo (Fase C6b). Atinge o indicado do bloco, não a Presidência. */
+export interface ScandalCase {
+  /** `${origem}:${alvo}#${mês de abertura}`, único. */
+  id: string;
+  /** Origem do caso; hoje só o escândalo em diretoria de estatal (Fase C6a). */
+  source: 'diretoria';
+  /** Diretoria atingida. */
+  subjectId: string;
+  /** Bloco que ocupava o cargo na abertura. */
+  blocId: string;
+  stage: CaseStage;
+  /** Mês em que o caso abriu (o da chegada do escândalo à caixa de entrada). */
+  openedMonth: number;
+  /** Mês em que entrou na etapa atual. */
+  stageMonth: number;
+  /** Mês da acusação, se houve. */
+  accusedMonth?: number;
+  /** Exposição acumulada E_t = δ·E_{t−1} + volume_t (mesma especificação de perigo da Fase C3). */
+  exposure: number;
+  /** Último mês em que o governo gastou ação para defender o caso. */
+  defendedMonth?: number;
+}
+
+/** Estágio da carreira (PLANO_CAMPANHA.md Fase C5); `governo` = da posse em diante. */
+export type CareerStage = PreInaugurationStage | 'governo';
+
+/** Pontos de partida antes da posse; `'posse'` é a partida de sempre, sem o bloco `career`. */
+export type CareerStartPoint = 'pre_campanha' | 'corrida';
+export type StartPoint = CareerStartPoint | 'posse';
+
+/**
+ * Carreira (PLANO_CAMPANHA.md §2.3, D-C1 na forma "índice sequencial"). Dois relógios explícitos:
+ * - `turnIndex` identifica cada turno salvo da partida (0 = primeiro turno, antes ou depois da posse) e é a chave de
+ *   banco, retenção e store;
+ * - `GameState.monthIndex` continua sendo o mês do mandato (0 = posse); antes da posse fica parado em 0 e nenhuma
+ *   etapa de governo roda (economia congelada, D-C12).
+ */
+export interface CareerState {
+  startPoint: CareerStartPoint;
+  /** Perfil de candidato do cenário (`Scenario.career.profiles`). */
+  profileId: string;
+  /** Caixa de campanha opcional, mantido no save. */
+  finance?: CampaignFinance;
+  /** Contabilidade de três bolsos quando o cenário habilita a expansão. */
+  expandedFinance?: ExpandedFinance;
+  illicit?: IllicitState & {
+    balance: number;
+    pending: { turn: number; amount: number }[];
+    closedBalance?: number;
+    cancelledPending?: number;
+  };
+  commitments?: DebtCommitment[];
+  stage: CareerStage;
+  /** Turno que está para ser jogado. */
+  turnIndex: number;
+  /** Reconhecimento do jogador por UF, 0–1 (Fase C2: decaimento e crescimento orgânico a cada turno). */
+  recognition: Record<string, number>;
+  /** Valência nacional do jogador, −1…1. */
+  valence: number;
+  /** Adversários na disputa (Fase C2, D-C17), na ordem do cenário, sem o do bloco do jogador. */
+  opponents: CareerCandidateState[];
+  /** Pesquisa mais recente (Fase C2); as anteriores ficam nos relatórios. Ausente antes da primeira. */
+  poll?: CareerPoll;
+  /** Resultado da eleição (Fase C5); ausente antes dela. Derrota encerra a partida (`campaignOutcome`). */
+  election?: CareerElectionResult;
+  /**
+   * Soma, por causa, das variações do reconhecimento nacional e da valência do jogador ao longo da campanha (Fase C5:
+   * "principais fatores" do resumo). Mesmas causas das contribuições do relatório; só turnos antes da posse.
+   */
+  causeTotals?: { recognition: Record<string, number>; valence: Record<string, number> };
+}
+
+/** Desfecho da eleição para o jogador (PLANO_CAMPANHA.md Fase C5, máquina de estados). */
+export type CareerElectionOutcome = 'eleito_1t' | 'eleito_2t' | 'derrotado_1t' | 'derrotado_2t';
+
+/** Apuração de um turno da eleição: votos inteiros, nacional = soma das UFs. */
+export interface CareerElectionRound {
+  /** Candidatos na cédula (`'jogador'` ou o bloco), na ordem das pesquisas. */
+  candidates: string[];
+  /** Votos nacionais, na ordem de `candidates`. */
+  votes: number[];
+  electorate: number;
+  abstention: number;
+  blankNull: number;
+  /** Mais votado em cada UF (empate na UF: o primeiro na ordem da cédula). */
+  ufWinners: Record<string, string>;
+  /** Parcela dos válidos do jogador em cada UF. */
+  playerShareByUf: Record<string, number>;
+}
+
+/** Desempate aplicado (CF art. 77 §5: o mais idoso; idades iguais ou ausentes: sorteio por chave). */
+export interface CareerElectionTiebreak {
+  round: 1 | 2;
+  /** `segundo_lugar`: vaga no 2º turno; `vencedor`: maioria exata no 2º turno. */
+  place: 'segundo_lugar' | 'vencedor';
+  candidates: string[];
+  rule: 'idade' | 'sorteio';
+  winner: string;
+}
+
+/** Resultado da eleição (PLANO_CAMPANHA.md Fase C5, tarefa C5.1). */
+export interface CareerElectionResult {
+  turnIndex: number;
+  /** "AAAA-MM" do turno da eleição. */
+  month: string;
+  first: CareerElectionRound;
+  /** Ausente quando alguém teve a maioria dos válidos no 1º turno. */
+  second?: CareerElectionRound;
+  winner: string;
+  outcome: CareerElectionOutcome;
+  tiebreaks: CareerElectionTiebreak[];
+}
+
+/** Adversário antes da posse: identidade pelo bloco (`elections.candidatos`), reconhecimento por UF e valência. */
+export interface CareerCandidateState {
+  blocId: string;
+  recognition: Record<string, number>;
+  valence: number;
+}
+
+/** Faixa do reconhecimento estimado no mapa (PLANO_CAMPANHA.md I8). */
+export type RecognitionBand = 'desconhecido' | 'pouco_conhecido' | 'conhecido' | 'muito_conhecido';
+
+/** Intenção estimada de um candidato: `'jogador'` ou o bloco do adversário. */
+export interface PollIntention {
+  candidateId: string;
+  share: number;
+}
+
+/**
+ * Pesquisa persistida (PLANO_CAMPANHA.md Fase C2): criada na última etapa do turno, com sorteio por chave; reabrir
+ * a tela ou retomar o save mostra a mesma. Parcelas sobre quem vai votar (comparecimento): candidatos, indecisos e
+ * brancos/nulos somam 1. Os valores internos do motor nunca vão para a tela, só esta estimativa.
+ */
+export interface CareerPoll {
+  /** Turno em que foi feita. */
+  turnIndex: number;
+  /** "AAAA-MM": mês de referência (o último coberto pelo turno). */
+  month: string;
+  scope: 'nacional';
+  /** Margem de erro divulgada (fração). */
+  margin: number;
+  /** Jogador primeiro, depois os adversários na ordem do estado. */
+  intentions: PollIntention[];
+  undecided: number;
+  blankNull: number;
+  /** Faixa do reconhecimento estimado do jogador por UF. */
+  recognitionBands: Record<string, RecognitionBand>;
+}
+
+/** Turno pré-posse no relatório: o estágio jogado e os meses do calendário civil que ele cobriu. */
+export interface CareerTurnReport {
+  stage: PreInaugurationStage;
+  /** "AAAA-MM" */
+  from: string;
+  /** "AAAA-MM"; igual a `from` num turno de um mês. */
+  to: string;
+  /** Pesquisa feita no turno (Fase C2); ausente nos turnos sem pesquisa (transição). */
+  poll?: CareerPoll;
+  /** Posição financeira no encerramento deste turno, em R$ mil. */
+  finance?: CampaignFinance & { expenditures: FinanceExpenditure[]; receipts: { turn: number; amount: number }[] };
+  expandedFinance?: ExpandedFinance & {
+    expenditures: FinanceExpenditure[];
+    receipts: ScheduledReceipt[];
+    personalContribution: number;
+  };
+  illicit?: {
+    volume: number;
+    exposure: number;
+    hazard: number;
+    discovered: boolean;
+    balance: number;
+    investigations: number;
+  };
+  /** Ações de campanha aceitas e o que cada uma fez (Fase C4), na ordem de envio. */
+  actions?: CareerActionOutcome[];
+  /** Debate do turno (Fase C4); ausente nos turnos sem debate. */
+  debate?: CareerDebateOutcome;
+  /** Eleição apurada no turno (Fase C5). */
+  election?: CareerElectionResult;
+}
+
+/** O que uma ação de campanha fez no turno (PLANO_CAMPANHA.md Fase C4, tarefa C4.1). */
+export interface CareerActionOutcome {
+  actionId: string;
+  /** UF da caravana ou bloco do adversário atacado. */
+  target?: string;
+  /** Ataque: deu certo ou virou bumerangue (sorteio por chave). */
+  result?: 'sucesso' | 'bumerangue';
+  /** Variação do reconhecimento nacional do jogador. */
+  recognitionDelta: number;
+  /** Variação da valência do jogador. */
+  valenceDelta: number;
+  /** Variação da valência do adversário atacado. */
+  targetValenceDelta?: number;
+}
+
+/** Postura no debate (PLANO_CAMPANHA.md Fase C4, tarefa C4.2). */
+export type DebatePosture = 'propositiva' | 'tecnica' | 'ataque';
+
+/** O que o debate do turno fez; `automatic` = o jogador não marcou postura e valeu a padrão. */
+export interface CareerDebateOutcome extends CareerActionOutcome {
+  debateId: string;
+  posture: DebatePosture;
+  automatic: boolean;
+}
+
+/** Perfil de quem o governo indica ao STF (Fase C6d). */
+export type CourtNomineeProfile = 'jurista' | 'aliado';
+
+/** Situação de uma vaga do STF: aberta (sem indicação), em sabatina (indicação feita, voto marcado) ou preenchida. */
+export type CourtVacancyStatus = 'aberta' | 'em_sabatina' | 'preenchida';
+
+export interface CourtVacancy {
+  /** Id da vaga no calendário do cenário. */
+  id: string;
+  /** Mês em que a vaga abriu. */
+  openedMonth: number;
+  status: CourtVacancyStatus;
+  /** Perfil da indicação atual (em sabatina) ou da aprovada (preenchida). */
+  nominee?: CourtNomineeProfile;
+  /** Mês da sabatina e da votação no plenário do Senado. */
+  hearingMonth?: number;
+  /** Indicações já rejeitadas pelo Senado nesta vaga. */
+  rejections: number;
+  /** Última votação no Senado: votos "sim" e o necessário (maioria absoluta). */
+  lastVote?: { monthIndex: number; yes: number; required: number; approved: boolean };
+}
+
+export interface CourtState {
+  vacancies: CourtVacancy[];
 }
 
 /**
@@ -762,10 +1063,16 @@ export interface CopomDecision {
 }
 
 export interface MonthReport {
-  /** Mês processado. */
+  /** Mês do mandato processado (antes da posse, 0: o mandato ainda não começou). */
   monthIndex: number;
+  /** Turno processado (PLANO_CAMPANHA.md §2.3); ausente nas partidas que começam na posse, em que é `monthIndex`. */
+  turnIndex?: number;
+  /** Turno pré-posse processado; ausente nos turnos de governo. */
+  career?: CareerTurnReport;
   accepted: Decision[];
   rejected: { decision: Decision; reason: DecisionRejection }[];
+  /** Sequência original de triagem quando a ordem de envio afeta reservas financeiras. */
+  decisionOrder?: { decision: Decision; accepted: boolean; reason: DecisionRejection | null }[];
   /** Variação de cada indicador no mês, decomposta por causa. */
   contributions: Contribution[];
   proposalChanges: ProposalChange[];
@@ -828,6 +1135,12 @@ export type ReportDraft = Pick<
   governorChanges?: string[];
   /** Resultado simulado por UF (preenchido por `electionResultStep`, depois da posse dos governadores). */
   electionResult?: ElectionResult;
+  /** Ações de campanha aplicadas no turno pré-posse (preenchido por `campaignStep`, Fase C4). */
+  careerActions?: CareerActionOutcome[];
+  /** Debate do turno pré-posse (preenchido por `campaignStep`, Fase C4). */
+  careerDebate?: CareerDebateOutcome;
+  /** Eleição apurada no turno (Fase C5). */
+  careerElection?: CareerElectionResult;
 };
 
 export interface StepContext {
