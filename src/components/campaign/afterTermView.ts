@@ -17,7 +17,7 @@ const LEGAL_LABEL: Record<LegalLevel, string> = {
   nenhuma: 'nenhuma pendência',
   investigacao: 'sob investigação',
   acusacao: 'com acusação formal',
-  condenacao: 'com condenação',
+  condenacao: 'condenação em diretoria de estatal',
   restricao: 'com restrição efetiva de direitos',
 };
 const LEGACY_LABEL: Record<LegacyBand, string> = { negativo: 'negativo', misto: 'misto', positivo: 'positivo' };

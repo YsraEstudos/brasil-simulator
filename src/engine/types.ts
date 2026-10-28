@@ -12,10 +12,10 @@ import type { DebtCommitment } from './career/commitments';
 import type { IllicitState } from './career/illicit';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 16;
+export const STATE_SCHEMA_VERSION = 18;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.12.0';
+export const ENGINE_VERSION = '0.14.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -396,6 +396,8 @@ export interface CongressState {
   blocs: BlocState[];
   /** Ministérios cujo ocupante mudou desde o início; os demais seguem o cenário. */
   cabinet: MinistryState[];
+  /** Diretorias alteradas durante o governo (C6a). */
+  directorates?: MinistryState[];
 }
 
 /**
@@ -424,6 +426,8 @@ export interface PendingEvent {
   instanceId: string;
   /** Local congelado no disparo; ausente = evento nacional (e saves anteriores à v12). */
   location?: EventLocation;
+  /** Diretoria associada ao evento (C6a). */
+  subjectId?: string;
 }
 
 /** Ocorrência de evento que chegou à caixa de entrada no mês, para o relatório (PLANO_GLOBO.md §6.3). */
@@ -727,6 +731,66 @@ export interface GameState {
    * turno é o próprio `monthIndex` e nada muda no jogo.
    */
   career?: CareerState;
+  /**
+   * Vagas do STF abertas no mandato (PLANO_CAMPANHA.md Fase C6d). Ausente até a primeira vaga: antes dela, o estado é
+   * o mesmo com o sistema ligado ou desligado.
+   */
+  court?: CourtState;
+  /**
+   * Casos de escândalo em andamento ou encerrados (PLANO_CAMPANHA.md Fase C6b). Ausente até o primeiro caso: o
+   * estado sem casos é o mesmo com o sistema ligado ou desligado.
+   */
+  cases?: ScandalCase[];
+  /**
+   * Gaveta do impeachment (PLANO_CAMPANHA.md Fase C6e): pedidos protocolados na Câmara. Ausente até o primeiro
+   * pedido: antes dele, o estado é o mesmo com o sistema ligado ou desligado.
+   */
+  impeachmentDrawer?: ImpeachmentRequest[];
+}
+
+/** Situação de um pedido de impeachment na Câmara (Fase C6e). */
+export type ImpeachmentRequestStatus = 'na_gaveta' | 'arquivado' | 'aberto';
+
+/** Pedido de impeachment protocolado (Fase C6e). Abrir um pedido só leva ao 1º evento da cadeia existente (§10). */
+export interface ImpeachmentRequest {
+  /** `pedido#${mês}#${ordem}`, único. */
+  id: string;
+  /** Mês do protocolo. */
+  filedMonth: number;
+  /** Motivo: a marca de escândalo que o motivou ou a pressão do mês. */
+  cause: 'escandalo_investigacao' | 'escandalo_acusacao' | 'escandalo_condenacao' | 'pressao';
+  status: ImpeachmentRequestStatus;
+  /** Mês em que foi arquivado ou aberto. */
+  decidedMonth?: number;
+}
+
+/**
+ * Etapas graduais de um caso (Fase C6b): `investigacao` → `acusacao` → `condenacao`. `arquivado` encerra sem
+ * condenação. A condenação só vem depois da acusação, nunca direto da investigação.
+ */
+export type CaseStage = 'investigacao' | 'acusacao' | 'condenacao' | 'arquivado';
+
+/** Caso aberto por um escândalo com alvo (Fase C6b). Atinge o indicado do bloco, não a Presidência. */
+export interface ScandalCase {
+  /** `${origem}:${alvo}#${mês de abertura}`, único. */
+  id: string;
+  /** Origem do caso; hoje só o escândalo em diretoria de estatal (Fase C6a). */
+  source: 'diretoria';
+  /** Diretoria atingida. */
+  subjectId: string;
+  /** Bloco que ocupava o cargo na abertura. */
+  blocId: string;
+  stage: CaseStage;
+  /** Mês em que o caso abriu (o da chegada do escândalo à caixa de entrada). */
+  openedMonth: number;
+  /** Mês em que entrou na etapa atual. */
+  stageMonth: number;
+  /** Mês da acusação, se houve. */
+  accusedMonth?: number;
+  /** Exposição acumulada E_t = δ·E_{t−1} + volume_t (mesma especificação de perigo da Fase C3). */
+  exposure: number;
+  /** Último mês em que o governo gastou ação para defender o caso. */
+  defendedMonth?: number;
 }
 
 /** Estágio da carreira (PLANO_CAMPANHA.md Fase C5); `governo` = da posse em diante. */
@@ -911,6 +975,32 @@ export interface CareerDebateOutcome extends CareerActionOutcome {
   debateId: string;
   posture: DebatePosture;
   automatic: boolean;
+}
+
+/** Perfil de quem o governo indica ao STF (Fase C6d). */
+export type CourtNomineeProfile = 'jurista' | 'aliado';
+
+/** Situação de uma vaga do STF: aberta (sem indicação), em sabatina (indicação feita, voto marcado) ou preenchida. */
+export type CourtVacancyStatus = 'aberta' | 'em_sabatina' | 'preenchida';
+
+export interface CourtVacancy {
+  /** Id da vaga no calendário do cenário. */
+  id: string;
+  /** Mês em que a vaga abriu. */
+  openedMonth: number;
+  status: CourtVacancyStatus;
+  /** Perfil da indicação atual (em sabatina) ou da aprovada (preenchida). */
+  nominee?: CourtNomineeProfile;
+  /** Mês da sabatina e da votação no plenário do Senado. */
+  hearingMonth?: number;
+  /** Indicações já rejeitadas pelo Senado nesta vaga. */
+  rejections: number;
+  /** Última votação no Senado: votos "sim" e o necessário (maioria absoluta). */
+  lastVote?: { monthIndex: number; yes: number; required: number; approved: boolean };
+}
+
+export interface CourtState {
+  vacancies: CourtVacancy[];
 }
 
 /**

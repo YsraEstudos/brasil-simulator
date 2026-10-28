@@ -28,6 +28,16 @@ export const CONCEDE_ACTION_ID = 'ceder_texto';
 export const URGENCY_ACTION_ID = 'pedir_urgencia';
 /** Nomeia o ocupante de um ministério (§6.3.1). Params: `ministryId`, `occupant` (`tecnico` ou id do bloco). */
 export const APPOINT_ACTION_ID = 'nomear_ministro';
+/** Nomeia o ocupante de uma diretoria de estatal (§6.3.2, Fase C6a). Params: `directorateId`, `occupant`. */
+export const DIRECTORATE_ACTION_ID = 'nomear_diretoria';
+/** Defesa do governo num caso de escândalo em andamento (§9.1, Fase C6b). Params: `caseId`. */
+export const DEFEND_CASE_ACTION_ID = 'defender_caso';
+/** Negociação com a presidência da Câmara para arquivar o pedido mais antigo da gaveta (§10.1, Fase C6e). Sem params. */
+export const DRAWER_ACTION_ID = 'negociar_gaveta';
+/** Pronunciamento à nação em rede nacional (PLANO_CAMPANHA.md Fase C6g). Sem params. */
+export const PRONOUNCEMENT_ACTION_ID = 'pronunciamento_nacional';
+/** Indicação ao STF numa vaga aberta (§8.1, Fase C6d). Params: `vacancyId`, `profile` (`jurista` ou `aliado`). */
+export const NOMINATE_JUSTICE_ACTION_ID = 'indicar_ministro_stf';
 /** Sanção ou veto de projeto aprovado (§7). Params: `proposalId`, `choice` (`SanctionChoice`). */
 export const SANCTION_ACTION_ID = 'sancao';
 /** Visita presidencial a uma UF (POLITICAL_RULES.md §2.1). Params: `uf` (sigla). */
@@ -127,6 +137,58 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
       'de escândalo cresce com o tempo; demitir ministro de bloco custa capital e a relação com o bloco.',
     agendaCost: 1,
     targetParams: ['ministryId'],
+    listed: false,
+  },
+  [DIRECTORATE_ACTION_ID]: {
+    id: DIRECTORATE_ACTION_ID,
+    name: 'Nomear diretoria de estatal',
+    summary:
+      'Troca o ocupante da diretoria. Indicação de bloco rende um pouco de apoio no Congresso, mas o risco de ' +
+      'escândalo cresce com o tempo, e mais quando o mesmo bloco tem o ministério; tirar o cargo de um bloco custa ' +
+      'capital e a relação com ele.',
+    agendaCost: 1,
+    targetParams: ['directorateId'],
+    listed: false,
+  },
+  [DEFEND_CASE_ACTION_ID]: {
+    id: DEFEND_CASE_ACTION_ID,
+    name: 'Defender o caso',
+    summary:
+      'Mobiliza a defesa do governo num caso de escândalo em andamento: reduz neste mês a chance de o caso avançar ' +
+      'de etapa e custa capital político. Não arquiva o caso: só a exposição baixa arquiva.',
+    agendaCost: 1,
+    targetParams: ['caseId'],
+    listed: false,
+  },
+  [DRAWER_ACTION_ID]: {
+    id: DRAWER_ACTION_ID,
+    name: 'Negociar com a presidência da Câmara',
+    summary:
+      'Pede à presidência da Câmara que arquive o pedido de impeachment mais antigo da gaveta. Custa capital ' +
+      'político e melhora a relação com o bloco que preside a Casa. Só com pedido na gaveta.',
+    agendaCost: 1,
+    targetParams: [],
+    listed: false,
+  },
+  [PRONOUNCEMENT_ACTION_ID]: {
+    id: PRONOUNCEMENT_ACTION_ID,
+    name: 'Pronunciamento à nação',
+    summary:
+      'Fala em rede nacional. Rende um pouco de aprovação no mês, menos a cada pronunciamento recente e menos ainda ' +
+      'com o termômetro das ruas crítico. Não muda indicadores da economia.',
+    agendaCost: 1,
+    targetParams: [],
+    listed: true,
+  },
+  [NOMINATE_JUSTICE_ACTION_ID]: {
+    id: NOMINATE_JUSTICE_ACTION_ID,
+    name: 'Indicar ministro do STF',
+    summary:
+      'Indica um nome para a vaga aberta no STF. O Senado sabatina e vota no mês seguinte e precisa de maioria ' +
+      'absoluta (41 de 81). Jurista de carreira passa com mais facilidade; aliado do governo depende da afinidade ' +
+      'dos blocos com o governo. Rejeição custa capital político e a vaga continua aberta.',
+    agendaCost: 1,
+    targetParams: ['vacancyId'],
     listed: false,
   },
   [SANCTION_ACTION_ID]: {

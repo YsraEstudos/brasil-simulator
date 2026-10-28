@@ -25,7 +25,7 @@ export function loadContent(scenarioId: string): GameContent {
   if (cached) return cached;
   const scenario = SCENARIOS[scenarioId];
   if (!scenario) throw new Error(`cenário desconhecido: ${scenarioId}`);
-  const missing = scenario.policies.filter((id) => !POLICIES[id]);
+  const missing = [...scenario.policies, ...(scenario.institutions?.fiscalBombs ?? [])].filter((id) => !POLICIES[id]);
   if (missing.length > 0 && Object.keys(POLICIES).length > 0) {
     throw new Error(`cenário ${scenarioId} cita políticas inexistentes: ${missing.join(', ')}`);
   }

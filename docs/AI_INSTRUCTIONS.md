@@ -109,6 +109,12 @@ recusados.
 | Acréscimos do relator ("jabutis") | `rider` |
 | Sanção / veto | `sanction` / `veto` |
 | Ministério, gabinete | `ministry`, `cabinet` |
+| Diretoria de estatal / "porteira fechada" (bloco com a diretoria e o ministério) | `directorate` (`congress/directorates.ts`, ação `nomear_diretoria`) / `isClosedGate` |
+| Termômetro (Congresso, ruas, mercado, instituições) / pronunciamento à nação | `thermometers` (`politics/thermometers.ts`, faixas `calmo`, `normal`, `tenso`, `critico`) / ação `pronunciamento_nacional` |
+| Gaveta do impeachment / pedido protocolado, arquivado, aberto | `GameState.impeachmentDrawer` (`congress/drawer.ts`, ação `negociar_gaveta`) / `ImpeachmentRequest`: `na_gaveta`, `arquivado`, `aberto` |
+| Caso de escândalo / investigação, acusação, condenação, arquivado | `ScandalCase` em `GameState.cases` (`congress/cases.ts`, ação `defender_caso`) / `CaseStage`: `investigacao`, `acusacao`, `condenacao`, `arquivado` |
+| Pauta-bomba (texto de despesa aprovado pelo Congresso contra o governo) | `fiscalBomb` (`congress/fiscalBombs.ts`, `institutions.fiscalBombs`, causa `pauta_bomba`) |
+| STF: vaga, indicação (jurista / aliado), sabatina | `CourtVacancy` em `GameState.court` (`congress/court.ts`, ação `indicar_ministro_stf`) / `CourtNomineeProfile`: `jurista`, `aliado` / `hearingMonth` |
 | Pauta | `pauta` (sem tradução: termo do regimento) |
 | Unidade da Federação (UF) | `uf` (id = sigla, ex.: `BA`) |
 | Participação no PIB / de tendência | `share` / `structuralShare` |

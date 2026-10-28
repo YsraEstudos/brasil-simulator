@@ -61,7 +61,10 @@ describe('catálogo de políticas', () => {
   });
 
   it('o cenário novo disponibiliza todas as políticas sem expandir o catálogo legado', () => {
-    expect([...SCENARIOS[DEFAULT_SCENARIO_ID].policies].sort()).toEqual(Object.keys(POLICIES).sort());
+    // As pautas-bomba (Fase C6c) ficam fora: só o Congresso as aprova (`institutions.fiscalBombs`).
+    const bombs = SCENARIOS[DEFAULT_SCENARIO_ID].institutions?.fiscalBombs ?? [];
+    expect(bombs.length).toBeGreaterThan(0);
+    expect([...SCENARIOS[DEFAULT_SCENARIO_ID].policies, ...bombs].sort()).toEqual(Object.keys(POLICIES).sort());
   });
 
   it('prazo legislativo é positivo só quando há instrumento legislativo', () => {

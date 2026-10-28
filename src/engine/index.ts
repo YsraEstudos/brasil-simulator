@@ -75,6 +75,11 @@ export {
   CONCEDE_ACTION_ID,
   DECLARE_CANDIDACY_ACTION_ID,
   DIRECTIVE_ACTION_ID,
+  DIRECTORATE_ACTION_ID,
+  DEFEND_CASE_ACTION_ID,
+  DRAWER_ACTION_ID,
+  PRONOUNCEMENT_ACTION_ID,
+  NOMINATE_JUSTICE_ACTION_ID,
   BRAND_ACTION_ID,
   isAgendaAction,
   NEGOTIATE_ACTION_ID,
@@ -121,6 +126,63 @@ export {
   policyMinistry,
 } from './congress/cabinet';
 export {
+  directorateOccupant,
+  directorateScandalChance,
+  directorateScandalRisk,
+  directoratesOf,
+  directorateSince,
+  directorateSupport,
+  isClosedGate,
+  partisanDirectorates,
+  riskiestDirectorate,
+} from './congress/directorates';
+export {
+  CASE_FLAGS,
+  CASE_STAGE_LABEL,
+  caseHazard,
+  caseRiskBand,
+  casesEnabled,
+  caseSubjectHeld,
+  isOpenCase,
+  openCases,
+} from './congress/cases';
+export {
+  camaraPresidentRelation,
+  drawerEnabled,
+  drawerRequests,
+  drawerStance,
+  pendingRequests,
+  REQUEST_CAUSE_LABEL,
+} from './congress/drawer';
+export {
+  BAND_LABEL,
+  bandOf,
+  pronouncementGain,
+  recentPronouncements,
+  THERMOMETER_LABEL,
+  thermometers,
+  type Thermometer,
+  type ThermometerBand,
+  type ThermometerFactor,
+  type ThermometerId,
+} from './politics/thermometers';
+export {
+  fiscalBombChance,
+  fiscalBombCostText,
+  fiscalBombPolicies,
+  fiscalBombProposer,
+  isFiscalBomb,
+  nextFiscalBomb,
+} from './congress/fiscalBombs';
+export {
+  appointedJustices,
+  courtCalendar,
+  courtVacancies,
+  expectedNominationYes,
+  NOMINEE_LABEL,
+  nomineeSupport,
+} from './congress/court';
+export {
   blocRelation,
   blocSupport,
   housePresident,
@@ -135,7 +197,7 @@ export {
 } from './congress/congress';
 export { currentHouse, pautaOccupancy, pautaSlots, reissueBarredPolicies } from './proposals/proposals';
 export { fiscalRoom } from './economy/fiscal';
-export { BC_BOARD_SIZE, boardShare } from './economy/monetary';
+export { BC_BOARD_SIZE, boardShare, pressureForecast, type PressureForecast } from './economy/monetary';
 export { activeImpulses, isActive, pruneImpulses, sumActive } from './impulses';
 export { checkInvariants } from './invariants';
 export {

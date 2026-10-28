@@ -27,6 +27,8 @@ export interface PendingItem {
 export interface SanctionItem {
   proposal: Proposal;
   name: string;
+  /** Texto de origem quando o projeto não é do governo (pauta-bomba, PLANO_CAMPANHA.md Fase C6c). */
+  context?: string;
 }
 
 export interface EventInboxProps {
@@ -89,7 +91,7 @@ export function EventInbox({
           Nada pede resposta neste mês.
         </Text>
       )}
-      {sanctions.map(({ proposal, name }) => {
+      {sanctions.map(({ proposal, name, context }) => {
         const options: SanctionChoice[] =
           proposal.rider > 0 ? ['sancionar', 'vetar_acrescimos', 'vetar_total'] : ['sancionar', 'vetar_total'];
         // Só a escolha marcada aparece selecionada; sem ela vale a sanção tácita, que o selo "padrão" indica.
@@ -97,9 +99,10 @@ export function EventInbox({
         return (
           <Card key={proposal.id} title={`Sanção: ${name}`} subtitle="Sem resposta neste mês, vale a sanção tácita.">
             <Text variant="body">
-              {proposal.rider > 0
-                ? 'O Congresso aprovou o projeto, e o relator incluiu acréscimos estranhos ao texto, com despesa extra.'
-                : 'O Congresso aprovou o projeto. Decida se sanciona ou veta.'}
+              {context ??
+                (proposal.rider > 0
+                  ? 'O Congresso aprovou o projeto, e o relator incluiu acréscimos estranhos ao texto, com despesa extra.'
+                  : 'O Congresso aprovou o projeto. Decida se sanciona ou veta.')}
             </Text>
             <View style={styles.options} accessibilityRole="radiogroup">
               {options.map((choice) => (

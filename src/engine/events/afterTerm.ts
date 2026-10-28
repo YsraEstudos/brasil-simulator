@@ -198,6 +198,12 @@ function legal(state: Readonly<GameState>): AfterTerm['legal'] {
   if (Object.keys(state.events.flags).some((f) => f.startsWith('escandalo_'))) {
     items.push({ level: 'investigacao', label: 'Denúncias de irregularidade no governo' });
   }
+  if (state.cases?.some((caseItem) => caseItem.stage === 'condenacao')) {
+    items.push({
+      level: 'condenacao',
+      label: 'Condenação em caso de diretoria de estatal; não implica condenação do presidente',
+    });
+  }
   const investigations = state.career?.illicit?.investigations ?? 0;
   if (investigations > 0) {
     items.push({ level: 'investigacao', label: 'Caixa 2 da campanha descoberto pela fiscalização' });

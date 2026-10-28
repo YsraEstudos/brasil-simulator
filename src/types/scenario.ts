@@ -129,6 +129,24 @@ export const ministrySchema = z
 export type Ministry = z.infer<typeof ministrySchema>;
 
 /**
+ * Diretoria de estatal ou banco público (PLANO_CAMPANHA.md Fase C6a; POLITICAL_RULES.md §6.3.2): cargo de segundo
+ * escalão vinculado a um ministério. Nomes genéricos (`FICTICIO`), sem estatal real.
+ */
+export const directorateSchema = z
+  .object({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    /** Ministério ao qual a diretoria se vincula (id de `ministries`). */
+    ministryId: contentIdSchema,
+    /** Peso político do cargo (0–1): apoio do bloco que o ocupa, relação na troca e risco de escândalo. */
+    weight: unitInterval,
+    /** Ocupante no início: `tecnico` ou id de bloco. */
+    occupant: contentIdSchema,
+  })
+  .strict();
+export type Directorate = z.infer<typeof directorateSchema>;
+
+/**
  * Instituições do cenário (POLITICAL_RULES.md §6.3, §13): blocos que presidem a Câmara e o Senado e
  * ministérios. Opcional: sem ele, cada Casa é presidida pelo maior bloco nela e não há ministérios.
  */
@@ -136,6 +154,42 @@ export const scenarioInstitutionsSchema = z
   .object({
     housePresidents: z.object({ camara: contentIdSchema, senado: contentIdSchema }).strict(),
     ministries: z.array(ministrySchema),
+    /** Diretorias de estatais (Fase C6a). Ausente = sistema desligado no cenário. */
+    directorates: z.array(directorateSchema).optional(),
+    /** Casos de escândalo graduais (Fase C6b): o escândalo em diretoria abre um caso. Exige `directorates`. */
+    scandalCases: z.boolean().optional(),
+    /**
+     * Gaveta do impeachment (Fase C6e): pedidos acumulados na Câmara, arquivados ou abertos pela presidência da Casa
+     * (`housePresidents.camara`). Ausente = sistema desligado.
+     */
+    impeachmentDrawer: z.boolean().optional(),
+    /**
+     * Pautas-bomba do cenário (PLANO_CAMPANHA.md Fase C6c): ids de políticas que o Congresso pode aprovar por conta
+     * própria, na ordem em que chegam. Fora de `policies` (o jogador não as propõe). Ausente = sistema desligado.
+     */
+    fiscalBombs: z.array(contentIdSchema).optional(),
+    /**
+     * STF (PLANO_CAMPANHA.md Fase C6d): calendário de vagas do mandato, dado do cenário (`FICTICIO`), sem idade dos
+     * ministros no estado. Ausente = sistema desligado.
+     */
+    supremeCourt: z
+      .object({
+        vacancies: z
+          .array(
+            z
+              .object({
+                id: contentIdSchema,
+                /** Mês do mandato em que a vaga abre (0 = jan/2027). */
+                monthIndex: z.number().int().min(1).max(95),
+                /** Motivo, para o texto: aposentadoria compulsória (EC 88/2015) ou saída antecipada. */
+                reason: z.enum(['aposentadoria_compulsoria', 'saida_antecipada']),
+              })
+              .strict(),
+          )
+          .min(1),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 export type ScenarioInstitutions = z.infer<typeof scenarioInstitutionsSchema>;
@@ -496,6 +550,28 @@ export const scenarioSchema = z
             code: 'custom',
             path: ['institutions', 'ministries', m.id],
             message: `ocupante deve ser "${TECHNICAL_MINISTER}" ou um bloco: ${m.occupant}`,
+          });
+        }
+      }
+      const directorates = s.institutions.directorates ?? [];
+      unique(
+        directorates.map((d) => d.id),
+        'institutions',
+      );
+      const ministryIds = new Set(s.institutions.ministries.map((m) => m.id));
+      for (const d of directorates) {
+        if (d.occupant !== TECHNICAL_MINISTER && !blocIds.has(d.occupant)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['institutions', 'directorates', d.id],
+            message: `ocupante deve ser "${TECHNICAL_MINISTER}" ou um bloco: ${d.occupant}`,
+          });
+        }
+        if (!ministryIds.has(d.ministryId)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['institutions', 'directorates', d.id],
+            message: `ministério inexistente: ${d.ministryId}`,
           });
         }
       }

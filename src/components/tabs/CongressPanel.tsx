@@ -10,10 +10,30 @@ import { loadContent } from '@/content';
 import {
   AGENDA_ACTIONS,
   AMENDMENTS_ACTION_ID,
+  appointedJustices,
+  courtVacancies,
+  expectedNominationYes,
+  NOMINATE_JUSTICE_ACTION_ID,
+  NOMINEE_LABEL,
+  type CourtNomineeProfile,
   APPOINT_ACTION_ID,
   blocRelation,
+  CASE_STAGE_LABEL,
+  caseRiskBand,
+  caseSubjectHeld,
   CONCEDE_ACTION_ID,
   currentHouse,
+  DEFEND_CASE_ACTION_ID,
+  DRAWER_ACTION_ID,
+  drawerEnabled,
+  drawerRequests,
+  drawerStance,
+  isOpenCase,
+  DIRECTORATE_ACTION_ID,
+  directorateOccupant,
+  directorateScandalChance,
+  directoratesOf,
+  isClosedGate,
   housePresident,
   legislativeInstrument,
   ministriesOf,
@@ -33,7 +53,7 @@ import {
 } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
 import { draftCost, findDecision, fits, gameStore, hasDecision, useGame, type ActiveCampaign } from '@/store';
-import { TECHNICAL_MINISTER, type Bloc, type Ministry } from '@/types/scenario';
+import { TECHNICAL_MINISTER, type Bloc, type Directorate, type Ministry } from '@/types/scenario';
 
 import { signedInt } from './StatRow';
 
@@ -115,6 +135,10 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
       ))}
 
       <MinistriesCard state={state} content={content} agenda={agenda} />
+      <CourtCard state={state} content={content} agenda={agenda} />
+      <DirectoratesCard state={state} content={content} agenda={agenda} />
+      <CasesCard state={state} content={content} agenda={agenda} />
+      <DrawerCard state={state} content={content} agenda={agenda} />
     </>
   );
 }
@@ -272,9 +296,14 @@ function ProposalItem({
 
 function BlocCard({ bloc, state, content }: { bloc: Bloc; state: GameState; content: GameContent }) {
   const relation = blocRelation(state, bloc);
-  const held = ministriesOf(content)
-    .filter((m) => ministryOccupant(state, m) === bloc.id)
-    .map((m) => m.name);
+  const held = [
+    ...ministriesOf(content)
+      .filter((m) => ministryOccupant(state, m) === bloc.id)
+      .map((m) => m.name),
+    ...directoratesOf(content)
+      .filter((d) => directorateOccupant(state, d) === bloc.id)
+      .map((d) => d.name),
+  ];
   const presides = HOUSES.filter((h) => housePresident(content, h)?.id === bloc.id).map((h) => HOUSE_LABEL[h]);
   return (
     <Card
@@ -343,6 +372,207 @@ function MinistriesCard({ state, content, agenda }: { state: GameState; content:
                         ? 'Nomear técnico'
                         : `Entregar ao bloco ${content.scenario.blocs.find((b) => b.id === o)?.name ?? o}`
                     }
+                    agenda={agenda}
+                  />
+                ))
+              : null}
+          </View>
+        );
+      })}
+    </Card>
+  );
+}
+
+/**
+ * Diretorias de estatais (PLANO_CAMPANHA.md Fase C6a): mesmo desenho dos ministérios. Mostra o ministério ao qual
+ * cada uma se vincula e avisa quando o mesmo bloco ocupa os dois ("porteira fechada"), que aumenta o risco.
+ */
+function DirectoratesCard({
+  state,
+  content,
+  agenda,
+}: {
+  state: GameState;
+  content: GameContent;
+  agenda: AgendaHelpers;
+}) {
+  const [open, setOpen] = useState<string | null>(null);
+  const directorates = directoratesOf(content);
+  if (directorates.length === 0) return null;
+  const blocName = (o: string) => content.scenario.blocs.find((b) => b.id === o)?.name ?? o;
+  const occupantName = (o: string) => (o === TECHNICAL_MINISTER ? 'quadro técnico' : `indicação: ${blocName(o)}`);
+  const ministryName = (id: string) => ministriesOf(content).find((m) => m.id === id)?.name ?? id;
+
+  return (
+    <Card
+      title="Diretorias de estatais"
+      subtitle="Ficção: estatais e bancos públicos genéricos. Diretoria entregue a um bloco rende um pouco de apoio nas votações, mas acumula risco de escândalo, maior quando o mesmo bloco tem o ministério da área. Tirar o cargo de um bloco custa capital e a relação com ele.">
+      {directorates.map((d: Directorate) => {
+        const occupant = directorateOccupant(state, d);
+        const risk = directorateScandalChance(state, content, d);
+        const closed = isClosedGate(state, content, d);
+        const pending = agenda.pending(actionDecision(DIRECTORATE_ACTION_ID, { directorateId: d.id, occupant: '' }));
+        const pendingOccupant = typeof pending?.params?.occupant === 'string' ? pending.params.occupant : null;
+        const options = [TECHNICAL_MINISTER, ...content.scenario.blocs.map((b) => b.id)].filter((o) => o !== occupant);
+        return (
+          <View key={d.id} style={styles.row}>
+            <Text variant="label">{d.name}</Text>
+            <Text variant="body" color="textSecondary">
+              {`${occupantName(occupant)} · vinculada a ${ministryName(d.ministryId)} · peso ${formatPercent(d.weight, 0)}${risk > 0 ? ` · risco de escândalo ${formatPercent(risk, 1)} ao mês` : ''}`}
+            </Text>
+            {closed ? (
+              <Text variant="caption" color="negative">
+                O mesmo bloco ocupa o ministério da área: o risco de escândalo é maior.
+              </Text>
+            ) : null}
+            {pendingOccupant ? (
+              <Text variant="caption" color="accent">
+                {`● Na agenda: ${occupantName(pendingOccupant)}`}
+              </Text>
+            ) : null}
+            <Button
+              label={open === d.id ? 'Fechar' : 'Trocar ocupante…'}
+              variant="ghost"
+              onPress={() => setOpen((cur) => (cur === d.id ? null : d.id))}
+              block
+            />
+            {open === d.id
+              ? options.map((o) => (
+                  <ActionButton
+                    key={o}
+                    decision={actionDecision(DIRECTORATE_ACTION_ID, { directorateId: d.id, occupant: o })}
+                    label={o === TECHNICAL_MINISTER ? 'Nomear técnico' : `Entregar ao bloco ${blocName(o)}`}
+                    agenda={agenda}
+                  />
+                ))
+              : null}
+          </View>
+        );
+      })}
+    </Card>
+  );
+}
+
+/**
+ * Casos de escândalo (PLANO_CAMPANHA.md Fase C6b): etapa, tempo na etapa e faixa de risco atual de avançar, sem
+ * número do motor. Os abertos vêm primeiro; defender entra na agenda do mês.
+ */
+function CasesCard({ state, content, agenda }: { state: GameState; content: GameContent; agenda: AgendaHelpers }) {
+  const cases = [...(state.cases ?? [])].sort((a, b) => Number(isOpenCase(b)) - Number(isOpenCase(a)));
+  if (cases.length === 0) return null;
+  const directorateName = (id: string) => directoratesOf(content).find((d) => d.id === id)?.name ?? id;
+  const blocName = (id: string) => content.scenario.blocs.find((b) => b.id === id)?.name ?? id;
+
+  return (
+    <Card
+      title="Casos de escândalo"
+      subtitle="Ficção. Um caso passa por investigação, acusação formal e, só depois da acusação, condenação; investigação não é condenação. A exposição cresce enquanto o bloco segue no cargo e cai quando o indicado sai; exposição baixa arquiva o caso.">
+      {cases.map((c) => {
+        const open = isOpenCase(c);
+        const months = state.monthIndex - c.stageMonth;
+        const held = caseSubjectHeld(state, content, c);
+        return (
+          <View key={c.id} style={styles.row}>
+            <Text variant="label">{`${directorateName(c.subjectId)} · indicação do bloco ${blocName(c.blocId)}`}</Text>
+            <Text variant="body" color="textSecondary">
+              {open
+                ? `${CASE_STAGE_LABEL[c.stage]} ${months === 0 ? 'desde este mês' : months === 1 ? 'há 1 mês' : `há ${months} meses`} · risco de avançar: ${caseRiskBand(c.exposure, content)}`
+                : `${CASE_STAGE_LABEL[c.stage]} em ${shortMonthLabel(c.stageMonth)}`}
+            </Text>
+            {open && !held ? (
+              <Text variant="caption" color="textSecondary">
+                O bloco já não ocupa o cargo: a exposição cai a cada mês.
+              </Text>
+            ) : null}
+            {open ? (
+              <ActionButton
+                decision={actionDecision(DEFEND_CASE_ACTION_ID, { caseId: c.id })}
+                label="Defender o caso"
+                agenda={agenda}
+              />
+            ) : null}
+          </View>
+        );
+      })}
+    </Card>
+  );
+}
+
+const DRAWER_STANCE_TEXT = {
+  arquiva: 'A presidência da Câmara é aliada: arquiva os pedidos antigos.',
+  segura: 'A presidência da Câmara segura os pedidos na gaveta, sem arquivar nem abrir.',
+  ameaca: 'A presidência da Câmara é hostil: com a pressão alta, pode abrir um pedido.',
+} as const;
+
+/**
+ * Gaveta do impeachment (PLANO_CAMPANHA.md Fase C6e): quantos pedidos esperam, a postura da presidência da Câmara e
+ * a negociação. Abrir um pedido só leva ao 1º passo da cadeia de impeachment (admissibilidade).
+ */
+function DrawerCard({ state, content, agenda }: { state: GameState; content: GameContent; agenda: AgendaHelpers }) {
+  if (!drawerEnabled(content)) return null;
+  const requests = drawerRequests(state);
+  const waiting = requests.filter((r) => r.status === 'na_gaveta');
+  const archived = requests.filter((r) => r.status === 'arquivado').length;
+  const opened = requests.filter((r) => r.status === 'aberto').length;
+  const president = housePresident(content, 'camara');
+
+  return (
+    <Card
+      title="Gaveta do impeachment"
+      subtitle={`Pedidos protocolados na Câmara esperam a decisão de quem a preside${president ? ` (bloco ${president.name})` : ''}. Abrir um pedido só leva à admissibilidade; a cassação continua dependendo das votações na Câmara e no Senado.`}>
+      <Text variant="body">{`Na gaveta: ${waiting.length} · arquivados: ${archived} · abertos: ${opened}`}</Text>
+      <Text variant="body" color={drawerStance(state, content) === 'ameaca' ? 'negative' : 'textSecondary'}>
+        {DRAWER_STANCE_TEXT[drawerStance(state, content)]}
+      </Text>
+      {waiting.length > 0 ? (
+        <ActionButton
+          decision={actionDecision(DRAWER_ACTION_ID, {})}
+          label="Negociar o arquivamento do pedido mais antigo"
+          agenda={agenda}
+        />
+      ) : null}
+    </Card>
+  );
+}
+
+const NOMINEE_PROFILES: readonly CourtNomineeProfile[] = ['jurista', 'aliado'];
+
+/**
+ * STF (PLANO_CAMPANHA.md Fase C6d): vagas do mandato, indicação com a previsão de votos no Senado (maioria absoluta)
+ * e o resultado da última votação. Só aparece depois da primeira vaga.
+ */
+function CourtCard({ state, content, agenda }: { state: GameState; content: GameContent; agenda: AgendaHelpers }) {
+  const vacancies = courtVacancies(state);
+  if (vacancies.length === 0) return null;
+  const appointed = appointedJustices(state);
+
+  return (
+    <Card
+      title="Supremo Tribunal Federal"
+      subtitle={`Vagas abertas no mandato: o presidente indica, o Senado sabatina e vota no mês seguinte e precisa de 41 dos 81 votos. Indicados por este governo: ${appointed}. As indicações não mudam as liminares contra as medidas do governo.`}>
+      {vacancies.map((v, i) => {
+        const vote = v.lastVote;
+        const voteText = vote
+          ? ` · última votação (${shortMonthLabel(vote.monthIndex)}): ${vote.yes} votos (${vote.required} necessários), ${vote.approved ? 'aprovada' : 'rejeitada'}`
+          : '';
+        const status =
+          v.status === 'preenchida'
+            ? `Preenchida por ${NOMINEE_LABEL[v.nominee ?? 'jurista']}`
+            : v.status === 'em_sabatina'
+              ? `Indicação de ${NOMINEE_LABEL[v.nominee ?? 'jurista']} em sabatina, votação em ${shortMonthLabel(v.hearingMonth ?? state.monthIndex)}`
+              : 'Aberta, à espera da indicação';
+        return (
+          <View key={v.id} style={styles.row}>
+            <Text variant="label">{`Vaga ${i + 1} · aberta em ${shortMonthLabel(v.openedMonth)}`}</Text>
+            <Text variant="body" color="textSecondary">
+              {`${status}${voteText}`}
+            </Text>
+            {v.status === 'aberta'
+              ? NOMINEE_PROFILES.map((profile) => (
+                  <ActionButton
+                    key={profile}
+                    decision={actionDecision(NOMINATE_JUSTICE_ACTION_ID, { vacancyId: v.id, profile })}
+                    label={`Indicar ${NOMINEE_LABEL[profile]} (previsão: ${Math.round(expectedNominationYes(state, profile, content))} votos, 41 necessários)`}
                     agenda={agenda}
                   />
                 ))
