@@ -250,6 +250,18 @@ Módulo `src/engine/politics/calibration.ts` (`PROFILE_PARAMS`, não sobrescrito
 | `eleitor_mediano_escala` | 0,15 | 0,08 – 0,3 | distância normalizada que satura o termo nacional |
 | `ufs_destacadas_previa`, `faixa_central` | 5; 0,2 | — | só interface (prévia e descrição em palavras) |
 
+## Depois do mandato (Fase C7 do PLANO_CAMPANHA)
+
+Módulo `src/engine/events/afterTerm.ts` (`AFTER_TERM_PARAMS`). Valores de jogo, só para a leitura do Legado: não mudam nenhuma simulação. A sensibilidade não foi medida.
+
+| Parâmetro | Valor | Faixa | Significado |
+| --- | --- | --- | --- |
+| `pos_influencia_aprovacao` | 100 | 50 – 150 | pontos de influência por unidade (100 p.p.) de aprovação final acima da neutra (`aprovacao_neutra`) |
+| `pos_influencia_relacao` | 0,2 | 0,1 – 0,4 | pontos por ponto de relação média com os blocos (−100 a 100) |
+| `pos_influencia_sucessor` | 10 | 0 – 20 | pontos quando a candidatura ou o sucessor apoiado vence a eleição geral |
+| `pos_influencia_derrota` | 10 | 0 – 20 | pontos perdidos quando a situação perde a eleição geral |
+| `pos_influencia_impeachment` | 30 | 15 – 50 | pontos perdidos com a condenação no Senado |
+
 ## Mapa eleitoral (PR 12 do PLANO_GLOBO)
 
 **Nenhum parâmetro de jogo novo.** O resultado simulado por UF e a intenção estimada ([POLITICAL_RULES.md](POLITICAL_RULES.md) §11.3) reaproveitam a votação nacional já calibrada (`eleicao_*`, `turno2_*`, `int_*`) e a aprovação por UF; a única incógnita, o deslocamento comum, sai da conta (bissecção), não de um coeficiente. Duas constantes numéricas (não de jogo) ficam em `regionalResult.ts`: o piso/teto das probabilidades antes do logit (10⁻⁶) e o teto de iterações da bissecção (200). Os pesos do eleitorado são a população (`PROVISORIO`, [DATA_SOURCES.md](DATA_SOURCES.md) §4.2). A faixa de cores (< 30 / 30–40 / 40–50 / 50–60 / ≥ 60%) e a inclinação em faixas de 0,1 são só interface.
