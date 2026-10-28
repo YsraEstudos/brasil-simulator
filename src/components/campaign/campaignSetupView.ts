@@ -1,7 +1,6 @@
 import {
   ADVICE_PARAMS,
   AGENDA_ACTIONS_PER_MONTH,
-  careerProfile,
   careerSchedule,
   DEFAULT_CALIBRATION,
   describeProfile,
@@ -229,7 +228,7 @@ const START_POINT_NAME: Record<StartPoint, string> = {
 
 /**
  * Pontos de partida do cenário (PLANO_CAMPANHA.md Fase C1, entrada mínima): a posse e os da carreira, com o mês de
- * início e o perfil de candidato lidos do próprio cenário. A transição até a posse ainda é provisória.
+ * início e o perfil de candidato lidos do próprio cenário.
  */
 export function startPointViews(scenarioId: string): StartPointView[] {
   const scenario = isKnownScenario(scenarioId) ? SCENARIOS[scenarioId] : undefined;
@@ -238,18 +237,22 @@ export function startPointViews(scenarioId: string): StartPointView[] {
       return { id, name: START_POINT_NAME[id], description: 'Começa no primeiro dia do mandato, já eleito.' };
     }
     const first = careerSchedule({ scenario }, id)[0];
-    const profile = careerProfile({ scenario });
     return {
       id,
       name: START_POINT_NAME[id],
       description:
-        `Começa em ${startLabel(first.from)}, como ${profile.name.toLowerCase()}, e disputa a eleição de outubro: ` +
+        `Começa em ${startLabel(first.from)} e disputa a eleição de outubro: ` +
         'vencendo, toma posse em janeiro de 2027; perdendo, a partida termina com um resumo da campanha. ' +
         (scenario.career?.finance?.expanded
           ? 'Inclui ações de campanha, um debate na TV e finanças de campanha.'
           : 'Inclui ações de campanha e um debate na TV.'),
     };
   });
+}
+
+/** Perfis eleitorais oferecidos pelo cenário, separados do perfil ideológico do governo. */
+export function careerProfileViews(scenarioId: string) {
+  return isKnownScenario(scenarioId) ? (SCENARIOS[scenarioId].career?.profiles ?? []) : [];
 }
 
 /** Texto do botão de criar: tomar posse ou começar a campanha. */
@@ -267,6 +270,7 @@ export interface SetupSummary {
   /** Perfil ideológico inicial do governo (nome e posição nos eixos). */
   profile: string;
   startPoint: string;
+  careerProfile: string | null;
   duration: string;
   seed: string;
 }
@@ -285,6 +289,11 @@ export function setupSummary(form: CampaignSetupForm): SetupSummary {
     version: scenario ? `v${scenario.version}` : '—',
     profile: profileSummary(form.profileId),
     startPoint: START_POINT_NAME[form.startPoint ?? 'posse'],
+    careerProfile:
+      form.startPoint && form.startPoint !== 'posse'
+        ? ((scenario?.career?.profiles.find((p) => p.id === form.careerProfileId) ?? scenario?.career?.profiles[0])
+            ?.name ?? null)
+        : null,
     duration: scenario ? `até ${durationLabel(campaignMonths(form.scenarioId))}` : '—',
     seed: !seed.ok ? 'Inválida' : seed.value === null ? 'Aleatória' : String(seed.value),
   };

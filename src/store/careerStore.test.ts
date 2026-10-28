@@ -8,6 +8,7 @@ import { careerSchedule, INAUGURATION_NOTE } from '@/engine';
 
 import { checkNewCampaignInput, startPointsOf } from './campaignSetup';
 import { createGameStore } from './gameStore';
+import { SCENARIOS } from './scenarios';
 
 // PLANO_CAMPANHA.md Fase C1 (tarefas C1.5 e C1.7): store e entrada mínima de nova campanha com o ponto 'corrida'.
 
@@ -32,6 +33,23 @@ async function device() {
 }
 
 describe('pontos de partida na configuração (PLANO_CAMPANHA.md Fase C1)', () => {
+  // PLANO_CAMPANHA.md Fase C8.1: perfil eleitoral validado pelo cenário.
+  it('aceita o perfil eleitoral do cenário e rejeita um perfil desconhecido', () => {
+    const selected = checkNewCampaignInput({
+      name: 'X',
+      difficulty: 'casual',
+      startPoint: 'corrida',
+      careerProfileId: 'ex_governador',
+    });
+    expect(selected.ok && selected.input.careerProfileId).toBe('ex_governador');
+    const unknown = checkNewCampaignInput({
+      name: 'X',
+      difficulty: 'casual',
+      startPoint: 'corrida',
+      careerProfileId: 'inexistente',
+    });
+    expect(unknown.ok).toBe(false);
+  });
   it('o cenário padrão oferece a corrida; cenários sem carreira, só a posse', () => {
     expect(startPointsOf(DEFAULT_SCENARIO_ID)).toEqual(['posse', 'corrida']);
     expect(startPointsOf('prototipo_ficticio')).toEqual(['posse']);
@@ -55,12 +73,51 @@ describe('pontos de partida na configuração (PLANO_CAMPANHA.md Fase C1)', () =
 });
 
 describe('store com a partida que começa na corrida (PLANO_CAMPANHA.md §2.3)', () => {
+  it('grava e retoma o perfil eleitoral selecionado', async () => {
+    const launchApp = await device();
+    const app = await launchApp();
+    const result = await app.getState().newCampaign({
+      name: 'Perfil',
+      difficulty: 'estrategica',
+      startPoint: 'corrida',
+      careerProfileId: 'ex_governador',
+    });
+    expect(result.ok).toBe(true);
+    const id = app.getState().active!.id;
+    const reopened = await launchApp();
+    expect(await reopened.getState().continueCampaign(id)).toBe(true);
+    expect(reopened.getState().active!.state.career?.profileId).toBe('ex_governador');
+  });
+
+  it('encaminha um segundo perfil do cenário ao motor e o conserva ao reabrir', async () => {
+    const profiles = SCENARIOS[DEFAULT_SCENARIO_ID].career!.profiles;
+    const second = { ...profiles[0], id: 'perfil_teste', name: 'Outro candidato' };
+    profiles.push(second);
+    try {
+      const launchApp = await device();
+      const app = await launchApp();
+      const result = await app.getState().newCampaign({
+        name: 'Outro perfil',
+        difficulty: 'estrategica',
+        startPoint: 'corrida',
+        careerProfileId: second.id,
+      });
+      expect(result.ok).toBe(true);
+      expect(app.getState().active!.state.career?.profileId).toBe(second.id);
+      const id = app.getState().active!.id;
+      const reopened = await launchApp();
+      expect(await reopened.getState().continueCampaign(id)).toBe(true);
+      expect(reopened.getState().active!.state.career?.profileId).toBe(second.id);
+    } finally {
+      profiles.pop();
+    }
+  });
   it('cria, joga, fecha e retoma antes e depois da posse, com a linha de base na posse', async () => {
     const launchApp = await device();
     let app = await launchApp();
     const created = await app
       .getState()
-      .newCampaign({ name: 'Corrida', difficulty: 'estrategica', startPoint: 'corrida' });
+      .newCampaign({ name: 'Corrida', difficulty: 'estrategica', startPoint: 'corrida', seed: 11 });
     expect(created.ok).toBe(true);
     const id = app.getState().active!.id;
     expect(app.getState().active!.state.career).toMatchObject({ stage: 'corrida', turnIndex: 0 });

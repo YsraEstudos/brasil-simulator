@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { advanceMonth } from '@/engine/advanceMonth';
-import { careerSchedule } from '@/engine/career';
+import { careerDefeated, careerSchedule } from '@/engine/career';
 import { checkInvariants } from '@/engine/invariants';
 import { createInitialState } from '@/engine/state';
 import type { Decision } from '@/engine/types';
@@ -31,15 +31,22 @@ function simulate(strategy: Strategy, seed: number) {
     violations += checkInvariants(state, result.state, result.report, content).length;
     rejected += result.report.rejected.length;
     state = result.state;
+    if (careerDefeated(state)) break;
   }
   const finance = state.career!.expandedFinance!;
-  const official = Object.values(finance.closure!.remaining).reduce((a, b) => a + b, 0);
-  const illicit = state.career!.illicit?.closedBalance ?? 0;
+  const official = Object.values(finance.closure?.remaining ?? finance.pockets).reduce((a, b) => a + b, 0);
+  const illicitState = state.career!.illicit;
+  const illicit = illicitState?.closedBalance ?? illicitState?.balance ?? 0;
+  const debt = finance.closure?.debt ?? finance.debt;
   return {
+    defeated: careerDefeated(state),
     official,
     illicit,
-    debt: finance.closure!.debt,
-    net: official + illicit + finance.personalAvailable - finance.closure!.debt,
+    debt,
+    pending:
+      finance.scheduled.reduce((total, receipt) => total + receipt.amount, 0) +
+      (illicitState?.pending.reduce((total, receipt) => total + receipt.amount, 0) ?? 0),
+    net: official + illicit + finance.personalAvailable - debt,
     investigations: state.career!.illicit?.investigations ?? 0,
     rejected,
     violations,
@@ -66,8 +73,15 @@ describe('diagnóstico financeiro de carreira', () => {
       const mean = (key: 'official' | 'illicit' | 'debt' | 'rejected' | 'net') =>
         rows.reduce((sum, row) => sum + row[key], 0) / rows.length;
       console.log(
-        `${strategy}: n=${rows.length}, líquido médio=${mean('net')} mil, sobra oficial média=${mean('official')} mil, caixa 2 médio=${mean('illicit')} mil, dívida média=${mean('debt')} mil, recusas médias=${mean('rejected')}, investigação=${investigated}/${rows.length} IC95%=[${(interval[0] * 100).toFixed(1)}%, ${(interval[1] * 100).toFixed(1)}%]`,
+        `${strategy}: n=${rows.length}, derrotas=${rows.filter((row) => row.defeated).length}, líquido médio=${mean('net')} mil, saldo oficial médio=${mean('official')} mil, caixa 2 médio=${mean('illicit')} mil, dívida média=${mean('debt')} mil, recusas médias=${mean('rejected')}, investigação=${investigated}/${rows.length} IC95%=[${(interval[0] * 100).toFixed(1)}%, ${(interval[1] * 100).toFixed(1)}%]`,
       );
+      for (const defeated of [true, false]) {
+        const group = rows.filter((row) => row.defeated === defeated);
+        if (group.length)
+          console.log(
+            `${strategy} ${defeated ? 'derrota: saldo aberto' : 'posse: contas encerradas'} n=${group.length} líquido médio=${(group.reduce((n, r) => n + r.net, 0) / group.length).toFixed(0)} mil parcelas pendentes=${group.reduce((n, r) => n + r.pending, 0)} mil`,
+          );
+      }
     }
   });
 });

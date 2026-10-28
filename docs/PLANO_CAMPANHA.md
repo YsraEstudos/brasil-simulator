@@ -22,7 +22,7 @@ Referências: [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) (regras do motor, §2.1 s
 
 **O que este documento é:** um plano em fases (Fases C0–C8) para levar ao código as partes do documento de origem que ainda são design — a Camada 1 (pré-campanha e eleição antes da posse), a Camada 3 (bastidores de Brasília) e a Camada 5 (pós-presidência) — e uma conferência, com evidência no código, do que o documento diz já estar implementado nas Camadas 2 e 4.
 
-**O que não é:** não muda o status de nenhuma fase do roadmap, não toma nenhuma decisão em aberto (§7) e não começa a implementação. Nomes de tipos, campos, arquivos e parâmetros que ainda não existem estão marcados **(proposto)**. Afirmações jurídicas estão **pendentes de verificação** (§8).
+**O que não é:** não altera por si só o status das fases do roadmap nem resolve todas as decisões em aberto (§7). As seções de implementação registram o que já foi entregue; o restante é planejamento. Nomes de tipos, campos, arquivos e parâmetros que ainda não existem estão marcados **(proposto)**. Afirmações jurídicas estão **pendentes de verificação** (§8).
 
 **Versões citadas:** números de versão (`STATE_SCHEMA_VERSION`, `ENGINE_VERSION`, id do cenário) são os de 27/10/2026. Como a implementação pode começar muito depois (D-C2), **toda fase confere de novo esses números ao abrir** e usa "versão atual + 1", nunca um número fixado aqui.
 
@@ -226,6 +226,8 @@ Três contratos diferentes, que a v0.2 misturava:
 ---
 
 ## 5. Fases
+
+Os relatos de implementação de cada fase descrevem o estado na data indicada. Uma funcionalidade listada como pendente naquela entrega pode ter sido implementada em uma fase posterior; o estado mais recente da C8 aparece ao fim desta seção.
 
 Coluna **Entrega**: M1.1, M1.2, M1.3 ou Exp (§3.1).
 
@@ -934,6 +936,15 @@ Derrotas antes da posse usam o resumo da Fase C5 (não há governo a avaliar). C
 | C8.4 | Balanceamento final (§5.1) e `docs/CALIBRATION.md` |
 | C8.5 | Revisão de coerência dos documentos |
 | C8.6 | Homologação no aparelho dos fluxos reais |
+
+#### Trabalho iniciado (27–28/10/2026)
+
+- **C8.2, tutorial inicial:** orientações consultáveis na aba eleitoral explicam ações, pagamento, pesquisa, debate e desfecho do percurso atual. A compreensão e a acessibilidade no aparelho ainda precisam de homologação.
+- **C8.1:** a tela apresenta os pontos e perfis eleitorais existentes no cenário e envia o perfil escolhido ao motor. O cenário oferece posse e corrida, com um único perfil eleitoral; pré-campanha longa e outros perfis dependem da expansão.
+- **C8.3:** o globo recebe a mesma camada de reconhecimento do mapa 2D e mostra uma rota ilustrativa para a UF da última caravana aceita; movimento reduzido posiciona o marcador diretamente no destino. Medição e confirmação visual em aparelho permanecem pendentes.
+- **C8.4:** a investigação em [DIAGNOSTICO_CAMPANHA.md](DIAGNOSTICO_CAMPANHA.md) identificou vantagem central elevada em perfis sintéticos e reduziu provisoriamente o peso do alinhamento de 1 para 0,25, o da mobilização de 0,08 para 0,02 e o do comício de 0,04 para 0,01. Os controles pré-registrados passaram em sementes independentes; a melhor das 27 sequências exploradas venceu 89/100. A comparação pareada com dotação total e gastos controlados passou em 200 sementes, mas cobre uma busca limitada e tem diferenças de liquidez. O diagnóstico financeiro agora para ao ocorrer derrota e distingue saldo aberto de contas encerradas. Não é balanceamento final: faltam perfis reais adicionais e sessões com pessoas.
+- **C8.6:** homologação real dos fluxos, acessibilidade e desempenho permanece pendente: em 28/10/2026 o autor informou que não há aparelho disponível. A tentativa de conferência web local também não terminou porque o ambiente bloqueou a conexão local ao Expo; não equivale a homologação Android.
+- **C8.5:** os documentos de design e da Fase 08 agora remetem ao percurso pré-posse; corrigida a descrição deste plano como se a implementação ainda não tivesse começado. A revisão completa de coerência permanece pendente. `CALIBRATION.md` é gerado pela simulação econômica; o diagnóstico eleitoral é registrado separadamente.
 
 **Estimativa (esforço).** Interface 2–3; balanceamento 1–2; homologação 1.
 

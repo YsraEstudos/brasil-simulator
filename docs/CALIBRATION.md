@@ -3,6 +3,7 @@
 Arquivo **gerado** por `npm run sim:sensitivity` (scripts/sim/sensitivity.sim.ts); não editar à mão.
 Fonte dos valores: `src/engine/economy/calibration.ts`. Todos os valores são `PROVISORIO` até a importação das
 séries oficiais ([DATA_SOURCES.md](DATA_SOURCES.md) §4); a justificativa de cada um está na coluna "Base".
+O diagnóstico eleitoral e suas limitações estão em [DIAGNOSTICO_CAMPANHA.md](DIAGNOSTICO_CAMPANHA.md).
 
 ## Método
 
