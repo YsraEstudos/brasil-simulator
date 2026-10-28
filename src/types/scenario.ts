@@ -354,7 +354,7 @@ export type ElectionCandidate = z.infer<typeof electionCandidateSchema>;
 /**
  * Eleições do cenário (Fase 08): calendário e regra de reeleição. Meses 0–47 contam do início do mandato
  * (posse jan/2027 = 0). Ausente = cenário sem eleições: o motor nunca roda o passo eleitoral, aplica vedação
- * ou encerra por derrota/fim de mandato.
+ * ou encerra por derrota eleitoral.
  */
 export const scenarioElectionsSchema = z
   .object({

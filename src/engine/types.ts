@@ -13,10 +13,10 @@ import type { IllicitState } from './career/illicit';
 import type { CampaignConfigV2 } from './campaignConfig';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 20;
+export const STATE_SCHEMA_VERSION = 21;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.16.0';
+export const ENGINE_VERSION = '0.17.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -597,6 +597,46 @@ export interface PresidentialElection {
   venceu: boolean;
   /** Decidida no 2º turno. */
   turno2: boolean;
+  /**
+   * Personagem que venceu a eleição e assume o mandato seguinte (PLANO_EXPANSAO EX-15/EX-16): `'jogador'` ou o id do
+   * sucessor. Ausente na derrota e em saves anteriores à revisão; a transição deriva a identidade nesse caso.
+   */
+  winnerId?: string;
+  /** Bloco de quem venceu (para a notícia e para o histórico). */
+  winnerBlocId?: string;
+}
+
+/**
+ * Identidade de uma administração (PLANO_EXPANSAO §2.1, EX-15). Descreve **quem** ocupa a Presidência e em que
+ * mandato; não duplica economia, Congresso nem sociedade, que continuam no `GameState`. Aditiva e opcional: o
+ * cenário sem eleições e os saves anteriores à revisão ficam sem o campo.
+ */
+export interface AdministrationIdentity {
+  /** `mandato#${termIndex}`, único no histórico. */
+  id: string;
+  /** Personagem na Presidência: `'jogador'` ou `'sucessor:<bloco>'`. */
+  presidentId: string;
+  /** Bloco do presidente (resolve o nome fictício em `elections.candidatos`). */
+  blocId: string;
+  /** Mês da posse. */
+  startedAtMonth: number;
+  /** Mês da saída (exclusivo); ausente enquanto governa. */
+  endedAtMonth?: number;
+  /** Mandato contado desde a primeira posse do país (0, 1, 2, ...). */
+  termIndex: number;
+  /** Mandatos consecutivos deste presidente, incluindo este (1 ou 2). Base da elegibilidade. */
+  consecutiveTerm: number;
+  /** Como assumiu: primeira eleição, reeleição ou sucessão de quem não concorreu. */
+  origin: 'eleicao' | 'reeleicao' | 'sucessao';
+}
+
+/**
+ * Quem o jogador controla (PLANO_EXPANSAO §2.1, EX-17). A Presidência segue o cargo: quem assume legalmente passa a
+ * ser controlado, mesmo quando não é o mesmo personagem da campanha.
+ */
+export interface ControlIdentity {
+  controlledCharacterId: string;
+  careerMode: 'presidencial';
 }
 
 /**
@@ -773,6 +813,13 @@ export interface GameState {
    * pedido: antes dele, o estado é o mesmo com o sistema ligado ou desligado.
    */
   impeachmentDrawer?: ImpeachmentRequest[];
+  /**
+   * Histórico das administrações (PLANO_EXPANSAO EX-15/EX-16): quem governou, em que mandato e como assumiu. A última
+   * é a que governa. Ausente em cenários sem eleições e em saves anteriores à revisão.
+   */
+  administrations?: AdministrationIdentity[];
+  /** Personagem controlado pelo jogador (EX-17); segue a Presidência quando há troca legítima de governo. */
+  control?: ControlIdentity;
 }
 
 /** Situação de um pedido de impeachment na Câmara (Fase C6e). */

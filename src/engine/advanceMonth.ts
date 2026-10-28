@@ -1,5 +1,6 @@
 import { actionKey, AGENDA_ACTIONS } from './actions';
 import { validateActionTarget } from './agenda';
+import { presidentialTransitionStep } from './administration/transition';
 import { advanceCareerTurn, isPreInauguration } from './career';
 import { chargeExpiredDebt, payCampaignDebt, PAY_CAMPAIGN_DEBT } from './career/commitments';
 import { electionsStep, governorTurnoverStep } from './elections/elections';
@@ -50,6 +51,7 @@ import {
  * governador recém-eleito não ser puxado pela evolução regional do próprio mês.
  */
 export const DEFAULT_STEPS: readonly MonthStep[] = [
+  presidentialTransitionStep,
   resolveEventsStep,
   cabinetStep,
   proposalsStep,

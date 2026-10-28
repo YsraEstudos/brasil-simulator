@@ -11,11 +11,14 @@ const content = loadContent(DEFAULT_SCENARIO_ID);
 const LIMIT = campaignMonths(DEFAULT_SCENARIO_ID);
 const start = () => createInitialState({ content, difficulty: 'estrategica', seed: 3 });
 
+/** Fim de leitura no mês 48: o limite é o próprio mês, como no fim de uma partida. */
+const END = 48;
+
 function ended(flags: string[] = []): GameState {
   const s = start();
   return {
     ...s,
-    monthIndex: 48,
+    monthIndex: END,
     events: { ...s.events, flags: Object.fromEntries(flags.map((f) => [f, 40])) },
     politics: {
       votingIntention: 0.5,
@@ -32,8 +35,12 @@ describe('depois do mandato na tela (Fase C7)', () => {
     expect(afterTermView(start(), content, LIMIT)).toBeNull();
   });
 
+  it('a posse de um sucessor não encerra a partida (R4): o país continua', () => {
+    expect(afterTermView(ended(), content, LIMIT)).toBeNull();
+  });
+
   it('três aspectos com valor e detalhes em texto, e as possibilidades', () => {
-    const view = afterTermView(ended(), content, LIMIT)!;
+    const view = afterTermView(ended(), content, END)!;
     expect(view.aspects.map((a) => a.title)).toEqual(['Influência política', 'Situação jurídica', 'Legado de governo']);
     expect(view.aspects[0].value).toMatch(/^(baixa|média|alta) · \d+ de 100$/);
     expect(view.aspects[0].details.join()).toMatch(/Sucessor apoiado eleito \+10/);
@@ -43,7 +50,16 @@ describe('depois do mandato na tela (Fase C7)', () => {
   });
 
   it('a CPI aparece como investigação, com o item', () => {
-    const view = afterTermView(ended(['cpi_instalada']), content, LIMIT)!;
+    const view = afterTermView(ended(['cpi_instalada']), content, END)!;
     expect(view.aspects[1]).toMatchObject({ value: 'sob investigação', details: ['CPI ainda em funcionamento'] });
+  });
+
+  it('prestação de contas mostra estado, tom e evidência de cada promessa', () => {
+    const s = ended();
+    const ppa = { kind: 'ppa' as const, year: 2027, priority: 'saude' as const, proposalId: 'ppa_2027', enactedAt: 5 };
+    const view = afterTermView({ ...s, publicPolicies: { ...s.publicPolicies, budgetLaws: [ppa] } }, content, END)!;
+    expect(view.accountability).toHaveLength(1);
+    expect(view.accountability[0]).toMatchObject({ status: 'Inviável', tone: 'negative' });
+    expect(view.accountability[0].evidence).toMatch(/Sem LOA/);
   });
 });

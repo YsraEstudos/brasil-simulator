@@ -25,6 +25,7 @@ import { initialClimate } from './climate/climate';
 import { initialRegions } from './regions/regions';
 import { seedRng } from './rng';
 import { createCareerState } from './career';
+import { initialAdministration } from './administration/identity';
 import { initialSociety, initialSocietyForGame } from './society/society';
 import { initialPublicPolicies } from './publicPolicies/types';
 import {
@@ -147,6 +148,8 @@ export function createInitialState(c: NewCampaign): GameState {
       ]),
     ),
   }));
+  // Identidade da primeira administração (PLANO_EXPANSAO EX-15): só onde há eleições, como o bloco `politics`.
+  const administration = scenario.elections ? initialAdministration(c.content, initialCareer?.profileId) : undefined;
   const state: GameState = {
     schemaVersion: STATE_SCHEMA_VERSION,
     engineVersion: ENGINE_VERSION,
@@ -214,6 +217,12 @@ export function createInitialState(c: NewCampaign): GameState {
     publicPolicies: initialPublicPolicies(),
     government: { profile: presetProfile(c.profile ?? DEFAULT_PROFILE_PRESET) },
     climate: initialClimate(c.seed),
+    ...(administration
+      ? {
+          administrations: [administration],
+          control: { controlledCharacterId: administration.presidentId, careerMode: 'presidencial' as const },
+        }
+      : {}),
     ...(initialCareer && opponents ? { career: { ...initialCareer, opponents } } : {}),
   };
   return { ...state, society: initialSocietyForGame(state), regions: { ufs: initialRegions(state, c.content).ufs } };
