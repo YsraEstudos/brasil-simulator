@@ -65,6 +65,9 @@ function logistic(x: number): number {
   return 1 / (1 + Math.exp(-x));
 }
 
+/** Maioria absoluta do Senado (CF art. 101: aprovação de ministro do STF). */
+export const SENATE_ABSOLUTE_MAJORITY = Math.floor(SENATE_SEATS / 2) + 1;
+
 function requiredVotes(seats: number, quorum: Quorum): number {
   const exact = (seats * quorum.numerador) / quorum.denominador;
   return quorum.tipo === 'ao_menos' ? Math.ceil(exact) : Math.floor(exact) + 1;
@@ -226,7 +229,7 @@ export function vetoOverrideSupport(
 }
 
 /** Votos "sim" esperados de um bloco dado o apoio, sem arredondar (parte fiel + parte dissidente). */
-function expectedBlocYes(support: number, seats: number, cohesion: number, c: Calibration): number {
+export function expectedBlocYes(support: number, seats: number, cohesion: number, c: Calibration): number {
   const loyalYes = support > c.limiar_apoio ? cohesion * seats : 0;
   const dissidentYes = (1 - cohesion) * seats * logistic(c.inclinacao_apoio * (support - c.limiar_apoio));
   return loyalYes + dissidentYes;

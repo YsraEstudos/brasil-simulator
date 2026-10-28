@@ -4,6 +4,7 @@ import {
   CONCEDE_ACTION_ID,
   DECLARE_CANDIDACY_ACTION_ID,
   DIRECTIVE_ACTION_ID,
+  NOMINATE_JUSTICE_ACTION_ID,
   BRAND_ACTION_ID,
   NEGOTIATE_ACTION_ID,
   SANCTION_ACTION_ID,
@@ -74,6 +75,11 @@ export function validateActionTarget(
       const occupantOk = occupant === TECHNICAL_OCCUPANT || content.scenario.blocs.some((b) => b.id === occupant);
       if (!ministry || !occupantOk) return 'alvo_invalido';
       return ministryOccupant(state, ministry) === occupant ? 'alvo_invalido' : null;
+    }
+    case NOMINATE_JUSTICE_ACTION_ID: {
+      const vacancy = state.court?.vacancies.find((v) => v.id === params.vacancyId);
+      const profileOk = params.profile === 'jurista' || params.profile === 'aliado';
+      return vacancy?.status === 'aberta' && profileOk ? null : 'alvo_invalido';
     }
     case SANCTION_ACTION_ID: {
       const p = proposal();
