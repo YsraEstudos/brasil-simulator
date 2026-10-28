@@ -3,6 +3,7 @@
 Arquivo **gerado** por `npm run sim:sensitivity` (scripts/sim/sensitivity.sim.ts); não editar à mão.
 Fonte dos valores: `src/engine/economy/calibration.ts`. Todos os valores são `PROVISORIO` até a importação das
 séries oficiais ([DATA_SOURCES.md](DATA_SOURCES.md) §4); a justificativa de cada um está na coluna "Base".
+O diagnóstico eleitoral e suas limitações estão em [DIAGNOSTICO_CAMPANHA.md](DIAGNOSTICO_CAMPANHA.md).
 
 ## Método
 
@@ -181,6 +182,14 @@ Resultado: todos os extremos estáveis.
 | `capital_veto_derrubado` | -6 | -12 – 0 | capital político quando o Congresso derruba um veto | POLITICAL_RULES.md §7: derrubada de veto = derrota política | dívida final 214% → 214% (+0,0 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `capital_veto_mantido` | 2 | 0 – 5 | capital político quando o veto é mantido | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (+0,0 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `apoio_acrescimo_base` | 0,1 | 0 – 0,3 | apoio de todos os blocos a derrubar o veto aos acréscimos (benefício paroquial) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (+0,0 p.p.); inflação média 3,2% → 3,2%; violações 0 |
+| `bomba_relacao_limite` | 0 | -30 – 20 | relação média com o Congresso abaixo da qual pode chegar pauta-bomba | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6c) |
+| `bomba_chance_por_ponto` | 0,004 | 0,001 – 0,01 | chance mensal de pauta-bomba por ponto de relação abaixo do limite | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6c) |
+| `bomba_chance_max` | 0,15 | 0,05 – 0,3 | teto da chance mensal de pauta-bomba | saturação de segurança (ECONOMIC_MODEL.md §1.8) | não medido (Fase C6c) |
+| `bomba_intervalo_meses` | 12 | 6 – 24 | meses mínimos entre duas pautas-bomba | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6c) |
+| `stf_apoio_jurista` | 0,35 | 0,1 – 0,6 | apoio próprio de um jurista de carreira na votação do Senado (somado à lealdade e à popularidade) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6d) |
+| `stf_apoio_aliado` | 0 | -0,3 – 0,3 | apoio próprio de um aliado do governo, além da afinidade ideológica do bloco com o governo (× w_ideo) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6d) |
+| `stf_capital_aprovada` | 2 | 0 – 5 | capital político quando o Senado aprova a indicação | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6d) |
+| `stf_capital_rejeitada` | -6 | -12 – 0 | capital político quando o Senado rejeita a indicação | POLITICAL_RULES.md §8.1: rejeição é derrota política | não medido (Fase C6d) |
 | `apoio_ministerio` | 0,25 | 0,1 – 0,4 | apoio do bloco nas votações por pasta ocupada, × peso da pasta | POLITICAL_RULES.md §6.3.1 | dívida final 214% → 214% (+0,4 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `apoio_ministerio_max` | 0,4 | 0,2 – 0,6 | saturação do apoio por ministérios de um bloco | saturação de segurança (ECONOMIC_MODEL.md §1.8) | dívida final 214% → 214% (−0,1 p.p.); inflação média 3,1% → 3,2%; violações 0 |
 | `relacao_nomeacao` | 15 | 5 – 25 | relação do bloco ao receber uma pasta, × peso | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (−0,1 p.p.); inflação média 3,1% → 3,2%; violações 0 |
@@ -191,6 +200,45 @@ Resultado: todos os extremos estáveis.
 | `escandalo_base_mes` | 0,004 | 0,001 – 0,01 | chance mensal de escândalo numa pasta de bloco recém-nomeada (× peso) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (+0,2 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `escandalo_por_ano` | 0,006 | 0,002 – 0,015 | aumento da chance mensal por ano no cargo (× peso) | POLITICAL_RULES.md §6.3.1: cresce com o tempo no cargo | dívida final 214% → 214% (−0,1 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `escandalo_max_mes` | 0,03 | 0,01 – 0,05 | saturação da chance mensal por pasta | saturação de segurança (ECONOMIC_MODEL.md §1.8) | dívida final 214% → 214% (+0,0 p.p.); inflação média 3,2% → 3,2%; violações 0 |
+| `apoio_diretoria` | 0,08 | 0,02 – 0,15 | apoio do bloco nas votações por diretoria ocupada, × peso; soma com o dos ministérios sob o mesmo teto | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6a: as diretorias começam técnicas e a estratégia simulada não as troca) |
+| `relacao_nomeacao_diretoria` | 6 | 2 – 12 | relação do bloco ao receber uma diretoria, × peso | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6a) |
+| `relacao_demissao_diretoria` | -10 | -20 – -3 | relação do bloco ao perder uma diretoria, × peso | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6a) |
+| `capital_demissao_diretoria` | -2 | -5 – 0 | capital político por tirar uma diretoria de um bloco | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6a) |
+| `fator_porteira_fechada` | 1,5 | 1 – 2,5 | risco de escândalo da diretoria × fator quando o mesmo bloco ocupa o ministério ao qual ela se vincula | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6a) |
+| `termo_congresso_relacao` | 0,5 | 0,2 – 1 | pontos do termômetro do Congresso por ponto de relação média (sinal trocado) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_congresso_pauta` | 15 | 5 – 30 | pontos por pauta-bomba à espera de sanção ou de sessão do veto | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_congresso_presidencia` | 10 | 0 – 25 | pontos quando a presidência da Câmara é hostil (abaixo de gaveta_relacao_abertura) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_ruas_aprovacao` | 100 | 50 – 200 | pontos das ruas por unidade de aprovação abaixo da neutra (0,5) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_ruas_desemprego` | 300 | 100 – 600 | pontos das ruas por unidade de desemprego acima do neutro | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_ruas_inflacao` | 300 | 100 – 600 | pontos das ruas por unidade de inflação em 12 meses acima da meta | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_mercado_premio` | 600 | 200 – 1200 | pontos do mercado por unidade de prêmio de risco acima do base | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_mercado_credibilidade` | 60 | 20 – 120 | pontos do mercado por unidade de credibilidade abaixo de 0,5 | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_mercado_limite` | 2000 | 500 – 4000 | pontos do mercado por unidade de despesa acima do limite (fração do PIB) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_inst_pressao` | 60 | 20 – 100 | pontos das instituições por unidade de pressão de impeachment | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_inst_caso` | 8 | 2 – 15 | pontos das instituições por caso de escândalo aberto | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_inst_pedido` | 4 | 1 – 10 | pontos das instituições por pedido de impeachment na gaveta | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `termo_inst_diretoria` | 300 | 100 – 600 | pontos das instituições por unidade de risco mensal de escândalo nas diretorias | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `pronunciamento_aprovacao` | 0,008 | 0,002 – 0,015 | aprovação no mês de um pronunciamento à nação, sem pronunciamento recente | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `pronunciamento_meses` | 6 | 3 – 12 | meses em que um pronunciamento anterior reduz pela metade o efeito do seguinte | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6g) |
+| `gaveta_pedido_pressao` | 0,3 | 0,1 – 0,6 | chance mensal de novo pedido de impeachment por unidade de pressão (× impeachmentPressure) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6e) |
+| `gaveta_meses_arquivo` | 6 | 3 – 12 | meses na gaveta depois dos quais a presidência aliada da Câmara arquiva o pedido | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6e) |
+| `gaveta_relacao_arquivo` | 0 | -20 – 30 | relação do bloco que preside a Câmara a partir da qual ele arquiva pedidos antigos | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6e) |
+| `gaveta_relacao_abertura` | -20 | -60 – 0 | relação do bloco que preside a Câmara abaixo da qual ele pode abrir um pedido | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6e) |
+| `gaveta_pressao_abertura` | 0,5 | 0,3 – 0,7 | pressão de impeachment mínima para abrir um pedido (a mesma do 1º evento da cadeia) | POLITICAL_RULES.md §10: condição do evento de pedido | não medido (Fase C6e) |
+| `gaveta_chance_abertura` | 0,3 | 0,1 – 0,6 | chance mensal de a presidência hostil abrir um pedido quando as condições valem | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6e) |
+| `capital_negociar_gaveta` | -3 | -8 – 0 | capital político gasto ao negociar o arquivamento de um pedido | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6e) |
+| `relacao_negociar_gaveta` | 5 | 0 – 12 | relação ganha com o bloco que preside a Câmara ao negociar | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6e) |
+| `caso_exposicao_inicial` | 1 | 0,5 – 2 | exposição do caso no mês em que abre | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
+| `caso_decaimento` | 0,6 | 0,3 – 0,9 | δ da exposição: E_t = δ·E_{t−1} + volume_t; volume 1 enquanto o bloco do caso segue no cargo | PLANO_CAMPANHA.md Fase C3: mesma especificação de perigo do caixa 2 | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
+| `caso_lambda` | 0,15 | 0,05 – 0,4 | λ do perigo de avançar de etapa: h = min(h_max, 1 − e^(−λ·E)) | PLANO_CAMPANHA.md Fase C3 | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
+| `caso_perigo_max` | 0,25 | 0,1 – 0,4 | teto do perigo mensal de o caso avançar de etapa | saturação de segurança (ECONOMIC_MODEL.md §1.8) | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
+| `caso_meses_min` | 3 | 1 – 6 | meses mínimos numa etapa antes de o caso poder avançar | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
+| `caso_arquivamento` | 0,3 | 0,1 – 0,6 | exposição abaixo da qual o caso é arquivado (investigação ou acusação) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
+| `caso_defesa` | 0,5 | 0,2 – 0,8 | redução do perigo no mês em que o governo defende o caso | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
+| `capital_defesa_caso` | -2 | -5 – 0 | capital político gasto ao defender um caso | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
+| `caso_aprovacao_acusacao` | -0,01 | -0,02 – -0,003 | aprovação por mês, por 2 meses, quando o caso vira acusação | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
+| `caso_aprovacao_condenacao` | -0,015 | -0,03 – -0,005 | aprovação por mês, por 3 meses, quando o indicado é condenado | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
+| `caso_prob_cpi` | 0,5 | 0 – 1 | chance de a acusação levar à instalação da CPI (evento existente da Fase 07) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | não medido (Fase C6b: casos só nascem de diretorias trocadas) |
 | `relacao_vitoria` | 3 | 0 – 10 | relação dos blocos que votaram sim após aprovação | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 209% → 214% (+5,2 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `relacao_derrota` | -3 | -10 – 0 | relação dos blocos que votaram não | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 213% → 214% (+1,4 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `capital_vitoria` | 4 | 0 – 10 | capital político por vitória legislativa | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (+0,0 p.p.); inflação média 3,2% → 3,2%; violações 0 |
@@ -249,6 +297,18 @@ Módulo `src/engine/politics/calibration.ts` (`PROFILE_PARAMS`, não sobrescrito
 | `eleitor_mediano_distancia_neutra` | 0,2 | 0,1 – 0,35 | distância normalizada ao mediano em que o termo nacional é zero |
 | `eleitor_mediano_escala` | 0,15 | 0,08 – 0,3 | distância normalizada que satura o termo nacional |
 | `ufs_destacadas_previa`, `faixa_central` | 5; 0,2 | — | só interface (prévia e descrição em palavras) |
+
+## Depois do mandato (Fase C7 do PLANO_CAMPANHA)
+
+Módulo `src/engine/events/afterTerm.ts` (`AFTER_TERM_PARAMS`). Valores de jogo, só para a leitura do Legado: não mudam nenhuma simulação. A sensibilidade não foi medida.
+
+| Parâmetro | Valor | Faixa | Significado |
+| --- | --- | --- | --- |
+| `pos_influencia_aprovacao` | 100 | 50 – 150 | pontos de influência por unidade (100 p.p.) de aprovação final acima da neutra (`aprovacao_neutra`) |
+| `pos_influencia_relacao` | 0,2 | 0,1 – 0,4 | pontos por ponto de relação média com os blocos (−100 a 100) |
+| `pos_influencia_sucessor` | 10 | 0 – 20 | pontos quando a candidatura ou o sucessor apoiado vence a eleição geral |
+| `pos_influencia_derrota` | 10 | 0 – 20 | pontos perdidos quando a situação perde a eleição geral |
+| `pos_influencia_impeachment` | 30 | 15 – 50 | pontos perdidos com a condenação no Senado |
 
 ## Mapa eleitoral (PR 12 do PLANO_GLOBO)
 

@@ -1,5 +1,5 @@
 import { governmentSupport, groupCounts } from '@/components/congress/hemicycle';
-import { monthLabel } from '@/components/campaign/labels';
+import { careerTurnLabel, monthLabel, shortMonthLabel, shortTurnLabel } from '@/components/campaign/labels';
 import { mapFills, mapRows, type MapIndicator } from './regionalMetrics';
 import {
   deltaSentiment,
@@ -12,6 +12,8 @@ import {
 import { campaignMonths } from '@/content';
 import {
   blocRelation,
+  careerSchedule,
+  currentCareerTurn,
   currentNominalGdpMillions,
   indicatorsFromScenario,
   ministryOccupant,
@@ -117,7 +119,9 @@ export interface HudData {
   demo: boolean;
   /** Mês a jogar; com a campanha encerrada, o último mês jogado. */
   monthLabel: string;
-  /** Número do mês de `monthLabel` na campanha (1 = posse). */
+  /** `monthLabel` curto ("ago/2026", "jan/2027"). */
+  shortLabel: string;
+  /** Número do mês de `monthLabel` na campanha (1 = posse); antes da posse, o turno da campanha. */
   turn: number;
   turnTotal: number;
   /**
@@ -224,7 +228,9 @@ interface StatInput {
   populationThousands: number;
   /** UFs do cenário (contexto de população). */
   ufCount: number;
-  monthIndex: number;
+  /** Rótulo e contagem já resolvidos (turno da campanha antes da posse, mês do mandato depois). */
+  monthLabel: string;
+  turn: number;
   turnTotal: number;
 }
 
@@ -246,8 +252,8 @@ function buildStats(input: StatInput): HudStat[] {
     {
       id: 'mes',
       label: 'Mês',
-      value: monthLabel(input.monthIndex),
-      context: `Turno ${input.monthIndex + 1} de ${input.turnTotal}`,
+      value: input.monthLabel,
+      context: `Turno ${input.turn} de ${input.turnTotal}`,
       sentiment: 'neutral',
       tone: 'neutral',
     },
@@ -417,11 +423,18 @@ export function hudFromCampaign(
   const ufStates = regionsView(state, content);
   // `monthIndex` é o próximo mês a jogar; encerrada, a campanha mostra o último mês jogado (não "49/48").
   const shownMonth = campaign.finished ? Math.max(0, state.monthIndex - 1) : state.monthIndex;
+  // Antes da posse (PLANO_CAMPANHA.md Fase C1) o rótulo e a contagem são os da campanha, não os do mandato.
+  const career = currentCareerTurn(state, content);
+  const preTurns = state.career ? careerSchedule(content, state.career.startPoint).length : 0;
+  const label = career ? careerTurnLabel(career) : monthLabel(shownMonth);
+  const turn = career && state.career ? state.career.turnIndex + 1 : shownMonth + 1;
+  const turnTotal = career ? preTurns : campaignMonths(state.scenarioId);
   return {
     demo: false,
-    monthLabel: monthLabel(shownMonth),
-    turn: shownMonth + 1,
-    turnTotal: campaignMonths(state.scenarioId),
+    monthLabel: label,
+    shortLabel: shortTurnLabel(state, content, campaign.finished),
+    turn,
+    turnTotal,
     actionsMax: state.resources.agendaActionsPerMonth,
     stats: buildStats({
       indicators: state.indicators,
@@ -430,8 +443,9 @@ export function hudFromCampaign(
       nominalGdp: currentNominalGdpMillions(state, content),
       populationThousands: ufs.reduce((n, uf) => n + uf.population, 0),
       ufCount: ufs.length,
-      monthIndex: shownMonth,
-      turnTotal: campaignMonths(state.scenarioId),
+      monthLabel: label,
+      turn,
+      turnTotal,
     }),
     ministries: buildMinistries(state, content),
     congress: buildCongress(content, state),
@@ -451,6 +465,7 @@ export function hudFromScenario(content: GameContent): HudData {
   return {
     demo: true,
     monthLabel: monthLabel(0),
+    shortLabel: shortMonthLabel(0),
     turn: 1,
     turnTotal,
     actionsMax: 3,
@@ -460,7 +475,8 @@ export function hudFromScenario(content: GameContent): HudData {
       nominalGdp: content.scenario.economy?.nominalGdpMillions.value ?? 11_400_000,
       populationThousands: ufs.reduce((n, uf) => n + uf.population, 0),
       ufCount: ufs.length,
-      monthIndex: 0,
+      monthLabel: monthLabel(0),
+      turn: 1,
       turnTotal,
     }),
     ministries: buildMinistries(null, content),

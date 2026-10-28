@@ -4,6 +4,10 @@ import {
   CONCEDE_ACTION_ID,
   DECLARE_CANDIDACY_ACTION_ID,
   DIRECTIVE_ACTION_ID,
+  DIRECTORATE_ACTION_ID,
+  DEFEND_CASE_ACTION_ID,
+  DRAWER_ACTION_ID,
+  NOMINATE_JUSTICE_ACTION_ID,
   BRAND_ACTION_ID,
   NEGOTIATE_ACTION_ID,
   SANCTION_ACTION_ID,
@@ -15,6 +19,8 @@ import {
 } from './actions';
 import { monthOfTerm, termOf } from './calendar';
 import { ministriesOf, ministryOccupant } from './congress/cabinet';
+import { openCases } from './congress/cases';
+import { directorateOccupant, directoratesOf } from './congress/directorates';
 import { legislativeInstrument } from './congress/congress';
 import { declarationInTermWindow } from './elections/elections';
 import { validatePublicAction } from './publicPolicies/publicPolicies';
@@ -74,6 +80,24 @@ export function validateActionTarget(
       const occupantOk = occupant === TECHNICAL_OCCUPANT || content.scenario.blocs.some((b) => b.id === occupant);
       if (!ministry || !occupantOk) return 'alvo_invalido';
       return ministryOccupant(state, ministry) === occupant ? 'alvo_invalido' : null;
+    }
+    case DIRECTORATE_ACTION_ID: {
+      const directorate = directoratesOf(content).find((d) => d.id === params.directorateId);
+      const occupant = params.occupant;
+      const occupantOk = occupant === TECHNICAL_OCCUPANT || content.scenario.blocs.some((b) => b.id === occupant);
+      if (!directorate || !occupantOk) return 'alvo_invalido';
+      return directorateOccupant(state, directorate) === occupant ? 'alvo_invalido' : null;
+    }
+    case DEFEND_CASE_ACTION_ID:
+      return openCases(state).some((c) => c.id === params.caseId && c.openedMonth <= state.monthIndex)
+        ? null
+        : 'alvo_invalido';
+    case DRAWER_ACTION_ID:
+      return (state.impeachmentDrawer ?? []).some((r) => r.status === 'na_gaveta') ? null : 'alvo_invalido';
+    case NOMINATE_JUSTICE_ACTION_ID: {
+      const vacancy = state.court?.vacancies.find((v) => v.id === params.vacancyId);
+      const profileOk = params.profile === 'jurista' || params.profile === 'aliado';
+      return vacancy?.status === 'aberta' && profileOk ? null : 'alvo_invalido';
     }
     case SANCTION_ACTION_ID: {
       const p = proposal();

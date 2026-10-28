@@ -1,5 +1,5 @@
-import type { NewsItem, NewsKind } from '@/engine';
-import { shortMonthLabel } from '@/components/campaign/labels';
+import { offsetOfKey, type NewsItem, type NewsKind } from '@/engine';
+import { shortCareerTurnLabel, shortMonthLabel } from '@/components/campaign/labels';
 
 import { NEWS_KIND_LABEL } from '@/components/tabs/newsView';
 
@@ -282,7 +282,8 @@ export function buildSocialFeed(
   const posts: SocialPost[] = [];
   const journalist = characters.find((c) => c.id === 'jornalista');
   // Ordenação estável: só os meses se invertem; a prioridade dentro do mês fica como o motor gravou.
-  const recent = news.slice(-NEWS_WINDOW).sort((a, b) => b.monthIndex - a.monthIndex);
+  const time = (item: NewsItem) => (item.careerPeriod ? offsetOfKey(item.careerPeriod) : item.monthIndex);
+  const recent = news.slice(-NEWS_WINDOW).sort((a, b) => time(b) - time(a));
 
   for (const item of recent) {
     const r = rng(hashString(item.id));
@@ -294,7 +295,9 @@ export function buildSocialFeed(
         stance,
         kind: item.kind,
         newsId: item.id,
-        when: whenLabel(item.monthIndex, currentMonth, r),
+        when: item.careerPeriod
+          ? shortCareerTurnLabel({ from: item.careerPeriod })
+          : whenLabel(item.monthIndex, currentMonth, r),
         ...counts(stance, author.verified, r),
       });
 

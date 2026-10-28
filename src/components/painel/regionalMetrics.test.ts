@@ -119,9 +119,10 @@ describe('camada Alinhamento (PLANO_GLOBO.md §5.2)', () => {
     expect(availableIndicators(content).map((m) => m.id)).toContain('alinhamento');
     const antigo = loadContent('brasil_2027_01_v070');
     expect(availableIndicators(antigo).map((m) => m.id)).not.toContain('alinhamento');
-    // Sem inclinação somem o Alinhamento e a Inclinação política; Intenção e Resultado dependem só das eleições.
+    // Sem inclinação somem o Alinhamento e a Inclinação política; Intenção e Resultado dependem só das eleições. O
+    // Reconhecimento do candidato só existe antes da posse (Fase C4).
     expect(availableIndicators(antigo).map((m) => m.id)).not.toContain('inclinacao');
-    expect(availableIndicators(antigo)).toHaveLength(MAP_INDICATORS.length - 2);
+    expect(availableIndicators(antigo)).toHaveLength(MAP_INDICATORS.length - 3);
   });
 });
 

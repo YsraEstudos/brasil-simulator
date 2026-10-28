@@ -1,5 +1,55 @@
 export { advanceMonth, DEFAULT_STEPS } from './advanceMonth';
 export {
+  advanceCareerTurn,
+  availableStartPoints,
+  careerDefeated,
+  careerProfile,
+  careerSchedule,
+  createCareerState,
+  currentCareerTurn,
+  inaugurationTurnIndex,
+  INAUGURATION_NOTE,
+  isPreInauguration,
+  PRE_INAUGURATION_STEPS,
+  turnIndexOf,
+} from './career';
+export {
+  attackRisk,
+  CAREER_ACTIONS,
+  careerActionsPerTurn,
+  isCareerAction,
+  type CareerActionSpec,
+  type CareerArchetype,
+} from './career/actions';
+export { CAREER_PARAMS, careerParam } from './career/calibration';
+export {
+  DEBATE_ACTION_ID,
+  DEBATE_POSTURES,
+  debateOfTurn,
+  debateOptions,
+  DEFAULT_DEBATE_POSTURE,
+  type DebateOption,
+} from './career/debate';
+export { keySalt } from './career/draw';
+export { ELECTION_NOTES, electedOutcome, runElection, tallyRound } from './career/election';
+export { canReachInauguration, inaugurationNews } from './career/inauguration';
+export {
+  aggregateTallies,
+  apportion,
+  fillWithCaps,
+  tallyUf,
+  validShares,
+  validVotes,
+  type BallotOption,
+  type Tally,
+} from './career/electorate';
+export { ballotOptions, candidateIdentities, PLAYER_CANDIDATE_ID, type CandidateIdentity } from './career/opponents';
+export { currentPollView, recognitionBand, tallyCareer, takePoll, ufElectorates } from './career/polls';
+export { nationalRecognition, RECOGNITION_CAUSES } from './career/viability';
+export {
+  calendarAt,
+  keyOfCalendar,
+  offsetOfKey,
   monthKey,
   monthOfTerm,
   START_YEAR,
@@ -25,6 +75,11 @@ export {
   CONCEDE_ACTION_ID,
   DECLARE_CANDIDACY_ACTION_ID,
   DIRECTIVE_ACTION_ID,
+  DIRECTORATE_ACTION_ID,
+  DEFEND_CASE_ACTION_ID,
+  DRAWER_ACTION_ID,
+  PRONOUNCEMENT_ACTION_ID,
+  NOMINATE_JUSTICE_ACTION_ID,
   BRAND_ACTION_ID,
   isAgendaAction,
   NEGOTIATE_ACTION_ID,
@@ -71,6 +126,63 @@ export {
   policyMinistry,
 } from './congress/cabinet';
 export {
+  directorateOccupant,
+  directorateScandalChance,
+  directorateScandalRisk,
+  directoratesOf,
+  directorateSince,
+  directorateSupport,
+  isClosedGate,
+  partisanDirectorates,
+  riskiestDirectorate,
+} from './congress/directorates';
+export {
+  CASE_FLAGS,
+  CASE_STAGE_LABEL,
+  caseHazard,
+  caseRiskBand,
+  casesEnabled,
+  caseSubjectHeld,
+  isOpenCase,
+  openCases,
+} from './congress/cases';
+export {
+  camaraPresidentRelation,
+  drawerEnabled,
+  drawerRequests,
+  drawerStance,
+  pendingRequests,
+  REQUEST_CAUSE_LABEL,
+} from './congress/drawer';
+export {
+  BAND_LABEL,
+  bandOf,
+  pronouncementGain,
+  recentPronouncements,
+  THERMOMETER_LABEL,
+  thermometers,
+  type Thermometer,
+  type ThermometerBand,
+  type ThermometerFactor,
+  type ThermometerId,
+} from './politics/thermometers';
+export {
+  fiscalBombChance,
+  fiscalBombCostText,
+  fiscalBombPolicies,
+  fiscalBombProposer,
+  isFiscalBomb,
+  nextFiscalBomb,
+} from './congress/fiscalBombs';
+export {
+  appointedJustices,
+  courtCalendar,
+  courtVacancies,
+  expectedNominationYes,
+  NOMINEE_LABEL,
+  nomineeSupport,
+} from './congress/court';
+export {
   blocRelation,
   blocSupport,
   housePresident,
@@ -85,7 +197,7 @@ export {
 } from './congress/congress';
 export { currentHouse, pautaOccupancy, pautaSlots, reissueBarredPolicies } from './proposals/proposals';
 export { fiscalRoom } from './economy/fiscal';
-export { BC_BOARD_SIZE, boardShare } from './economy/monetary';
+export { BC_BOARD_SIZE, boardShare, pressureForecast, type PressureForecast } from './economy/monetary';
 export { activeImpulses, isActive, pruneImpulses, sumActive } from './impulses';
 export { checkInvariants } from './invariants';
 export {
@@ -221,4 +333,22 @@ export {
 export { GEO_EVENT_PARAMS } from './events/calibration';
 export { impeachmentPressure } from './events/pressure';
 export { campaignOutcome, type CampaignOutcome } from './events/outcome';
+export {
+  AFTER_TERM_PARAMS,
+  afterTerm,
+  finalOutcome,
+  IMPEACHMENT_DISQUALIFICATION_YEARS,
+  influenceBand,
+  initialIndicators,
+  LEGACY_INDICATORS,
+  legacyBand,
+  legacyScore,
+  type AfterTerm,
+  type FinalOutcome,
+  type InfluenceBand,
+  type InfluenceFactor,
+  type LegacyBand,
+  type LegalItem,
+  type LegalLevel,
+} from './events/afterTerm';
 export { NEWS_LIMIT, NEWS_PER_MONTH_MAX, appendNews, generateNews } from './news';

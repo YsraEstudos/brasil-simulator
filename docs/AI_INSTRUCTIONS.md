@@ -109,6 +109,12 @@ recusados.
 | Acréscimos do relator ("jabutis") | `rider` |
 | Sanção / veto | `sanction` / `veto` |
 | Ministério, gabinete | `ministry`, `cabinet` |
+| Diretoria de estatal / "porteira fechada" (bloco com a diretoria e o ministério) | `directorate` (`congress/directorates.ts`, ação `nomear_diretoria`) / `isClosedGate` |
+| Termômetro (Congresso, ruas, mercado, instituições) / pronunciamento à nação | `thermometers` (`politics/thermometers.ts`, faixas `calmo`, `normal`, `tenso`, `critico`) / ação `pronunciamento_nacional` |
+| Gaveta do impeachment / pedido protocolado, arquivado, aberto | `GameState.impeachmentDrawer` (`congress/drawer.ts`, ação `negociar_gaveta`) / `ImpeachmentRequest`: `na_gaveta`, `arquivado`, `aberto` |
+| Caso de escândalo / investigação, acusação, condenação, arquivado | `ScandalCase` em `GameState.cases` (`congress/cases.ts`, ação `defender_caso`) / `CaseStage`: `investigacao`, `acusacao`, `condenacao`, `arquivado` |
+| Pauta-bomba (texto de despesa aprovado pelo Congresso contra o governo) | `fiscalBomb` (`congress/fiscalBombs.ts`, `institutions.fiscalBombs`, causa `pauta_bomba`) |
+| STF: vaga, indicação (jurista / aliado), sabatina | `CourtVacancy` em `GameState.court` (`congress/court.ts`, ação `indicar_ministro_stf`) / `CourtNomineeProfile`: `jurista`, `aliado` / `hearingMonth` |
 | Pauta | `pauta` (sem tradução: termo do regimento) |
 | Unidade da Federação (UF) | `uf` (id = sigla, ex.: `BA`) |
 | Participação no PIB / de tendência | `share` / `structuralShare` |
@@ -135,6 +141,12 @@ recusados.
 | Normal de chuva (mm por UF e mês) / teleconexão ENSO (macrorregião × estação) | `rainfallNormal` / `ensoTeleconnection` (`Climatology`) |
 | Resultado simulado por UF da eleição geral (fotografia gravada no banco, sem sorteio novo) / intenção de voto estimada por UF | `ElectionResult` (`MonthReport.electionResult`, tabela `election_results`) / `regionalVoteIntention` |
 | Prevenção climática (força do programa em `Policy.prevention`; proteção = fração do dano evitada por UF; nunca muda a chuva) / visita e obra no mapa | `prevention` / `preventionOf` (`ImpulseTarget` `clima.prevencao_seca`, `clima.prevencao_cheia`) / marcadores `visit` e `work` (`projectUfs`) |
+| Carreira antes da posse (estágio, perfil de candidato, ponto de partida) | `GameState.career` (`CareerState`, `CareerStage`, `StartPoint`); cenário `Scenario.career` ([PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)) |
+| Reconhecimento / adversário / pesquisa da campanha / faixa do mapa / partição do eleitorado / sorteio por chave | `CareerState.recognition` (pseudo-indicador `'careerRecognition'`) / `CareerCandidateState` (`career.opponents`) / `CareerPoll` (`CareerState.poll`) / `RecognitionBand` / `tallyUf` (`Tally`) / `keyedRng` (`career/draw.ts`) |
+| Ação de campanha / debate / valência do candidato | `CAREER_ACTIONS` (`career/actions.ts`, ids em `CAREER_ACTION_IDS`) / `participar_debate` (`career/debate.ts`, `career.debates`) / `CareerState.valence` (pseudo-indicador `'careerValence'`) |
+| Depois do mandato (influência política, situação jurídica, legado de governo) / desfecho final com o limite de meses | `afterTerm` (`events/afterTerm.ts`) / `finalOutcome` |
+| Eleição da campanha / derrota antes da posse / posse da carreira | `runElection` e `CareerState.election` (`career/election.ts`) / desfecho `derrota_campanha` (`campaignOutcome`, `careerDefeated`) / `career/inauguration.ts` |
+| Índice do turno (identidade de cada turno salvo; = `monthIndex` na partida que começa na posse) / turno da posse | `turnIndexOf(state)` (coluna `turn_index`) / `inaugurationTurnIndex(state)` |
 
 ---
 

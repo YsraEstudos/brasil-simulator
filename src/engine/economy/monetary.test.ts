@@ -35,7 +35,7 @@ describe('diretoria do BC indicada pelo governo (LC 179/2021)', () => {
     expect(boardShare(12, c)).toBeCloseTo(4 / 9, 12);
     expect(boardShare(24, c)).toBeCloseTo(7 / 9, 12);
     expect(boardShare(47, c)).toBe(1);
-    expect(boardShare(48, c)).toBeCloseTo(2 / 9, 12);
+    expect(boardShare(48, c)).toBe(1);
   });
 });
 

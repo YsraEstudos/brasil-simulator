@@ -1,5 +1,11 @@
 import {
   alignmentView,
+  inaugurationTurnIndex,
+  isPreInauguration,
+  turnIndexOf,
+  type PreInaugurationStage,
+  type CareerStartPoint,
+  type CareerTurnReport,
   populationShares,
   regionalVoteIntention,
   regionsOf,
@@ -19,12 +25,16 @@ import {
 } from '../engine';
 import type { SqlDatabase } from './types';
 
-/** Quantos meses de decomposição causal (`MonthReport`) ficam no banco (ECONOMIC_MODEL.md §11). */
+/**
+ * Quantos turnos de decomposição causal (`MonthReport`) ficam no banco (ECONOMIC_MODEL.md §11). A retenção conta
+ * turnos (`turn_index`, PLANO_CAMPANHA.md §2.3), que coincidem com meses na partida que começa na posse.
+ */
 export const REPORT_RETENTION_MONTHS = 12;
 
 /**
- * Quantos snapshots completos do estado ficam no banco, contando o atual (ECONOMIC_MODEL.md §11). Os meses mais
- * antigos ficam só em `indicator_history`. 13 = o mês atual e os 12 anteriores (comparações de 12 meses).
+ * Quantos snapshots completos do estado ficam no banco, contando o atual (ECONOMIC_MODEL.md §11). Os turnos mais
+ * antigos ficam só em `indicator_history`. 13 = o turno atual e os 12 anteriores (comparações de 12 meses). O
+ * snapshot do turno da posse nunca sai: é a base do "na posse" ao retomar a partida.
  */
 export const SNAPSHOT_RETENTION_MONTHS = 13;
 
@@ -77,7 +87,12 @@ export interface CampaignSummary {
   /** Semente da simulação usada na criação (para reproduzir a partida). */
   seed: number;
   status: 'ativa' | 'encerrada';
+  /** Mês do mandato do turno atual (0 antes da posse). */
   currentMonth: number;
+  /** Turno atual (PLANO_CAMPANHA.md §2.3); igual a `currentMonth` na partida que começa na posse. */
+  currentTurn: number;
+  /** Estágio da carreira no turno atual; `null` = governo (inclusive na partida que começa na posse). */
+  stage: PreInaugurationStage | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,7 +106,29 @@ export class CampaignNotFoundError extends Error {
   }
 }
 
-/** Cria a campanha e grava o estado inicial (mês 0). */
+/**
+ * Resumo compacto da pré-campanha (PLANO_CAMPANHA.md §2.3, item 3): fica fora da retenção, a partida inteira. Cresce
+ * um item por turno pré-posse; os relatórios detalhados desses turnos seguem a retenção normal.
+ */
+export interface CareerSummary {
+  startPoint: CareerStartPoint;
+  profileId: string;
+  turns: CareerSummaryTurn[];
+}
+
+export interface CareerSummaryTurn extends CareerTurnReport {
+  turnIndex: number;
+  /** Ids das decisões aceitas no turno, na ordem. */
+  accepted: string[];
+  /** Quantas decisões foram recusadas. */
+  rejected: number;
+}
+
+/** Estágio gravado na linha da campanha: `null` para governo. */
+const stageColumn = (state: GameState): PreInaugurationStage | null =>
+  state.career && state.career.stage !== 'governo' ? state.career.stage : null;
+
+/** Cria a campanha e grava o estado inicial (turno 0) e, se a partida começa antes da posse, o resumo vazio. */
 export async function createCampaign(
   db: SqlDatabase,
   c: { id: string; name: string; scenarioVersion: string; state: GameState; content?: GameContent },
@@ -99,16 +136,36 @@ export async function createCampaign(
   const s = c.state;
   await db.transaction(async () => {
     await db.run(
-      `INSERT INTO campaigns (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [c.id, c.name, s.scenarioId, c.scenarioVersion, s.difficulty, s.seed, s.engineVersion, s.monthIndex],
+      `INSERT INTO campaigns
+         (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month, current_turn, stage)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        c.id,
+        c.name,
+        s.scenarioId,
+        c.scenarioVersion,
+        s.difficulty,
+        s.seed,
+        s.engineVersion,
+        s.monthIndex,
+        turnIndexOf(s),
+        stageColumn(s),
+      ],
     );
+    if (s.career) {
+      const summary: CareerSummary = { startPoint: s.career.startPoint, profileId: s.career.profileId, turns: [] };
+      await db.run('INSERT INTO career_summaries (campaign_id, summary_json) VALUES (?, ?)', [
+        c.id,
+        JSON.stringify(summary),
+      ]);
+    }
     await insertSnapshot(db, c.id, s, c.content);
   });
 }
 
 /**
- * Grava o resultado de um mês: decisões enviadas (aceitas primeiro, depois recusadas, cada grupo na ordem
+ * Grava o resultado de um turno (um mês do mandato ou um turno pré-posse), identificado pelo índice do turno
+ * (PLANO_CAMPANHA.md §2.3): decisões enviadas (aceitas primeiro, depois recusadas, cada grupo na ordem
  * de envio), o relatório do mês, os eventos disparados e resolvidos, o novo estado e, se `finish`, o
  * encerramento da campanha. Descarta relatórios além de `REPORT_RETENTION_MONTHS`. Tudo numa transação: fechar
  * o app no meio não deixa o save pela metade (nem um último mês gravado com a campanha ainda "ativa").
@@ -120,29 +177,32 @@ export async function recordMonth(
   options: { finish?: boolean; content?: GameContent } = {},
 ): Promise<void> {
   const { report, state } = result;
-  const rows: { decision: Decision; accepted: boolean; reason: string | null }[] = [
+  // Turno processado e turno seguinte: na partida que começa na posse, os próprios meses.
+  const turn = report.turnIndex ?? report.monthIndex;
+  const nextTurn = turnIndexOf(state);
+  const rows: { decision: Decision; accepted: boolean; reason: string | null }[] = report.decisionOrder ?? [
     ...report.accepted.map((decision) => ({ decision, accepted: true, reason: null })),
     ...report.rejected.map((r) => ({ decision: r.decision, accepted: false, reason: r.reason })),
   ];
   await db.transaction(async () => {
     const updated = await db.run(
-      `UPDATE campaigns SET current_month = ?, engine_version = ?,
+      `UPDATE campaigns SET current_month = ?, current_turn = ?, stage = ?, engine_version = ?,
          status = CASE WHEN ? THEN 'encerrada' ELSE status END,
          updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-       WHERE id = ? AND current_month = ?`,
-      [state.monthIndex, state.engineVersion, options.finish ? 1 : 0, campaignId, report.monthIndex],
+       WHERE id = ? AND current_turn = ?`,
+      [state.monthIndex, nextTurn, stageColumn(state), state.engineVersion, options.finish ? 1 : 0, campaignId, turn],
     );
     if (updated.changes !== 1) {
-      throw new Error(`campanha ${campaignId} não está no mês ${report.monthIndex}`);
+      throw new Error(`campanha ${campaignId} não está no turno ${turn}`);
     }
     for (const [position, row] of rows.entries()) {
       await db.run(
         `INSERT INTO decisions
-           (campaign_id, month_index, position, policy_id, agenda_cost, params_json, accepted, rejection_reason)
+           (campaign_id, turn_index, position, policy_id, agenda_cost, params_json, accepted, rejection_reason)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           campaignId,
-          report.monthIndex,
+          turn,
           position,
           row.decision.policyId,
           row.decision.agendaCost,
@@ -152,9 +212,9 @@ export async function recordMonth(
         ],
       );
     }
-    await db.run('INSERT INTO month_reports (campaign_id, month_index, report_json) VALUES (?, ?, ?)', [
+    await db.run('INSERT INTO month_reports (campaign_id, turn_index, report_json) VALUES (?, ?, ?)', [
       campaignId,
-      report.monthIndex,
+      turn,
       JSON.stringify(report),
     ]);
     // Evento disparado neste mês aguarda resposta: linha no mês seguinte, sem escolha ainda. O payload guarda a
@@ -162,10 +222,10 @@ export async function recordMonth(
     for (const eventId of report.eventsFired) {
       const instance = report.eventInstances?.find((i) => i.eventId === eventId);
       await db.run(
-        'INSERT INTO events (campaign_id, month_index, event_id, choice_id, payload_json) VALUES (?, ?, ?, NULL, ?)',
+        'INSERT INTO events (campaign_id, turn_index, event_id, choice_id, payload_json) VALUES (?, ?, ?, NULL, ?)',
         [
           campaignId,
-          report.monthIndex + 1,
+          turn + 1,
           eventId,
           instance ? JSON.stringify({ instanceId: instance.instanceId, location: instance.location }) : null,
         ],
@@ -174,10 +234,10 @@ export async function recordMonth(
     // Escolha aplicada neste mês (do jogador ou automática, quando o prazo venceu).
     for (const resolved of report.eventsResolved) {
       await db.run(
-        'INSERT INTO events (campaign_id, month_index, event_id, choice_id, payload_json) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO events (campaign_id, turn_index, event_id, choice_id, payload_json) VALUES (?, ?, ?, ?, ?)',
         [
           campaignId,
-          report.monthIndex,
+          turn,
           resolved.eventId,
           resolved.choiceId,
           JSON.stringify({ automatic: resolved.automatic, instanceId: resolved.instanceId }),
@@ -192,19 +252,51 @@ export async function recordMonth(
         JSON.stringify(report.electionResult),
       ]);
     }
-    await db.run('DELETE FROM month_reports WHERE campaign_id = ? AND month_index < ?', [
+    if (report.career) await appendCareerSummary(db, campaignId, turn, report);
+    await db.run('DELETE FROM month_reports WHERE campaign_id = ? AND turn_index < ?', [
       campaignId,
-      report.monthIndex - (REPORT_RETENTION_MONTHS - 1),
+      turn - (REPORT_RETENTION_MONTHS - 1),
     ]);
     await insertSnapshot(db, campaignId, state, options.content);
-    await db.run('DELETE FROM snapshots WHERE campaign_id = ? AND month_index < ?', [
+    // -1 antes da posse: nenhum turno a poupar.
+    await db.run('DELETE FROM snapshots WHERE campaign_id = ? AND turn_index < ? AND turn_index <> ?', [
       campaignId,
-      state.monthIndex - (SNAPSHOT_RETENTION_MONTHS - 1),
+      nextTurn - (SNAPSHOT_RETENTION_MONTHS - 1),
+      inaugurationTurnIndex(state) ?? -1,
     ]);
   });
 }
 
-/** Série de longo prazo da campanha, mês a mês (inclui o mês 0). */
+/** Acrescenta o turno pré-posse ao resumo compacto (na transação de quem chama). */
+async function appendCareerSummary(db: SqlDatabase, campaignId: string, turn: number, report: MonthReport) {
+  const row = await db.first<{ summary_json: string }>(
+    'SELECT summary_json FROM career_summaries WHERE campaign_id = ?',
+    [campaignId],
+  );
+  if (!row || !report.career) throw new Error(`campanha ${campaignId} sem resumo da pré-campanha`);
+  const summary = JSON.parse(row.summary_json) as CareerSummary;
+  summary.turns.push({
+    turnIndex: turn,
+    ...report.career,
+    accepted: report.accepted.map((d) => d.policyId),
+    rejected: report.rejected.length,
+  });
+  await db.run('UPDATE career_summaries SET summary_json = ? WHERE campaign_id = ?', [
+    JSON.stringify(summary),
+    campaignId,
+  ]);
+}
+
+/** Resumo compacto da pré-campanha; `null` na partida que começa na posse. */
+export async function loadCareerSummary(db: SqlDatabase, campaignId: string): Promise<CareerSummary | null> {
+  const row = await db.first<{ summary_json: string }>(
+    'SELECT summary_json FROM career_summaries WHERE campaign_id = ?',
+    [campaignId],
+  );
+  return row ? (JSON.parse(row.summary_json) as CareerSummary) : null;
+}
+
+/** Série de longo prazo da campanha, mês do mandato a mês (inclui a posse, mês 0; nenhum turno pré-posse). */
 export async function loadIndicatorHistory(db: SqlDatabase, campaignId: string): Promise<IndicatorPoint[]> {
   const rows = await db.all<{ month_index: number; point_json: string }>(
     'SELECT month_index, point_json FROM indicator_history WHERE campaign_id = ? ORDER BY month_index',
@@ -296,26 +388,32 @@ export async function loadProfileHistory(
   campaignId: string,
   months = PROFILE_HISTORY_MONTHS,
 ): Promise<ProfileHistory> {
-  const states = await db.all<{ month_index: number; state_json: string }>(
-    `SELECT month_index, state_json FROM snapshots
-     WHERE campaign_id = ? AND state_schema_version >= 10 ORDER BY month_index DESC LIMIT ?`,
+  // Só turnos de governo: antes da posse o perfil não anda e o mês do mandato fica parado em 0.
+  const states = await db.all<{ state_json: string }>(
+    `SELECT state_json FROM snapshots
+     WHERE campaign_id = ? AND state_schema_version >= 10 ORDER BY turn_index DESC LIMIT ?`,
     [campaignId, months],
   );
   const trail: ProfileTrailPoint[] = [];
   for (const row of states) {
-    const profile = (JSON.parse(row.state_json) as { government?: { profile?: IdeologyPoint } }).government?.profile;
-    if (profile) trail.push({ monthIndex: row.month_index, profile });
+    const saved = JSON.parse(row.state_json) as Pick<GameState, 'monthIndex' | 'career'> & {
+      government?: { profile?: IdeologyPoint };
+    };
+    const profile = saved.government?.profile;
+    if (profile && !isPreInauguration(saved)) trail.push({ monthIndex: saved.monthIndex, profile });
   }
   trail.reverse();
 
-  const reports = await db.all<{ month_index: number; report_json: string }>(
-    'SELECT month_index, report_json FROM month_reports WHERE campaign_id = ? ORDER BY month_index DESC LIMIT ?',
+  const reports = await db.all<{ report_json: string }>(
+    'SELECT report_json FROM month_reports WHERE campaign_id = ? ORDER BY turn_index DESC LIMIT ?',
     [campaignId, months],
   );
   const moves: ProfileMovesMonth[] = [];
   for (const row of reports) {
-    const found = (JSON.parse(row.report_json) as Partial<MonthReport>).profileMoves ?? [];
-    if (found.length > 0) moves.push({ monthIndex: row.month_index, moves: found });
+    const report = JSON.parse(row.report_json) as Partial<MonthReport>;
+    const found = report.profileMoves ?? [];
+    if (found.length > 0 && report.monthIndex !== undefined)
+      moves.push({ monthIndex: report.monthIndex, moves: found });
   }
   return { trail, moves };
 }
@@ -326,15 +424,15 @@ const LEGACY_REJECTION_REASONS: Record<string, DecisionRejection> = {
 };
 
 /**
- * Relatório mensal salvo (decomposição causal); `null` se o mês saiu da retenção ou não existe. Relatórios
+ * Relatório salvo de um turno (decomposição causal); `null` se o turno saiu da retenção ou não existe. Relatórios
  * gravados antes da Fase 05 não têm a explicação por UF: ela vem como `null`; os anteriores à v10 não têm as
  * decisões que moveram o perfil ideológico (`profileMoves` vem vazio). A v9 renomeou um motivo de
  * recusa ("pontos" → "ações"): relatórios antigos são traduzidos na leitura para o rótulo continuar aparecendo.
  */
-export async function loadReport(db: SqlDatabase, campaignId: string, monthIndex: number): Promise<MonthReport | null> {
+export async function loadReport(db: SqlDatabase, campaignId: string, turnIndex: number): Promise<MonthReport | null> {
   const row = await db.first<{ report_json: string }>(
-    'SELECT report_json FROM month_reports WHERE campaign_id = ? AND month_index = ?',
-    [campaignId, monthIndex],
+    'SELECT report_json FROM month_reports WHERE campaign_id = ? AND turn_index = ?',
+    [campaignId, turnIndex],
   );
   if (!row) return null;
   const report = JSON.parse(row.report_json) as Partial<MonthReport>;
@@ -354,7 +452,7 @@ export async function loadReport(db: SqlDatabase, campaignId: string, monthIndex
 export async function loadLatestState(db: SqlDatabase, campaignId: string): Promise<GameState> {
   const row = await db.first<{ state_schema_version: number; state_json: string }>(
     `SELECT state_schema_version, state_json FROM snapshots
-     WHERE campaign_id = ? ORDER BY month_index DESC LIMIT 1`,
+     WHERE campaign_id = ? ORDER BY turn_index DESC LIMIT 1`,
     [campaignId],
   );
   if (!row) throw new CampaignNotFoundError(campaignId);
@@ -371,6 +469,8 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     seed: number;
     status: 'ativa' | 'encerrada';
     current_month: number;
+    current_turn: number;
+    stage: PreInaugurationStage | null;
     created_at: string;
     updated_at: string;
   }>('SELECT * FROM campaigns ORDER BY updated_at DESC, id');
@@ -383,16 +483,18 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     seed: r.seed,
     status: r.status,
     currentMonth: r.current_month,
+    currentTurn: r.current_turn,
+    stage: r.stage,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }));
 }
 
-/** Estado salvo de um mês específico (ex.: o anterior, para mostrar variações). `null` se não existir. */
-export async function loadStateAt(db: SqlDatabase, campaignId: string, monthIndex: number): Promise<GameState | null> {
+/** Estado salvo no início de um turno (ex.: o anterior, para mostrar variações). `null` se não existir. */
+export async function loadStateAt(db: SqlDatabase, campaignId: string, turnIndex: number): Promise<GameState | null> {
   const row = await db.first<{ state_schema_version: number; state_json: string }>(
-    'SELECT state_schema_version, state_json FROM snapshots WHERE campaign_id = ? AND month_index = ?',
-    [campaignId, monthIndex],
+    'SELECT state_schema_version, state_json FROM snapshots WHERE campaign_id = ? AND turn_index = ?',
+    [campaignId, turnIndex],
   );
   return row ? upgradeState(row.state_schema_version, row.state_json) : null;
 }
@@ -405,7 +507,7 @@ export async function finishCampaign(db: SqlDatabase, campaignId: string): Promi
   );
 }
 
-/** Apaga a campanha e, em cascata, snapshots, decisões, eventos e relatórios. */
+/** Apaga a campanha e, em cascata, snapshots, decisões, eventos, relatórios e o resumo da pré-campanha. */
 export async function deleteCampaign(db: SqlDatabase, campaignId: string): Promise<void> {
   await db.run('DELETE FROM campaigns WHERE id = ?', [campaignId]);
 }
@@ -424,9 +526,11 @@ const OBSERVATION_FIELDS = [
 
 async function insertSnapshot(db: SqlDatabase, campaignId: string, state: GameState, content?: GameContent) {
   await db.run(
-    'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
-    [campaignId, state.monthIndex, state.schemaVersion, JSON.stringify(state)],
+    'INSERT INTO snapshots (campaign_id, turn_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
+    [campaignId, turnIndexOf(state), state.schemaVersion, JSON.stringify(state)],
   );
+  // As séries de governo são por mês do mandato e começam na posse (PLANO_CAMPANHA.md §2.3): antes dela, nada.
+  if (isPreInauguration(state)) return;
   const e = state.economy;
   const point: Omit<IndicatorPoint, 'monthIndex'> = {
     indicators: state.indicators,

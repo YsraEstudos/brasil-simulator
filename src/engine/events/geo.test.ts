@@ -529,7 +529,7 @@ describe('atualização v11 → v12: pendências ganham identidade (AI_INSTRUCTI
     const original = structuredClone(raw);
     const migrated = upgradeGameState(11, raw);
     expect(raw).toEqual(original);
-    expect(migrated.schemaVersion).toBe(12);
+    expect(migrated.schemaVersion).toBe(14);
     expect(migrated.events.pending).toEqual([
       { eventId: 'alta_petroleo', monthIndex: 3, instanceId: 'alta_petroleo#3' },
       { eventId: 'seca_safra_energia', monthIndex: 3, instanceId: 'seca_safra_energia#3' },

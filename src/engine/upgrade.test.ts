@@ -15,7 +15,7 @@ import v5Save from '@/tests/saves/state_v5_fase05.json';
 import v6Save from '@/tests/saves/state_v6_fase06.json';
 import v7Save from '@/tests/saves/state_v7_fase07.json';
 
-// AI_INSTRUCTIONS.md §3 e §5: saves antigos são atualizados, não recusados; teste com save real da versão
+// Cadeia histórica existente termina na v14; a v15 não adiciona migração de saves. Testes existentes com a versão
 // anterior. O fixture foi gravado pelo motor 0.2.0 (Fase 02, commit 30b0749): campanha populista fiscal,
 // semente 4, cinco meses jogados no cenário brasil_2027_01.
 
@@ -29,7 +29,7 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
     const state = upgradeGameState(6, raw);
     const legacy = structuredClone(v6Save);
     expect(legacy.schemaVersion).toBe(6);
-    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.schemaVersion).toBe(14);
     expect(state.engineVersion).toBe(ENGINE_VERSION);
     expect(state.impulses).toEqual(legacy.impulses);
     expect(state.proposals).toEqual(legacy.proposals);
@@ -55,7 +55,7 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
     const state = upgradeGameState(7, raw);
     const legacy = structuredClone(v7Save);
     expect(legacy.schemaVersion).toBe(7);
-    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.schemaVersion).toBe(14);
     expect(state.engineVersion).toBe(ENGINE_VERSION);
     expect(state.indicators).toEqual(legacy.indicators);
     expect(state.economy).toEqual(legacy.economy);
@@ -76,7 +76,7 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
   it('save v8 troca o nome do campo de ações de agenda sem tocar no valor', () => {
     const v8Save = { ...structuredClone(v7Save), schemaVersion: 8, engineVersion: '0.8.0' };
     const state = upgradeGameState(8, v8Save);
-    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.schemaVersion).toBe(14);
     expect(state.engineVersion).toBe(ENGINE_VERSION);
     expect(state.resources.agendaActionsPerMonth).toBe(v8Save.resources.agendaPointsPerMonth);
     expect(state.resources).not.toHaveProperty('agendaPointsPerMonth');
@@ -95,7 +95,7 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
     }
     expect(errors).toEqual([]);
     expect(state.monthIndex).toBe(19);
-    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.schemaVersion).toBe(14);
   });
 
   it('save real v6 atualizado continua jogável por 12 meses sem violar invariantes', () => {
@@ -107,7 +107,7 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
       state = result.state;
     }
     expect(errors).toEqual([]);
-    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.schemaVersion).toBe(14);
   });
 
   it('save real v5 preserva federação, propostas e impulsos e retoma por 48 meses', () => {
@@ -115,7 +115,7 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
     let state = upgradeGameState(5, raw);
     const legacy = loadContent(state.scenarioId);
     expect(raw.schemaVersion).toBe(5);
-    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.schemaVersion).toBe(14);
     expect(state.regions).toEqual(raw.regions);
     expect(state.proposals).toEqual(raw.proposals);
     expect(state.impulses).toEqual(raw.impulses);
@@ -130,7 +130,7 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
   it('save v2 da Fase 02 vira estado atual com contas por grupo e setor externo', () => {
     const raw = structuredClone(v2Save) as unknown;
     const state = upgradeGameState(2, raw);
-    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.schemaVersion).toBe(14);
     expect(state.monthIndex).toBe(5);
     expect(state.proposals.length).toBeGreaterThan(0);
     const e = state.economy;
@@ -159,7 +159,7 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
   // meses no cenário brasil_2027_01, com a PEC da reforma administrativa em tramitação.
   it('save v3 da Fase 03 ganha gabinete e campos de tramitação; a PEC recomeça pela Câmara', () => {
     const state = upgradeGameState(3, structuredClone(v3Save) as unknown);
-    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.schemaVersion).toBe(14);
     expect(state.congress.cabinet).toEqual([]);
     const pec = state.proposals.find((p) => p.policyId === 'reforma_administrativa');
     expect(pec?.status).toBe('em_tramitacao');
@@ -192,7 +192,7 @@ describe('atualização de saves (AI_INSTRUCTIONS.md §3)', () => {
   // no cenário brasil_2027_01, com as duas PECs em tramitação, cinco pastas de bloco e infraestrutura em execução.
   it('save v4 da Fase 04 ganha as UFs (a partir do cenário) e a adesão nas propostas', () => {
     const state = upgradeGameState(4, structuredClone(v4Save) as unknown);
-    expect(state.schemaVersion).toBe(STATE_SCHEMA_VERSION);
+    expect(state.schemaVersion).toBe(14);
     expect(state.regions.ufs).toEqual([]);
     expect(state.proposals.every((p) => p.adherents === null)).toBe(true);
     expect(state.congress.cabinet).toHaveLength(5);

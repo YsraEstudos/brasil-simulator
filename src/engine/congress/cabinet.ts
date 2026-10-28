@@ -1,6 +1,6 @@
 import type { Policy } from '../../types/policy';
 import type { Ministry } from '../../types/scenario';
-import { APPOINT_ACTION_ID } from '../actions';
+import { APPOINT_ACTION_ID, DIRECTORATE_ACTION_ID } from '../actions';
 import type { Calibration } from '../economy/calibration';
 import {
   TECHNICAL_OCCUPANT,
@@ -11,6 +11,11 @@ import {
   type MonthStep,
 } from '../types';
 
+import { advanceCases } from './cases';
+import { applyPronouncement } from '../politics/thermometers';
+
+import { advanceDrawer } from './drawer';
+import { appointDirector, directorateSupport, directoratesOf } from './directorates';
 import { allRelations, shiftRelation } from './relations';
 
 /**
@@ -56,13 +61,16 @@ export function partisanMinistries(state: Readonly<GameState>, content: GameCont
   return ministriesOf(content).filter((m) => isPartisan(ministryOccupant(state, m)));
 }
 
-/** Apoio do bloco em todas as votações pelas pastas que ocupa, saturado (§6.3.1). */
+/**
+ * Apoio do bloco em todas as votações pelas pastas que ocupa (§6.3.1) e pelas diretorias de estatais (§6.3.2,
+ * Fase C6a), somados sob o mesmo teto.
+ */
 export function cabinetSupport(state: Readonly<GameState>, blocId: string, content: GameContent): number {
   const c = content.calibration;
   const total = ministriesOf(content)
     .filter((m) => ministryOccupant(state, m) === blocId)
     .reduce((s, m) => s + c.apoio_ministerio * m.weight, 0);
-  return Math.min(c.apoio_ministerio_max, total);
+  return Math.min(c.apoio_ministerio_max, total + directorateSupport(state, blocId, content));
 }
 
 /** Pasta que executa a política (a primeira cuja lista de áreas contém a área da política). */
@@ -121,7 +129,7 @@ export function appointMinister(
     { id: ministry.id, occupant, since: state.monthIndex },
   ];
   return {
-    congress: { blocs, cabinet },
+    congress: { ...state.congress, blocs, cabinet },
     capitalDelta,
     note: `${ministry.name}: sai ${who(previous)}, entra ${who(occupant)}.`,
   };
@@ -152,10 +160,22 @@ export function applyAppointment(state: Readonly<GameState>, a: Appointment): Ga
   };
 }
 
-/** Etapa mensal: nomeações decididas no mês (ação `nomear_ministro`, já validada pelo `advanceMonth`). */
+/**
+ * Etapa mensal: nomeações decididas no mês (ações `nomear_ministro` e `nomear_diretoria`, já validadas pelo
+ * `advanceMonth`), na ordem das decisões, e em seguida os casos de escândalo (defesa e etapas, Fase C6b).
+ */
 export const cabinetStep: MonthStep = (state, ctx) => {
   let current: GameState = state;
   for (const d of ctx.decisions) {
+    if (d.policyId === DIRECTORATE_ACTION_ID) {
+      const directorate = directoratesOf(ctx.content).find((x) => x.id === d.params?.directorateId);
+      const occupant = d.params?.occupant;
+      if (!directorate || typeof occupant !== 'string') continue;
+      const appointment = appointDirector(current, ctx.content, directorate, occupant);
+      current = applyAppointment(current, appointment);
+      ctx.draft.notes.push(appointment.note);
+      continue;
+    }
     if (d.policyId !== APPOINT_ACTION_ID) continue;
     const ministry = ministriesOf(ctx.content).find((m) => m.id === d.params?.ministryId);
     const occupant = d.params?.occupant;
@@ -164,5 +184,8 @@ export const cabinetStep: MonthStep = (state, ctx) => {
     current = applyAppointment(current, appointment);
     ctx.draft.notes.push(appointment.note);
   }
-  return { state: current, contributions: [] };
+  // Casos de escândalo (Fase C6b) depois das nomeações: afastar no mês já tira o volume da exposição.
+  // Gaveta do impeachment (Fase C6e) depois dos casos: lê as marcas que eles acabaram de gravar.
+  // Pronunciamento (Fase C6g) lê os termômetros do começo do mês, antes das demais etapas.
+  return { state: applyPronouncement(advanceDrawer(advanceCases(current, ctx), ctx), ctx), contributions: [] };
 };

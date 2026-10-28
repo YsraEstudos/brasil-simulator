@@ -2,62 +2,35 @@ import { StyleSheet, View } from 'react-native';
 
 import { Alert, Card, formatMoneyMillions, formatNumber, formatPercent, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { campaignMonths } from '@/content';
 import {
   campaignOutcome,
+  initialIndicators,
+  legacyScore,
   regionalDispersion,
   regionsOf,
   regionsView,
   type GameContent,
   type GameState,
-  type IndicatorKey,
   type Proposal,
 } from '@/engine';
 import type { PublicPolicyState } from '@/engine/publicPolicies/types';
 import type { SocietyState } from '@/engine/society/types';
 
+import { AfterTermCard } from './AfterTermCard';
 import { INDICATOR_META, INDICATOR_ORDER, PROPOSAL_STATUS_LABEL, monthLabel } from './labels';
-
-/**
- * Relatório de legado (GAME_DESIGN.md §7.1): país recebido vs. entregue.
- *
- * Pontuação simples do protótipo (GDD §7.2): para cada um dos 5 indicadores, +1 se o valor final melhorou em
- * relação ao inicial (aprovação e PIB: subiu; inflação e desemprego: caiu; resultado primário: subiu), −1 se
- * piorou e 0 se ficou igual. A pontuação é a média desses 5 sinais, entre −1 e +1.
- */
-export function legacyScore(
-  initial: Readonly<Record<IndicatorKey, number>>,
-  final: Readonly<Record<IndicatorKey, number>>,
-): {
-  signs: Record<IndicatorKey, -1 | 0 | 1>;
-  score: number;
-} {
-  const signs = {} as Record<IndicatorKey, -1 | 0 | 1>;
-  let total = 0;
-  for (const key of INDICATOR_ORDER) {
-    const delta = final[key] - initial[key];
-    const better = INDICATOR_META[key].goodWhen === 'up' ? delta : -delta;
-    const sign: -1 | 0 | 1 = better > 0 ? 1 : better < 0 ? -1 : 0;
-    signs[key] = sign;
-    total += sign;
-  }
-  return { signs, score: total / INDICATOR_ORDER.length };
-}
 
 export interface LegacyReportProps {
   state: GameState;
   content: GameContent;
 }
 
-/** Relatório de legado ao fim da campanha (GAME_DESIGN.md §7.1). */
+/**
+ * Relatório de legado ao fim da campanha (GAME_DESIGN.md §7.1): país recebido vs. entregue, com a pontuação do motor
+ * (`legacyScore`) e a seção "Depois do mandato" (PLANO_CAMPANHA.md Fase C7).
+ */
 export function LegacyReport({ state, content }: LegacyReportProps) {
-  const initial = content.scenario.indicators;
-  const initialValues = {
-    approval: initial.approval.value,
-    inflation12m: initial.inflation12m.value,
-    unemployment: initial.unemployment.value,
-    gdpGrowth12m: initial.gdpGrowth12m.value,
-    primaryBalance12m: initial.primaryBalance12m.value,
-  } satisfies Record<IndicatorKey, number>;
+  const initialValues = initialIndicators(content);
   const { signs, score } = legacyScore(initialValues, state.indicators);
   const improved = INDICATOR_ORDER.filter((k) => signs[k] === 1).length;
 
@@ -141,6 +114,8 @@ export function LegacyReport({ state, content }: LegacyReportProps) {
           Mede apenas a direção da mudança, não a magnitude nem a dificuldade do cenário.
         </Text>
       </Card>
+
+      <AfterTermCard state={state} content={content} monthLimit={campaignMonths(state.scenarioId)} />
 
       <RegionalCard state={state} content={content} />
 

@@ -5,7 +5,14 @@ import { BackHandler, Image, StyleSheet, View, type LayoutChangeEvent } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
 
-import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER, shortMonthLabel } from '@/components/campaign/labels';
+import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campaign/labels';
+import { CareerActionsCard } from '@/components/campaign/CareerActionsCard';
+import { CampaignTutorialCard } from '@/components/campaign/CampaignTutorialCard';
+import { CareerElectionCard } from '@/components/campaign/CareerElectionCard';
+import { careerElectionViewModel } from '@/components/campaign/careerElectionView';
+import { CareerPollCard } from '@/components/campaign/CareerPollCard';
+import { CareerDebtCard, CareerFinanceCard } from '@/components/campaign/CareerFinanceCard';
+import { careerPollViewModel } from '@/components/campaign/careerPollView';
 import { ElectionsCard } from '@/components/campaign/ElectionsCard';
 import { EventInbox } from '@/components/campaign/EventInbox';
 import {
@@ -26,8 +33,11 @@ import type { IndicatorPoint } from '@/database/campaignRepository';
 import {
   indicatorsFromScenario,
   initialRegions,
+  careerDefeated,
+  isPreInauguration,
   SANCTION_ACTION_ID,
   toCalendar,
+  turnIndexOf,
   type Decision,
   type ElectionResult,
   type IndicatorKey,
@@ -40,6 +50,7 @@ import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel
 import { useMapMarkers } from '@/components/map/useMapMarkers';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
+import { caravanDestination } from '@/globe/caravan';
 import type { Profile3d } from '@/globe/qualityProfiles';
 import { draftCost, gameStore, planMapQuality, useGame, type RegionalPoint } from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
@@ -228,8 +239,11 @@ export function PainelScreen() {
   const content = useMemo(() => loadContent(scenarioId), [scenarioId]);
   const activeId = active?.id;
   const monthIndex = active?.state.monthIndex;
+  // As leituras do banco seguem o turno, não o mês do mandato: da transição para a posse o mês fica em 0 e só o
+  // turno anda, e é justamente aí que a série grava o primeiro ponto (PLANO_CAMPANHA.md Fase C1).
+  const turnIndex = active ? turnIndexOf(active.state) : undefined;
 
-  // Série do PIB: relida do banco quando a partida ou o mês mudam; a tela não guarda histórico próprio.
+  // Série do PIB: relida do banco quando a partida ou o turno mudam; a tela não guarda histórico próprio.
   // O par (id, pontos) evita mostrar a série de uma partida anterior enquanto a nova ainda não chegou.
   useEffect(() => {
     if (activeId === undefined) return;
@@ -243,7 +257,7 @@ export function PainelScreen() {
     return () => {
       live = false;
     };
-  }, [activeId, monthIndex]);
+  }, [activeId, turnIndex]);
   const history = activeId !== undefined && series?.id === activeId ? series.points : null;
 
   useEffect(() => {
@@ -258,10 +272,10 @@ export function PainelScreen() {
     return () => {
       live = false;
     };
-  }, [activeId, monthIndex]);
+  }, [activeId, turnIndex]);
   const regionalHistory = activeId !== undefined && regional?.id === activeId ? regional.points : EMPTY_REGIONAL;
 
-  // Relida a cada mês gravado, como a série regional: a fotografia nasce na mesma transação do mês da eleição.
+  // Relida a cada turno gravado, como a série regional: a fotografia nasce na mesma transação do mês da eleição.
   useEffect(() => {
     if (activeId === undefined) return;
     let live = true;
@@ -274,12 +288,14 @@ export function PainelScreen() {
     return () => {
       live = false;
     };
-  }, [activeId, monthIndex]);
+  }, [activeId, turnIndex]);
   const electionResults = activeId !== undefined && elections?.id === activeId ? elections.results : null;
   const election = electionResults && electionResults.length > 0 ? electionResults[electionResults.length - 1] : null;
 
   // Camadas que o cenário permite (o Alinhamento precisa da inclinação das UFs).
-  const layers = useMemo(() => availableIndicators(content), [content]);
+  // A camada Reconhecimento só aparece antes da posse (PLANO_CAMPANHA.md Fase C4).
+  const careerLayer = active ? isPreInauguration(active.state) : false;
+  const layers = useMemo(() => availableIndicators(content, careerLayer), [content, careerLayer]);
   // Sem partida não há dado por UF: a camada escolhida só vale com campanha em andamento e se o cenário a oferece.
   // O Resultado só abre depois de existir uma fotografia da eleição (nunca "resultado" antes disso).
   const layer =
@@ -309,6 +325,8 @@ export function PainelScreen() {
   );
   // Marcadores de eventos e notícias com local (um por UF); o pulso dos críticos novos vem marcado em cada um.
   const markers = useMapMarkers(active, content);
+  const caravanTarget =
+    active && isPreInauguration(active.state) ? caravanDestination(active.lastReport?.career?.actions ?? []) : null;
   const baseMapModel = useMemo(
     () =>
       buildRegionalMapViewModel({
@@ -387,7 +405,10 @@ export function PainelScreen() {
   const pendingCount = playing ? inboxCount(active.state, content, draft) : 0;
 
   // Eleições só entram no trilho na janela eleitoral; os selos da doca vêm do estado (funções puras em `mesaNav`).
-  const showElections = playing && electionsRelevant(content.scenario.elections, active.state.monthIndex);
+  // Antes da posse (PLANO_CAMPANHA.md Fase C2) o trilho eleitoral mostra a pesquisa da campanha.
+  const preInauguration = playing && isPreInauguration(active.state);
+  const showElections =
+    playing && (preInauguration || electionsRelevant(content.scenario.elections, active.state.monthIndex));
   const seenNewsMonth = seenNews && seenNews.id === activeId ? seenNews.month : null;
   const dockBadges: Readonly<Partial<Record<DockRoute, number>>> = playing
     ? { '/congresso': congressBadge(active.state), '/noticias': newsBadge(active.state, seenNewsMonth) }
@@ -429,7 +450,7 @@ export function PainelScreen() {
     closeSheet();
     // Abrir as Notícias dá o relatório por visto: o selo some até o próximo mês.
     if (route === '/noticias' && active && active.state.monthIndex > 0) {
-      setSeenNews({ id: active.id, month: active.state.monthIndex - 1 });
+      setSeenNews({ id: active.id, month: turnIndexOf(active.state) - 1 });
     }
     router.push(params ? { pathname: route, params } : route);
   };
@@ -476,12 +497,14 @@ export function PainelScreen() {
    * operação em curso) deixa tudo como está.
    */
   const endMonth = async () => {
-    const before = gameStore.getState().active?.state.monthIndex;
+    // Compara o turno, não o mês do mandato: antes da posse o mês fica parado (PLANO_CAMPANHA.md §2.3).
+    const beforeState = gameStore.getState().active?.state;
+    const before = beforeState ? turnIndexOf(beforeState) : undefined;
     // O resultado vem do estado, não do `ok`: se o mês foi gravado e só a releitura da lista falhou, ele avançou.
     // Falha antes de gravar: o mês fica, o rascunho também, e o aviso da mesa pede para tentar de novo.
     await gameStore.getState().endMonth();
     const after = gameStore.getState().active;
-    const outcome = endMonthOutcome(before, after?.state.monthIndex, after?.finished ?? false);
+    const outcome = endMonthOutcome(before, after ? turnIndexOf(after.state) : undefined, after?.finished ?? false);
     setEndMonthFailed(outcome === 'nada' && gameStore.getState().error !== undefined);
     if (outcome === 'relatorio') setSheet('relatorio');
     else if (outcome === 'legado') go('/legado');
@@ -527,7 +550,7 @@ export function PainelScreen() {
   const topCells = (
     <>
       {statCell('mes', {
-        value: shortMonthLabel(hud.turn - 1),
+        value: hud.shortLabel,
         line: `${hud.turn}/${hud.turnTotal} · ${actionsLeft === 1 ? '1 ação' : `${actionsLeft} ações`}`,
       })}
       {statCell('aprovacao')}
@@ -560,6 +583,7 @@ export function PainelScreen() {
     busy,
     actionsUsed: active ? draftCost(draft, content) : 0,
     actionsMax: active?.state.resources.agendaActionsPerMonth ?? 0,
+    campaignLost: active ? careerDefeated(active.state) : false,
   });
   const endButton = (
     <EndMonthButton
@@ -601,6 +625,46 @@ export function PainelScreen() {
           />
         );
       case 'eleicoes':
+        if (active && isPreInauguration(active.state)) {
+          // Depois da eleição (Fase C5): o resultado no lugar das ações e da pesquisa; as contas seguem até a posse.
+          const election = careerElectionViewModel(active.state, content);
+          if (election) {
+            return (
+              <>
+                <CareerElectionCard view={election} />
+                {!active.finished && (
+                  <CareerFinanceCard
+                    state={active.state}
+                    content={content}
+                    report={active.lastReport}
+                    draft={draft}
+                    onToggle={(decision) => gameStore.getState().toggleDecision(decision)}
+                  />
+                )}
+              </>
+            );
+          }
+          return (
+            <>
+              <CampaignTutorialCard />
+              <CareerActionsCard
+                state={active.state}
+                content={content}
+                report={active.lastReport}
+                draft={draft}
+                onToggle={(decision) => gameStore.getState().toggleDecision(decision)}
+              />
+              <CareerFinanceCard
+                state={active.state}
+                content={content}
+                report={active.lastReport}
+                draft={draft}
+                onToggle={(decision) => gameStore.getState().toggleDecision(decision)}
+              />
+              <CareerPollCard view={careerPollViewModel(active.state, content, active.lastReport)} />
+            </>
+          );
+        }
         return active && content.scenario.elections ? (
           <ElectionsCard
             state={active.state}
@@ -614,10 +678,21 @@ export function PainelScreen() {
           <EmptyNote text="Este cenário não tem eleições." />
         );
       case 'relatorio':
-        return active?.lastReport ? (
-          <MonthSummary report={active.lastReport} content={content} />
-        ) : (
-          <EmptyNote text="O primeiro relatório chega quando você encerrar o mês." />
+        return (
+          <>
+            {active && (
+              <CareerDebtCard
+                state={active.state}
+                draft={draft}
+                onToggle={(decision) => gameStore.getState().toggleDecision(decision)}
+              />
+            )}
+            {active?.lastReport ? (
+              <MonthSummary report={active.lastReport} content={content} />
+            ) : (
+              <EmptyNote text="O primeiro relatório chega quando você encerrar o mês." />
+            )}
+          </>
         );
       case 'meta':
         return (
@@ -795,6 +870,11 @@ export function PainelScreen() {
             sky={sky}
             climate={climateData}
             clouds={mapClouds}
+            caravan={
+              caravanTarget && active
+                ? { destination: caravanTarget, key: `${active.id}:${active.lastReport?.turnIndex}` }
+                : null
+            }
             viewModel={mapModel}
             paused={!focused}
             reservedRects={labelReserve.rects}

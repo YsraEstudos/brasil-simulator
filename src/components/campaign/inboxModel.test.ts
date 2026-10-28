@@ -114,6 +114,24 @@ describe('Itens da caixa de entrada', () => {
     expect(items[0].name).toBe(content.policies[policyId].name);
   });
 
+  it('a pauta-bomba (Fase C6c) mostra no cartão quem propôs e quanto custa, em vez do texto padrão', () => {
+    const detail = 'Pauta-bomba: o Congresso aprovou, por iniciativa do bloco Centro, um texto.';
+    const bomb = proposal({
+      id: 'pb',
+      policyId: 'pauta_bomba_reajuste_servidores',
+      status: 'aguardando_sancao',
+      voteMonth: 3,
+    });
+    const state: GameState = {
+      ...baseState(),
+      monthIndex: 3,
+      proposals: [{ ...bomb, history: [{ monthIndex: 2, status: 'aguardando_sancao', cause: 'pauta_bomba', detail }] }],
+    };
+    const [item] = sanctionItems(state, content);
+    expect(item.context).toBe(detail);
+    expect(item.name).toBe(content.policies.pauta_bomba_reajuste_servidores.name);
+  });
+
   it('o selo soma eventos e sanções ainda sem resposta no rascunho, e ignora evento que sumiu do conteúdo', () => {
     const state: GameState = {
       ...withPending(baseState(), [EVENT_ID, 'evento_que_sumiu']),

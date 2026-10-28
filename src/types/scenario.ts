@@ -129,6 +129,24 @@ export const ministrySchema = z
 export type Ministry = z.infer<typeof ministrySchema>;
 
 /**
+ * Diretoria de estatal ou banco público (PLANO_CAMPANHA.md Fase C6a; POLITICAL_RULES.md §6.3.2): cargo de segundo
+ * escalão vinculado a um ministério. Nomes genéricos (`FICTICIO`), sem estatal real.
+ */
+export const directorateSchema = z
+  .object({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    /** Ministério ao qual a diretoria se vincula (id de `ministries`). */
+    ministryId: contentIdSchema,
+    /** Peso político do cargo (0–1): apoio do bloco que o ocupa, relação na troca e risco de escândalo. */
+    weight: unitInterval,
+    /** Ocupante no início: `tecnico` ou id de bloco. */
+    occupant: contentIdSchema,
+  })
+  .strict();
+export type Directorate = z.infer<typeof directorateSchema>;
+
+/**
  * Instituições do cenário (POLITICAL_RULES.md §6.3, §13): blocos que presidem a Câmara e o Senado e
  * ministérios. Opcional: sem ele, cada Casa é presidida pelo maior bloco nela e não há ministérios.
  */
@@ -136,6 +154,42 @@ export const scenarioInstitutionsSchema = z
   .object({
     housePresidents: z.object({ camara: contentIdSchema, senado: contentIdSchema }).strict(),
     ministries: z.array(ministrySchema),
+    /** Diretorias de estatais (Fase C6a). Ausente = sistema desligado no cenário. */
+    directorates: z.array(directorateSchema).optional(),
+    /** Casos de escândalo graduais (Fase C6b): o escândalo em diretoria abre um caso. Exige `directorates`. */
+    scandalCases: z.boolean().optional(),
+    /**
+     * Gaveta do impeachment (Fase C6e): pedidos acumulados na Câmara, arquivados ou abertos pela presidência da Casa
+     * (`housePresidents.camara`). Ausente = sistema desligado.
+     */
+    impeachmentDrawer: z.boolean().optional(),
+    /**
+     * Pautas-bomba do cenário (PLANO_CAMPANHA.md Fase C6c): ids de políticas que o Congresso pode aprovar por conta
+     * própria, na ordem em que chegam. Fora de `policies` (o jogador não as propõe). Ausente = sistema desligado.
+     */
+    fiscalBombs: z.array(contentIdSchema).optional(),
+    /**
+     * STF (PLANO_CAMPANHA.md Fase C6d): calendário de vagas do mandato, dado do cenário (`FICTICIO`), sem idade dos
+     * ministros no estado. Ausente = sistema desligado.
+     */
+    supremeCourt: z
+      .object({
+        vacancies: z
+          .array(
+            z
+              .object({
+                id: contentIdSchema,
+                /** Mês do mandato em que a vaga abre (0 = jan/2027). */
+                monthIndex: z.number().int().min(1).max(95),
+                /** Motivo, para o texto: aposentadoria compulsória (EC 88/2015) ou saída antecipada. */
+                reason: z.enum(['aposentadoria_compulsoria', 'saida_antecipada']),
+              })
+              .strict(),
+          )
+          .min(1),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 export type ScenarioInstitutions = z.infer<typeof scenarioInstitutionsSchema>;
@@ -245,6 +299,183 @@ export const scenarioElectionsSchema = z
   .strict();
 export type ScenarioElections = z.infer<typeof scenarioElectionsSchema>;
 
+/** Mês do calendário civil no formato "AAAA-MM" (rótulo de turno antes da posse; PLANO_CAMPANHA.md §2.4). */
+const calendarMonthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'mês no formato AAAA-MM');
+
+/** Estágios antes da posse (PLANO_CAMPANHA.md Fase C5, máquina de estados); `governo` começa na posse. */
+export const PRE_INAUGURATION_STAGES = ['pre_campanha', 'convencao', 'corrida', 'eleicao', 'transicao'] as const;
+
+/**
+ * Ações de campanha com execução no motor (PLANO_CAMPANHA.md Fase C4, tarefa C4.1): um id por arquétipo. Só ids desta
+ * lista podem ter custo em `career.finance.costs`; o catálogo (efeitos e estágios) mora em `engine/career/actions.ts`.
+ */
+export const CAREER_ACTION_IDS = [
+  'comicio_nacional',
+  'caravana_regional',
+  'mobilizar_militancia',
+  'ataque_adversario',
+  'arrecadar_doacoes',
+] as const;
+export type CareerActionId = (typeof CAREER_ACTION_IDS)[number];
+
+/** Debate na TV (PLANO_CAMPANHA.md Fase C4, tarefa C4.2): acontece no turno que começa em `from`. */
+export const careerDebateSchema = z
+  .object({ id: contentIdSchema, name: z.string().min(1), from: calendarMonthSchema })
+  .strict();
+export type CareerDebate = z.infer<typeof careerDebateSchema>;
+
+/**
+ * Turno de jogo antes da posse (PLANO_CAMPANHA.md §2.4): estágio e meses do calendário civil que ele cobre. `to`
+ * ausente = um mês só; com `to`, o turno é condensado (ex.: transição nov–dez).
+ */
+export const careerTurnSchema = z
+  .object({ stage: z.enum(PRE_INAUGURATION_STAGES), from: calendarMonthSchema, to: calendarMonthSchema.optional() })
+  .strict();
+export type CareerTurn = z.infer<typeof careerTurnSchema>;
+
+/** Calendário de um ponto de partida: turnos contíguos que terminam no mês anterior à posse. */
+export const careerStartPointSchema = z.object({ turns: z.array(careerTurnSchema).min(1) }).strict();
+export type CareerStartPointSpec = z.infer<typeof careerStartPointSchema>;
+
+/**
+ * Perfil de candidato (PLANO_CAMPANHA.md Fase C1, contratos iniciais). Valores de design (`FICTICIO`) até a
+ * calibração; dinheiro em R$ mil inteiros (D-C14). `territorialBase`: reconhecimento extra por UF (0–1); UF
+ * ausente = sem base própria.
+ */
+export const careerProfileSchema = z
+  .object({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    description: z.string().min(1),
+    /**
+     * Bloco do partido do candidato (PLANO_CAMPANHA.md Fase C2, D-C17): o jogador ocupa a vaga desse bloco na
+     * disputa, e o adversário listado para o bloco sai dela. A ideologia do bloco orienta o alinhamento por UF.
+     */
+    blocId: contentIdSchema,
+    /** Reconhecimento nacional inicial, 0–1. */
+    recognition: unitInterval,
+    /** Valência nacional (imagem entre quem conhece), −1…1. */
+    valence: axis,
+    /** Influência no próprio partido, 0–1. */
+    partyInfluence: unitInterval,
+    /** Patrimônio pessoal, R$ mil. */
+    wealth: z.number().int().min(0),
+    /** Fração do patrimônio que pode virar dinheiro na campanha, 0–1. */
+    liquidity: unitInterval,
+    /** Capacidade de arrecadar por turno, R$ mil. */
+    fundraisingCapacity: z.number().int().min(0),
+    territorialBase: z.record(ufIdSchema, unitInterval),
+    /**
+     * Idade na eleição (`FICTICIO`), só para o desempate (CF art. 77 §5: o mais idoso; PLANO_CAMPANHA.md Fase C5).
+     * Mínimo de 35 anos para presidente (CF art. 14 §3, VI, a). Ausente: o desempate vai ao sorteio por chave.
+     */
+    age: z.number().int().min(35).max(120).optional(),
+    dataStatus: dataStatusSchema,
+  })
+  .strict();
+export type CareerProfile = z.infer<typeof careerProfileSchema>;
+
+/**
+ * Adversário simples da eleição antes da posse (PLANO_CAMPANHA.md Fase C2, D-C17 opção a): a **identidade** (nome) é
+ * a de `elections.candidatos` do mesmo bloco; aqui ficam só os dados de campanha. Valores `FICTICIO` até a calibração.
+ */
+export const careerOpponentSchema = z
+  .object({
+    blocId: contentIdSchema,
+    /** Reconhecimento nacional inicial, 0–1. */
+    recognition: unitInterval,
+    /** Valência nacional, −1…1. */
+    valence: axis,
+    territorialBase: z.record(ufIdSchema, unitInterval),
+    /**
+     * Idade na eleição (`FICTICIO`), só para o desempate (CF art. 77 §5: o mais idoso; PLANO_CAMPANHA.md Fase C5).
+     * Mínimo de 35 anos para presidente (CF art. 14 §3, VI, a). Ausente: o desempate vai ao sorteio por chave.
+     */
+    age: z.number().int().min(35).max(120).optional(),
+    dataStatus: dataStatusSchema,
+  })
+  .strict();
+export type CareerOpponent = z.infer<typeof careerOpponentSchema>;
+
+/**
+ * Carreira antes da posse (PLANO_CAMPANHA.md, Fase C1). Ausente = o jogo só começa na posse, como sempre. Cada ponto
+ * de partida é opcional; um nome desconhecido é recusado (`.strict()`).
+ */
+export const scenarioCareerSchema = z
+  .object({
+    startPoints: z
+      .object({ pre_campanha: careerStartPointSchema.optional(), corrida: careerStartPointSchema.optional() })
+      .strict(),
+    profiles: z.array(careerProfileSchema).min(1),
+    /** Caixa eleitoral em R$ mil; ausente desliga a contabilidade da carreira. */
+    finance: z
+      .object({
+        initialBalance: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+        spendingLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+        spendingLimitStatus: dataStatusSchema.optional(),
+        dataStatus: dataStatusSchema,
+        expanded: z
+          .object({
+            personalAvailable: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            personalLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            debtLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            debtDeadline: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            illicit: z
+              .object({
+                decay: z.number().min(0).lt(1).optional(),
+                sensitivity: z.number().min(0).optional(),
+                maxHazard: z.number().min(0).max(1).optional(),
+                monthlyLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+              })
+              .strict()
+              .optional(),
+            installments: z
+              .array(
+                z
+                  .object({
+                    turn: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+                    amount: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+                    pocket: z.enum(['party', 'donations']),
+                  })
+                  .strict(),
+              )
+              .optional(),
+          })
+          .strict()
+          .optional(),
+        /** Catálogo de custos em R$ mil; só incluir ações que tenham execução no motor. */
+        costs: z
+          .array(
+            z
+              .object({
+                id: contentIdSchema,
+                cost: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+                pockets: z
+                  .array(z.enum(['personal', 'party', 'donations', 'illicit']))
+                  .min(1)
+                  .optional(),
+              })
+              .strict(),
+          )
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    /** Adversários por bloco; o do bloco do perfil escolhido sai da disputa (o jogador ocupa a vaga). */
+    opponents: z.array(careerOpponentSchema).min(1),
+    /** Debates na TV (Fase C4); ausente = nenhum debate. */
+    debates: z.array(careerDebateSchema).optional(),
+    dataStatus: dataStatusSchema,
+  })
+  .strict();
+export type ScenarioCareer = z.infer<typeof scenarioCareerSchema>;
+
+/** "2026-08" → meses contados a partir de "2027-01" (negativo antes da posse). */
+function monthsFromInauguration(key: string): number {
+  const [y, m] = key.split('-').map(Number);
+  return (y - 2027) * 12 + (m - 1);
+}
+
 export const scenarioSchema = z
   .object({
     /** Ex.: `brasil_2027_01` */
@@ -269,6 +500,8 @@ export const scenarioSchema = z
     characters: z.array(characterSchema).optional(),
     /** Eleições e calendário eleitoral (Fase 08); ausente nos cenários anteriores. */
     elections: scenarioElectionsSchema.optional(),
+    /** Carreira antes da posse (PLANO_CAMPANHA.md, Fase C1); ausente = só o ponto de partida da posse. */
+    career: scenarioCareerSchema.optional(),
   })
   .strict()
   .superRefine((s, ctx) => {
@@ -317,6 +550,28 @@ export const scenarioSchema = z
             code: 'custom',
             path: ['institutions', 'ministries', m.id],
             message: `ocupante deve ser "${TECHNICAL_MINISTER}" ou um bloco: ${m.occupant}`,
+          });
+        }
+      }
+      const directorates = s.institutions.directorates ?? [];
+      unique(
+        directorates.map((d) => d.id),
+        'institutions',
+      );
+      const ministryIds = new Set(s.institutions.ministries.map((m) => m.id));
+      for (const d of directorates) {
+        if (d.occupant !== TECHNICAL_MINISTER && !blocIds.has(d.occupant)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['institutions', 'directorates', d.id],
+            message: `ocupante deve ser "${TECHNICAL_MINISTER}" ou um bloco: ${d.occupant}`,
+          });
+        }
+        if (!ministryIds.has(d.ministryId)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['institutions', 'directorates', d.id],
+            message: `ministério inexistente: ${d.ministryId}`,
           });
         }
       }
@@ -438,7 +693,127 @@ export const scenarioSchema = z
         }
       }
     }
+    if (s.career) checkCareer(s, s.career, ctx);
   });
+
+/**
+ * Regras do bloco `career` que dependem do resto do cenário: UFs da base territorial existem no cenário, ids de
+ * perfil únicos, turnos de cada ponto de partida contíguos, em ordem e terminando no mês anterior à posse, e a
+ * disputa (Fase C2): blocos existentes, adversário com identidade em `elections.candidatos`, no máximo um por bloco e
+ * pelo menos dois candidatos (jogador incluído) para cada perfil.
+ */
+function checkCareer(
+  s: { blocs: readonly Bloc[]; regions?: ScenarioRegions; elections?: ScenarioElections },
+  career: ScenarioCareer,
+  ctx: z.RefinementCtx,
+) {
+  const costIds = new Set<string>();
+  for (const [index, cost] of (career.finance?.costs ?? []).entries()) {
+    if (!(CAREER_ACTION_IDS as readonly string[]).includes(cost.id)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'finance', 'costs', index, 'id'],
+        message: `ação de carreira sem execução: ${cost.id}`,
+      });
+    }
+    if (costIds.has(cost.id))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'finance', 'costs', index, 'id'],
+        message: `custo repetido: ${cost.id}`,
+      });
+    costIds.add(cost.id);
+  }
+  const known = new Set(s.regions?.ufs.map((u) => u.id) ?? []);
+  const blocIds = new Set(s.blocs.map((b) => b.id));
+  const named = new Set(s.elections?.candidatos?.map((c) => c.blocId) ?? []);
+  const checkBase = (base: Record<string, number>, path: (string | number)[]) => {
+    for (const uf of Object.keys(base)) {
+      if (!known.has(uf)) ctx.addIssue({ code: 'custom', path, message: `UF inexistente no cenário: ${uf}` });
+    }
+  };
+  const seen = new Set<string>();
+  if (career.finance?.expanded && career.finance.expanded.personalLimit > career.finance.spendingLimit / 10) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['career', 'finance', 'expanded', 'personalLimit'],
+      message: 'limite pessoal excede 10% do teto de campanha',
+    });
+  }
+  for (const p of career.profiles) {
+    if (seen.has(p.id)) ctx.addIssue({ code: 'custom', path: ['career', 'profiles'], message: `id repetido: ${p.id}` });
+    seen.add(p.id);
+    if (career.finance?.expanded && career.finance.expanded.personalAvailable > p.wealth * p.liquidity) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'finance', 'expanded', 'personalAvailable'],
+        message: `liquidez insuficiente no perfil ${p.id}`,
+      });
+    }
+    checkBase(p.territorialBase, ['career', 'profiles', p.id, 'territorialBase']);
+    if (!blocIds.has(p.blocId)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'profiles', p.id, 'blocId'],
+        message: `bloco inexistente: ${p.blocId}`,
+      });
+    }
+    if (career.opponents.filter((o) => o.blocId !== p.blocId).length < 1) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'profiles', p.id],
+        message: 'a disputa precisa de pelo menos dois candidatos, com o jogador',
+      });
+    }
+  }
+  const seenOpponents = new Set<string>();
+  for (const [i, o] of career.opponents.entries()) {
+    const path = ['career', 'opponents', i];
+    if (seenOpponents.has(o.blocId))
+      ctx.addIssue({ code: 'custom', path, message: `adversário repetido: ${o.blocId}` });
+    seenOpponents.add(o.blocId);
+    if (!named.has(o.blocId)) {
+      ctx.addIssue({ code: 'custom', path, message: `adversário sem candidato em elections.candidatos: ${o.blocId}` });
+    }
+    checkBase(o.territorialBase, [...path, 'territorialBase']);
+  }
+  // Debate: id único, num turno de campanha oficial (corrida ou eleição) de algum ponto de partida.
+  const debateIds = new Set<string>();
+  for (const [i, d] of (career.debates ?? []).entries()) {
+    const path = ['career', 'debates', i];
+    if (debateIds.has(d.id)) ctx.addIssue({ code: 'custom', path, message: `debate repetido: ${d.id}` });
+    debateIds.add(d.id);
+    const inCampaign = Object.values(career.startPoints).some((spec) =>
+      spec?.turns.some((t) => t.from === d.from && (t.stage === 'corrida' || t.stage === 'eleicao')),
+    );
+    if (!inCampaign) {
+      ctx.addIssue({ code: 'custom', path, message: `debate fora de um turno de campanha oficial: ${d.from}` });
+    }
+  }
+  for (const [point, spec] of Object.entries(career.startPoints)) {
+    if (!spec) continue;
+    let expected = monthsFromInauguration(spec.turns[0].from);
+    for (const [i, t] of spec.turns.entries()) {
+      const from = monthsFromInauguration(t.from);
+      const to = t.to ? monthsFromInauguration(t.to) : from;
+      if (from !== expected || to < from) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['career', 'startPoints', point, 'turns', i],
+          message: `turno fora de ordem ou com lacuna: ${t.from}${t.to ? `–${t.to}` : ''}`,
+        });
+      }
+      expected = to + 1;
+    }
+    if (expected !== 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['career', 'startPoints', point, 'turns'],
+        message: 'os turnos precisam terminar em dezembro de 2026, o mês anterior à posse',
+      });
+    }
+  }
+}
 export type Scenario = z.infer<typeof scenarioSchema>;
 
 /** Valida dados desconhecidos (JSON) e devolve o cenário ou os erros em texto legível. */

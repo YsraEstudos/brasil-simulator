@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1)
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1) • v0.5 (27/10/2026, Fase C6a do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)): diretorias de estatais (§6.3.2), motor 0.10.0 • v0.6 (27/10/2026, Fase C6b): casos de escândalo graduais (§9.1), motor 0.11.0 • v0.7 (27/10/2026, Fase C6e): gaveta do impeachment (§10.1), motor 0.12.0
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -209,6 +209,19 @@ Cada ministério relevante tem um ocupante com `origem`: **técnico/aliado** ou 
 
 Todos os pesos são parâmetros a calibrar (Fase 04). Demitir um ministro de bloco custa capital político e piora a relação com o bloco.
 
+### 6.3.2 Diretorias de estatais (Fase C6a do PLANO_CAMPANHA, motor 0.10.0)
+Cargos de segundo escalão em estatais e bancos públicos, **genéricos e fictícios** ("estatal de energia", "banco público", "estatal de obras", "banco público de habitação"; `FICTICIO`, sem estatal real; [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md) §5.3). Cada diretoria do cenário (`institutions.directorates`) é um cargo, vinculado a um ministério, com peso e ocupante: **técnico** ou **indicação de bloco**, como as pastas (§6.3.1). Os requisitos legais de nomeação em estatais não são modelados (simplificação: a verificar antes de qualquer regra que dependa deles).
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Cargos limitados | Uma vaga por diretoria do cenário (4 no cenário padrão, todas técnicas no início). A troca é a ação de agenda `nomear_diretoria` (custo 1, params `directorateId` e `occupant`), processada na etapa do gabinete, na ordem das decisões. Não há vaga extra nem acúmulo. |
+| Efeito político | O bloco que recebe a diretoria melhora a relação (`relacao_nomeacao_diretoria` × peso) e passa a apoiar o governo em todas as votações (`apoio_diretoria` × peso), **somado** ao apoio das pastas sob o mesmo teto (`apoio_ministerio_max`). |
+| Custo de substituição | Tirar a diretoria de um bloco custa capital (`capital_demissao_diretoria`) e a relação com ele (`relacao_demissao_diretoria` × peso), para outro bloco ou para o quadro técnico. |
+| Risco | Diretoria técnica não tem risco. A de bloco segue a regra das pastas (`escandalo_base_mes` + `escandalo_por_ano` × anos no cargo, × peso, saturada em `escandalo_max_mes`), × `fator_porteira_fechada` quando o mesmo bloco ocupa o ministério ao qual a diretoria se vincula ("porteira fechada"). O risco agregado é 1 − Π(1 − p). |
+| Escândalo, com causa | O evento "Escândalo em diretoria de estatal" só é elegível com diretoria de bloco (sem ela, não consome o sorteio) e dispara com probabilidade igual ao risco agregado. No disparo, o motor **congela o alvo** (`PendingEvent.subjectId`): a diretoria de maior risco (empate: a há mais tempo no cargo). O relatório do mês diz a causa: a diretoria, o bloco, o tempo no cargo e se a porteira está fechada. "Afastar" devolve **essa** diretoria ao quadro técnico, com o custo de substituição; se ela já mudou de mãos, não faz nada. |
+| Sistema desligado | Sem `institutions.directorates` no cenário, nada muda. O estado só ganha `congress.directorates` na primeira troca, então o jogo sem trocas é idêntico com o sistema ligado ou desligado (teste de regressão). |
+| Para a Fase C6b | `directorateScandalChance`, `directorateScandalRisk` e `riskiestDirectorate` são o risco que a C6b (escândalos graduais) vai consumir. Nenhuma marca é gravada nesta fase. |
+
 ### 6.4 Evolução
 Fase 04: Câmara e Senado separadas e relatores (feito, §6.5). Comissões permanentes individuais e parlamentares individuais: Fase 09.
 
@@ -237,6 +250,18 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 
 **No motor (Fase 04):** aprovado no Congresso, o projeto fica **aguardando sanção** no mês seguinte; sem resposta, vale a sanção tácita. O jogador pode sancionar, vetar o projeto inteiro ou, quando o relator incluiu acréscimos, vetar só os acréscimos (o motor trata os acréscimos como dispositivos inteiros, então o veto parcial é sempre possível). O veto vai à sessão conjunta no mês seguinte; a derrubada exige maioria absoluta de cada Casa e depende do interesse dos blocos no texto, menos a lealdade ao governo (relação e pastas) e a popularidade do presidente. Veto derrubado: a lei (ou os acréscimos) entra em vigor e o capital cai; veto mantido rende um pouco de capital. **PEC** é promulgada pelas Mesas, sem sanção (CF art. 60 §3º); **MP** convertida segue em vigor sem nova sanção no motor.
 
+### 7.1 Pauta-bomba (Fase C6c do PLANO_CAMPANHA)
+Projeto de aumento de despesa ou de renúncia aprovado pelo Congresso **por iniciativa própria**, contra o governo. Textos genéricos e fictícios (`FICTICIO`), com valores de ordem de grandeza. Antes desta fase não havia nenhum evento com aumento aprovado pelo Congresso nem escolha entre vetar e sancionar (verificação C0.5 do plano); os vizinhos (pauta travada, obstrução, liminar do STF, greve de servidores) continuam como estão.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Textos | Os do cenário (`institutions.fiscalBombs`): no padrão, reajuste extra de carreiras do serviço público (despesa obrigatória, cerca de R$ 12 bi/ano) e desoneração ampliada da folha de setores (renúncia, cerca de R$ 15 bi/ano), ambos sem compensação e com perda de credibilidade fiscal. Ficam fora do catálogo do jogador. Cada texto chega no máximo uma vez, na ordem do cenário. |
+| Quem propõe | O bloco com maior apoio à **derrubada de um veto** ao texto (afinidade e interesse menos a lealdade ao governo, a mesma conta da sessão do veto). |
+| Quando chega | Só com a relação média com o Congresso abaixo de `bomba_relacao_limite`, fora de janeiro (recesso) e pelo menos `bomba_intervalo_meses` depois da anterior. Chance mensal `bomba_chance_por_ponto` × distância ao limite, até `bomba_chance_max`. Sorteio **por chave** (não consome o PRNG principal). |
+| Sanção e veto | O texto chega já aprovado, **aguardando sanção** no mês seguinte, e segue o caminho deste §7: sem resposta, sanção tácita; o veto total vai à sessão conjunta, onde a derrubada exige maioria absoluta de cada Casa (veto derrubado custa capital; mantido rende um pouco). O cartão de sanção diz quem propôs e quanto custa. |
+| Impacto fiscal | Executado, o custo entra pelos canais da política (ECONOMIC_MODEL.md §5.11): `despesa_obrigatoria` ou `desoneracao_renda` em R$ milhões/ano ÷ PIB nominal, permanente; com o limite de despesas fixo, a despesa obrigatória comprime as discricionárias. A regra de compensação da LRF (§4.5) vale como para qualquer política sem compensação. |
+| Sistema desligado | Sem `institutions.fiscalBombs`, nada muda. Ligado, o jogo é idêntico até a primeira chegada (teste de regressão); numa partida sem decisões a relação média cai abaixo do limite e a pauta-bomba chega no 1º ano. |
+
 ---
 
 ## 8. Controle judicial e de contas (simplificado)
@@ -245,7 +270,19 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 - **TCU**: emite alertas sobre execução e contas. Parecer pela rejeição das contas aumenta o risco de impeachment e afeta a credibilidade. O julgamento das contas é feito pelo Congresso.
 - **No motor (Fase 04):** o risco `judicializacao` da política, mais `risco_juridico_flag` por regra quebrada (gasto acima do limite, renúncia ou despesa sem compensação na LRF; também para políticas sem esse risco previsto), decide no início da execução se haverá ação no STF. Havendo, uma liminar suspende a execução de 1 a `liminar_lag_max` meses depois, por `suspensao_min_meses`–`suspensao_max_meses`; no julgamento a medida volta a valer ou é declarada inconstitucional (`prob_inconstitucional`, maior com regra quebrada). Os efeitos da janela suspensa são retirados da fila (ECONOMIC_MODEL.md §5.11). A janela e a derrubada valem também para os acréscimos do relator, que fazem parte da mesma lei. O TCU é modelado na Fase 07 (§9); indicações ao STF ainda não são modelados.
 - **Indicações**: vagas no STF e na diretoria do BC surgem conforme calendário do cenário (no STF, pela aposentadoria compulsória aos 75 anos — EC 88/2015 e LC 152/2015 —, ou por evento); exigem aprovação do Senado (maioria absoluta para ministro do STF, CF art. 101; maioria simples em votação secreta após arguição para presidente e diretores do BC, CF art. 52, III, d ✔).
-- **Diretoria do BC (LC 179/2021):** mandatos fixos de 4 anos, não coincidentes com o do presidente da República. O presidente do BC começa no 3º ano do mandato presidencial; os 8 diretores entram 2 por ano. No motor, a fração indicada pelo governo é 2/9, 4/9, 7/9 e 9/9 do 1º ao 4º ano, e as indicações são consideradas aprovadas pelo Senado. Ela determina quanto o BC cede à pressão pública (ECONOMIC_MODEL.md §5.4.1).
+- **STF no motor:** ver §8.1 (Fase C6d).
+- **Diretoria do BC (LC 179/2021):** mandatos fixos de 4 anos, não coincidentes com o do presidente da República. O presidente do BC começa no 3º ano do mandato presidencial; os 8 diretores entram 2 por ano. No motor, a fração indicada pelo governo é 2/9, 4/9, 7/9 e 9/9 do 1º ao 4º ano e 9/9 em todo o 2º mandato do mesmo presidente (correção da Fase C6f do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md), ECONOMIC_MODEL.md §5.4.2), e as indicações são consideradas aprovadas pelo Senado. Ela determina quanto o BC cede à pressão pública (ECONOMIC_MODEL.md §5.4.1).
+
+### 8.1 STF: vaga, indicação e aprovação (Fase C6d do PLANO_CAMPANHA, motor 0.10.0)
+Três passos **separados**, e a decisão judicial (ADI e liminar, acima) continua como estava: quem o governo indicou não muda a chance nem a duração de uma liminar nesta fase.
+
+| Passo | Como o motor aplica |
+| --- | --- |
+| Vaga | Abre no mês do **calendário do cenário** (`institutions.supremeCourt.vacancies`, `FICTICIO`): no padrão, uma por aposentadoria compulsória no mês 14 e uma por saída antecipada no mês 33. O estado **não guarda idade** de ministro (a regra dos 75 anos, EC 88/2015 e LC 152/2015, aparece só como motivo da vaga); vaga por evento fica para depois. O estado ganha `court` só quando a primeira vaga abre. |
+| Indicação | Ação de agenda `indicar_ministro_stf` (custo 1, params `vacancyId` e `profile`): **jurista de carreira** ou **aliado do governo**. Só numa vaga aberta; a vaga fica em sabatina. |
+| Aprovação | Sabatina e votação no plenário do Senado no mês seguinte, por **maioria absoluta** (41 de 81, CF art. 101 parágrafo único). O apoio de cada bloco é o das votações (relação com o governo, pastas, popularidade e o bônus do Casual), mais o termo do perfil: o jurista tem apoio próprio (`stf_apoio_jurista`); o aliado depende da afinidade do bloco com o perfil ideológico do governo (`w_ideo`), mais `stf_apoio_aliado`. Um sorteio de apoio por bloco, como nas demais votações. |
+| Resultado | Aprovada: vaga preenchida e `stf_capital_aprovada`. Rejeitada: `stf_capital_rejeitada` e a vaga volta a ficar aberta para nova indicação. |
+| Interface | Cartão "Supremo Tribunal Federal" no Congresso: as vagas, a previsão de votos de cada perfil antes de indicar e a última votação. |
 
 ---
 
@@ -258,6 +295,21 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 - **TCU (contas):** o gasto acima do limite de despesas (`limitExcess` > 0) dá o **alerta do TCU** (30%, até 3 vezes, intervalo de 6 meses; grava `tcu_alerta`). Corrigir a execução contingencia custeio por seis meses; defender a execução (padrão) ou pedir prazo deixa o alerta virar **parecer** em 3 meses com 50% (sorteio único). O parecer pela rejeição grava `tcu_parecer_rejeicao` (sem resposta, é a escolha padrão) e pesa na credibilidade. O julgamento final das contas continua **fora**: o jogo não tem votação do Congresso sobre o parecer.
 - **Contagem na pressão:** `cpi_instalada` e `cpi_encerrada` contam como uma CPI só; `cpi_relatorio_pesado` conta à parte (relatório desfavorável pesa mais).
 - **Fora da Fase 07:** CPI com comissão própria, votos por bancada e convocações (Fase 09); efeito das CPIs sobre ministérios (demissão automática).
+
+### 9.1 Casos de escândalo graduais (Fase C6b do PLANO_CAMPANHA, motor 0.11.0)
+Ficção (`FICTICIO`): o caso atinge o **indicado do bloco** numa diretoria de estatal (§6.3.2), não a Presidência. O jogo não descreve procedimento ilícito; não há ação ilegal do jogador nesta fase (D-C3 continua em aberto para a Camada 3).
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Gatilho | O escândalo em diretoria (§6.3.2) abre um caso em **investigação** sobre a diretoria e o bloco congelados no disparo, e grava a marca `escandalo_investigacao`. Ligado por `institutions.scandalCases` no cenário (exige diretorias). |
+| Etapas | `investigacao` → `acusacao` → `condenacao`, ou `arquivado`. A **condenação só vem depois de uma acusação**, nunca direto da investigação (invariante), e cada etapa dura pelo menos `caso_meses_min` meses. |
+| Descoberta | Mesma especificação de perigo do caixa 2 (Fase C3): exposição E_t = δ·E_{t−1} + volume_t (`caso_decaimento`), com volume 1 enquanto o bloco do caso segue no cargo e 0 depois; perigo de avançar h = min(`caso_perigo_max`, 1 − e^(−`caso_lambda`·E)). Um sorteio por caso e por mês, **por chave** (não consome o PRNG principal). |
+| Arquivamento | Exposição abaixo de `caso_arquivamento` arquiva o caso (em investigação ou acusação). Afastar o indicado corta o volume: a exposição cai mês a mês e o caso tende a ser arquivado. |
+| Defesa | Ação de agenda `defender_caso` (custo 1, params `caseId`): reduz o perigo do mês em `caso_defesa` e custa capital (`capital_defesa_caso`). Não arquiva sozinha. |
+| Acusação | Marca `escandalo_acusacao`, aprovação `caso_aprovacao_acusacao` por 2 meses e, com chance `caso_prob_cpi` (sorteio por chave), agenda a CPI existente (`fase07_inst_cpi_instalada`) para o mês seguinte (a CPI continua com no máximo uma ocorrência). |
+| Condenação | Marca `escandalo_condenacao`, aprovação `caso_aprovacao_condenacao` por 3 meses e o condenado sai do cargo (volta ao quadro técnico; o bloco perde a diretoria e piora a relação, sem custo de capital). |
+| Pressão de impeachment | As três marcas têm prefixo `escandalo_` e entram na contagem existente (§10), cada uma uma vez. A cadeia de impeachment segue a única via de condenação da Presidência. |
+| Para a Fase C6e | As marcas acima e `GameState.cases` são o que a gaveta do impeachment vai consumir. |
 
 ---
 
@@ -281,6 +333,17 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 - A escolha "mobilizar a base no Senado" tem a descrição "se a base não estiver pronta, a escolha perde força", e o motor não verifica a base: ela arquiva sempre.
 - A regra dos dois terços não é contada bancada por bancada: a escolha do jogador e a probabilidade fazem o papel dela.
 
+### 10.1 Gaveta do impeachment (Fase C6e do PLANO_CAMPANHA, motor 0.12.0)
+Pedidos de impeachment se acumulam na Câmara, e quem decide é a presidência da Casa (`housePresidents.camara`), como no passo 1 acima. A gaveta **só alimenta o 1º passo da cadeia**: ela nunca grava marca de impeachment, e a autorização e a condenação continuam só pelos eventos de §10.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Acúmulo | Um pedido por marca de escândalo gravada no mês (Fase C6b: `escandalo_investigacao`, `escandalo_acusacao`, `escandalo_condenacao`) e, por sorteio com chave, um pedido com chance `gaveta_pedido_pressao` × pressão de impeachment. |
+| Descarte | Presidência aliada (relação ≥ `gaveta_relacao_arquivo`) arquiva os pedidos com mais de `gaveta_meses_arquivo` meses. O governo pode **negociar** (ação `negociar_gaveta`, custo 1): arquiva o pedido mais antigo, custa `capital_negociar_gaveta` e melhora a relação com o bloco que preside a Casa (`relacao_negociar_gaveta`). |
+| Abertura | Presidência hostil (relação < `gaveta_relacao_abertura`), pressão ≥ `gaveta_pressao_abertura` (a mesma do evento de pedido) e a cadeia ainda sem pedido: com chance `gaveta_chance_abertura`, abre o pedido mais antigo e **agenda o evento de pedido** (`fase07_inst_pedido_impeachment`) para o mês seguinte, pelo caminho dos encadeados (a chegada confere as condições e as marcas do evento). Entre a abertura e a chegada, o sorteio próprio do evento continua valendo. |
+| Sorteios | Por chave (`gaveta`, mês): não consomem o PRNG principal. |
+| Sistema desligado | Sem `institutions.impeachmentDrawer`, nada muda. Ligado, a gaveta só aparece no estado e nas notas até a primeira abertura (teste de regressão). |
+
 **Fora da Fase 07:** o afastamento de até 180 dias (texto do evento, sem efeito mecânico); o presidente do STF no julgamento; crimes de responsabilidade além do excesso de limite de despesa; mobilização social como fator próprio; sucessão pelo vice (a condenação encerra a campanha).
 
 ---
@@ -290,15 +353,20 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 - 1º turno no primeiro domingo de outubro; 2º turno no último domingo de outubro, se nenhum candidato obtiver maioria absoluta dos votos válidos (CF art. 77).
 - Reeleição para um único período subsequente (CF art. 14 §5º). ✔ 13/10/2026: a PEC 12/2022 (fim da reeleição, mandatos de 5 anos) foi aprovada na CCJ do Senado em mai/2025 e desmembrada, sem aprovação em plenário; mesmo pelo texto da CCJ, o presidente eleito em 2026 ainda poderia disputar a reeleição em 2030. Fica como parâmetro do cenário e candidata a evento/PEC dentro do jogo.
 - Condutas vedadas (Lei 9.504/1997, art. 73): nos 3 meses anteriores à eleição ficam proibidas transferências voluntárias a estados e municípios (salvo obra em andamento e emergência), publicidade institucional e nomeações/demissões de servidores (com exceções); revisão geral de remuneração dos servidores acima da inflação é vedada a partir de 180 dias antes. Em ano eleitoral, programas sociais novos também são restringidos (art. 73 §10). ✔
-- **No jogo:** durante **todo o ano eleitoral** (2030) fica bloqueada a criação de benefício gratuito novo, salvo calamidade, estado de emergência ou programa autorizado em lei e já em execução orçamentária no ano anterior (art. 73 §10). O jogador pode forçar a brecha da emergência (regra quebrável, §1.1): a medida passa, mas abre risco de ação na Justiça Eleitoral por abuso de poder, com efeito sobre a candidatura.
+- **No jogo (simplificação):** a lei veda o benefício gratuito novo durante todo o ano eleitoral (art. 73 §10); o motor aplica a vedação só nos **3 meses antes de cada pleito** (`VEDACAO_MESES = 3`): meses 18–20 antes da municipal (mês 21) e 42–44 antes da geral (mês 45), e de novo no 2º mandato ([src/engine/elections/vedacao.ts](../src/engine/elections/vedacao.ts)). Conta como benefício novo a política com impacto positivo em transferências, despesa obrigatória ou salário mínimo real; a política é recusada com o motivo `vedacao_eleitoral`. O jogador pode forçar a brecha da emergência (`vedacao_bypass`, regra quebrável, §1.1): a medida passa, mas paga pena na intenção de voto e risco de multa por abuso de poder. A dificuldade Casual não aplica a vedação. As demais condutas vedadas acima (transferências voluntárias, publicidade, nomeações) não são modeladas.
 
+### 11.0 Finanças antes da posse (PLANO_CAMPANHA.md Fase C3)
+
+A corrida dispõe de caixa simples ou de três bolsos configurados pelo cenário. Quantias são R$ mil inteiros; gastos contratados contam para um teto global e as decisões disputam saldo na ordem enviada. Aporte pessoal é limitado pela liquidez e pelo limite do cenário, que não supera 10% do teto; repasses futuros e arrecadação só entram no turno previsto. Doações são agregadas: o jogo não representa rendimentos nem verifica limites de doadores individuais. Repasses, riscos e custos do cenário atual são `FICTICIO`. O teto de R$ 88.944 mil é aproximação conservadora `PROVISORIO` do limite de primeiro turno. Consulte [DATA_SOURCES.md](DATA_SOURCES.md) §6 quanto às fontes e lacunas.
+
+Dívida é uma escolha explícita, limitada e contabilizada no gasto contratado; na posse ela vira compromisso pessoal, exceto no Casual. O pagamento sai do patrimônio pessoal, não do orçamento público. Após o prazo, a cobrança reduz capital político conforme parâmetro `PROVISORIO`, uma vez. Caixa 2 é ficcional, indisponível no Casual e sujeito a exposição e fiscalização por turno; uma descoberta inicia investigação e notícia, não condenação automática. A cassação depende da Fase C5.
 ### 11.1 Ciclo do mandato (modelo de opinião)
 O peso que o eleitor dá a cada coisa muda ao longo do mandato (parâmetros a calibrar, valores de partida abaixo):
 
 | Fase | Meses (`monthIndex`) | Regra |
 | --- | --- | --- |
 | **Lua de mel** | 0–5 (jan–jun/2027) | Perda de aprovação por medidas impopulares reduzida (`fator_lua_de_mel` ≈ 0,6) e parte da culpa por indicadores ruins atribuída ao governo anterior. É a janela para medidas duras. |
-| **Meio do mandato** | 6–38 | Regras normais; o custo de manter a coalizão sobe com o tempo. |
+| **Meio do mandato** | 6–38 | Regras normais. O "custo de manter a coalizão crescente com o tempo" **não está modelado** (conferido no código em 27/10/2026, [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md) Fase C0, tarefa C0.2): a relação com os blocos não se desgasta sozinha com os meses. O único custo que cresce com o tempo é o risco de escândalo nas pastas de bloco (§6.5, `escandalo_por_ano`). |
 | **Pré-eleição** | 39–45 (abr–out/2030) | **Memória curta:** inflação de alimentos, desemprego e renda dos últimos 6 meses pesam mais na intenção de voto do que o desempenho acumulado (`peso_recente` ≈ 3×). Valem as vedações acima. |
 
 Válido também para mandatos seguintes, contando a partir de cada posse.

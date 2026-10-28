@@ -88,6 +88,7 @@ export interface GlobeViewProps {
   /** O anel de `pulseKey` terminou (as instâncias param de pulsar na sessão). */
   onPulseDone?: (instanceIds: readonly string[]) => void;
   reduceMotion?: boolean;
+  caravan?: { destination: string; key: string } | null;
 }
 
 const NO_RECTS: readonly Rect[] = [];
@@ -126,6 +127,7 @@ export function GlobeView({
   onMarkerPress,
   onPulseDone,
   reduceMotion = false,
+  caravan,
 }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   useEffect(() => controller.setReduceMotion(reduceMotion), [controller, reduceMotion]);
@@ -291,6 +293,7 @@ export function GlobeView({
                   pulseKey={reduceMotion ? '' : pulseKey}
                   onPulseDone={onPulseDone}
                   reduceMotion={reduceMotion}
+                  caravan={caravan}
                 />
               </Canvas>
             ) : (
@@ -321,6 +324,7 @@ export function GlobeView({
                   pulseKey={reduceMotion ? '' : pulseKey}
                   onPulseDone={onPulseDone}
                   reduceMotion={reduceMotion}
+                  caravan={caravan}
                 />
               </NativeGlobeCanvas>
             )}

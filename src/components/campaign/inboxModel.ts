@@ -50,10 +50,15 @@ function awaitingSanction(state: Readonly<GameState>): Proposal[] {
 
 /** Itens de sanção da caixa de entrada; sem resposta vale a sanção tácita. */
 export function sanctionItems(state: Readonly<GameState>, content: GameContent): SanctionItem[] {
-  return awaitingSanction(state).map((proposal) => ({
-    proposal,
-    name: content.policies[proposal.policyId]?.name ?? proposal.policyId,
-  }));
+  return awaitingSanction(state).map((proposal) => {
+    // Pauta-bomba (Fase C6c): o texto vem do Congresso; o histórico diz quem propôs e quanto custa.
+    const origin = proposal.history.find((h) => h.cause === 'pauta_bomba');
+    return {
+      proposal,
+      name: content.policies[proposal.policyId]?.name ?? proposal.policyId,
+      ...(origin ? { context: origin.detail } : {}),
+    };
+  });
 }
 
 /**
