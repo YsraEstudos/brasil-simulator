@@ -5,6 +5,7 @@ import {
   type InfluenceBand,
   type LegacyBand,
   type LegalLevel,
+  type PromiseStatus,
 } from '@/engine';
 
 /**
@@ -33,8 +34,24 @@ export interface AfterTermAspect {
 
 export interface AfterTermView {
   aspects: AfterTermAspect[];
+  /** Promessas com estado, tom e evidência (EX-18). */
+  accountability: { promise: string; status: string; tone: AfterTermTone; evidence: string }[];
   possibilities: string[];
 }
+
+const PROMISE_LABEL: Record<PromiseStatus, string> = {
+  cumprida: 'Cumprida',
+  parcial: 'Parcial',
+  abandonada: 'Abandonada',
+  inviavel: 'Inviável',
+};
+
+const PROMISE_TONE: Record<PromiseStatus, AfterTermTone> = {
+  cumprida: 'positive',
+  parcial: 'warning',
+  abandonada: 'negative',
+  inviavel: 'negative',
+};
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -82,6 +99,12 @@ export function afterTermView(state: GameState, content: GameContent, monthLimit
         ],
       },
     ],
+    accountability: view.accountability.map((item) => ({
+      promise: item.promise,
+      status: PROMISE_LABEL[item.status],
+      tone: PROMISE_TONE[item.status],
+      evidence: item.evidence,
+    })),
     possibilities: view.possibilities,
   };
 }

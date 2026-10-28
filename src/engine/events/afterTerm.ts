@@ -1,4 +1,6 @@
-import { START_YEAR, termOf } from '../calendar';
+import { START_YEAR } from '../calendar';
+import { accountability, type PromiseAccount } from '../administration/accountability';
+import { consecutiveTermsOf } from '../administration/identity';
 import type { ParamSpec } from '../economy/calibration';
 import type { GameContent, GameState, IndicatorKey } from '../types';
 
@@ -64,8 +66,9 @@ export const IMPEACHMENT_DISQUALIFICATION_YEARS = 8;
 
 /**
  * Desfecho final, na precedência da Fase C7: `cassacao` (1) e `nao_homologado` (3) ainda não existem (Fase C5, Exp);
- * depois vêm `impeachment` (2), a derrota antes da posse (4), `derrota_eleitoral` (5), `fim_de_mandato` (6) e o fim
- * pelo limite de meses do cenário (7), que não é desfecho do motor, e por isso chega como `monthLimit`.
+ * depois vêm `impeachment` (2), a derrota antes da posse (4), `derrota_eleitoral` (5) e o fim pelo limite de meses
+ * do cenário (6), que não é desfecho do motor, e por isso chega como `monthLimit`. A posse de um sucessor não é mais
+ * desfecho (PLANO_EXPANSAO R4): o país continua sob a administração eleita.
  */
 export type FinalOutcome = CampaignOutcome | 'limite_de_meses';
 
@@ -139,6 +142,8 @@ export interface AfterTerm {
   /** O nível é o mais grave dos itens; sem itens, `nenhuma`. Marca de CPI ou de escândalo nunca é condenação. */
   legal: { level: LegalLevel; items: LegalItem[] };
   legacy: { score: number; band: LegacyBand; improved: number; approvedProposals: number };
+  /** Promessas do governo com estado e evidência (PLANO_EXPANSAO EX-18). */
+  accountability: PromiseAccount[];
   /** Projeções, cada uma com a regra que a sustenta quando é jurídica. */
   possibilities: string[];
 }
@@ -270,8 +275,8 @@ function possibilities(
 export function afterTerm(state: Readonly<GameState>, content: GameContent, monthLimit: number): AfterTerm | null {
   const outcome = finalOutcome(state, monthLimit);
   if (outcome === null || outcome === 'derrota_campanha') return null;
-  const lastMonth = Math.max(0, state.monthIndex - 1);
-  const terms = termOf(lastMonth) + 1;
+  // Mandatos consecutivos do presidente que governa no fim (EX-17), não do país: um sucessor recomeça em 1.
+  const terms = consecutiveTermsOf(state);
   const influenceView = influence(state, content, outcome);
   const legalView = legal(state);
   return {
@@ -280,6 +285,7 @@ export function afterTerm(state: Readonly<GameState>, content: GameContent, mont
     influence: influenceView,
     legal: legalView,
     legacy: legacy(state, content),
+    accountability: accountability(state, content),
     possibilities: possibilities(state, outcome, terms, influenceView, legalView),
   };
 }

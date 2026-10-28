@@ -1,4 +1,5 @@
 import type { ScenarioElections } from '../../types/scenario';
+import { canRunForReelection, currentAdministration, successorId } from '../administration/identity';
 import { DECLARE_CANDIDACY_ACTION_ID, SUPPORT_CANDIDATE_ACTION_ID } from '../actions';
 import { monthOfTerm, termOf } from '../calendar';
 import { allRelations, blocRelation, RELACAO_ESCALA, shiftRelation } from '../congress/relations';
@@ -142,7 +143,7 @@ function generalElectionMonth(
   const t = state.monthIndex;
   const politics = state.politics ?? initialPolitics(c);
   const declared = politics.declaracao !== null && declarationInTermWindow(politics.declaracao, t, elections);
-  const candidatura = declared && elections.reeleicaoPermitida && termOf(t) === 0;
+  const candidatura = declared && elections.reeleicaoPermitida && canRunForReelection(state);
   const governmentVote = candidatura ? politics.votingIntention : c.fator_sucessao * politics.votingIntention;
 
   const vote1 = governmentVote + c.eleicao_ruido_primeiro_turno * ctx.rng.normal();
@@ -174,11 +175,30 @@ function generalElectionMonth(
     blocs = shiftRelation(blocs, bloc.id, c.renovacao_amplitude * (2 * ctx.rng.float() - 1));
   }
 
+  // Identidade de quem venceu (EX-15/EX-16): o apoio é consumido agora, então o vencedor é gravado na eleição.
+  const current = currentAdministration(state, ctx.content);
+  const winnerId = venceu
+    ? candidatura
+      ? current.presidentId
+      : successorId(politics.apoio ?? current.blocId)
+    : undefined;
+  const winnerBlocId = venceu ? (candidatura ? current.blocId : (politics.apoio ?? current.blocId)) : undefined;
+
   return {
     ...state,
     congress: { ...state.congress, blocs },
     // A campanha terminou: o apoio à sucessão é consumido pela eleição (um novo apoio por campanha).
-    politics: { ...politics, apoio: null, eleicao_geral: { monthIndex: t, candidatura, venceu, turno2 } },
+    politics: {
+      ...politics,
+      apoio: null,
+      eleicao_geral: {
+        monthIndex: t,
+        candidatura,
+        venceu,
+        turno2,
+        ...(winnerId ? { winnerId, winnerBlocId } : {}),
+      },
+    },
   };
 }
 

@@ -29,13 +29,28 @@ const POLITICS = { votingIntention: 0.5, memoria: [], declaracao: null, apoio: n
 /** Estado no mês `month`, com marcas, eleição geral e aprovação opcionais. */
 function at(
   month: number,
-  opts: { flags?: string[]; general?: Partial<PresidentialElection>; approval?: number } = {},
+  opts: { flags?: string[]; general?: Partial<PresidentialElection>; approval?: number; consecutiveTerm?: number } = {},
 ): GameState {
   const s = start();
   const flags = Object.fromEntries((opts.flags ?? []).map((f) => [f, month - 1]));
+  const termIndex = Math.floor(month / 48);
+  const consecutiveTerm = opts.consecutiveTerm ?? 1;
+  const administrations = Array.from({ length: termIndex + 1 }, (_, i) => ({
+    id: `mandato#${i}`,
+    presidentId: 'jogador',
+    blocId: 'centro',
+    startedAtMonth: i * 48,
+    ...(i < termIndex ? { endedAtMonth: (i + 1) * 48 } : {}),
+    termIndex: i,
+    consecutiveTerm,
+    origin: (i === 0 ? 'eleicao' : consecutiveTerm === 2 ? 'reeleicao' : 'sucessao') as
+      'eleicao' | 'reeleicao' | 'sucessao',
+  }));
   return {
     ...s,
     monthIndex: month,
+    administrations,
+    control: { controlledCharacterId: 'jogador', careerMode: 'presidencial' },
     indicators: { ...s.indicators, ...(opts.approval === undefined ? {} : { approval: opts.approval }) },
     events: { ...s.events, flags: { ...s.events.flags, ...flags } },
     ...(opts.general
@@ -48,7 +63,8 @@ function at(
       : {}),
   };
 }
-const read = (s: GameState) => afterTerm(s, content, LIMIT)!;
+// O relatório é sempre a leitura do mês do estado: o limite é o próprio mês, como no fim de uma partida.
+const read = (s: GameState) => afterTerm(s, content, s.monthIndex)!;
 const defeatedBeforeInauguration = (s: GameState, outcome: 'derrotado_1t' | 'derrotado_2t'): GameState => ({
   ...s,
   career: { ...({} as Career), election: { outcome } as CareerElectionResult },
@@ -66,7 +82,9 @@ describe('desfecho final e precedência (Fase C7)', () => {
       'impeachment',
     );
     expect(finalOutcome(at(46, { general: { candidatura: true } }), 46)).toBe('derrota_eleitoral');
-    expect(finalOutcome(at(48, { general: { venceu: true } }), 48)).toBe('fim_de_mandato');
+    // A posse de sucessor não é desfecho (R4): sem derrota, só o limite de meses encerra a partida.
+    expect(campaignOutcome(at(48, { general: { venceu: true } }))).toBeNull();
+    expect(finalOutcome(at(48, { general: { venceu: true } }), 48)).toBe('limite_de_meses');
     const both = defeatedBeforeInauguration(at(5, { flags: ['impeachment_condenado'] }), 'derrotado_1t');
     expect(campaignOutcome(both)).toBe('impeachment');
     expect(campaignOutcome({ ...both, events: start().events })).toBe('derrota_campanha');
@@ -177,7 +195,7 @@ describe('legado de governo e possibilidades', () => {
   });
 
   it('dois mandatos impedem a eleição seguinte; um mandato não', () => {
-    const second = read(at(96, { general: { monthIndex: 93, venceu: true } }));
+    const second = read(at(96, { general: { monthIndex: 93, venceu: true }, consecutiveTerm: 2 }));
     expect(second.terms).toBe(2);
     expect(second.possibilities[0]).toMatch(/dois mandatos/);
     expect(read(at(48, { general: { venceu: true } })).possibilities[0]).toMatch(/Pode disputar/);

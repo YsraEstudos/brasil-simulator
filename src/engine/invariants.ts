@@ -1,4 +1,5 @@
 import { isPreInauguration, turnIndexOf } from './career';
+import { checkAdministrations } from './administration/identity';
 import { usesFormalRules } from './campaignConfig';
 import { electedOutcome } from './career/election';
 import { nationalRecognition } from './career/viability';
@@ -187,6 +188,9 @@ export function checkInvariants(
   }
 
   if (next.career) errors.push(...checkCareer(prev, next, report, content));
+
+  // Tempo político (onda R4): histórico de administrações contíguo, um único mandato aberto e controle coerente.
+  if (next.administrations) errors.push(...checkAdministrations(prev, next));
 
   // Perfil ideológico (PLANO_GLOBO.md §5.1): média móvel de posições em [−1, 1], logo sempre dentro dos eixos.
   const profile = next.government.profile;

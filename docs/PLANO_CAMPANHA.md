@@ -873,7 +873,7 @@ pre_campanha ──► convencao ──► nao_homologado (desfecho)
 | 3 | `nao_homologado` | Fase C5 |
 | 4 | `derrotado_1t` / `derrotado_2t` | Fase C5 |
 | 5 | `derrota_eleitoral` (no governo) | [outcome.ts:25](../src/engine/events/outcome.ts) |
-| 6 | `fim_de_mandato` | [outcome.ts:27](../src/engine/events/outcome.ts) |
+| 6 | ~~`fim_de_mandato`~~ — **removido na onda R4**: a posse do sucessor é continuidade, não desfecho | [outcome.ts](../src/engine/events/outcome.ts) |
 | 7 | fim por limite de meses | [gameStore.ts:65](../src/store/gameStore.ts) |
 
 Derrotas antes da posse usam o resumo da Fase C5 (não há governo a avaliar). Consequências jurídicas ficam condicionadas ao §8.
@@ -991,6 +991,18 @@ Onda R3 do plano de expansão (§4, "Escolhas fiscais e responsabilização"; EX
 - **Testes de aceite da onda:** `src/engine/taxation/taxation.test.ts` (conciliação em 36 meses com reforma, transição sem dupla cobrança, retorno decrescente, estimativa = convergência do motor social, parecer, legalidade) e `src/engine/congress/integrity.test.ts` (fato independente do bloco e do PRNG, 150 sementes sem inocente sancionado, absolvição de culpado com prova fraca, sanção × condenação, defesa sem reescrever fato, auditoria que não muda a quantidade de irregularidades).
 
 **Pendente na R3:** homologação visual e em aparelho da aba Economia e do cartão de casos (mesma limitação de aparelho das ondas anteriores); a composição em tributos e as magnitudes das reformas são `PROVISORIO`; casos contra ocupantes técnicos continuam fora, porque o escândalo da Fase C6a só atinge diretorias de bloco.
+
+#### Expansão R4 — tempo político (28/10/2026)
+
+Onda R4 do plano de expansão (§4, "Tempo político"; EX-15 a EX-18), sobre a R3. A Presidência deixa de ser o fim da partida: o país atravessa mandatos, e quem assume legalmente passa a ser controlado. Motor 0.17.0, estado v21.
+
+- **Identidade da administração (EX-15).** `GameState.administrations` guarda quem ocupou a Presidência, em que mandato, com que bloco e como assumiu (primeira eleição, reeleição ou sucessão); `GameState.control` diz qual personagem o jogador controla. A identidade é **aditiva e opcional**: só nasce onde o cenário tem o bloco `elections`, como `politics`, e não duplica economia, Congresso nem sociedade — cada variável tem uma fonte de verdade (`PLANO_EXPANSAO_BRASIL_SIMULATOR.md` §2.1). O vencedor é gravado na própria eleição (`PresidentialElection.winnerId`/`winnerBlocId`), porque o apoio é consumido no mesmo passo.
+- **Transição sem reset (EX-16).** `presidentialTransitionStep` abre o primeiro passo de `DEFAULT_STEPS`. No primeiro mês de um novo mandato (48, 96, ...), com vitória legítima na eleição do mandato anterior, ele fecha a administração anterior e abre a seguinte. Economia, sociedade, regiões, Congresso, propostas, dívida, PPA/LDO/LOA e a carteira de obras continuam **os mesmos objetos** — o teste compara por identidade de referência. O passo é idempotente e não abre administração em derrota, em eleição de outro mandato nem no meio do mandato; a posse entra no noticiário com causa rastreável.
+- **Nova Presidência jogável (EX-17).** A elegibilidade passa a olhar o ocupante, não o índice do mandato: quem cumpriu menos de dois mandatos consecutivos pode concorrer (`consecutiveTerm`), então um sucessor eleito no primeiro mandato disputa a reeleição. Quando o presidente não pode concorrer e o sucessor apoiado vence, o controle passa para ele; `fim_de_mandato` sai de `CampaignOutcome` e a derrota eleitoral continua encerrando a partida (a continuação depois de derrota é decisão de autoria do plano §10).
+- **Prestação de contas (EX-18).** `accountability()` lê a prioridade do PPA, as marcas de governo e os compromissos de campanha e devolve, para cada promessa, `cumprida`, `parcial`, `abandonada` ou `inviavel` com a **evidência** que a sustenta (valores, contagens, situação da obra ou da lei). É leitura derivada: não cria promessa, não altera orçamento e não soma efeito. O relatório de legado mostra a seção "Prestação de contas" e o cartão "Administrações".
+- **Testes de aceite da onda:** `src/engine/administration/administration.test.ts` fixa os critérios — identidade no mandato 0, cenário sem eleições sem identidade, transição que preserva o país por referência, reeleição que mantém o presidente, vitória ilegítima que não abre administração, idempotência, sucessor com um mandato elegível, 96 e 240 meses reais determinísticos e retomada de save no meio da transição com resultado idêntico. `src/engine/administration/accountability.test.ts` cobre PPA sem LOA, obra em operação, obra em andamento, LOA sem desembolso, marca e compromissos.
+
+**Pendente na R4:** homologação visual e em aparelho do cartão "Administrações" e da prestação de contas (mesma limitação de aparelho das ondas anteriores); substituição por vice (F05, item 2) e carreira fora do Executivo (F05, item 4) continuam fora desta onda; a transição ainda não recompõe gabinete nem diretrizes — o governo seguinte herda a estrutura anterior, o que fica para a onda de continuidade administrativa.
 
 #### Tutorial jogável — diagnóstico e correção (28/10/2026)
 

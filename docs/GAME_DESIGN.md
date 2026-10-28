@@ -212,10 +212,14 @@ Regras que valem para todos:
 | Impeachment | Derrota | Câmara autoriza (2/3) e Senado condena (2/3). Ver [POLITICAL_RULES.md](POLITICAL_RULES.md) §10. |
 | Renúncia | Derrota voluntária | Opção do jogador ou evento extremo aceito pelo jogador |
 | Derrota eleitoral | Derrota | O presidente ou o candidato apoiado perde a eleição (Fase 08) |
-| Fim de mandato sem reeleição | Encerramento | Mandato termina e o jogador não concorre ou já cumpriu dois mandatos consecutivos |
+| Sucessão de governo | Continuidade | O mandato termina e o vencedor da eleição assume; a partida **continua** sob a nova administração, com o país intacto (onda R4, [POLITICAL_RULES.md](POLITICAL_RULES.md) §11.4) |
 | Fim do protótipo | Encerramento | Na versão 0.1, a campanha termina em dez/2027 |
 
 Toda campanha encerrada gera um **Relatório de Legado**: país recebido vs. país entregue, reformas aprovadas, objetivos cumpridos, pontuação.
+
+**Administrações** (onda R4): o mesmo relatório lista quem governou, em que mandato e como assumiu (`GameState.administrations`). O país é um só: obras, leis, dívida e orçamento atravessam a troca de governo sem cópia nem reset.
+
+**Prestação de contas** (onda R4): para cada promessa do governo — prioridade do PPA, marca de governo e compromisso de campanha — o relatório mostra o estado (`cumprida`, `parcial`, `abandonada` ou `inviavel`) e a **evidência** que o estado final sustenta. É leitura derivada: não cria promessa, não altera orçamento e não soma efeito.
 
 **Depois do mandato** (Fase C7 do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)): uma seção do Legado, sem meses jogáveis, que lê o estado final em três aspectos independentes, mais as possibilidades que decorrem deles. São projeções, não destinos.
 

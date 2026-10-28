@@ -4,9 +4,11 @@ import { Alert, Card, formatMoneyMillions, formatNumber, formatPercent, Text } f
 import { Spacing } from '@/constants/theme';
 import { campaignMonths } from '@/content';
 import {
+  administrationHistory,
   campaignOutcome,
   initialIndicators,
   legacyScore,
+  presidentName,
   regionalDispersion,
   regionsOf,
   regionsView,
@@ -24,6 +26,12 @@ export interface LegacyReportProps {
   state: GameState;
   content: GameContent;
 }
+
+const ORIGIN_LABEL = {
+  eleicao: 'primeira eleição',
+  reeleicao: 'reeleição',
+  sucessao: 'sucessão',
+} as const;
 
 /**
  * Relatório de legado ao fim da campanha (GAME_DESIGN.md §7.1): país recebido vs. entregue, com a pontuação do motor
@@ -51,6 +59,7 @@ export function LegacyReport({ state, content }: LegacyReportProps) {
   const society: SocietyState = state.society;
   const outcome = campaignOutcome(state);
   const general = state.politics?.eleicao_geral;
+  const administrations = administrationHistory(state, content);
 
   return (
     <View style={styles.root}>
@@ -68,13 +77,6 @@ export function LegacyReport({ state, content }: LegacyReportProps) {
           message="Ficção: a situação perdeu a eleição geral e o mandato acabou no pleito. O relatório abaixo mostra o país até esse mês."
         />
       )}
-      {outcome === 'fim_de_mandato' && (
-        <Alert
-          tone="info"
-          title="Fim do mandato"
-          message="Ficção: o mandato terminou sem candidatura à reeleição e o sucessor tomou posse. O relatório abaixo mostra o país entregue."
-        />
-      )}
       <Text variant="title">Relatório de legado</Text>
 
       {general && (
@@ -86,6 +88,25 @@ export function LegacyReport({ state, content }: LegacyReportProps) {
           <Text variant="body">
             {general.venceu ? 'Vitória' : 'Derrota'} da situação{general.turno2 ? ' no 2º turno' : ' no 1º turno'}.
           </Text>
+        </Card>
+      )}
+
+      {administrations.length > 1 && (
+        <Card
+          title="Administrações"
+          subtitle="Quem governou, em que mandato e como assumiu. O país é o mesmo em todas: obras, leis e dívida continuam.">
+          {administrations.map((admin) => (
+            <View key={admin.id} style={styles.rowBlock}>
+              <Text variant="label">
+                {presidentName(admin, content)} · {admin.consecutiveTerm}º mandato
+              </Text>
+              <Text variant="caption" color="textSecondary">
+                {`${monthLabel(admin.startedAtMonth)} – ${
+                  admin.endedAtMonth === undefined ? 'até o fim da partida' : monthLabel(admin.endedAtMonth)
+                } · ${ORIGIN_LABEL[admin.origin]}`}
+              </Text>
+            </View>
+          ))}
         </Card>
       )}
 

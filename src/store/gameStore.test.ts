@@ -138,7 +138,7 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     expect(app.getState().draft.decisions).toHaveLength(1);
   });
 
-  it('cenário novo continua após 12 meses e encerra no primeiro mandato (derrota ou fim), sem avançar mais', async () => {
+  it('cenário novo continua após 12 meses e encerra na derrota ou no limite do cenário, sem avançar mais', async () => {
     const { launchApp } = await device();
     const app = await launchApp();
     await app.getState().newCampaign({ name: 'Curta', difficulty: 'estrategica' });
@@ -146,14 +146,14 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     expect(months).toBe(96);
     for (let m = 0; m < PROTOTYPE_MONTHS; m++) await app.getState().endMonth();
     expect(app.getState().active!.finished).toBe(false);
-    // Sem candidatura declarada, o 1º mandato termina na eleição geral (derrota) ou na posse (fim de mandato).
+    // Sem candidatura declarada: ou a situação perde a eleição geral e a partida encerra em `derrota_eleitoral`, ou o
+    // sucessor vence e o país continua até o limite de meses do cenário (onda R4, EX-16/EX-17).
     for (let m = PROTOTYPE_MONTHS; m < months + 2 && !app.getState().active!.finished; m++) {
       await app.getState().endMonth();
     }
     const ended = app.getState().active!;
     expect(ended.finished).toBe(true);
-    expect(ended.state.monthIndex).toBeLessThanOrEqual(48);
-    expect(campaignOutcome(ended.state)).not.toBeNull();
+    expect(campaignOutcome(ended.state) !== null || ended.state.monthIndex >= months).toBe(true);
     await app.getState().endMonth();
     expect(app.getState().active!.state.monthIndex).toBe(ended.state.monthIndex);
     expect(app.getState().campaigns[0].status).toBe('encerrada');

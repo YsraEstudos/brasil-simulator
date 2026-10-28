@@ -178,7 +178,7 @@ describe('electionsStep (FASE_08.md)', () => {
     expect(municipal?.delta).toBeCloseTo(c.municipais_efeito * weightedMemory(politics(state).memoria, c), 10);
   });
 
-  it('eleição geral: candidatura exige declaração na janela, reeleição permitida e 1º mandato', () => {
+  it('eleição geral: candidatura exige declaração na janela, reeleição permitida e menos de 2 mandatos', () => {
     expect(declarationInTermWindow(44, 45, ELECTIONS)).toBe(true);
     expect(declarationInTermWindow(30, 45, ELECTIONS)).toBe(false);
     expect(declarationInTermWindow(38, 45, ELECTIONS)).toBe(false);
@@ -193,16 +193,49 @@ describe('electionsStep (FASE_08.md)', () => {
     const at45: GameState = play(newState(11), 45);
     const declared: GameState = { ...at45, politics: { ...politics(at45), declaracao: 44 } };
     const out = runStep(declared);
-    expect(politics(out.state).eleicao_geral).toEqual({
-      monthIndex: 45,
-      candidatura: true,
-      venceu: expect.any(Boolean),
-      turno2: expect.any(Boolean),
-    });
+    const geral = politics(out.state).eleicao_geral!;
+    expect(geral).toMatchObject({ monthIndex: 45, candidatura: true, turno2: expect.any(Boolean) });
+    expect(typeof geral.venceu).toBe('boolean');
+    // O vencedor é gravado na eleição, porque o apoio é consumido no mesmo passo (EX-15/EX-16).
+    if (geral.venceu) expect(geral.winnerId).toBe('jogador');
 
-    // 2º mandato (mês 93): a declaração está na janela, mas a reeleição não é permitida de novo.
-    const secondTerm: GameState = { ...declared, monthIndex: 93, politics: { ...politics(declared), declaracao: 92 } };
+    // 2º mandato (mês 93): a declaração está na janela, mas o presidente já cumpriu dois mandatos seguidos.
+    const secondTerm: GameState = {
+      ...declared,
+      monthIndex: 93,
+      administrations: [
+        ...(declared.administrations ?? []),
+        {
+          id: 'mandato#1',
+          presidentId: 'jogador',
+          blocId: 'centro',
+          startedAtMonth: 48,
+          termIndex: 1,
+          consecutiveTerm: 2,
+          origin: 'reeleicao',
+        },
+      ],
+      politics: { ...politics(declared), declaracao: 92 },
+    };
     expect(runStep(secondTerm).state.politics?.eleicao_geral?.candidatura).toBe(false);
+
+    // Um sucessor que cumpriu só um mandato pode concorrer à reeleição (regra antiga só olhava o mandato 0).
+    const successor: GameState = {
+      ...secondTerm,
+      administrations: [
+        ...(declared.administrations ?? []),
+        {
+          id: 'mandato#1',
+          presidentId: 'sucessor:centro',
+          blocId: 'centro',
+          startedAtMonth: 48,
+          termIndex: 1,
+          consecutiveTerm: 1,
+          origin: 'sucessao',
+        },
+      ],
+    };
+    expect(runStep(successor).state.politics?.eleicao_geral?.candidatura).toBe(true);
   });
 
   it('eleição geral: governadores trocam de dono e o Congresso renova as relações', () => {
@@ -434,7 +467,7 @@ describe('campaignOutcome (FASE_08.md)', () => {
     expect(campaignOutcome(state)).toBe('derrota_eleitoral');
   });
 
-  it('posse de sucessor sem candidatura encerra como fim de mandato; reeleito segue', () => {
+  it('posse de sucessor não encerra a partida; reeleito também segue', () => {
     const fim: GameState = {
       ...newState(),
       monthIndex: 48,
@@ -443,7 +476,7 @@ describe('campaignOutcome (FASE_08.md)', () => {
         eleicao_geral: { monthIndex: 45, candidatura: false, venceu: true, turno2: false },
       },
     };
-    expect(campaignOutcome(fim)).toBe('fim_de_mandato');
+    expect(campaignOutcome(fim)).toBeNull();
     const reeleito: GameState = {
       ...fim,
       politics: { ...fim.politics!, eleicao_geral: { monthIndex: 45, candidatura: true, venceu: true, turno2: false } },

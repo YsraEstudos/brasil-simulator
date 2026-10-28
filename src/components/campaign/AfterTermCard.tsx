@@ -26,7 +26,11 @@ export function AfterTermCard({
       title="Depois do mandato"
       subtitle="Projeções a partir do fim do mandato, não destinos definitivos. Os três aspectos são independentes.">
       {view.aspects.map((aspect) => (
-        <View key={aspect.title} style={styles.aspect} accessible>
+        <View
+          key={aspect.title}
+          style={styles.aspect}
+          accessible
+          accessibilityLabel={`${aspect.title}: ${aspect.value}. ${aspect.details.join('. ')}`}>
           <View style={styles.head}>
             <Text variant="label">{aspect.title}</Text>
             <Text variant="label" color={aspect.tone}>
@@ -40,6 +44,26 @@ export function AfterTermCard({
           ))}
         </View>
       ))}
+      {view.accountability.length > 0 && (
+        <View style={styles.aspect}>
+          <Text variant="label">Prestação de contas</Text>
+          {view.accountability.map((item, index) => (
+            <View
+              key={`${item.promise}-${index}`}
+              style={styles.promise}
+              accessible
+              accessibilityLabel={`${item.promise}: ${item.status}. ${item.evidence}`}>
+              <Text variant="label">{item.promise}</Text>
+              <Text variant="caption" color={item.tone}>
+                {item.status}
+              </Text>
+              <Text variant="caption" color="textSecondary">
+                {item.evidence}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
       <View style={styles.aspect}>
         <Text variant="label">Possibilidades</Text>
         {view.possibilities.map((line) => (
@@ -54,5 +78,6 @@ export function AfterTermCard({
 
 const styles = StyleSheet.create({
   aspect: { gap: Spacing.half, paddingVertical: Spacing.one },
+  promise: { gap: Spacing.half },
   head: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.two },
 });
