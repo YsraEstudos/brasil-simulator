@@ -158,6 +158,11 @@ export const scenarioInstitutionsSchema = z
     directorates: z.array(directorateSchema).optional(),
     /** Casos de escândalo graduais (Fase C6b): o escândalo em diretoria abre um caso. Exige `directorates`. */
     scandalCases: z.boolean().optional(),
+    /**
+     * Gaveta do impeachment (Fase C6e): pedidos acumulados na Câmara, arquivados ou abertos pela presidência da Casa
+     * (`housePresidents.camara`). Ausente = sistema desligado.
+     */
+    impeachmentDrawer: z.boolean().optional(),
   })
   .strict();
 export type ScenarioInstitutions = z.infer<typeof scenarioInstitutionsSchema>;

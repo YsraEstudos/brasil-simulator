@@ -1098,6 +1098,64 @@ export const PARAMS = {
     basis: JOGO,
   },
 
+  // ── Gaveta do impeachment (PLANO_CAMPANHA.md Fase C6e; POLITICAL_RULES.md §10.1) ────────────────
+  gaveta_pedido_pressao: {
+    value: 0.3,
+    min: 0.1,
+    max: 0.6,
+    note: 'chance mensal de novo pedido de impeachment por unidade de pressão (× impeachmentPressure)',
+    basis: JOGO,
+  },
+  gaveta_meses_arquivo: {
+    value: 6,
+    min: 3,
+    max: 12,
+    note: 'meses na gaveta depois dos quais a presidência aliada da Câmara arquiva o pedido',
+    basis: JOGO,
+  },
+  gaveta_relacao_arquivo: {
+    value: 0,
+    min: -20,
+    max: 30,
+    note: 'relação do bloco que preside a Câmara a partir da qual ele arquiva pedidos antigos',
+    basis: JOGO,
+  },
+  gaveta_relacao_abertura: {
+    value: -20,
+    min: -60,
+    max: 0,
+    note: 'relação do bloco que preside a Câmara abaixo da qual ele pode abrir um pedido',
+    basis: JOGO,
+  },
+  gaveta_pressao_abertura: {
+    value: 0.5,
+    min: 0.3,
+    max: 0.7,
+    note: 'pressão de impeachment mínima para abrir um pedido (a mesma do 1º evento da cadeia)',
+    basis: 'POLITICAL_RULES.md §10: condição do evento de pedido',
+  },
+  gaveta_chance_abertura: {
+    value: 0.3,
+    min: 0.1,
+    max: 0.6,
+    note: 'chance mensal de a presidência hostil abrir um pedido quando as condições valem',
+    basis: JOGO,
+  },
+  capital_negociar_gaveta: {
+    value: -3,
+    min: -8,
+    max: 0,
+    note: 'capital político gasto ao negociar o arquivamento de um pedido',
+    basis: JOGO,
+  },
+  relacao_negociar_gaveta: {
+    value: 5,
+    min: 0,
+    max: 12,
+    note: 'relação ganha com o bloco que preside a Câmara ao negociar',
+    basis: JOGO,
+  },
+
   // ── Casos de escândalo graduais (PLANO_CAMPANHA.md Fase C6b; POLITICAL_RULES.md §9.1) ───────────
   caso_exposicao_inicial: {
     value: 1,

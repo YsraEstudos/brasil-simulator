@@ -6,6 +6,7 @@ import {
   DIRECTIVE_ACTION_ID,
   DIRECTORATE_ACTION_ID,
   DEFEND_CASE_ACTION_ID,
+  DRAWER_ACTION_ID,
   BRAND_ACTION_ID,
   NEGOTIATE_ACTION_ID,
   SANCTION_ACTION_ID,
@@ -90,6 +91,8 @@ export function validateActionTarget(
       return openCases(state).some((c) => c.id === params.caseId && c.openedMonth <= state.monthIndex)
         ? null
         : 'alvo_invalido';
+    case DRAWER_ACTION_ID:
+      return (state.impeachmentDrawer ?? []).some((r) => r.status === 'na_gaveta') ? null : 'alvo_invalido';
     case SANCTION_ACTION_ID: {
       const p = proposal();
       const choice = SANCTION_CHOICES.find((c) => c === params.choice);

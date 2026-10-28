@@ -278,6 +278,7 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
         ...scenario.institutions,
         directorates: undefined,
         scandalCases: undefined,
+        impeachmentDrawer: undefined,
       };
       return {
         ...resto,
