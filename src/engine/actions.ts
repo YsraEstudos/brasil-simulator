@@ -32,6 +32,8 @@ export const APPOINT_ACTION_ID = 'nomear_ministro';
 export const DIRECTORATE_ACTION_ID = 'nomear_diretoria';
 /** Defesa do governo num caso de escândalo em andamento (§9.1, Fase C6b). Params: `caseId`. */
 export const DEFEND_CASE_ACTION_ID = 'defender_caso';
+/** Auditoria da CGU num caso de escândalo em andamento (§9.1.1, PLANO_EXPANSAO EX-13). Params: `caseId`. */
+export const FISCALIZE_CASE_ACTION_ID = 'fiscalizar_caso';
 /** Negociação com a presidência da Câmara para arquivar o pedido mais antigo da gaveta (§10.1, Fase C6e). Sem params. */
 export const DRAWER_ACTION_ID = 'negociar_gaveta';
 /** Pronunciamento à nação em rede nacional (PLANO_CAMPANHA.md Fase C6g). Sem params. */
@@ -154,8 +156,18 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
     id: DEFEND_CASE_ACTION_ID,
     name: 'Defender o caso',
     summary:
-      'Mobiliza a defesa do governo num caso de escândalo em andamento: reduz neste mês a chance de o caso avançar ' +
-      'de etapa e custa capital político. Não arquiva o caso: só a exposição baixa arquiva.',
+      'Mobiliza a defesa do governo num caso de escândalo em andamento: contesta neste mês a prova obtida, o que ' +
+      'pesa se o caso for decidido agora, e custa capital político. Não muda os fatos nem arquiva o caso.',
+    agendaCost: 1,
+    targetParams: ['caseId'],
+    listed: false,
+  },
+  [FISCALIZE_CASE_ACTION_ID]: {
+    id: FISCALIZE_CASE_ACTION_ID,
+    name: 'Pedir auditoria da CGU',
+    summary:
+      'Pede à Controladoria-Geral da União que audite o caso: a investigação anda mais rápido em direção à verdade, ' +
+      'seja para afastar o indicado, seja para inocentá-lo. O bloco investigado não gosta.',
     agendaCost: 1,
     targetParams: ['caseId'],
     listed: false,

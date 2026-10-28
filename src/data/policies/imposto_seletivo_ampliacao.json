@@ -1,0 +1,54 @@
+{
+  "id": "imposto_seletivo_ampliacao",
+  "name": "Alíquotas maiores no Imposto Seletivo",
+  "summary": "Por lei ordinária, eleva as alíquotas do Imposto Seletivo sobre cigarros e bebidas alcoólicas e açucaradas. Arrecada mais e desestimula consumo prejudicial à saúde, mas pesa proporcionalmente mais sobre a renda das famílias pobres. Respeita a noventena.",
+  "area": "tributacao",
+  "competence": "federal",
+  "instruments": ["projeto_lei"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": -12000,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["aumento_receita"],
+  "timeline": {
+    "planningMonths": 1,
+    "expectedLegislativeMonths": 4,
+    "executionMonths": 0,
+    "maturationMonths": 0
+  },
+  "conditions": ["noventena"],
+  "impacts": [
+    {
+      "channel": "receita_consumo",
+      "magnitude": 12000,
+      "lagMonths": 0
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": -0.008,
+      "lagMonths": 0
+    }
+  ],
+  "risks": [
+    {
+      "kind": "judicializacao",
+      "probability": 0.1
+    }
+  ],
+  "affected": {
+    "groups": ["consumidores", "industria_bebidas"],
+    "sectors": ["industria"],
+    "regions": ["nacional"]
+  },
+  "regional": {
+    "key": "populacao",
+    "scope": [],
+    "boost": {}
+  },
+  "position": {
+    "economic": 0.1,
+    "social": 0.1
+  },
+  "dataStatus": "PROVISORIO"
+}

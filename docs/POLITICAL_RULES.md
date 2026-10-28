@@ -157,6 +157,17 @@ Situação para o cenário de 2027 (fontes secundárias; reconferir o texto comp
 
 Consequência de design: no cenário de 2027 a política "reduzir IPI" **não está disponível** como instrumento geral de estímulo.
 
+### 5.3 Mudança de tributo no motor (onda R3 do plano de expansão, motor 0.16.0)
+Validado no esquema de política (`src/types/policy.ts`): conteúdo que viola a regra não carrega, então o presidente não executa tributo ilegal por decisão própria.
+
+| Regra | Como o jogo aplica |
+| --- | --- |
+| Competência | Política com canal tributário (`receita_*`, `desoneracao_*`) só com `competence: federal`. Tributo de estado ou município (ICMS, ISS, ITCMD, IPTU) exige acordo federativo e fica fora das decisões da União. |
+| Instrumento | Lei (PL, PLP, MP, PEC) ou, nos impostos regulatórios, decreto de alíquota (§5.1). Decreto regulamentar ou portaria não mexem em tributo. |
+| Anterioridade | Aumento por lei declara `anterioridade_anual` ou `noventena` (tabela do §5.1); a execução adia a receita (`proposals.ts`). Desoneração pode valer de imediato. |
+| Fases | Reforma em fases é uma política com mais de um impacto de receita, cada um com sua defasagem; o parecer da Fazenda lista as fases antes da anterioridade. |
+| Composição | O cenário reparte cada grupo de receita em tributos por fase legal (`Scenario.taxation`); cada fase soma 100% do grupo, então tributo antigo e novo nunca arrecadam em dobro. A transição ICMS/ISS → IBS (§5.2) aparece como calendário, fora do caixa da União. |
+
 ---
 
 ## 6. Congresso no protótipo (0.1)
@@ -310,6 +321,21 @@ Ficção (`FICTICIO`): o caso atinge o **indicado do bloco** numa diretoria de e
 | Pressão de impeachment | As três marcas têm prefixo `escandalo_` e entram na contagem existente (§10), cada uma uma vez. A cadeia de impeachment segue a única via de condenação da Presidência. |
 | Para a Fase C6e | As marcas acima e `GameState.cases` são o que a gaveta do impeachment vai consumir. |
 
+#### 9.1.1 Fato, prova e desfecho (onda R3 do plano de expansão, motor 0.16.0)
+A R3 separa o que aconteceu, o que se provou e a pressão pública, e substitui as linhas "Etapas", "Arquivamento", "Defesa" e "Condenação" da tabela acima onde houver conflito.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Fato latente | `irregular`, sorteado uma vez na abertura, por chave, com chance `caso_prob_irregular` igual para qualquer ocupante e bloco. Nada o altera depois, e a interface não o lê. Indicação partidária aumenta a exposição a escândalo (§6.3.2), não a chance de culpa. |
+| Prova | `evidence` (0–1) anda a cada mês uma fração (`caso_descoberta`) da distância até o que os fatos sustentam: 1 se houve irregularidade, `caso_prova_teto_indicios` se não houve. A interface mostra só a faixa (indícios fracos, moderados, fortes). |
+| Auditoria da CGU | Ação `fiscalizar_caso` (custo 1, params `caseId`): no mês, a fração sobe para `caso_descoberta_auditoria` e, sem irregularidade, o alvo vira 0 (a auditoria esclarece). Custa relação com o bloco investigado (`relacao_auditoria_caso`). Fiscalizar mais descobre mais; não cria irregularidade. |
+| Acusação | Além do perigo do mês, exige prova ≥ `caso_prova_acusacao`. Como o teto dos indícios fica acima desse limiar, inocente pode ser acusado. |
+| Julgamento | Toda acusação vai a julgamento (perigo mínimo `caso_perigo_julgamento`). Prova ≥ `caso_prova_condenacao`: **condenação judicial** (marca `escandalo_condenacao`, sai do cargo). Prova ≥ `caso_prova_sancao`: **sanção administrativa** da CGU (sai do cargo, `caso_aprovacao_sancao`, sem marca de condenação). Abaixo: **absolvição por falta de provas**, inclusive de quem cometeu a irregularidade. |
+| Rumor não condena | O teto dos indícios fica abaixo do limiar de sanção em qualquer ponto das faixas calibradas; o invariante recusa `condenacao` ou `sancao` sem irregularidade real. |
+| Defesa | `defender_caso` contesta no mês uma fração `caso_defesa` da prova usada na decisão. Não muda o fato nem a prova acumulada e não reduz mais o perigo. |
+| Arquivamento | Só na investigação: exposição abaixo de `caso_arquivamento` **e** indícios abaixo do limiar de acusação (investigação inconclusiva). |
+| Responsabilidade | O caso atinge o indicado; a Presidência só sente o custo político (aprovação, CPI, pressão de impeachment pelas marcas). |
+
 ---
 
 ## 10. Impeachment (CF arts. 85–86; Lei 1.079/1950)
@@ -423,6 +449,8 @@ Este é o catálogo-semente. As 8 primeiras compõem o protótipo (ver [GAME_DES
 | 21 | Segurança hídrica do semiárido (PR 13, v0.8.0) | Saneamento / clima | PL + obra (carteira) | Espaço no limite de despesas; território no escopo regional (9 UFs); reduz o dano da seca, não a chuva; manutenção anual |
 | 22 | Drenagem urbana e contenção de encostas (PR 13, v0.8.0) | Cidades / clima | PL + obra (carteira) | Espaço no limite de despesas; nacional; reduz o dano das cheias; manutenção anual |
 | 23 | Reforço da Defesa Civil (PR 13, v0.8.0) | Cidades / clima | Rotina (ato executivo + dotação anual) | Uma rotina por pasta e ano; efeito proporcional à dotação liberada, com maturação |
+| 24 | Tributação de lucros e dividendos com redução do IR das empresas (R3, v0.8.0) | Tributação | PL ordinário | Anterioridade anual; duas fases (a segunda 12 meses depois); pesa mais sobre o quinto mais rico (§5.3) |
+| 25 | Alíquotas maiores no Imposto Seletivo (R3, v0.8.0) | Tributação | PL ordinário | Noventena; pesa proporcionalmente mais sobre o quinto mais pobre (§5.3) |
 
 ---
 

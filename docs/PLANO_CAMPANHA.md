@@ -980,6 +980,18 @@ Onda R2 do mesmo plano (§4, "Governar melhor"), sobre a R1. A auditoria mostrou
 
 **Pendente na R2:** homologação visual e em aparelho dos painéis de gargalo, manutenção, compromissos e leis orçamentárias (mesma limitação de aparelho da R1). A integração em `main` continua fora desta branch, que empilha R1 e R2 sobre a base da R0.
 
+#### Expansão R3 — escolhas fiscais e responsabilização (28/10/2026)
+
+Onda R3 do plano de expansão (§4, "Escolhas fiscais e responsabilização"; EX-11 a EX-14), sobre a R2. Evolui o motor fiscal e os casos da Fase C6b, sem segundo agregado fiscal nem segundo motor de corrupção. Motor 0.16.0, estado v20.
+
+- **Bases tributárias conciliadas (EX-11).** O motor grava, por grupo de receita, carga legal do cenário, carga de medidas novas, ciclo, perda de conformidade e repasses (`FiscalState.revenueDetail`); o invariante confere que a soma dá a receita líquida de cada grupo ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.7.1). O cenário atual declara a composição de cada grupo em tributos e o calendário ICMS/ISS → IBS (`Scenario.taxation`, `PROVISORIO`); cada fase soma 100% do grupo, e o esquema recusa dupla cobrança. A aba Economia mostra a receita por base, do legal ao caixa.
+- **Reformas com distribuição e Congresso (EX-12).** Duas reformas novas: tributação de dividendos com redução do IR das empresas (duas fases, anterioridade anual) e alíquotas maiores no Imposto Seletivo (noventena). O parecer da Fazenda lista as fases e a estimativa por quintil, marcada como estimativa; ela usa os mesmos vetores de incidência do bloco social, então converge para o efeito que o motor aplica. O esquema de política recusa tributo de outro ente, mudança de tributo sem lei (salvo decreto de alíquota) e aumento por lei sem anterioridade ou noventena ([POLITICAL_RULES.md](POLITICAL_RULES.md) §5.3).
+- **Fato latente e descoberta (EX-13).** Cada caso sorteia na abertura, por chave, se houve irregularidade, com a mesma chance para qualquer bloco. A prova obtida anda em direção ao que os fatos sustentam; a nova ação "Pedir auditoria da CGU" acelera a descoberta para os dois lados e custa relação com o bloco investigado.
+- **Prova e desfecho (EX-14).** Acusação exige indícios; todo acusado vai a julgamento, que termina em condenação judicial, sanção administrativa ou absolvição por falta de provas. Indícios sem fato nunca sancionam (garantido pelas faixas da calibração e por invariante). A defesa contesta a prova da decisão, sem mudar fato nem prova acumulada ([POLITICAL_RULES.md](POLITICAL_RULES.md) §9.1.1).
+- **Testes de aceite da onda:** `src/engine/taxation/taxation.test.ts` (conciliação em 36 meses com reforma, transição sem dupla cobrança, retorno decrescente, estimativa = convergência do motor social, parecer, legalidade) e `src/engine/congress/integrity.test.ts` (fato independente do bloco e do PRNG, 150 sementes sem inocente sancionado, absolvição de culpado com prova fraca, sanção × condenação, defesa sem reescrever fato, auditoria que não muda a quantidade de irregularidades).
+
+**Pendente na R3:** homologação visual e em aparelho da aba Economia e do cartão de casos (mesma limitação de aparelho das ondas anteriores); a composição em tributos e as magnitudes das reformas são `PROVISORIO`; casos contra ocupantes técnicos continuam fora, porque o escândalo da Fase C6a só atinge diretorias de bloco.
+
 #### Tutorial jogável — diagnóstico e correção (28/10/2026)
 
 Auditoria do tutorial em execução (semente 42, cenário padrão) encontrou nove defeitos de compreensão, não de motor. A correção fecha todos e documenta o desenho em [TUTORIAL.md](TUTORIAL.md):

@@ -69,6 +69,17 @@ export function checkInvariants(
   if (Math.abs(revenueSum - eco.revenue) > EPSILON) {
     errors.push(`receita por grupo não fecha com a receita total: diferença ${revenueSum - eco.revenue}`);
   }
+  // Do tributo legal à receita líquida (PLANO_EXPANSAO EX-11): cada base fecha com a própria receita líquida.
+  for (const g of REVENUE_GROUPS) {
+    const d = f.revenueDetail[g];
+    const net = d.base + d.policy + d.cycle - d.loss - d.transfers;
+    if (Math.abs(net - f.revenueByGroup[g]) > EPSILON) {
+      errors.push(
+        `receita de ${g} não fecha com carga, ciclo, perda e repartição: diferença ${net - f.revenueByGroup[g]}`,
+      );
+    }
+    if (!(d.loss >= 0) || !(d.transfers >= 0)) errors.push(`receita de ${g}: perda ou repartição negativa`);
+  }
   const spendingSum =
     MANDATORY_GROUPS.reduce((s, g) => s + f.mandatory[g], 0) +
     f.linked +
@@ -215,15 +226,21 @@ export function checkInvariants(
     }
   }
 
-  // Casos de escândalo (Fase C6b): ids únicos, exposição não negativa e condenação só depois de uma acusação.
+  // Casos de escândalo (Fase C6b; PLANO_EXPANSAO EX-13/14): ids únicos, exposição não negativa, prova entre 0 e 1,
+  // desfecho só depois de uma acusação e nenhuma sanção sem irregularidade real (rumor sozinho não condena).
   const caseIds = new Set<string>();
   for (const c of next.cases ?? []) {
     if (caseIds.has(c.id)) errors.push(`caso repetido: ${c.id}`);
     caseIds.add(c.id);
     if (!(c.exposure >= 0)) errors.push(`${c.id}: exposição negativa ${c.exposure}`);
+    if (!(c.evidence >= 0 && c.evidence <= 1)) errors.push(`${c.id}: prova fora de 0–1 ${c.evidence}`);
     if (c.stageMonth < c.openedMonth) errors.push(`${c.id}: etapa antes da abertura`);
-    if (c.stage === 'condenacao' && !(c.accusedMonth !== undefined && c.accusedMonth < c.stageMonth)) {
-      errors.push(`${c.id}: condenação sem acusação anterior`);
+    const verdict = c.stage === 'condenacao' || c.stage === 'sancao' || c.stage === 'absolvido';
+    if (verdict && !(c.accusedMonth !== undefined && c.accusedMonth < c.stageMonth)) {
+      errors.push(`${c.id}: julgamento sem acusação anterior`);
+    }
+    if ((c.stage === 'condenacao' || c.stage === 'sancao') && !c.irregular) {
+      errors.push(`${c.id}: sanção sem irregularidade real`);
     }
   }
   // STF (Fase C6d): cada vaga é do calendário do cenário, uma vez só; indicação em sabatina tem mês e perfil.

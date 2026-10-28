@@ -228,6 +228,21 @@ function incomeImpulseEffect(
   quintile: SocietyQuintileId,
   calibration: SocietyCalibration,
 ): number {
+  return quintileIncomeEffect(impulse.target, impulse.delta, quintile, calibration);
+}
+
+/**
+ * Efeito permanente de um impulso (alvo, fração do PIB) na renda real média do quintil, em pontos do índice de
+ * renda: o valor para o qual `policyAdjustment` converge. Fonte única da incidência por quintil, lida também pela
+ * estimativa distributiva das reformas (`taxation/incidence.ts`).
+ */
+export function quintileIncomeEffect(
+  target: ImpulseTarget,
+  delta: number,
+  quintile: SocietyQuintileId,
+  calibration: SocietyCalibration = DEFAULT_SOCIETY_CALIBRATION,
+): number {
+  const impulse = { target, delta };
   const index = calibration.quintilePopulationShare;
   switch (impulse.target) {
     case 'gasto.transferencia_baixa_renda':

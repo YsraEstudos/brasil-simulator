@@ -20,11 +20,13 @@ import {
   APPOINT_ACTION_ID,
   blocRelation,
   CASE_STAGE_LABEL,
+  caseEvidenceBand,
   caseRiskBand,
   caseSubjectHeld,
   CONCEDE_ACTION_ID,
   currentHouse,
   DEFEND_CASE_ACTION_ID,
+  FISCALIZE_CASE_ACTION_ID,
   DRAWER_ACTION_ID,
   drawerEnabled,
   drawerRequests,
@@ -473,8 +475,9 @@ function DirectoratesCard({
 }
 
 /**
- * Casos de escândalo (PLANO_CAMPANHA.md Fase C6b): etapa, tempo na etapa e faixa de risco atual de avançar, sem
- * número do motor. Os abertos vêm primeiro; defender entra na agenda do mês.
+ * Casos de escândalo (PLANO_CAMPANHA.md Fase C6b; PLANO_EXPANSAO EX-13/14): etapa, tempo na etapa, faixa de risco
+ * de avançar e faixa da prova obtida, sem número do motor e sem o fato latente. Os abertos vêm primeiro; defender
+ * e pedir auditoria entram na agenda do mês.
  */
 function CasesCard({ state, content, agenda }: { state: GameState; content: GameContent; agenda: AgendaHelpers }) {
   const cases = [...(state.cases ?? [])].sort((a, b) => Number(isOpenCase(b)) - Number(isOpenCase(a)));
@@ -485,7 +488,7 @@ function CasesCard({ state, content, agenda }: { state: GameState; content: Game
   return (
     <Card
       title="Casos de escândalo"
-      subtitle="Ficção. Um caso passa por investigação, acusação formal e, só depois da acusação, condenação; investigação não é condenação. A exposição cresce enquanto o bloco segue no cargo e cai quando o indicado sai; exposição baixa arquiva o caso.">
+      subtitle="Ficção. Fato, prova e pressão são coisas diferentes. A pressão (exposição) cresce enquanto o bloco segue no cargo e decide quando o caso anda; a prova decide o desfecho. Acusação exige indícios; no julgamento, prova forte leva à condenação judicial, prova moderada à sanção administrativa e prova fraca à absolvição. Indícios sem fato não sancionam ninguém.">
       {cases.map((c) => {
         const open = isOpenCase(c);
         const months = state.monthIndex - c.stageMonth;
@@ -495,7 +498,7 @@ function CasesCard({ state, content, agenda }: { state: GameState; content: Game
             <Text variant="label">{`${directorateName(c.subjectId)} · indicação do bloco ${blocName(c.blocId)}`}</Text>
             <Text variant="body" color="textSecondary">
               {open
-                ? `${CASE_STAGE_LABEL[c.stage]} ${months === 0 ? 'desde este mês' : months === 1 ? 'há 1 mês' : `há ${months} meses`} · risco de avançar: ${caseRiskBand(c.exposure, content)}`
+                ? `${CASE_STAGE_LABEL[c.stage]} ${months === 0 ? 'desde este mês' : months === 1 ? 'há 1 mês' : `há ${months} meses`} · risco de avançar: ${caseRiskBand(c.exposure, content)} · indícios ${caseEvidenceBand(c.evidence, content)}`
                 : `${CASE_STAGE_LABEL[c.stage]} em ${shortMonthLabel(c.stageMonth)}`}
             </Text>
             {open && !held ? (
@@ -504,11 +507,18 @@ function CasesCard({ state, content, agenda }: { state: GameState; content: Game
               </Text>
             ) : null}
             {open ? (
-              <ActionButton
-                decision={actionDecision(DEFEND_CASE_ACTION_ID, { caseId: c.id })}
-                label="Defender o caso"
-                agenda={agenda}
-              />
+              <>
+                <ActionButton
+                  decision={actionDecision(DEFEND_CASE_ACTION_ID, { caseId: c.id })}
+                  label="Defender o caso"
+                  agenda={agenda}
+                />
+                <ActionButton
+                  decision={actionDecision(FISCALIZE_CASE_ACTION_ID, { caseId: c.id })}
+                  label="Pedir auditoria da CGU"
+                  agenda={agenda}
+                />
+              </>
             ) : null}
           </View>
         );

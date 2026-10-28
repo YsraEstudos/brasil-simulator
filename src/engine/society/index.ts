@@ -3,6 +3,7 @@ export {
   checkSociety,
   initialSociety,
   initialSocietyForGame,
+  quintileIncomeEffect,
   societyStep,
 } from './society';
 export {

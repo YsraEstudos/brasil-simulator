@@ -110,6 +110,81 @@ export const scenarioFiscalSchema = z
   .strict();
 export type ScenarioFiscal = z.infer<typeof scenarioFiscalSchema>;
 
+/** Grupos de receita do governo central (os mesmos de `RevenueGroup` no motor). */
+export const TAX_GROUPS = ['renda', 'folha', 'consumo', 'outras', 'royalties'] as const;
+
+const yearShareSchema = z.object({ fromYear: z.number().int(), share: unitInterval }).strict();
+
+/** Tributo do governo central dentro de um grupo de receita (PLANO_EXPANSAO EX-11). */
+export const tributeSchema = z
+  .object({
+    id: contentIdSchema,
+    name: z.string().min(1),
+    group: z.enum(TAX_GROUPS),
+    /** Participação na carga legal do grupo, por fase legal: vale do ano `fromYear` até a fase seguinte. */
+    phases: z.array(yearShareSchema).min(1),
+    /** Fundamento legal da cobrança (lei, artigo da Constituição). */
+    legalBasis: z.string().min(1),
+  })
+  .strict();
+export type Tribute = z.infer<typeof tributeSchema>;
+
+/**
+ * Fração de uma série por fase no ano `year`: a fase de maior `fromYear` que já começou; antes da primeira fase do
+ * grupo, vale a primeira (`firstYear`). Usada pela validação do cenário e pelo motor.
+ */
+export function phaseShareAt(phases: readonly { fromYear: number; share: number }[], year: number, firstYear: number) {
+  const y = Math.max(year, firstYear);
+  let share = 0;
+  let best = -Infinity;
+  for (const p of phases) {
+    if (p.fromYear <= y && p.fromYear > best) {
+      best = p.fromYear;
+      share = p.share;
+    }
+  }
+  return share;
+}
+
+/**
+ * Regras tributárias do cenário (PLANO_EXPANSAO EX-11 e §2.6): composição de cada grupo em tributos, por fase, e o
+ * calendário da transição do consumo subnacional. Versionadas com o cenário, nunca alteradas pela dificuldade.
+ */
+export const scenarioTaxationSchema = z
+  .object({
+    status: dataStatusSchema,
+    note: z.string().min(1),
+    tributes: z.array(tributeSchema).min(1),
+    /**
+     * ICMS e ISS → IBS (EC 132/2023; LC 214/2025): fração do IBS na carga do consumo de estados e municípios, por
+     * ano. Fora do caixa da União: informação de calendário, não receita do motor.
+     */
+    subnationalTransition: z.array(z.object({ fromYear: z.number().int(), ibsShare: unitInterval }).strict()).min(1),
+    legalBasis: z.string().min(1),
+  })
+  .strict()
+  .superRefine((t, ctx) => {
+    for (const group of TAX_GROUPS) {
+      const tributes = t.tributes.filter((x) => x.group === group);
+      if (tributes.length === 0) {
+        ctx.addIssue({ code: 'custom', path: ['tributes'], message: `grupo sem tributo: ${group}` });
+        continue;
+      }
+      const years = [...new Set(tributes.flatMap((x) => x.phases.map((p) => p.fromYear)))].sort((a, b) => a - b);
+      for (const year of years) {
+        // Cada fase do grupo reparte 100% da carga: tributo antigo e novo nunca somam duas vezes.
+        const sum = tributes.reduce((acc, x) => acc + phaseShareAt(x.phases, year, years[0]), 0);
+        if (Math.abs(sum - 1) > 1e-9) {
+          ctx.addIssue({ code: 'custom', path: ['tributes'], message: `${group} em ${year} soma ${sum}, esperado 1` });
+        }
+      }
+    }
+    const ids = t.tributes.map((x) => x.id);
+    const dup = ids.find((id, i) => ids.indexOf(id) !== i);
+    if (dup) ctx.addIssue({ code: 'custom', path: ['tributes'], message: `tributo repetido: ${dup}` });
+  });
+export type ScenarioTaxation = z.infer<typeof scenarioTaxationSchema>;
+
 /** Ocupante técnico/aliado de um ministério (POLITICAL_RULES.md §6.3.1); os demais ocupantes são ids de bloco. */
 export const TECHNICAL_MINISTER = 'tecnico';
 
@@ -487,6 +562,8 @@ export const scenarioSchema = z
     indicators: scenarioIndicatorsSchema,
     economy: scenarioEconomySchema.optional(),
     fiscal: scenarioFiscalSchema.optional(),
+    /** Tributos por grupo e transição legal (PLANO_EXPANSAO EX-11); ausente nos cenários anteriores. */
+    taxation: scenarioTaxationSchema.optional(),
     institutions: scenarioInstitutionsSchema.optional(),
     regions: scenarioRegionsSchema.optional(),
     /** Parâmetros do modelo (ECONOMIC_MODEL.md §6), todos com status — `A_CALIBRAR` = `PROVISORIO`. */

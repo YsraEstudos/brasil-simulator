@@ -288,6 +288,7 @@ export const economyStep: MonthStep = (input, ctx) => {
     limitExcess: spending.limitExcess,
     revenueByGroup: revenue.byGroup,
     revenueLoss: revenue.loss,
+    revenueDetail: revenue.detail,
     revenue12m: e.fiscal.revenue12m + (revenue.total - e.fiscal.revenue12m) / MONTHS_PER_YEAR,
     demandRef: e.fiscal.demandRef + c.adaptacao_fiscal * (gap.stance - e.fiscal.demandRef),
   };

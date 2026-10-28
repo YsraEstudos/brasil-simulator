@@ -191,6 +191,18 @@ R_j,t = base_j(PIBnominal_t, componente) * aliquota_efetiva_j,t * (1 + elast_j *
 - Sazonalidade mensal da arrecadação vem do cenário.
 - Transferências constitucionais a estados e municípios (FPE/FPM) são deduzidas da receita líquida do governo central conforme as regras de repartição.
 
+#### 5.7.1 Bases tributárias e conciliação (onda R3 do plano de expansão, motor 0.16.0)
+O motor grava, por grupo, o caminho do tributo legal ao caixa (`FiscalState.revenueDetail`), em fração do PIB anualizada:
+```
+líquida_j = base_j + política_j + ciclo_j − perda_j − repasses_j
+base_j     = carga legal do cenário
+política_j = Σ impulsos de receita ativos do grupo (desoneração com sinal negativo)
+ciclo_j    = (base_j + política_j)·(ciclo − 1)
+perda_j    = (base_j + política_j)·perda(carga)·ciclo
+repasses_j = repartição_j·(base_j + política_j)·(1 − perda)·ciclo
+```
+O invariante confere a identidade em cada grupo, e a soma dos grupos continua igual à receita total. A composição em tributos (`Scenario.taxation`) reparte só a carga legal do cenário; medidas novas aparecem à parte, sem serem atribuídas a um tributo que não criaram. A estimativa distributiva de uma reforma (`taxation/incidence.ts`) usa os mesmos vetores de incidência por quintil do bloco social (`quintileIncomeEffect`), então converge para o efeito que o motor aplica; ela continua marcada como estimativa, porque ciclo e perda mudam o valor efetivo e não há microdados de domicílios.
+
 ### 5.8 Despesas
 - **Obrigatórias** (previdência, pessoal, BPC, abono/seguro-desemprego, mínimos de saúde e educação, emendas impositivas): crescem por regra de indexação (inflação, salário mínimo, demografia, número de beneficiários).
 - **Discricionárias**: definidas pela LOA, limitadas pelo Regime Fiscal Sustentável e afetadas por contingenciamento.

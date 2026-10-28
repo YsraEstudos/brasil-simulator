@@ -106,7 +106,8 @@ describe('contratos de políticas da Fase 06', () => {
     expect([...current.policies].sort()).toEqual(published.map((policy) => policy.id).sort());
     expect(published.filter((policy) => policy.delivery === 'rotina')).toHaveLength(22);
     expect(published.filter((policy) => policy.delivery === 'projeto')).toHaveLength(10);
-    expect(published.filter((policy) => policy.delivery === undefined)).toHaveLength(10);
+    // 10 da Fase 06 + as duas reformas tributárias da R3 (PLANO_EXPANSAO EX-12).
+    expect(published.filter((policy) => policy.delivery === undefined)).toHaveLength(12);
     for (const policy of Object.values(POLICIES).filter((item) => item.delivery === 'projeto')) {
       expect(policy.timeline.executionMonths, policy.id).toBeGreaterThan(0);
       expect(policy.cost.disbursementProfile.length, policy.id).toBe(Math.ceil(policy.timeline.executionMonths / 12));
