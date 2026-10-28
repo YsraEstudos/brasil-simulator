@@ -946,7 +946,7 @@ Derrotas antes da posse usam o resumo da Fase C5 (não há governo a avaliar). C
 
 #### Trabalho iniciado (27–28/10/2026)
 
-- **C8.2, tutorial inicial:** orientações consultáveis na aba eleitoral explicam ações, pagamento, pesquisa, debate e desfecho do percurso atual. A compreensão e a acessibilidade no aparelho ainda precisam de homologação.
+- **C8.2, tutorial inicial:** orientações consultáveis na aba eleitoral explicam ações, pagamento, pesquisa, debate e desfecho do percurso atual. O tutorial jogável foi revisado em 28/10/2026 (ver "Tutorial jogável" abaixo e [TUTORIAL.md](TUTORIAL.md)). A compreensão e a acessibilidade no aparelho ainda precisam de homologação.
 - **C8.1:** a tela apresenta os pontos e perfis eleitorais existentes no cenário e envia o perfil escolhido ao motor. O cenário oferece posse e corrida, com um único perfil eleitoral; pré-campanha longa e outros perfis dependem da expansão.
 - **C8.3:** o globo recebe a mesma camada de reconhecimento do mapa 2D e mostra uma rota ilustrativa para a UF da última caravana aceita; movimento reduzido posiciona o marcador diretamente no destino. Medição e confirmação visual em aparelho permanecem pendentes.
 - **C8.4:** a investigação em [DIAGNOSTICO_CAMPANHA.md](DIAGNOSTICO_CAMPANHA.md) identificou vantagem central elevada em perfis sintéticos e reduziu provisoriamente o peso do alinhamento de 1 para 0,25, o da mobilização de 0,08 para 0,02 e o do comício de 0,04 para 0,01. Os controles pré-registrados passaram em sementes independentes; a melhor das 27 sequências exploradas venceu 89/100. A comparação pareada com dotação total e gastos controlados passou em 200 sementes, mas cobre uma busca limitada e tem diferenças de liquidez. O diagnóstico financeiro agora para ao ocorrer derrota e distingue saldo aberto de contas encerradas. Não é balanceamento final: faltam perfis reais adicionais e sessões com pessoas.
@@ -979,6 +979,23 @@ Onda R2 do mesmo plano (§4, "Governar melhor"), sobre a R1. A auditoria mostrou
 - **Testes de aceite da onda:** `src/engine/publicPolicies/governance.test.ts` fixa os sete critérios — canais de orçamento e capacidade separados; melhor gestão nunca atrasa a mesma obra; capacidade não altera o total desembolsado; recurso adicional só acelera quando o gargalo é o orçamento; compromisso é previsão; indicação política não é incompetência; estoque de capital reconcilia mês a mês. Complementam `publicPolicies.test.ts`, `commitments.test.ts`, `budgetLaws.test.ts` e `budgetCalendar.test.ts`.
 
 **Pendente na R2:** homologação visual e em aparelho dos painéis de gargalo, manutenção, compromissos e leis orçamentárias (mesma limitação de aparelho da R1). A integração em `main` continua fora desta branch, que empilha R1 e R2 sobre a base da R0.
+
+#### Tutorial jogável — diagnóstico e correção (28/10/2026)
+
+Auditoria do tutorial em execução (semente 42, cenário padrão) encontrou nove defeitos de compreensão, não de motor. A correção fecha todos e documenta o desenho em [TUTORIAL.md](TUTORIAL.md):
+
+- **Retorno ao jogador.** O resultado do mês agora abre pelo que ele escolheu; os efeitos são separados entre causas do jogador (`acao:`, `debate`, `diretriz:`, `proposta:`, `acrescimo:` e eventos respondidos) e o resto do mês, agregados por causa e indicador. Antes, a lista começava pelo ruído macro e a escolha sumia.
+- **Números visíveis.** A faixa "Sua situação" mostra caixa do partido, limite de ações, pesquisa com margem e faixas de reconhecimento na campanha; aprovação, espaço fiscal, limite de ações e carteira no governo. Os valores das opções vêm do catálogo, não de texto fixo.
+- **Eleição com dois turnos.** A apuração reutiliza a leitura da Fase C5 (percentuais dos válidos por turno, mais votado e pesquisa contra o resultado), em vez de um desfecho sem números.
+- **Passagem do tempo explícita.** A negociação prepara o período (`pendingAdvance`) e a tela informa quantos meses serão simulados; `advance()` só aplica quando o jogador decide. Antes, sete meses corriam escondidos dentro da escolha de bloco.
+- **Costura campanha → governo.** O exercício de governo começa em posse nova e a tela diz que a eleição anterior não vira posse automática; o resultado eleitoral fica no relatório do passo 3.
+- **Tutorial × laboratório.** O texto separa o exercício guiado e descartável do sandbox fiel; o encerramento aponta para o laboratório (quando há campanha ativa) e para o jogo.
+- **Robustez.** `tutorialContentIssues` confere o cenário antes de abrir as lições; escolha inválida vira mensagem; a negociação sem proposta devolve lição vazia em vez de quebrar a renderização.
+- **Acessibilidade.** Regiões vivas, anúncio da etapa, `accessibilityHint` nas opções e rolagem ao topo ao trocar de passo.
+- **R2 visível.** Um cartão de carteira mostra fase, progresso, gargalo, manutenção e saldo plurianual, e o encerramento remete PPA, LDO e LOA ao Gabinete e ao laboratório.
+- **Persistência e reversão.** O tutorial sobrevive à navegação (cache por cenário), tem "Voltar uma escolha" e "Recomeçar".
+
+**Testes:** `guidedTutorial.test.ts`, `tutorialView.test.ts` e `campaignTutorial.test.ts`. **Pendente:** homologação em aparelho, como nas demais ondas.
 
 ---
 
