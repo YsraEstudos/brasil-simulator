@@ -967,6 +967,19 @@ Onda R1 do plano de expansão sistêmica (`PLANO_EXPANSAO_BRASIL_SIMULATOR.md`, 
 
 **Pendente na R1:** homologação visual e em aparelho da tela de Novo jogo com os módulos (sem aparelho disponível em 28/10/2026).
 
+#### Expansão R2 — governar melhor (28/10/2026)
+
+Onda R2 do mesmo plano (§4, "Governar melhor"), sobre a R1. A auditoria mostrou que a mecânica já estava no código desde a integração da Fase 06; esta rodada fechou a onda fixando o critério de saída em teste, em vez de presumir que o código integrado estava correto.
+
+- **Competência do ocupante (EX-07).** Cada indicação sorteia competência, experiência e coordenação por chave (pasta, ocupante, semente), sem consumir o PRNG principal; a capacidade é a média das três, entre 0,65 e 1 da referência. Indicado político e técnico têm a mesma distribuição: nada no motor associa "político" a gestão pior. A estimativa aparece na aba do Congresso antes da posse.
+- **Gargalo por etapa (EX-08).** Planejamento, licitação e obra avançam pelo menor entre o ritmo do dinheiro e o da capacidade; o projeto registra qual dos dois o limitou (`bottleneck`), e a interface traduz o rótulo. Capacidade muda **quando** se gasta, não **quanto**: o valor declarado é cobrado uma única vez, então obra lenta não custa mais caro.
+- **Manutenção e depreciação.** Obra em operação cobra manutenção anual como custeio, não como segundo investimento; manutenção muito abaixo do necessário acelera a depreciação do ativo, sem mexer no orçamento da obra.
+- **Compromissos plurianuais (EX-09).** `projectCommitments` distribui o saldo ainda não desembolsado por ano. É leitura pura: não altera dotação, não cria despesa e não serve como autorização orçamentária.
+- **PPA, LDO e LOA (EX-10).** O projeto de lei orçamentária só vira autorização depois da sanção; a LOA aprovada limita a alocação futura do ano, com prioridade declarada, e não transforma autorização em gasto imediato. O calendário federal distingue o PPA herdado do primeiro ano próprio.
+- **Testes de aceite da onda:** `src/engine/publicPolicies/governance.test.ts` fixa os sete critérios — canais de orçamento e capacidade separados; melhor gestão nunca atrasa a mesma obra; capacidade não altera o total desembolsado; recurso adicional só acelera quando o gargalo é o orçamento; compromisso é previsão; indicação política não é incompetência; estoque de capital reconcilia mês a mês. Complementam `publicPolicies.test.ts`, `commitments.test.ts`, `budgetLaws.test.ts` e `budgetCalendar.test.ts`.
+
+**Pendente na R2:** homologação visual e em aparelho dos painéis de gargalo, manutenção, compromissos e leis orçamentárias (mesma limitação de aparelho da R1). A integração em `main` continua fora desta branch, que empilha R1 e R2 sobre a base da R0.
+
 ---
 
 ## 5.1 Testes, simulações, balanceamento e homologação
