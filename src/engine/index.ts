@@ -271,4 +271,22 @@ export {
 export { GEO_EVENT_PARAMS } from './events/calibration';
 export { impeachmentPressure } from './events/pressure';
 export { campaignOutcome, type CampaignOutcome } from './events/outcome';
+export {
+  AFTER_TERM_PARAMS,
+  afterTerm,
+  finalOutcome,
+  IMPEACHMENT_DISQUALIFICATION_YEARS,
+  influenceBand,
+  initialIndicators,
+  LEGACY_INDICATORS,
+  legacyBand,
+  legacyScore,
+  type AfterTerm,
+  type FinalOutcome,
+  type InfluenceBand,
+  type InfluenceFactor,
+  type LegacyBand,
+  type LegalItem,
+  type LegalLevel,
+} from './events/afterTerm';
 export { NEWS_LIMIT, NEWS_PER_MONTH_MAX, appendNews, generateNews } from './news';

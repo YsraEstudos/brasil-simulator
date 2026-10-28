@@ -19,9 +19,10 @@ export const IMPEACHMENT_CONVICTION_FLAG = 'impeachment_condenado';
 export type CampaignOutcome = 'impeachment' | 'derrota_eleitoral' | 'fim_de_mandato' | 'derrota_campanha';
 
 export function campaignOutcome(state: Readonly<GameState>): CampaignOutcome | null {
+  // Precedência da Fase C7: o impeachment vem antes da derrota antes da posse (a cassação, que viria antes, não existe).
+  if (hasFlag(state, IMPEACHMENT_CONVICTION_FLAG)) return 'impeachment';
   const election = state.career?.election;
   if (election && !electedOutcome(election.outcome)) return 'derrota_campanha';
-  if (hasFlag(state, IMPEACHMENT_CONVICTION_FLAG)) return 'impeachment';
   const politics = state.politics;
   if (!politics) return null;
   const geral = politics.eleicao_geral;

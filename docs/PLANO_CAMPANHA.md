@@ -1,6 +1,6 @@
 # Plano — Carreira de 4 a 8 anos (Camadas 1 a 5)
 
-Versão 0.8 do documento • 27/10/2026 • 🟨 Fases C0, C1 (M1.1), C2 e C4 (partes M1.2) e C5 (parte M1.3) feitas a pedido do autor, C3 em verificação; as decisões continuam com o autor
+Versão 0.8 do documento • 27/10/2026 • 🟨 Fases C0, C1 (M1.1), C2 e C4 (partes M1.2), C5 (parte M1.3) e C7 feitas a pedido do autor, C3 em verificação; as decisões continuam com o autor
 v0.2: incorpora comentários de revisão de 27/10/2026 (persistência, percurso inicial, modelo eleitoral, posse, divisão da Fase C6, saves).
 v0.3: incorpora a segunda revisão de 27/10/2026, na ordem de prioridade dela — M1 como sequência de entregas (§3.1), ações entre os turnos eleitorais (D-C15) e calendário fechado (§2.4), contabilidade dos eleitores (Fase C2), vitória do adversário no 1º turno (Fase C5), visibilidade e persistência das pesquisas (Fase C2), retenção, linha de base da posse e relógio da fila (§2.3), contratos de ordem e de sorteio (§4.1), Fase C6 separável com contratos de integração; e ajustes menores (nomenclatura, notícias, estimativas, D-C10).
 
@@ -872,6 +872,53 @@ Derrotas antes da posse usam o resumo da Fase C5 (não há governo a avaliar). C
 **Testes.** Casos por aspecto e por desfecho; fronteiras; desfechos simultâneos.
 
 **Estimativa (esforço).** Motor 0,5–1; interface 1.
+
+#### Implementação (27/10/2026)
+
+**Escolhas tomadas para implementar** (recomendações do plano, registradas aqui; o autor pode revê-las):
+
+- **D-C7 = seção do Legado.** "Depois do mandato" é uma leitura do estado final em `src/engine/events/afterTerm.ts` (`afterTerm`), sem estado próprio, sem sorteio e sem meses jogáveis. A forma do estado e a versão do motor não mudam.
+- **Precedência.** `finalOutcome` junta o `campaignOutcome` ao fim pelo limite de meses (ordem 7), que não é desfecho do motor e chega como parâmetro. `campaignOutcome` passou a testar o impeachment antes da derrota antes da posse, como na tabela. `cassacao` (1) e `nao_homologado` (3) não existem ainda (Fase C5, Exp).
+- **Derrota antes da posse:** sem esta seção, como pede o plano. O resumo da Fase C5 continua no lugar do legado.
+- **Influência política:** 0 a 100, igual a 50 mais a soma dos fatores. Os fatores são a aprovação final acima da neutra, a relação média com os blocos e o resultado da eleição geral: reeleição ou sucessor eleito somam, a derrota tira. A condenação no impeachment tira mais. As faixas são baixa (< 40), média (< 60) e alta. São 5 parâmetros novos, `pos_influencia_*`, de jogo.
+- **Situação jurídica:** o nível é o do item mais grave.
+
+  | Nível | O que leva a ele neste ramo |
+  | --- | --- |
+  | investigação | CPI instalada e não encerrada, ou relatório pesado da CPI; marca `escandalo_*`; caixa 2 descoberto na campanha (Fase C3) |
+  | acusação | denúncia de impeachment aceita, ou processo autorizado pela Câmara, sem arquivamento |
+  | condenação | nada ainda: entra com os casos de escândalo da Fase C6b (PR próprio) |
+  | restrição efetiva | condenação no Senado, com inabilitação por 8 anos (CF art. 52, parágrafo único, conferido no [DATA_SOURCES.md](DATA_SOURCES.md) §6) |
+
+  Marca de CPI ou de escândalo nunca é condenação.
+- **Legado de governo:** a pontuação do relatório de legado. `legacyScore` saiu do componente para o motor, sem mudar a conta. As faixas são negativo (≤ −0,2), misto e positivo (≥ 0,2).
+- **Possibilidades:** projeções em texto, com a regra quando são jurídicas:
+  - inabilitação até o ano da condenação + 8;
+  - depois de dois mandatos seguidos, a eleição seguinte fica vedada (CF art. 14, §5º, conferido no §6);
+  - fora desses casos, a candidatura volta a ser possível;
+  - uma frase por faixa de influência;
+  - aviso de que as apurações em aberto não são condenação.
+- **Consequências jurídicas da cassação** (LC 64/1990): ficam para a C5.5, que ainda não existe.
+
+**Entregue:**
+- **Motor:** `afterTerm`, `finalOutcome`, `legacyScore`, `initialIndicators` e `AFTER_TERM_PARAMS`.
+- **Interface:** cartão "Depois do mandato" no relatório de legado (`AfterTermCard`, `afterTermView.ts`), entre a pontuação e o desenvolvimento regional.
+- **Testes:**
+  - desfechos simultâneos e a ordem da tabela;
+  - partida em andamento e derrota antes da posse sem leitura;
+  - fórmula da influência e faixas;
+  - cada nível jurídico, com o arquivamento e a CPI encerrada;
+  - pontuação igual à do relatório;
+  - possibilidades por desfecho;
+  - leitura sem efeito no estado;
+  - texto do cartão.
+- **Conferência no navegador:** partida encerrada no mês 96 com a CPI aberta. O cartão mostrou influência "média · 58 de 100", situação "sob investigação" com o item, legado "misto" e as três possibilidades, sem erros no console.
+
+**Não entregue nesta fase:**
+- **Calibração** dos pesos da influência.
+- **Casos da Fase C6b.** Quando as duas fases estiverem em `main`, a condenação de um caso entra como "condenação".
+- **Cassação** (C5.5).
+- **Teste do Maestro.**
 
 ---
 
