@@ -196,6 +196,16 @@ export function checkInvariants(
     }
   }
 
+  // Gaveta do impeachment (Fase C6e): pedidos únicos, decididos depois do protocolo; abrir nunca grava condenação.
+  const requestIds = new Set<string>();
+  for (const r of next.impeachmentDrawer ?? []) {
+    if (requestIds.has(r.id)) errors.push(`pedido de impeachment repetido: ${r.id}`);
+    requestIds.add(r.id);
+    if (r.status !== 'na_gaveta' && !(r.decidedMonth !== undefined && r.decidedMonth >= r.filedMonth)) {
+      errors.push(`${r.id}: pedido decidido sem mês ou antes do protocolo`);
+    }
+  }
+
   // Casos de escândalo (Fase C6b): ids únicos, exposição não negativa e condenação só depois de uma acusação.
   const caseIds = new Set<string>();
   for (const c of next.cases ?? []) {

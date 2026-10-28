@@ -378,6 +378,7 @@
       }
     ],
     "scandalCases": true,
+    "impeachmentDrawer": true,
     "directorates": [
       {
         "id": "diretoria_estatal_energia",

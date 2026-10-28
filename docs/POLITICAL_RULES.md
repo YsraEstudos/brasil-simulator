@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1) • v0.5 (27/10/2026, Fase C6a do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)): diretorias de estatais (§6.3.2), motor 0.10.0 • v0.6 (27/10/2026, Fase C6b): casos de escândalo graduais (§9.1), motor 0.11.0
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1) • v0.5 (27/10/2026, Fase C6a do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)): diretorias de estatais (§6.3.2), motor 0.10.0 • v0.6 (27/10/2026, Fase C6b): casos de escândalo graduais (§9.1), motor 0.11.0 • v0.7 (27/10/2026, Fase C6e): gaveta do impeachment (§10.1), motor 0.12.0
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -308,6 +308,17 @@ Ficção (`FICTICIO`): o caso atinge o **indicado do bloco** numa diretoria de e
 - Quem não responde deixa a cadeia avançar: as três escolhas padrão levam à condenação. Medido com 20 sementes: em 48 meses, a cadeia só começa na estratégia fisiológica (denúncia em 11 de 20; condenação em 9 de 20). Em 240 meses, a estratégia inerte é condenada em 20 de 20 sementes, a partir do mês 161. A populista escapa em todas porque sempre escolhe a resposta de maior ganho de aprovação (arquivamento na Câmara), mas a pressão dela chega a cerca de 90% no mês 200 nas três sementes observadas, com o pico de 98,6% em 240 meses.
 - A escolha "mobilizar a base no Senado" tem a descrição "se a base não estiver pronta, a escolha perde força", e o motor não verifica a base: ela arquiva sempre.
 - A regra dos dois terços não é contada bancada por bancada: a escolha do jogador e a probabilidade fazem o papel dela.
+
+### 10.1 Gaveta do impeachment (Fase C6e do PLANO_CAMPANHA, motor 0.12.0)
+Pedidos de impeachment se acumulam na Câmara, e quem decide é a presidência da Casa (`housePresidents.camara`), como no passo 1 acima. A gaveta **só alimenta o 1º passo da cadeia**: ela nunca grava marca de impeachment, e a autorização e a condenação continuam só pelos eventos de §10.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Acúmulo | Um pedido por marca de escândalo gravada no mês (Fase C6b: `escandalo_investigacao`, `escandalo_acusacao`, `escandalo_condenacao`) e, por sorteio com chave, um pedido com chance `gaveta_pedido_pressao` × pressão de impeachment. |
+| Descarte | Presidência aliada (relação ≥ `gaveta_relacao_arquivo`) arquiva os pedidos com mais de `gaveta_meses_arquivo` meses. O governo pode **negociar** (ação `negociar_gaveta`, custo 1): arquiva o pedido mais antigo, custa `capital_negociar_gaveta` e melhora a relação com o bloco que preside a Casa (`relacao_negociar_gaveta`). |
+| Abertura | Presidência hostil (relação < `gaveta_relacao_abertura`), pressão ≥ `gaveta_pressao_abertura` (a mesma do evento de pedido) e a cadeia ainda sem pedido: com chance `gaveta_chance_abertura`, abre o pedido mais antigo e **agenda o evento de pedido** (`fase07_inst_pedido_impeachment`) para o mês seguinte, pelo caminho dos encadeados (a chegada confere as condições e as marcas do evento). Entre a abertura e a chegada, o sorteio próprio do evento continua valendo. |
+| Sorteios | Por chave (`gaveta`, mês): não consomem o PRNG principal. |
+| Sistema desligado | Sem `institutions.impeachmentDrawer`, nada muda. Ligado, a gaveta só aparece no estado e nas notas até a primeira abertura (teste de regressão). |
 
 **Fora da Fase 07:** o afastamento de até 180 dias (texto do evento, sem efeito mecânico); o presidente do STF no julgamento; crimes de responsabilidade além do excesso de limite de despesa; mobilização social como fator próprio; sucessão pelo vice (a condenação encerra a campanha).
 

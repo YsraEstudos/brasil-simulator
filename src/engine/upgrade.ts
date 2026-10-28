@@ -43,6 +43,8 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   if (version < 13) state = { ...state, schemaVersion: 13 };
   // v13 → v14 (Fase C6b): só entra o campo opcional `cases`; ausente = nenhum caso. Sem conversão.
   if (version < 14) state = { ...state, schemaVersion: 14 };
+  // v14 → v15 (Fase C6e): só entra o campo opcional `impeachmentDrawer`; ausente = gaveta vazia. Sem conversão.
+  if (version < 15) state = { ...state, schemaVersion: 15 };
   return state as unknown as GameState;
 }
 

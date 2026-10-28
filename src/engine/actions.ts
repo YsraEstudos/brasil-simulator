@@ -32,6 +32,8 @@ export const APPOINT_ACTION_ID = 'nomear_ministro';
 export const DIRECTORATE_ACTION_ID = 'nomear_diretoria';
 /** Defesa do governo num caso de escândalo em andamento (§9.1, Fase C6b). Params: `caseId`. */
 export const DEFEND_CASE_ACTION_ID = 'defender_caso';
+/** Negociação com a presidência da Câmara para arquivar o pedido mais antigo da gaveta (§10.1, Fase C6e). Sem params. */
+export const DRAWER_ACTION_ID = 'negociar_gaveta';
 /** Sanção ou veto de projeto aprovado (§7). Params: `proposalId`, `choice` (`SanctionChoice`). */
 export const SANCTION_ACTION_ID = 'sancao';
 /** Visita presidencial a uma UF (POLITICAL_RULES.md §2.1). Params: `uf` (sigla). */
@@ -142,6 +144,16 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
       'de etapa e custa capital político. Não arquiva o caso: só a exposição baixa arquiva.',
     agendaCost: 1,
     targetParams: ['caseId'],
+    listed: false,
+  },
+  [DRAWER_ACTION_ID]: {
+    id: DRAWER_ACTION_ID,
+    name: 'Negociar com a presidência da Câmara',
+    summary:
+      'Pede à presidência da Câmara que arquive o pedido de impeachment mais antigo da gaveta. Custa capital ' +
+      'político e melhora a relação com o bloco que preside a Casa. Só com pedido na gaveta.',
+    agendaCost: 1,
+    targetParams: [],
     listed: false,
   },
   [SANCTION_ACTION_ID]: {

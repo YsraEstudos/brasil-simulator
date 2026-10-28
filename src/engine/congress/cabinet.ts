@@ -12,6 +12,7 @@ import {
 } from '../types';
 
 import { advanceCases } from './cases';
+import { advanceDrawer } from './drawer';
 import { appointDirector, directorateSupport, directoratesOf } from './directorates';
 import { allRelations, shiftRelation } from './relations';
 
@@ -182,5 +183,6 @@ export const cabinetStep: MonthStep = (state, ctx) => {
     ctx.draft.notes.push(appointment.note);
   }
   // Casos de escândalo (Fase C6b) depois das nomeações: afastar no mês já tira o volume da exposição.
-  return { state: advanceCases(current, ctx), contributions: [] };
+  // Gaveta do impeachment (Fase C6e) depois dos casos: lê as marcas que eles acabaram de gravar.
+  return { state: advanceDrawer(advanceCases(current, ctx), ctx), contributions: [] };
 };

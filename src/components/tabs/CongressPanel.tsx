@@ -18,6 +18,10 @@ import {
   CONCEDE_ACTION_ID,
   currentHouse,
   DEFEND_CASE_ACTION_ID,
+  DRAWER_ACTION_ID,
+  drawerEnabled,
+  drawerRequests,
+  drawerStance,
   isOpenCase,
   DIRECTORATE_ACTION_ID,
   directorateOccupant,
@@ -127,6 +131,7 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
       <MinistriesCard state={state} content={content} agenda={agenda} />
       <DirectoratesCard state={state} content={content} agenda={agenda} />
       <CasesCard state={state} content={content} agenda={agenda} />
+      <DrawerCard state={state} content={content} agenda={agenda} />
     </>
   );
 }
@@ -482,6 +487,43 @@ function CasesCard({ state, content, agenda }: { state: GameState; content: Game
           </View>
         );
       })}
+    </Card>
+  );
+}
+
+const DRAWER_STANCE_TEXT = {
+  arquiva: 'A presidência da Câmara é aliada: arquiva os pedidos antigos.',
+  segura: 'A presidência da Câmara segura os pedidos na gaveta, sem arquivar nem abrir.',
+  ameaca: 'A presidência da Câmara é hostil: com a pressão alta, pode abrir um pedido.',
+} as const;
+
+/**
+ * Gaveta do impeachment (PLANO_CAMPANHA.md Fase C6e): quantos pedidos esperam, a postura da presidência da Câmara e
+ * a negociação. Abrir um pedido só leva ao 1º passo da cadeia de impeachment (admissibilidade).
+ */
+function DrawerCard({ state, content, agenda }: { state: GameState; content: GameContent; agenda: AgendaHelpers }) {
+  if (!drawerEnabled(content)) return null;
+  const requests = drawerRequests(state);
+  const waiting = requests.filter((r) => r.status === 'na_gaveta');
+  const archived = requests.filter((r) => r.status === 'arquivado').length;
+  const opened = requests.filter((r) => r.status === 'aberto').length;
+  const president = housePresident(content, 'camara');
+
+  return (
+    <Card
+      title="Gaveta do impeachment"
+      subtitle={`Pedidos protocolados na Câmara esperam a decisão de quem a preside${president ? ` (bloco ${president.name})` : ''}. Abrir um pedido só leva à admissibilidade; a cassação continua dependendo das votações na Câmara e no Senado.`}>
+      <Text variant="body">{`Na gaveta: ${waiting.length} · arquivados: ${archived} · abertos: ${opened}`}</Text>
+      <Text variant="body" color={drawerStance(state, content) === 'ameaca' ? 'negative' : 'textSecondary'}>
+        {DRAWER_STANCE_TEXT[drawerStance(state, content)]}
+      </Text>
+      {waiting.length > 0 ? (
+        <ActionButton
+          decision={actionDecision(DRAWER_ACTION_ID, {})}
+          label="Negociar o arquivamento do pedido mais antigo"
+          agenda={agenda}
+        />
+      ) : null}
     </Card>
   );
 }

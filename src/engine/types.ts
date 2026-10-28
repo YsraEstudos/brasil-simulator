@@ -9,10 +9,10 @@ import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 14;
+export const STATE_SCHEMA_VERSION = 15;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.11.0';
+export const ENGINE_VERSION = '0.12.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -715,6 +715,27 @@ export interface GameState {
    * estado sem casos é o mesmo com o sistema ligado ou desligado.
    */
   cases?: ScandalCase[];
+  /**
+   * Gaveta do impeachment (PLANO_CAMPANHA.md Fase C6e): pedidos protocolados na Câmara. Ausente até o primeiro
+   * pedido: antes dele, o estado é o mesmo com o sistema ligado ou desligado.
+   */
+  impeachmentDrawer?: ImpeachmentRequest[];
+}
+
+/** Situação de um pedido de impeachment na Câmara (Fase C6e). */
+export type ImpeachmentRequestStatus = 'na_gaveta' | 'arquivado' | 'aberto';
+
+/** Pedido de impeachment protocolado (Fase C6e). Abrir um pedido só leva ao 1º evento da cadeia existente (§10). */
+export interface ImpeachmentRequest {
+  /** `pedido#${mês}#${ordem}`, único. */
+  id: string;
+  /** Mês do protocolo. */
+  filedMonth: number;
+  /** Motivo: a marca de escândalo que o motivou ou a pressão do mês. */
+  cause: 'escandalo_investigacao' | 'escandalo_acusacao' | 'escandalo_condenacao' | 'pressao';
+  status: ImpeachmentRequestStatus;
+  /** Mês em que foi arquivado ou aberto. */
+  decidedMonth?: number;
 }
 
 /**
