@@ -30,7 +30,7 @@ import { activeInstitutionalMarks, pressureBand } from '@/components/tabs/instit
 import { NoCampaign } from '@/components/tabs/NoCampaign';
 import { Alert } from '@/components/ui';
 import { loadContent } from '@/content';
-import { formatEventText, headlines, impeachmentPressure } from '@/engine';
+import { formatEventText, headlines, impeachmentPressure, moduleEnabled } from '@/engine';
 import { Canvas } from '@/globe/r3f';
 import { useGame, type ActiveCampaign } from '@/store';
 
@@ -87,6 +87,8 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
   const { noticia } = useLocalSearchParams<{ noticia?: string }>();
 
   const feed = state.events.news;
+  // Módulo de notícias desligado nesta campanha: sem edição nova nunca, e os vazios explicam isso.
+  const newsOff = !moduleEnabled(state, 'noticias');
   const editions = useMemo(() => buildEditions(feed), [feed]);
   const characters = useMemo(() => content.scenario.characters ?? [], [content]);
   const posts = useMemo(
@@ -290,6 +292,7 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
             marks={marks}
             pending={pending}
             focusNewsId={noticia}
+            newsOff={newsOff}
           />
         </Animated.View>
       )}
@@ -304,7 +307,7 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
           ]}
           renderToHardwareTextureAndroid={socialFading || mode === 'saindo'}
           pointerEvents={mode === 'pc' ? 'auto' : 'none'}>
-          <SocialScreen posts={posts} onBack={backToDesk} progress={social} />
+          <SocialScreen posts={posts} onBack={backToDesk} progress={social} newsOff={newsOff} />
           <Animated.View style={[StyleSheet.absoluteFill, styles.flash, flashStyle]} pointerEvents="none" />
         </Animated.View>
       )}

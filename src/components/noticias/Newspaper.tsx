@@ -22,6 +22,7 @@ import type { NewsItem } from '@/engine';
 import {
   editionIndexOf,
   editionPage,
+  emptyEditionMessage,
   leadFontSize,
   mastheadFontSize,
   NEWSPAPER_NAME,
@@ -64,6 +65,8 @@ export interface NewspaperProps {
   pending: readonly { key: string; title: string; monthIndex: number }[];
   /** Notícia aberta pelo marcador do mapa: o jornal abre na edição dela e a traz como manchete. */
   focusNewsId?: string;
+  /** Módulo de notícias desligado nesta campanha: nunca haverá edição, e o vazio explica isso. */
+  newsOff: boolean;
 }
 
 /**
@@ -81,6 +84,7 @@ export function Newspaper({
   marks,
   pending,
   focusNewsId,
+  newsOff,
 }: NewspaperProps) {
   const styles = useScaledStyles(baseStyles);
   const [filter, setFilter] = useState<NewsFilter>('todas');
@@ -166,9 +170,7 @@ export function Newspaper({
 
         <Animated.View style={pageStyle} renderToHardwareTextureAndroid={turning}>
           {!edition ? (
-            <Text style={styles.empty}>
-              A redação aguarda o primeiro mês de governo. Encerre um mês para a primeira edição chegar à mesa.
-            </Text>
+            <Text style={styles.empty}>{emptyEditionMessage(newsOff)}</Text>
           ) : !page.lead ? (
             <Text style={styles.empty}>Nenhuma notícia deste caderno nesta edição.</Text>
           ) : (

@@ -336,6 +336,16 @@ export function moodOf(posts: readonly SocialPost[]): Record<PostStance, number>
     : { apoio: count('apoio'), critica: count('critica'), neutra: count('neutra') };
 }
 
+/**
+ * Mensagem da rede vazia: com o módulo de notícias desligado nesta campanha ninguém publica nunca; com ele
+ * ligado, valem as primeiras manchetes do governo.
+ */
+export function emptySocialMessage(newsOff: boolean): string {
+  return newsOff
+    ? 'As notícias estão desligadas nesta campanha, então esta rede fica vazia.'
+    : 'Ninguém comentando ainda. As reações chegam com as primeiras manchetes do governo.';
+}
+
 /** Número curto: 1.234 → "1,2 mil". */
 export function compactCount(n: number): string {
   if (n < 1000) return String(n);
