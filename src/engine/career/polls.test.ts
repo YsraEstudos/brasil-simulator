@@ -43,6 +43,13 @@ describe('pesquisas (PLANO_CAMPANHA.md Fase C2)', () => {
         lastPoll = t;
         expect(r.report.career!.poll).toEqual(r.state.career!.poll);
         expect(r.state.career!.poll).toMatchObject({ turnIndex: t, scope: 'nacional', month: r.report.career!.to });
+        expect(r.state.career!.poll).toMatchObject({
+          observedPeriod: { from: r.report.career!.to, to: r.report.career!.to },
+          publishedAt: r.report.career!.to,
+          source: 'instituto_ficticio',
+          methodVersion: 'pesquisa_carreira_v2',
+          precision: { margin: careerParam('pesquisa_margem') },
+        });
       }
     }
     expect(corrida().career!.poll).toBeUndefined();

@@ -19,6 +19,12 @@ violações 0.
 
 Resultado: todos os extremos estáveis.
 
+**Situações iniciais da expansão:** `pressao_externa` acrescenta 0,005 ao prêmio de risco e `desaceleracao` subtrai 0,01 do hiato do produto; ambas são hipóteses fictícias de jogo, ainda sem calibração de longo prazo. `normal` preserva os valores do cenário.
+
+**Desafio personalizado, PROVISORIO:** valores de 0 a 1 têm referência neutra em 0,5. A pressão econômica soma entre −0,002 e +0,002 ao prêmio de risco inicial (limitado a zero); a força da oposição desloca relações iniciais em até 5 pontos e o reconhecimento dos adversários por até 0,1 × r × (1−r); a estabilidade altera relações por até 0,1 ponto mensal; a frequência altera a probabilidade de eventos climáticos elegíveis por fator de 0,5 a 1,5, limitado a 1. Nenhum desses ajustes altera a inflação diretamente. Os presets usam 0,2/0,8, 0,5 ou 0,8/0,2 conforme o sentido de cada ajuste; ainda exigem calibração de longo prazo.
+
+**Informação, PROVISORIO:** a assistência clara, padrão e incerta escala o ruído e a margem publicada de pesquisas respectivamente por 0,5, 1 e 1,5; não altera o eleitorado real. A apresentação de pareceres legislativos usa a clareza escolhida, separadamente da dificuldade.
+
 ## Parâmetros
 
 | Parâmetro | Valor | Faixa testada | Significado | Base | Sensibilidade |
@@ -195,7 +201,7 @@ Resultado: todos os extremos estáveis.
 | `relacao_nomeacao` | 15 | 5 – 25 | relação do bloco ao receber uma pasta, × peso | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (−0,1 p.p.); inflação média 3,1% → 3,2%; violações 0 |
 | `relacao_demissao` | -20 | -35 – -5 | relação do bloco ao perder uma pasta, × peso | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (+0,0 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `capital_demissao` | -4 | -8 – 0 | capital político por demissão de ministro de bloco | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (+0,0 p.p.); inflação média 3,2% → 3,2%; violações 0 |
-| `perda_execucao_partidaria` | 0,25 | 0,1 – 0,4 | parte do resultado (capital público, aprovação) perdida nas políticas de pasta de bloco | POLITICAL_RULES.md §6.3.1: capacidade administrativa menor | dívida final 213% → 215% (+1,6 p.p.); inflação média 3,2% → 3,1%; violações 0 |
+| `perda_execucao_partidaria` | 0,25 | 0,1 – 0,4 | parâmetro legado, não aplicado à capacidade de execução | substituído por competência do indicado; POLITICAL_RULES.md §6.3.1 | resultado histórico anterior à mudança: dívida final 213% → 215% (+1,6 p.p.); inflação média 3,2% → 3,1%; violações 0 |
 | `atraso_ministerio_contrario` | 3 | 1 – 6 | meses de atraso quando a pasta de bloco é contrária à política | POLITICAL_RULES.md §6.3.1 | dívida final 214% → 214% (+0,0 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `escandalo_base_mes` | 0,004 | 0,001 – 0,01 | chance mensal de escândalo numa pasta de bloco recém-nomeada (× peso) | critério de jogo: legibilidade e ritmo da campanha; testado na faixa | dívida final 214% → 214% (+0,2 p.p.); inflação média 3,2% → 3,2%; violações 0 |
 | `escandalo_por_ano` | 0,006 | 0,002 – 0,015 | aumento da chance mensal por ano no cargo (× peso) | POLITICAL_RULES.md §6.3.1: cresce com o tempo no cargo | dívida final 214% → 214% (−0,1 p.p.); inflação média 3,2% → 3,2%; violações 0 |

@@ -93,7 +93,7 @@ export function careerPollViewModel(
     .filter((t): t is string => t !== undefined && t !== '');
   return {
     title: 'Pesquisa nacional',
-    subtitle: `${careerTurnLabel({ from: poll.month })} · intenção de voto entre quem vai votar`,
+    subtitle: `${careerTurnLabel({ from: poll.publishedAt })} · estimativa simulada de instituto fictício · intenção de voto entre quem vai votar`,
     rows,
     margin: `Margem de erro: ${points} ${points === 1 ? 'ponto' : 'pontos'} para mais ou para menos.`,
     bands,

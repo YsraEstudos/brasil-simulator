@@ -1,7 +1,8 @@
 import type { GameEvent } from '../../types/event';
 import type { Policy } from '../../types/policy';
 import { TERM_MONTHS } from '../calendar';
-import { isPartisan, ministryOccupant, policyMinistry } from '../congress/cabinet';
+import { DEFAULT_ASSISTANCE, usesFormalRules } from '../campaignConfig';
+import { policyCapacity } from '../congress/management';
 import {
   housePresident,
   legislativeInstrument,
@@ -97,13 +98,11 @@ function adviceSeed(state: Readonly<GameState>, policyId: string): number {
 
 /**
  * Como a execução vai escalar a política, igual ao motor de propostas: só a população dos estados que aderem
- * recebe o programa por convênio (`reach`) e a pasta com ministro de bloco perde parte do ganho (`resultFactor`).
+ * recebe o programa por convênio (`reach`) e a competência administrativa condiciona o resultado.
  */
 function executionFactors(state: Readonly<GameState>, policy: Policy, content: GameContent, reach: number) {
-  const ministry = policyMinistry(policy, content);
-  const occupant = ministry ? ministryOccupant(state, ministry) : null;
-  const partisan = occupant !== null && isPartisan(occupant);
-  return { reach, resultFactor: partisan ? 1 - content.calibration.perda_execucao_partidaria : 1, partisan };
+  const resultFactor = policy.delivery === 'projeto' ? 1 : policyCapacity(state, content, policy.area);
+  return { reach, resultFactor };
 }
 
 function fiscalParts(policy: Policy, gdpMillions: number, reach = 1): FiscalParts {
@@ -179,7 +178,7 @@ function slack(v: VotePrediction): number {
   return (v.expectedYes - v.required) / v.total;
 }
 
-/** Parecer de articulação para a etapa mais apertada: faixa ou número exato, conforme a dificuldade. */
+/** Parecer de articulação para a etapa mais apertada, conforme a clareza de informação escolhida. */
 export function votesOpinion(state: Readonly<GameState>, policyId: string, prediction: VotePrediction): Opinion {
   const { required, total } = prediction;
   const house = HOUSE_LABEL[prediction.house] ?? prediction.house;
@@ -188,11 +187,13 @@ export function votesOpinion(state: Readonly<GameState>, policyId: string, predi
 
   let shown: number;
   let text: string;
-  if (state.difficulty === 'casual') {
+  const clarity =
+    state.initialCampaignConfiguration?.assistance?.informationClarity ?? DEFAULT_ASSISTANCE.informationClarity;
+  if (clarity === 'clara') {
     shown = Math.round(prediction.expectedYes);
     text = `${label}: cerca de ${shown} votos para ${required} necessários.`;
   } else {
-    const realismo = state.difficulty === 'realismo';
+    const realismo = clarity === 'incerta';
     const margin = Math.max(
       1,
       Math.round((realismo ? ADVICE_PARAMS.marginRealismo : ADVICE_PARAMS.marginEstrategica) * total),
@@ -217,7 +218,7 @@ function comunicacaoOpinion(
   policy: Policy,
   content: GameContent,
   impact: number,
-  partisan = false,
+  limitedCapacity = false,
 ): Opinion {
   const parts: string[] = [];
   let tone: Opinion['tone'] = 'neutro';
@@ -227,7 +228,7 @@ function comunicacaoOpinion(
     const lag = firstLag(policy, new Set([APPROVAL_CHANNEL]));
     parts.push(`Efeito de ${pp(impact)} na aprovação${lag !== null && lag > 0 ? ` daqui a ${lag} meses` : ''}.`);
     tone = impact > 0 ? 'favoravel' : 'desfavoravel';
-    if (impact > 0 && partisan) parts.push('Pasta com ministro de bloco: o ganho rende menos.');
+    if (impact > 0 && limitedCapacity) parts.push('A capacidade de gestão da pasta limita o ganho estimado.');
   }
 
   const groups = policy.affected.groups.slice(0, 2).map((g) => g.replace(/_/g, ' '));
@@ -264,7 +265,7 @@ function regionalSentence(policy: Policy, content: GameContent): string | null {
 
 /** Adesão esperada dos governadores a programa por convênio (POLITICAL_RULES.md §2.1). */
 function adhesionWarning(state: Readonly<GameState>, policy: Policy, content: GameContent) {
-  if (!policy.conditions.includes('adesao_estadual') || state.difficulty === 'casual') return null;
+  if (!policy.conditions.includes('adesao_estadual') || !usesFormalRules(state)) return null;
   const expected = expectedAdhesion(state, content);
   if (!expected) return null;
   const total = content.scenario.regions?.ufs.length ?? 0;
@@ -326,7 +327,7 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
 
   let articulacao: Opinion = { text: 'Ato do Executivo: não depende do Congresso.', tone: 'neutro' };
   const adhesion = adhesionWarning(state, policy, content);
-  // Mesmas escalas que a execução aplicará (proposals.ts): adesão dos estados e perda da pasta de bloco.
+  // Mesmas escalas que a execução aplicará: adesão dos estados e capacidade da pasta.
   const factors = executionFactors(state, policy, content, adhesion?.share ?? 1);
   const parts = fiscalParts(policy, currentNominalGdpMillions(state, content), factors.reach);
   const approvalImpact = policy.impacts
@@ -348,7 +349,7 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
   return {
     fazenda: fazendaOpinion(state, content, parts, policy),
     articulacao,
-    comunicacao: comunicacaoOpinion(state, policy, content, approvalImpact, factors.partisan),
+    comunicacao: comunicacaoOpinion(state, policy, content, approvalImpact, factors.resultFactor < 1),
     forecast: { annualFiscalImpact: parts.fiscal, votes, approvalImpact, adhesion: adhesion?.share ?? null },
   };
 }

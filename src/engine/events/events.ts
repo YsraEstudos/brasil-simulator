@@ -5,6 +5,7 @@ import type {
   EventEffect,
   GameEvent,
 } from '../../types/event';
+import { CHALLENGE_CALIBRATION } from '../campaignConfig';
 import {
   appointMinister,
   applyAppointment,
@@ -298,9 +299,14 @@ export function eventProbability(
 ): number {
   const { probability, probabilityFactor } = event.trigger;
   const base = event.trigger.climate && location ? probability * worstSeverity(location) : probability;
-  if (probabilityFactor === undefined) return base;
-  const factor = Math.min(1, Math.max(0, conditionValue(state, probabilityFactor, content)));
-  return base * factor;
+  const factor =
+    probabilityFactor === undefined ? 1 : Math.min(1, Math.max(0, conditionValue(state, probabilityFactor, content)));
+  const climateFactor = event.trigger.climate
+    ? 1 +
+      ((state.initialCampaignConfiguration?.challenge?.crisisFrequency ?? 0.5) - 0.5) *
+        CHALLENGE_CALIBRATION.climateProbabilitySpread
+    : 1;
+  return Math.min(1, Math.max(0, base * factor * climateFactor));
 }
 
 /**

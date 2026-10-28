@@ -15,6 +15,7 @@ import { appendNews, generateNews } from './news';
 import { opinionStep } from './politics/opinion';
 import { governmentProfileStep } from './politics/profile';
 import { publicPoliciesStep, reservePublicAction } from './publicPolicies/publicPolicies';
+import { budgetDraftOf, isBudgetPolicy } from './publicPolicies/budgetLaws';
 import { societyStep } from './society/society';
 import { proposalsStep, reissueBarredPolicies } from './proposals/proposals';
 import { regionsStep } from './regions/regions';
@@ -202,6 +203,8 @@ function screenInput(state: GameState, input: MonthInput, content: GameContent) 
       const cost = policy ? policy.agendaCost : decision.agendaCost;
       if (!policy || !content.scenario.policies.includes(decision.policyId)) {
         rejected.push({ decision, reason: 'politica_desconhecida' });
+      } else if (isBudgetPolicy(decision.policyId) && !budgetDraftOf(decision, state)) {
+        rejected.push({ decision, reason: 'alvo_invalido' });
       } else if (policy.delivery === 'rotina') {
         rejected.push({ decision, reason: 'alvo_invalido' });
       } else if (sent.has(decision.policyId)) {

@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Button, Card, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { reissueBarredPolicies, type GameContent, type GameState, type Proposal } from '@/engine';
+import { isBudgetPolicy, reissueBarredPolicies, type GameContent, type GameState, type Proposal } from '@/engine';
 import { legislativeInstrument } from '@/engine/congress/congress';
 import type { Policy } from '@/types/policy';
 
@@ -45,7 +45,7 @@ export function DecisionPanel({
 }: DecisionPanelProps) {
   const policies = content.scenario.policies.flatMap((id) => {
     const policy = content.policies[id];
-    return policy && policy.delivery !== 'rotina' ? [policy] : [];
+    return policy && policy.delivery !== 'rotina' && !isBudgetPolicy(id) ? [policy] : [];
   });
   const barred = reissueBarredPolicies(state, content);
   const areas = [...new Set(policies.map((policy) => policy.area))];

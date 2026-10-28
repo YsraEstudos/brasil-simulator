@@ -37,6 +37,7 @@ export default function JogoLayout() {
         <Stack.Screen name="economia" options={{ animation: 'fade_from_bottom' }} />
         <Stack.Screen name="noticias" options={{ animation: 'fade' }} />
         <Stack.Screen name="legado" options={{ animation: 'fade' }} />
+        <Stack.Screen name="laboratorio" options={{ animation: 'fade' }} />
       </Stack>
     </ThemeProvider>
   );

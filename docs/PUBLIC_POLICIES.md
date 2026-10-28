@@ -34,11 +34,22 @@ O custo nominal total da obra é `cost.annualMillions × executionMonths / 12 ×
 sobrecusto calibrado aplicado quando esse risco foi sorteado. `cost.disbursementProfile` reparte esse total entre as
 frações anuais declaradas pelo catálogo; dentro de cada fração, o desembolso segue uma curva S normalizada. Se a
 capacidade ministerial estender o prazo, as janelas anuais são estendidas, preservando o total e o perfil relativo.
-Os parâmetros da curva e da capacidade ficam na calibração central: `curva_s_projetos = 8` (faixa 4–12) controla a
-inclinação logística, e `capacidade_minima_projetos = 0,1` (faixa 0,05–0,2) limita a execução de uma pasta partidária;
-o ocupante técnico mantém capacidade 1. A faixa de depreciação anual de `dep_kg` é 0,03–0,06 (padrão 0,04), e a
+`curva_s_projetos = 8` (faixa 4–12) controla a inclinação logística. A capacidade do indicado é a média de competência,
+experiência e coordenação, geradas deterministicamente para cada pasta e indicação entre 0,65 e 1; são valores fictícios
+e provisórios, apresentados antes da nomeação. Indicação política não implica capacidade inferior. A capacidade afeta
+o prazo da obra; o efeito da proposta não recebe uma segunda redução pelo mesmo fator. A faixa de depreciação anual de `dep_kg` é 0,03–0,06 (padrão 0,04), e a
 elasticidade `elast_kg` do capital concluído é 0,05–0,2 (padrão 0,1). Esses valores são parâmetros de calibração e
 não constantes específicas da carteira.
+Planejamento acumula trabalho conforme competência; licenciamento, conforme coordenação; contratação, conforme experiência.
+A carteira registra a principal limitação do último mês (gestão, orçamento, suspensão ou intervalo de cronograma),
+separando-a do desembolso. Ao trocar gestor durante a obra, saldos pagos permanecem e o restante é quitado antes da conclusão.
+O painel também distribui o saldo ainda não desembolsado por ano, como estimativa uniforme a partir da fase e da
+capacidade atuais. Não prevê contingenciamentos nem suspensões e não registra despesa, crédito ou autorização na LOA.
+O horizonte exibido é limitado a 40 anos quando o prazo calculado ultrapassa esse limite, com aviso na interface.
+No cenário com leis de planejamento, PPA, LDO e LOA tramitam e só passam a valer após sanção ou derrubada do veto.
+Como simplificação do jogo, a LDO segue a prioridade do PPA vigente, quando houver, e a LOA segue a LDO do mesmo ano.
+A LOA limita as alocações anuais da carteira à menor entre a autorização e a folga fiscal, atendendo primeiro a área
+prioritária. Essa autorização não cria despesa nem representa o orçamento federal completo.
 O espaço fiscal é compartilhado com diretrizes e manutenção. Como a conta fiscal é anualizada, uma parcela mensal de
 obra é convertida em parcela anualizada por `× 12` antes de virar impulso. Sem espaço a obra fica parada e registra
 um atraso; alocação parcial aumenta o avanço físico proporcionalmente ao valor

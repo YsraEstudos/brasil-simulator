@@ -1,4 +1,21 @@
 import type { Scenario } from '../types/scenario';
+import {
+  assistanceSchema,
+  campaignConfigSchema,
+  challengeSchema,
+  CHALLENGE_CALIBRATION,
+  CHALLENGE_PRESETS,
+  DEFAULT_ASSISTANCE,
+  DEFAULT_CHALLENGE,
+  DEFAULT_INSTITUTIONAL_RULES,
+  DEFAULT_START_SITUATION,
+  institutionalRulesSchema,
+  START_SITUATIONS,
+  type AssistanceConfig,
+  type ChallengeConfig,
+  type InstitutionalRules,
+  type StartSituationId,
+} from './campaignConfig';
 
 import type { Calibration } from './economy/calibration';
 import { initialFiscal, type FiscalValues } from './economy/fiscal';
@@ -93,17 +110,67 @@ export interface NewCampaign {
   startPoint?: StartPoint;
   /** Perfil de candidato (`Scenario.career.profiles`); padrão: o primeiro. Ignorado na posse. */
   careerProfileId?: string;
+  startSituationId?: StartSituationId;
+  challenge?: ChallengeConfig;
+  institutionalRules?: InstitutionalRules;
+  assistance?: AssistanceConfig;
 }
 
 export function createInitialState(c: NewCampaign): GameState {
   if (!Number.isInteger(c.seed)) throw new RangeError(`semente deve ser inteira: ${c.seed}`);
   const { scenario, calibration } = c.content;
+  const situation = START_SITUATIONS.find((item) => item.id === (c.startSituationId ?? DEFAULT_START_SITUATION));
+  if (!situation) throw new RangeError('situação inicial desconhecida');
+  const challenge = challengeSchema.parse(c.challenge ?? DEFAULT_CHALLENGE);
+  const institutionalRules = institutionalRulesSchema.parse(c.institutionalRules ?? DEFAULT_INSTITUTIONAL_RULES);
+  const assistance = assistanceSchema.parse(c.assistance ?? DEFAULT_ASSISTANCE);
+  const economy = initialEconomy(scenario, calibration);
+  const initialCareer =
+    c.startPoint && c.startPoint !== 'posse'
+      ? createCareerState(c.content, c.startPoint, c.careerProfileId, c.difficulty, institutionalRules)
+      : undefined;
+  const opponents = initialCareer?.opponents.map((opponent) => ({
+    ...opponent,
+    recognition: Object.fromEntries(
+      Object.entries(opponent.recognition).map(([uf, r]) => [
+        uf,
+        Math.max(
+          0,
+          Math.min(
+            1,
+            r + (challenge.oppositionStrength - 0.5) * CHALLENGE_CALIBRATION.oppositionRecognition * r * (1 - r),
+          ),
+        ),
+      ]),
+    ),
+  }));
   const state: GameState = {
     schemaVersion: STATE_SCHEMA_VERSION,
     engineVersion: ENGINE_VERSION,
     scenarioId: scenario.id,
     difficulty: c.difficulty,
     seed: c.seed,
+    initialCampaignConfiguration: campaignConfigSchema.parse({
+      schemaVersion: 1,
+      scenarioId: scenario.id,
+      scenarioContentVersion: scenario.version,
+      difficulty: c.difficulty,
+      presetId: (Object.keys(challenge) as (keyof ChallengeConfig)[]).every(
+        (key) => challenge[key] === CHALLENGE_PRESETS[c.difficulty][key],
+      )
+        ? c.difficulty
+        : 'personalizada',
+      profileId: c.profile ?? DEFAULT_PROFILE_PRESET,
+      startPoint: c.startPoint ?? 'posse',
+      startSituationId: situation.id,
+      challenge,
+      institutionalRules,
+      assistance,
+      ...(c.startPoint && c.startPoint !== 'posse'
+        ? { careerProfileId: c.careerProfileId ?? scenario.career?.profiles[0]?.id }
+        : {}),
+      seed: c.seed,
+    }),
     rng: seedRng(c.seed),
     monthIndex: 0,
     indicators: indicatorsFromScenario(scenario),
@@ -111,9 +178,27 @@ export function createInitialState(c: NewCampaign): GameState {
       politicalCapital: c.politicalCapital ?? INITIAL_POLITICAL_CAPITAL,
       agendaActionsPerMonth: AGENDA_ACTIONS_PER_MONTH[c.difficulty],
     },
-    economy: initialEconomy(scenario, calibration),
+    economy: {
+      ...economy,
+      riskPremium: Math.max(
+        0,
+        economy.riskPremium +
+          situation.riskDelta +
+          (challenge.economicPressure - 0.5) * CHALLENGE_CALIBRATION.riskSpread,
+      ),
+      outputGap: economy.outputGap + situation.gapDelta,
+    },
     congress: {
-      blocs: scenario.blocs.map((b) => ({ id: b.id, governmentRelation: b.governmentRelation })),
+      blocs: scenario.blocs.map((b) => ({
+        id: b.id,
+        governmentRelation: Math.max(
+          -100,
+          Math.min(
+            100,
+            b.governmentRelation - (challenge.oppositionStrength - 0.5) * CHALLENGE_CALIBRATION.oppositionRelation,
+          ),
+        ),
+      })),
       cabinet: [],
     },
     proposals: [],
@@ -125,9 +210,7 @@ export function createInitialState(c: NewCampaign): GameState {
     publicPolicies: initialPublicPolicies(),
     government: { profile: presetProfile(c.profile ?? DEFAULT_PROFILE_PRESET) },
     climate: initialClimate(c.seed),
-    ...(c.startPoint && c.startPoint !== 'posse'
-      ? { career: createCareerState(c.content, c.startPoint, c.careerProfileId, c.difficulty) }
-      : {}),
+    ...(initialCareer && opponents ? { career: { ...initialCareer, opponents } } : {}),
   };
   return { ...state, society: initialSocietyForGame(state), regions: { ufs: initialRegions(state, c.content).ufs } };
 }

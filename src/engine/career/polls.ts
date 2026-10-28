@@ -1,4 +1,5 @@
 import { populationShares } from '../regions/regions';
+import { DEFAULT_ASSISTANCE, INFORMATION_NOISE } from '../campaignConfig';
 import type { CareerPoll, CareerState, GameContent, GameState, MonthStep, RecognitionBand } from '../types';
 
 import { careerParam } from './calibration';
@@ -73,7 +74,7 @@ export function pollKey(turnIndex: number): (string | number)[] {
  * parcela, renormalizada para somar 1; e a faixa do reconhecimento do jogador por UF, com erro próprio.
  */
 export function takePoll(
-  state: Pick<GameState, 'seed'>,
+  state: Pick<GameState, 'seed' | 'initialCampaignConfiguration'>,
   career: CareerState,
   content: GameContent,
   month: string,
@@ -81,7 +82,11 @@ export function takePoll(
   const { national } = tallyCareer(career, content, 'pesquisa');
   const turnout = national.electorate - national.abstention;
   const rng = keyedRng(state.seed, pollKey(career.turnIndex));
-  const noisy = (x: number) => Math.max(0, x + careerParam('ruido_nacional') * rng.normal());
+  const scale =
+    INFORMATION_NOISE[
+      state.initialCampaignConfiguration?.assistance?.informationClarity ?? DEFAULT_ASSISTANCE.informationClarity
+    ];
+  const noisy = (x: number) => Math.max(0, x + careerParam('ruido_nacional') * scale * rng.normal());
 
   const raw = [...national.votes, national.undecided, national.blankNull].map((v) =>
     noisy(turnout > 0 ? v / turnout : 0),
@@ -93,15 +98,23 @@ export function takePoll(
   const ufs = content.scenario.regions?.ufs ?? [];
   const recognitionBands: Record<string, RecognitionBand> = {};
   for (const u of ufs) {
-    const estimate = Math.min(1, Math.max(0, (career.recognition[u.id] ?? 0) + careerParam('ruido_uf') * rng.normal()));
+    const estimate = Math.min(
+      1,
+      Math.max(0, (career.recognition[u.id] ?? 0) + careerParam('ruido_uf') * scale * rng.normal()),
+    );
     recognitionBands[u.id] = recognitionBand(estimate);
   }
 
   return {
+    observedPeriod: { from: month, to: month },
+    publishedAt: month,
+    source: 'instituto_ficticio',
+    methodVersion: 'pesquisa_carreira_v2',
+    precision: { margin: careerParam('pesquisa_margem') * scale },
     turnIndex: career.turnIndex,
     month,
     scope: 'nacional',
-    margin: careerParam('pesquisa_margem'),
+    margin: careerParam('pesquisa_margem') * scale,
     intentions: ids.map((candidateId, i) => ({ candidateId, share: shares[i] })),
     undecided: shares[ids.length],
     blankNull: shares[ids.length + 1],

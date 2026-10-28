@@ -1,10 +1,11 @@
 import {
-  ADVICE_PARAMS,
   AGENDA_ACTIONS_PER_MONTH,
   careerSchedule,
   DEFAULT_CALIBRATION,
   describeProfile,
   PROFILE_PRESETS,
+  START_SITUATIONS,
+  DEFAULT_CHALLENGE,
   type Difficulty,
   type ProfilePresetId,
   type StartPoint,
@@ -27,7 +28,6 @@ import { DIFFICULTY } from './labels';
  * agenda de `AGENDA_ACTIONS_PER_MONTH`, bônus e ruídos da calibração padrão e margens dos pareceres de `ADVICE_PARAMS`.
  */
 
-const pct = (fraction: number) => `${Math.round(fraction * 100)}%`;
 const factor = (x: number) => `×${String(Math.round(x * 100) / 100).replace('.', ',')}`;
 
 /** Escala do ruído econômico em relação à Estratégica (mesma conta do motor em `noiseScale`). */
@@ -56,28 +56,16 @@ function buildDifficultyView(id: Difficulty): DifficultyView {
       ...common,
       `Congresso mais receptivo: +${Math.round(DEFAULT_CALIBRATION.bonus_casual * 100)} pontos no apoio de cada bloco`,
       `Oscilações aleatórias da economia menores (${factor(noise)})`,
-      'Anterioridade, noventena, limite de despesas e compensação da LRF não se aplicam',
-      'Sem recesso de janeiro nas votações e sem vedação eleitoral',
-      'Programas por convênio valem em todos os estados, sem depender de adesão',
-      'Ministérios preveem as votações sem margem de erro',
     ],
     estrategica: () => [
       ...common,
       'Congresso calibrado, sem bônus de apoio',
       'Oscilações aleatórias da economia no nível de referência',
-      'Regras legais completas: anterioridade, noventena, limite de despesas e LRF',
-      'Recesso de janeiro e vedação eleitoral nos meses antes do pleito',
-      'Programas por convênio dependem da adesão de cada governador',
-      `Previsões de votação com margem de ±${pct(ADVICE_PARAMS.marginEstrategica)} dos votos`,
     ],
     realismo: () => [
       ...common,
       'Congresso calibrado, sem bônus de apoio',
       `Oscilações aleatórias da economia maiores (${factor(noise)})`,
-      'Regras legais completas, como na Estratégica',
-      'Recesso de janeiro e vedação eleitoral nos meses antes do pleito',
-      'Programas por convênio dependem da adesão de cada governador',
-      `Previsões de votação com margem de ±${pct(ADVICE_PARAMS.marginRealismo)} e viés otimista de ${pct(ADVICE_PARAMS.biasRealismo)}`,
     ],
   };
   return {
@@ -90,9 +78,9 @@ function buildDifficultyView(id: Difficulty): DifficultyView {
 }
 
 const TAGLINES: Record<Difficulty, string> = {
-  casual: 'Para conhecer o jogo: regras simplificadas e Congresso mais aberto.',
-  estrategica: 'O modo padrão: regras completas e ministérios com margem de erro.',
-  realismo: 'Mais incerteza na economia e pareceres menos confiáveis.',
+  casual: 'Para conhecer o jogo: Congresso mais aberto e economia menos volátil.',
+  estrategica: 'O modo padrão: Congresso sem bônus e oscilações de referência.',
+  realismo: 'Mais incerteza na economia, com Congresso sem bônus.',
 };
 
 /** Montadas uma vez: tudo vem de constantes do motor, que não mudam com o app aberto. */
@@ -270,6 +258,10 @@ export interface SetupSummary {
   /** Perfil ideológico inicial do governo (nome e posição nos eixos). */
   profile: string;
   startPoint: string;
+  startSituation: string;
+  challenge: string;
+  institutionalRules: string;
+  assistance: string;
   careerProfile: string | null;
   duration: string;
   seed: string;
@@ -289,6 +281,16 @@ export function setupSummary(form: CampaignSetupForm): SetupSummary {
     version: scenario ? `v${scenario.version}` : '—',
     profile: profileSummary(form.profileId),
     startPoint: START_POINT_NAME[form.startPoint ?? 'posse'],
+    startSituation: START_SITUATIONS.find((item) => item.id === (form.startSituationId ?? 'normal'))?.name ?? '-',
+    challenge: (() => {
+      const c = form.challenge ?? DEFAULT_CHALLENGE;
+      return `Economia ${Math.round(c.economicPressure * 100)}/100 · oposição ${Math.round(c.oppositionStrength * 100)}/100 · estabilidade ${Math.round(c.coalitionStability * 100)}/100 · crises climáticas ${Math.round(c.crisisFrequency * 100)}/100`;
+    })(),
+    institutionalRules:
+      form.institutionalRules === 'simplificadas'
+        ? 'Simplificadas — cenário ficcional'
+        : 'Brasileiras — regras institucionais',
+    assistance: `${{ clara: 'Mais clara', padrao: 'Padrão', incerta: 'Mais incerta' }[form.assistance?.informationClarity ?? 'padrao']} · dicas ${(form.assistance?.hints ?? true) ? 'ligadas' : 'desligadas'}`,
     careerProfile:
       form.startPoint && form.startPoint !== 'posse'
         ? ((scenario?.career?.profiles.find((p) => p.id === form.careerProfileId) ?? scenario?.career?.profiles[0])

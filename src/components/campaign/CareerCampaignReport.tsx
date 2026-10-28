@@ -26,9 +26,9 @@ export function CareerCampaignReport({ state, content }: CareerCampaignReportPro
   const summary = careerCampaignSummary(state, content);
   if (!summary) return null;
 
-  const retry = async () => {
+  const retry = async (mode: 'same' | 'new') => {
     setError(null);
-    const r = await gameStore.getState().retryCareer();
+    const r = await gameStore.getState().retryCareer(mode);
     if (r.ok) router.replace('/painel');
     else setError(r.error);
   };
@@ -61,11 +61,19 @@ export function CareerCampaignReport({ state, content }: CareerCampaignReportPro
       <Card title="E agora?" subtitle="A partida perdida continua salva em CARREGAR JOGO.">
         {error && <Text color="negative">{error}</Text>}
         <Button
-          label="Tentar de novo com a mesma candidatura"
-          onPress={() => void retry()}
+          label="Repetir com a mesma semente"
+          onPress={() => void retry('same')}
           loading={busy}
           block
-          accessibilityHint="Começa uma campanha nova na corrida eleitoral, com a mesma dificuldade"
+          accessibilityHint="Recomeça com a configuração e a semente originais"
+        />
+        <Button
+          label="Tentar com outra semente"
+          variant="secondary"
+          onPress={() => void retry('new')}
+          loading={busy}
+          block
+          accessibilityHint="Mantém a configuração original e sorteia outra semente"
         />
         <Button label="Outro jogo" variant="secondary" onPress={() => router.replace('/novo-jogo')} block />
       </Card>

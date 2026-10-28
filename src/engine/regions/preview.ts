@@ -1,4 +1,5 @@
 import type { RegionalKey } from '../../types/regions';
+import { usesFormalRules } from '../campaignConfig';
 import { legislativeInstrument } from '../congress/congress';
 import { isNovoBeneficio, vedacaoAtiva } from '../elections/vedacao';
 import { fiscalDirection } from '../policyChannels';
@@ -55,7 +56,7 @@ export interface RegionalDecisionPreview {
   direction: 'benefit' | 'cost';
   /** Uma entrada por UF, na ordem do cenário. */
   ufs: RegionalPreviewUf[];
-  /** Adesão esperada (soma das probabilidades); `null` sem adesão (ou no Casual, em que todos aderem). */
+  /** Adesão esperada (soma das probabilidades); `null` sem adesão ou nas regras simplificadas. */
   adhesion: { expectedStates: number; expectedPopulationShare: number } | null;
   /** Defasagem adicional, em meses após o início da execução; `null` se nenhum impacto tem magnitude. */
   lagMonths: { earliest: number; longest: number } | null;
@@ -94,7 +95,7 @@ export function buildRegionalDecisionPreview(
     regional,
   );
 
-  const hasAdhesion = policy.conditions.includes('adesao_estadual') && state.difficulty !== 'casual';
+  const hasAdhesion = policy.conditions.includes('adesao_estadual') && usesFormalRules(state);
   const probabilities = hasAdhesion ? adhesionProbabilities(state, content) : null;
   const preview: RegionalPreviewUf[] = ufs.map((u, i) => ({
     id: u.id,

@@ -20,7 +20,7 @@ import { allRelations, shiftRelation } from './relations';
 
 /**
  * Ministérios técnicos ou de indicação partidária (POLITICAL_RULES.md §6.3.1). A pasta de bloco rende apoio
- * no Congresso, executa pior, pode travar políticas contrárias ao bloco e tem risco de escândalo que cresce
+ * no Congresso, pode travar políticas contrárias ao bloco e tem risco de escândalo que cresce
  * com o tempo no cargo. Os ministérios vêm do cenário; o estado guarda só os que mudaram de ocupante.
  */
 

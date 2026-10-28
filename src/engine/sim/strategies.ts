@@ -9,6 +9,7 @@ import {
 import { ministriesOf, ministryOccupant } from '../congress/cabinet';
 import { blocSupport, legislativeInstrument, predictVotes } from '../congress/congress';
 import { reissueBarredPolicies } from '../proposals/proposals';
+import { isBudgetPolicy } from '../publicPolicies/budgetLaws';
 import { createRng, seedRng, type Rng } from '../rng';
 import {
   PROPOSAL_IN_PROGRESS,
@@ -64,7 +65,11 @@ function sendablePolicies(state: GameState, content: GameContent): Set<string> {
   for (const id of reissueBarredPolicies(state, content)) busy.add(id);
   return new Set(
     content.scenario.policies.filter(
-      (id) => content.policies[id] !== undefined && content.policies[id].delivery !== 'rotina' && !busy.has(id),
+      (id) =>
+        content.policies[id] !== undefined &&
+        content.policies[id].delivery !== 'rotina' &&
+        !isBudgetPolicy(id) &&
+        !busy.has(id),
     ),
   );
 }

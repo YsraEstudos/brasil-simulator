@@ -229,7 +229,11 @@ describe('governadores e adesão a convênios (POLITICAL_RULES.md §2.1)', () =>
       'x',
       1,
       1,
-      { ...s0, difficulty: 'casual' },
+      {
+        ...s0,
+        difficulty: 'casual',
+        initialCampaignConfiguration: { ...s0.initialCampaignConfiguration, institutionalRules: 'simplificadas' },
+      },
       { ...ctx, rng: createRng(s0.rng) },
     );
     expect(full.adherents).toBeNull();

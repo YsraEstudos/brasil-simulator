@@ -5,6 +5,10 @@ Documentos relacionados: [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) · [POLITICAL_RU
 
 O percurso eleitoral antes da posse, suas entregas e limitações atuais estão em [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md); as eleições ao longo do mandato seguem o modelo deste documento e de [FASE_08.md](FASE_08.md).
 
+Em Novo Jogo, a situação inicial pode manter as condições do cenário ou aplicar uma hipótese fictícia de pressão externa ou desaceleração; o resumo identifica a escolha. O laboratório permite experimentar ações em uma cópia descartável e recomeçar com a mesma semente, sem alterar a campanha salva.
+
+Os ajustes de desafio permitem variar pressão econômica inicial, oposição, estabilidade da coalizão e frequência de eventos climáticos elegíveis. Seus parâmetros são provisórios e constam de [CALIBRATION.md](CALIBRATION.md). As regras institucionais e a clareza de pesquisas e pareceres são escolhas separadas; a opção institucional simplificada é explicitamente fictícia e não representa todos os procedimentos brasileiros.
+
 ---
 
 ## 1. Visão

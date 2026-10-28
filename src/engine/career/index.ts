@@ -15,6 +15,7 @@ import type {
   Difficulty,
 } from '../types';
 import { createRng } from '../rng';
+import { usesFormalRules, type InstitutionalRules } from '../campaignConfig';
 
 import { careerActionsPerTurn, isCareerAction, screenCareerAction } from './actions';
 import { campaignStep } from './campaignStep';
@@ -100,6 +101,7 @@ export function createCareerState(
   startPoint: CareerStartPoint,
   profileId?: string,
   difficulty: Difficulty = 'estrategica',
+  institutionalRules: InstitutionalRules = difficulty === 'casual' ? 'simplificadas' : 'brasileiras',
 ): CareerState {
   const schedule = careerSchedule(content, startPoint);
   const profile = careerProfile(content, profileId);
@@ -125,7 +127,7 @@ export function createCareerState(
     profileId: profile.id,
     ...(finance && !expanded ? { finance: createCampaignFinance(finance.initialBalance, finance.spendingLimit) } : {}),
     ...(expandedFinance ? { expandedFinance } : {}),
-    ...(expanded?.illicit && difficulty !== 'casual'
+    ...(expanded?.illicit && institutionalRules === 'brasileiras'
       ? { illicit: { balance: 0, pending: [], exposure: 0, investigations: 0 } }
       : {}),
     stage: schedule[0].stage,
@@ -266,7 +268,7 @@ export function advanceCareerTurn(
     }
     if (decision.policyId === 'usar_caixa_dois') {
       const amount = decision.params?.valor;
-      if (!expandedFinance || !illicit || !illicitConfig || state.difficulty === 'casual') {
+      if (!expandedFinance || !illicit || !illicitConfig || !usesFormalRules(state)) {
         reject(decision, 'fora_do_estagio');
       } else if (
         typeof amount !== 'number' ||
@@ -470,7 +472,8 @@ export function advanceCareerTurn(
   }
   if (nextStage === 'governo') draft.notes.push(INAUGURATION_NOTE);
   const poll = after.poll?.turnIndex === career.turnIndex ? after.poll : undefined;
-  const closed = nextStage === 'governo' ? closeCampaignAccounts(after, state.difficulty, content) : after;
+  const closed =
+    nextStage === 'governo' ? closeCampaignAccounts(after, state.difficulty, content, usesFormalRules(state)) : after;
   finance = closed.finance;
   expandedFinance = closed.expandedFinance;
   illicit = closed.illicit;

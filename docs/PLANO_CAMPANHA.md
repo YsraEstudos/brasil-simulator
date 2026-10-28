@@ -440,6 +440,7 @@ Persistência das pesquisas:
 
   A transição não muda o reconhecimento. Os adversários seguem a mesma regra (adversários simples, sem ações).
 - **Pesquisa.** É a última etapa de cada turno pré-posse, exceto na transição. Mostra a intenção sobre o comparecimento: candidatos, indecisos e brancos/nulos, somando 1. O erro de amostra é `ruido_nacional` em cada parcela, com renormalização. Cada UF recebe uma faixa de reconhecimento com erro `ruido_uf`, e a margem divulgada é `pesquisa_margem`. A pesquisa atual fica em `CareerState.poll`, e a de cada turno, em `MonthReport.career.poll`.
+- A publicação registra o mês da fotografia e da divulgação, fonte fictícia, versão do método e margem; a fotografia corresponde ao estado no fim do turno, não a uma série medida ao longo de todos os meses do turno.
 - **Eleitorado.** São 156.454.011 eleitores, repartidos entre as UFs pela população (`PROVISORIO`). A abstenção e os brancos e nulos usam os números de 2022 registrados no [DATA_SOURCES.md](DATA_SOURCES.md) §6.
 - **Versão do estado 14**, sem função de atualização (§4, saves antes do lançamento).
 
@@ -738,6 +739,8 @@ pre_campanha ──► convencao ──► nao_homologado (desfecho)
 
 **Depois de uma derrota antes da posse (D-C18).** Proposta para o M1: **encerrar com um resumo útil e oferecer recomeçar** (nova campanha ou nova tentativa com o mesmo perfil), sem modo alternativo. O resumo traz: resultado (nacional e por UF); principais fatores; duas ou três escolhas com efeito relevante; e a separação entre o que foi influência do jogador e o que foi acontecimento externo.
 
+**Tutorial e laboratório:** o tutorial independente oferece oito escolhas de campanha, debate, eleição, dotação, proposta, negociação, crise e gabinete. Depois da eleição, o exercício de governo usa uma situação separada: derrota não se converte em posse. A CPI é uma situação fictícia preparada para ensino. O laboratório, acessível pela ajuda eleitoral ou pelo Congresso, usa uma cópia da campanha e permite testar ações e reiniciar com a mesma semente, sem gravar no banco; exibe recusas e causas do motor. Ainda são necessárias sessões com jogadores e homologação visual em aparelho.
+
 **Interrupção e retomada:** cada transição acontece dentro de um turno gravado numa transação; fechar e reabrir em qualquer estado retoma no mesmo estado.
 
 **Posse: destino de cada dado.** `createInitialState` reinicia o PRNG ([src/engine/state.ts:98](../src/engine/state.ts)); a posse usa uma variante que recebe o estado existente.
@@ -774,7 +777,7 @@ pre_campanha ──► convencao ──► nao_homologado (desfecho)
 - **Regras da eleição (C5.1)**, em `src/engine/career/election.ts`, com a base do CF art. 77 já conferida ([DATA_SOURCES.md](DATA_SOURCES.md) §6):
   1. quem tem mais da metade dos válidos no 1º turno vence; se for um adversário, o jogador perde, mesmo em segundo;
   2. senão, os dois mais votados vão ao 2º turno, e vence quem tiver mais válidos; o jogador fora dos dois perde no 1º turno;
-  3. empate na vaga do 2º turno: o mais idoso (§5). O mesmo critério vale para o empate exato no 2º turno, uma simplificação, porque a Constituição não trata esse caso. Idades iguais ou ausentes vão a um sorteio por chave;
+  3. empate na vaga do 2º turno: o mais idoso (§5). O mesmo critério vale para o empate exato no 2º turno, uma simplificação, porque a Constituição não trata esse caso. Idades iguais vão a sorteio por chave; se alguma idade dos empatados for desconhecida, todos participam do sorteio, sem presumir a idade ausente;
   4. com um adversário só, o 1º turno decide, salvo empate exato.
 - **Apuração.** A partição do eleitorado em modo `eleicao` (Fase C2) dá votos inteiros por UF, e o nacional é a soma das UFs.
   - **Humor do dia:** o peso de cada candidato é multiplicado por e^(`ruido_eleicao`·z), igual em todas as UFs, com z sorteado pela chave `['career', 'election', turno, rodada]`. A pesquisa, assim, não acerta o resultado com certeza.
@@ -790,6 +793,8 @@ pre_campanha ──► convencao ──► nao_homologado (desfecho)
   - os principais fatores, as escolhas que mais pesaram e o que não dependeu do jogador, em texto e sem números do motor.
 
   Os fatores vêm de `CareerState.causeTotals`, a soma por causa das contribuições do reconhecimento e da valência ao longo da campanha. O botão "Tentar de novo com a mesma candidatura" (`retryCareer` na store) cria uma campanha nova com a mesma dificuldade, o mesmo cenário e o mesmo ponto de partida, com semente nova. A partida perdida continua salva.
+
+  Atualização: a configuração original é gravada na campanha, incluindo perfil político, perfil eleitoral, cenário, versão de conteúdo, ponto de partida, dificuldade e semente. O resumo oferece repetição com a mesma semente ou tentativa com outra; a repetição exige conteúdo e motor compatíveis. Isso ainda não representa a configuração avançada completa da expansão.
 - **Posse com continuidade (C5.3)**, em `src/engine/career/inauguration.ts`:
   - **PRNG:** a posse não chama `createInitialState`. O estado do governo já nasce com a partida (D-C12), e nenhuma etapa antes da posse toca o PRNG principal, então a semente e o estado do PRNG na posse são os da criação (teste);
   - **linha de base:** o ponto da posse na série, como na Fase C1;

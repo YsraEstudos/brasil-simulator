@@ -161,6 +161,34 @@ describe('store com a partida que começa na corrida (PLANO_CAMPANHA.md §2.3)',
 });
 
 describe('derrota na eleição e nova tentativa (PLANO_CAMPANHA.md Fase C5, D-C18)', () => {
+  it('retoma e repete a configuração inicial e permite outra semente', async () => {
+    const launchApp = await device();
+    let app = await launchApp();
+    await app.getState().newCampaign({
+      name: 'Replay',
+      difficulty: 'realismo',
+      startPoint: 'corrida',
+      profileId: 'esquerda',
+      careerProfileId: 'ex_governador',
+      startSituationId: 'pressao_externa',
+      challenge: { economicPressure: 0.8, oppositionStrength: 0.7, coalitionStability: 0.3, crisisFrequency: 0.2 },
+      institutionalRules: 'simplificadas',
+      assistance: { informationClarity: 'incerta', hints: false },
+      seed: 123,
+    });
+    const original = app.getState().active!;
+    app = await launchApp();
+    expect(await app.getState().continueCampaign(original.id)).toBe(true);
+    expect(await app.getState().retryCareer('same')).toMatchObject({ ok: true });
+    const replay = app.getState().active!.state;
+    expect(replay).toEqual(original.state);
+    expect(await app.getState().retryCareer('new')).toMatchObject({ ok: true });
+    const next = app.getState().active!.state;
+    expect(next.seed).not.toBe(original.state.seed);
+    expect(next.government.profile).toEqual(original.state.government.profile);
+    expect(next.career?.profileId).toBe('ex_governador');
+  });
+
   it('a derrota encerra e sobrevive ao reinício; a nova tentativa começa outra corrida e mantém a perdida', async () => {
     const launchApp = await device();
     let app = await launchApp();

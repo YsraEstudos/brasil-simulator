@@ -93,7 +93,10 @@ describe('contratos de políticas da Fase 06', () => {
     // As políticas de prevenção (PR 13) só entram no v0.8.0: os cenários publicados seguem com o catálogo de antes.
     // As pautas-bomba (Fase C6c) também não estão nos cenários publicados: só o Congresso as aprova.
     const published = Object.values(POLICIES).filter(
-      (policy) => !PREVENTION_POLICY_IDS.includes(policy.id) && !policy.id.startsWith('pauta_bomba_'),
+      (policy) =>
+        !PREVENTION_POLICY_IDS.includes(policy.id) &&
+        !policy.id.startsWith('pauta_bomba_') &&
+        !['orcamento_ppa', 'orcamento_ldo', 'orcamento_loa'].includes(policy.id),
     );
     const current = SCENARIOS.brasil_2027_01_v050;
     const legacy = SCENARIOS[LEGACY_SCENARIO_ID];

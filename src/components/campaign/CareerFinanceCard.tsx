@@ -160,8 +160,8 @@ export function CareerFinanceCard({
             variant="secondary"
             onPress={() => choose('arrecadar_doacoes', { bolso: 'party', divida: 'integral' })}
           />
-          {state.difficulty === 'casual' ? (
-            <Text color="textSecondary">No Casual, a dívida é encerrada sem cobrança na posse.</Text>
+          {state.initialCampaignConfiguration?.institutionalRules === 'simplificadas' ? (
+            <Text color="textSecondary">Nas regras simplificadas, a dívida é encerrada sem cobrança na posse.</Text>
           ) : (
             expanded && (
               <Text color="textSecondary">

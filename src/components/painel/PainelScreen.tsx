@@ -646,7 +646,7 @@ export function PainelScreen() {
           }
           return (
             <>
-              <CampaignTutorialCard />
+              {(active.state.initialCampaignConfiguration?.assistance?.hints ?? true) && <CampaignTutorialCard />}
               <CareerActionsCard
                 state={active.state}
                 content={content}

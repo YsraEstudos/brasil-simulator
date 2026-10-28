@@ -5,6 +5,7 @@ import type { Decision, GameContent, GameState, StepContext } from '@/engine/typ
 import type { Policy } from '@/types/policy';
 import { proposalsStep } from '@/engine/proposals/proposals';
 import { createRng } from '@/engine/rng';
+import { managementProfile } from '@/engine/congress/management';
 
 import {
   BRAND_ACTION_ID,
@@ -262,6 +263,61 @@ describe('publicPoliciesStep', () => {
     expect(draft.draft.notes.some((note) => note.includes('orçamento reduzido'))).toBe(true);
   });
 
+  it('a LOA aprovada limita alocação futura, sem transformar autorização em gasto imediato', () => {
+    const c = content();
+    const s = state({
+      publicPolicies: {
+        ...initialPublicPolicies(),
+        budgetLaws: [
+          { proposalId: 'loa', kind: 'loa', year: 2027, priority: 'saude', annualMillions: 100, enactedAt: 0 },
+        ],
+      },
+    } as never);
+    const noAction = publicPoliciesStep(s, { ...ctx(c), decisions: [] });
+    expect(noAction.state.impulses.filter((item) => item.target.startsWith('gasto.'))).toHaveLength(0);
+    const draft = ctx(c);
+    const out = publicPoliciesStep(s, {
+      ...draft,
+      decisions: [
+        {
+          policyId: DIRECTIVE_ACTION_ID,
+          agendaCost: 1,
+          params: { ministryId: 'fazenda', policyId: routine.id, annualMillions: 1000 },
+        },
+      ],
+    });
+    expect(draft.draft.notes.some((note) => note.includes('para R$ 100.0 mi'))).toBe(true);
+    expect(out.state.publicPolicies.budgetLaws).toHaveLength(1);
+  });
+
+  it('a prioridade da LOA distribui a folga escassa sem aumentar o limite', () => {
+    const base = content();
+    const c = {
+      ...base,
+      policies: {
+        ...base.policies,
+        [routine.id]: { ...routine, area: 'saude' as const },
+        [alternateRoutine.id]: { ...alternateRoutine, area: 'educacao' as const },
+      },
+    };
+    const s = state({
+      publicPolicies: {
+        ...initialPublicPolicies(),
+        directives: [
+          { ministryId: 'fazenda', policyId: routine.id, annualMillions: 100, year: 0 },
+          { ministryId: 'social', policyId: alternateRoutine.id, annualMillions: 100, year: 0 },
+        ],
+        budgetLaws: [
+          { proposalId: 'loa', kind: 'loa', year: 2027, priority: 'educacao', annualMillions: 100, enactedAt: 0 },
+        ],
+      },
+    } as never);
+    const result = publicPoliciesStep(s, ctx(c));
+    const spending = result.state.impulses.filter((item) => item.target === 'gasto.custeio');
+    expect(spending).toHaveLength(1);
+    expect(spending[0]?.sourceId).toContain(alternateRoutine.id);
+  });
+
   it('accelerates depreciation when maintenance is materially underfunded', () => {
     const c = content();
     const proposal = {
@@ -389,6 +445,147 @@ describe('publicPoliciesStep', () => {
     expect(publicState.projects[0]?.spentMillions).toBe(300);
     expect((s.proposals[0] as typeof proposal).status).toBe('concluida');
     expect(investmentSeen).toBe(true);
+  });
+
+  it.each([
+    { initial: 'tecnico', next: 'centro', switchAt: 4 },
+    { initial: 'centro', next: 'tecnico', switchAt: 3 },
+  ])('troca de $initial por $next preserva desembolso e permite concluir', ({ initial, next, switchAt }) => {
+    const policy = { ...directProject, area: 'social' };
+    const base = content();
+    const c = { ...base, policies: { ...base.policies, [policy.id]: policy } };
+    const seed = Array.from({ length: 500 }, (_, n) => n).find(
+      (n) =>
+        managementProfile(n, 'social', 'tecnico').capacity < 0.75 &&
+        managementProfile(n, 'social', 'centro').capacity > 0.75,
+    );
+    expect(seed).toBeDefined();
+    const proposal = {
+      id: 'troca_ministro_obra',
+      policyId: policy.id,
+      createdMonth: 0,
+      status: 'em_execucao' as const,
+      scale: 1,
+      voteMonth: null,
+      stage: 0,
+      rapporteur: null,
+      textAltered: false,
+      postponements: 0,
+      negotiation: { blocs: {}, amendments: false, textConceded: false, urgency: false },
+      rider: 0,
+      veto: null,
+      judicial: null,
+      executionStart: 0,
+      executionEnd: null,
+      adherents: null,
+      votes: [],
+      history: [],
+    };
+    let s = { ...state({ proposals: [proposal] } as never), seed: seed! };
+    s = { ...s, congress: { ...s.congress, cabinet: [{ id: 'social', occupant: initial, since: 0 }] } };
+    for (let month = 0; month < switchAt; month++) {
+      const out = publicPoliciesStep(s, { ...ctx(c), decisions: [] });
+      s = { ...out.state, monthIndex: month + 1 };
+    }
+    const spent = s.publicPolicies.projects[0].spentMillions;
+    s = { ...s, congress: { ...s.congress, cabinet: [{ id: 'social', occupant: next, since: switchAt }] } };
+    for (let month = switchAt; month < 14; month++) {
+      const out = publicPoliciesStep(s, { ...ctx(c), decisions: [] });
+      s = { ...out.state, monthIndex: month + 1 };
+      const current = s.publicPolicies.projects[0];
+      expect(current.spentMillions).toBeLessThanOrEqual(current.budgetMillions);
+      expect(current.progress).toBeLessThanOrEqual(current.spentMillions / current.budgetMillions + 1e-9);
+    }
+    expect(s.publicPolicies.projects[0].spentMillions).toBeGreaterThanOrEqual(spent);
+    expect(s.publicPolicies.projects[0]).toMatchObject({ phase: 'operacao', progress: 1, spentMillions: 300 });
+  });
+
+  it('uma gestão mais lenta não desfaz progresso físico já executado', () => {
+    const policy = { ...directProject, area: 'social', timeline: { ...directProject.timeline, executionMonths: 12 } };
+    const base = content();
+    const c = { ...base, policies: { ...base.policies, [policy.id]: policy } };
+    const seed = Array.from({ length: 5000 }, (_, n) => n).find(
+      (n) =>
+        managementProfile(n, 'social', 'tecnico').capacity < 0.72 &&
+        managementProfile(n, 'social', 'centro').capacity > 0.84,
+    );
+    expect(seed).toBeDefined();
+    const proposal = {
+      id: 'projeto_troca_lenta',
+      policyId: policy.id,
+      createdMonth: 0,
+      status: 'em_execucao' as const,
+      scale: 1,
+      voteMonth: null,
+      stage: 0,
+      rapporteur: null,
+      textAltered: false,
+      postponements: 0,
+      negotiation: { blocs: {}, amendments: false, textConceded: false, urgency: false },
+      rider: 0,
+      veto: null,
+      judicial: null,
+      executionStart: 0,
+      executionEnd: null,
+      adherents: null,
+      votes: [],
+      history: [],
+    };
+    let s = { ...state({ proposals: [proposal] } as never), seed: seed! };
+    s = { ...s, congress: { ...s.congress, cabinet: [{ id: 'social', occupant: 'centro', since: 0 }] } };
+    for (let month = 0; month < 9; month++) {
+      const out = publicPoliciesStep(s, { ...ctx(c), decisions: [] });
+      s = { ...out.state, monthIndex: month + 1 };
+    }
+    const previous = s.publicPolicies.projects[0].progress;
+    s = { ...s, congress: { ...s.congress, cabinet: [{ id: 'social', occupant: 'tecnico', since: 9 }] } };
+    const next = publicPoliciesStep(s, { ...ctx(c), decisions: [] }).state.publicPolicies.projects[0];
+    expect(next.progress).toBeGreaterThanOrEqual(previous);
+  });
+
+  it('a competência de preparação limita o ritmo do planejamento antes da obra', () => {
+    const policy = { ...directProject, area: 'social', timeline: { ...directProject.timeline, planningMonths: 3 } };
+    const base = content();
+    const c = { ...base, policies: { ...base.policies, [policy.id]: policy } };
+    const seed = Array.from({ length: 500 }, (_, n) => n).find(
+      (n) =>
+        managementProfile(n, 'social', 'tecnico').competence < 0.72 &&
+        managementProfile(n, 'social', 'centro').competence > 0.84,
+    );
+    expect(seed).toBeDefined();
+    const proposal = {
+      id: 'preparacao_obra',
+      policyId: policy.id,
+      createdMonth: 0,
+      status: 'em_execucao' as const,
+      scale: 1,
+      voteMonth: null,
+      stage: 0,
+      rapporteur: null,
+      textAltered: false,
+      postponements: 0,
+      negotiation: { blocs: {}, amendments: false, textConceded: false, urgency: false },
+      rider: 0,
+      veto: null,
+      judicial: null,
+      executionStart: 0,
+      executionEnd: null,
+      adherents: null,
+      votes: [],
+      history: [],
+    };
+    const play = (occupant: string) => {
+      let s = { ...state({ proposals: [proposal] } as never), seed: seed! };
+      s = { ...s, congress: { ...s.congress, cabinet: [{ id: 'social', occupant, since: 0 }] } };
+      for (let month = 0; month < 4; month++) {
+        const out = publicPoliciesStep(s, { ...ctx(c), decisions: [] });
+        s = { ...out.state, monthIndex: month + 1 };
+      }
+      return s.publicPolicies.projects[0];
+    };
+    expect(play('tecnico').phase).toBe('planejamento');
+    expect(play('tecnico').bottleneck).toBe('capacidade');
+    expect(play('centro').phase).not.toBe('planejamento');
   });
 
   it('pauses project progress and spending while its proposal is suspended', () => {
@@ -530,6 +727,7 @@ describe('publicPoliciesStep', () => {
     const tranche = 1.5 * monthlyRoom;
     const first = step(atBudget(tranche / perMillion));
     expect(project(first).phaseMonth).toBe(0);
+    expect(project(first).bottleneck).toBe('orcamento');
     const second = step(first);
     expect(project(second).phaseMonth).toBe(1);
     expect(project(second).spentMillions).toBeCloseTo(tranche, 6);

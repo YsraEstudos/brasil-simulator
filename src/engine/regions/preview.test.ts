@@ -152,7 +152,14 @@ describe('adesão dos governadores na prévia (POLITICAL_RULES.md §2.1)', () =>
   });
 
   it('sem adesão no Casual e em política que não depende de convênio', () => {
-    const casual = preview(start('casual'), 'seguranca_cooperacao');
+    const initial = start('casual');
+    const casual = preview(
+      {
+        ...initial,
+        initialCampaignConfiguration: { ...initial.initialCampaignConfiguration, institutionalRules: 'simplificadas' },
+      },
+      'seguranca_cooperacao',
+    );
     expect(casual.adhesion).toBeNull();
     expect(casual.ufs.every((u) => u.adhesionProbability === null)).toBe(true);
     expect(casual.uncertain).not.toContain('adesao_sorteada');
@@ -188,7 +195,19 @@ describe('incertezas, defasagem e impedimentos da prévia', () => {
     const inWindow = { ...start(), monthIndex: elections.mesEleicaoMunicipal - VEDACAO_MESES };
     expect(preview(inWindow, 'transferencia_renda_ampliacao').barred).toBe('vedacao_eleitoral');
     expect(preview(inWindow, 'irpf_tabela').barred).toBeNull();
-    expect(preview({ ...inWindow, difficulty: 'casual' }, 'transferencia_renda_ampliacao').barred).toBeNull();
+    expect(
+      preview(
+        {
+          ...inWindow,
+          difficulty: 'casual',
+          initialCampaignConfiguration: {
+            ...inWindow.initialCampaignConfiguration,
+            institutionalRules: 'simplificadas',
+          },
+        },
+        'transferencia_renda_ampliacao',
+      ).barred,
+    ).toBeNull();
     expect(preview(start(), 'transferencia_renda_ampliacao').barred).toBeNull();
   });
 });
