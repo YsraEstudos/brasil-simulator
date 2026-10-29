@@ -24,7 +24,7 @@ import type { SqlDatabase } from '@/database/types';
 import { DEFAULT_PROFILE_3D, type Profile3d } from '@/globe/qualityProfiles';
 import { DEFAULT_DAY_TIME, type DayTimeSetting } from '@/globe/visualClock';
 import { campaignMonths, loadContent, SCENARIOS } from '@/content';
-import { ENGINE_VERSION } from '@/engine/types';
+import { ENGINE_VERSION, STATE_SCHEMA_VERSION } from '@/engine/types';
 import {
   advanceMonth,
   campaignOutcome,
@@ -404,6 +404,11 @@ export function createGameStore(deps: GameStoreDeps) {
         return run(async (d) => {
           const summary = (await listCampaigns(d)).find((c) => c.id === id);
           const state = await loadLatestState(d, id);
+          if (state.schemaVersion !== STATE_SCHEMA_VERSION) {
+            throw new Error(
+              'Esta partida de desenvolvimento é incompatível com esta versão. Comece uma nova campanha.',
+            );
+          }
           // Turno anterior pelo índice do turno (PLANO_CAMPANHA.md §2.3), não pelo mês do mandato.
           const turn = turnIndexOf(state);
           // Comparação com o mês anterior só dentro do mandato: na posse e antes dela não há mês anterior de governo.

@@ -158,3 +158,15 @@ describe('Painel com a partida', () => {
     expect(data.goal.checks.find((c) => c.label === 'Resultado primário')?.met).toBe(false);
   });
 });
+
+it('mostra no HUD a população dinâmica da mesma campanha', () => {
+  const active = campaign();
+  active.state.demography.ufs[0].ages.young += 10000;
+  const thousands = active.state.demography.ufs.reduce(
+    (sum, uf) => sum + uf.ages.young + uf.ages.working + uf.ages.older,
+    0,
+  );
+  expect(stat(hudFromCampaign(active, content, null), 'populacao').value).toBe(
+    `${formatNumber(thousands / 1000, 1)} milhões`,
+  );
+});

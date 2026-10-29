@@ -1,0 +1,201 @@
+{
+  "source": "IBGE SIDRA, Censo Demográfico 2022, tabela 9514",
+  "url": "https://apisidra.ibge.gov.br/values/t/9514/n3/all/v/93/p/2022/c2/6794/c286/113635/c287/100362,93070,93084,93085,93086,93087,93088,93089,93090,93091,93092,93093,93094,93095,93096,93097,93098,49108,49109,60040,60041,6653",
+  "period": "2022",
+  "unit": "pessoas",
+  "status": "OFICIAL_OBSERVADO",
+  "retrievedAt": "2026-10-29",
+  "sourceSha256": "f7828484d197128f83e3b1574d52d35d80c50cde11ad8edb70a5ce5143c3b38d",
+  "method": "Sexo total; forma de declaração total; somas das faixas quinquenais 0–19, 20–64 e 65+.",
+  "ufs": [
+    {
+      "uf": "RO",
+      "total": 1581196,
+      "young": 470210,
+      "working": 982715,
+      "older": 128271
+    },
+    {
+      "uf": "AC",
+      "total": 830018,
+      "young": 299849,
+      "working": 477599,
+      "older": 52570
+    },
+    {
+      "uf": "AM",
+      "total": 3941613,
+      "young": 1443404,
+      "working": 2264601,
+      "older": 233608
+    },
+    {
+      "uf": "RR",
+      "total": 636707,
+      "young": 243083,
+      "working": 361249,
+      "older": 32375
+    },
+    {
+      "uf": "PA",
+      "total": 8120131,
+      "young": 2717720,
+      "working": 4813377,
+      "older": 589034
+    },
+    {
+      "uf": "AP",
+      "total": 733759,
+      "young": 265804,
+      "working": 427802,
+      "older": 40153
+    },
+    {
+      "uf": "TO",
+      "total": 1511460,
+      "young": 476359,
+      "working": 904637,
+      "older": 130464
+    },
+    {
+      "uf": "MA",
+      "total": 6776699,
+      "young": 2258494,
+      "working": 3945712,
+      "older": 572493
+    },
+    {
+      "uf": "PI",
+      "total": 3271199,
+      "young": 939292,
+      "working": 1983153,
+      "older": 348754
+    },
+    {
+      "uf": "CE",
+      "total": 8794957,
+      "young": 2451247,
+      "working": 5431151,
+      "older": 912559
+    },
+    {
+      "uf": "RN",
+      "total": 3302729,
+      "young": 898184,
+      "working": 2057254,
+      "older": 347291
+    },
+    {
+      "uf": "PB",
+      "total": 3974687,
+      "young": 1123196,
+      "working": 2412854,
+      "older": 438637
+    },
+    {
+      "uf": "PE",
+      "total": 9058931,
+      "young": 2580249,
+      "working": 5555282,
+      "older": 923400
+    },
+    {
+      "uf": "AL",
+      "total": 3127683,
+      "young": 969884,
+      "working": 1877919,
+      "older": 279880
+    },
+    {
+      "uf": "SE",
+      "total": 2210004,
+      "young": 642045,
+      "working": 1365967,
+      "older": 201992
+    },
+    {
+      "uf": "BA",
+      "total": 14141626,
+      "young": 3932030,
+      "working": 8703572,
+      "older": 1506024
+    },
+    {
+      "uf": "MG",
+      "total": 20539989,
+      "young": 5071510,
+      "working": 12925387,
+      "older": 2543092
+    },
+    {
+      "uf": "ES",
+      "total": 3833712,
+      "young": 997525,
+      "working": 2405204,
+      "older": 430983
+    },
+    {
+      "uf": "RJ",
+      "total": 16055174,
+      "young": 3868124,
+      "working": 10083859,
+      "older": 2103191
+    },
+    {
+      "uf": "SP",
+      "total": 44411238,
+      "young": 10832832,
+      "working": 28293220,
+      "older": 5285186
+    },
+    {
+      "uf": "PR",
+      "total": 11444380,
+      "young": 2956323,
+      "working": 7189187,
+      "older": 1298870
+    },
+    {
+      "uf": "SC",
+      "total": 7610361,
+      "young": 1903839,
+      "working": 4912083,
+      "older": 794439
+    },
+    {
+      "uf": "RS",
+      "total": 10882965,
+      "young": 2575578,
+      "working": 6775487,
+      "older": 1531900
+    },
+    {
+      "uf": "MS",
+      "total": 2757013,
+      "young": 805067,
+      "working": 1687500,
+      "older": 264446
+    },
+    {
+      "uf": "MT",
+      "total": 3658649,
+      "young": 1100486,
+      "working": 2276123,
+      "older": 282040
+    },
+    {
+      "uf": "GO",
+      "total": 7056495,
+      "young": 1940090,
+      "working": 4467532,
+      "older": 648873
+    },
+    {
+      "uf": "DF",
+      "total": 2817381,
+      "young": 742779,
+      "working": 1826026,
+      "older": 248576
+    }
+  ]
+}

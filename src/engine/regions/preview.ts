@@ -93,6 +93,7 @@ export function buildRegionalDecisionPreview(
     ufs,
     view.map((u) => u.structuralShare),
     regional,
+    state,
   );
 
   const hasAdhesion = policy.conditions.includes('adesao_estadual') && usesFormalRules(state);

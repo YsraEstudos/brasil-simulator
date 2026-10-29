@@ -27,6 +27,8 @@ import projetoMobilidadeUrbana from '@/data/policies/projeto_mobilidade_urbana.j
 import projetoRequalificacaoPortuaria from '@/data/policies/projeto_requalificacao_portuaria.json';
 import projetoSaneamentoResiliente from '@/data/policies/projeto_saneamento_resiliente.json';
 import projetoTransmissaoEnergia from '@/data/policies/projeto_transmissao_energia.json';
+import projetoGeracaoEnergia from '@/data/policies/projeto_geracao_energia.json';
+import projetoReservatorioEnergia from '@/data/policies/projeto_reservatorio_energia.json';
 import projetoSegurancaHidrica from '@/data/policies/projeto_seguranca_hidrica.json';
 import projetoDrenagemContencao from '@/data/policies/projeto_drenagem_contencao.json';
 import rotinaDefesaCivil from '@/data/policies/rotina_defesa_civil.json';
@@ -99,6 +101,8 @@ const RAW: readonly unknown[] = [
   projetoSaneamentoResiliente,
   projetoCorredoresLogisticos,
   projetoTransmissaoEnergia,
+  projetoGeracaoEnergia,
+  projetoReservatorioEnergia,
   projetoHabitacaoInteresseSocial,
   projetoConectividadePublica,
   projetoArmazenagemAgropecuaria,

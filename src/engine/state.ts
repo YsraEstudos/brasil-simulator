@@ -1,4 +1,6 @@
 import { initialEducation } from './education/education';
+import { initialDemography } from './demography/demography';
+import { initialEnergy } from './energy/energy';
 import type { Scenario } from '../types/scenario';
 import { DEFAULT_ENABLED_MODULES, normalizeModules, type ModuleId } from './modules';
 import {
@@ -219,6 +221,8 @@ export function createInitialState(c: NewCampaign): GameState {
     government: { profile: presetProfile(c.profile ?? DEFAULT_PROFILE_PRESET) },
     climate: initialClimate(c.seed),
     education: initialEducation(),
+    demography: initialDemography(scenario.regions?.ufs ?? [], c.content.censusAgeData),
+    energy: initialEnergy(),
     ...(administration
       ? {
           administrations: [administration],

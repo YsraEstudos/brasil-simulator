@@ -58,6 +58,8 @@ Versão 0.1 do documento • Fase 00 • 13/10/2026 • ✅ Revisado pelo autor 
 | `planalto` | Legislação compilada | Regras institucionais (POLITICAL_RULES.md) | planalto.gov.br | Texto legal público |
 | `datasus` / `inep` | DataSUS, INEP | Indicadores de saúde e educação (Fase 06) | sites oficiais | Verificar termos |
 
+**R6 — composição etária:** `scripts/data/build_demography.py` consulta o SIDRA, tabela 9514 (Censo 2022, população residente, sexo e forma de declaração totais), valida as faixas e gera `src/data/demography/census2022.json` com URL, data de recuperação, unidade e SHA-256 da resposta. O artefato contém observações de 2022; no cenário principal, suas proporções são aplicadas aos totais do cenário como estimativa inicial, não como observação de 2027. O app não consulta o IBGE em tempo de jogo. A fonte é atribuída; os [termos gerais do portal IBGE](https://www.ibge.gov.br/acesso-informacao/acoes-e-programas/politica-de-privacidade.html) estão identificados, mas as condições específicas de redistribuição da tabela SIDRA ainda precisam ser confirmadas antes de publicação.
+
 ### 3.1 Dados geográficos do globo (em uso desde 13/10/2026)
 
 | Dado | Fonte | Uso | Licença / atribuição |

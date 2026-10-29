@@ -13,6 +13,7 @@ import {
 import type { ActiveCampaign } from '@/store';
 
 import { EducationPanel } from './EducationPanel';
+import { ResourcesPanel } from './ResourcesPanel';
 import { SectorInvestmentsCard } from './SectorInvestments';
 import { signedPercent, StatRow } from './StatRow';
 import { SocietyPanel } from './SocietyPanel';
@@ -217,6 +218,7 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
       <SocietyPanel state={state} />
 
       <EducationPanel state={state} />
+      <ResourcesPanel state={state} />
     </>
   );
 }

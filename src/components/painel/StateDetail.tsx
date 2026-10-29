@@ -255,6 +255,15 @@ export function UfDetail({
   const actionsLeft = actionsMax - draftCost(draft, content);
   // A posse vem do próprio save (mês 0); sem o snapshot, valem os valores do cenário embutido.
   const startShare = baseline?.regions.ufs.find((u) => u.id === uf.id)?.share ?? scenarioUf?.gdpShare ?? uf.share;
+  const demographicTotal = state.demography.ufs.reduce(
+    (sum, item) => sum + item.ages.young + item.ages.working + item.ages.older,
+    0,
+  );
+  const localPopulation = state.demography.ufs.find((item) => item.id === uf.id)?.ages;
+  const populationShare =
+    localPopulation && demographicTotal > 0
+      ? (localPopulation.young + localPopulation.working + localPopulation.older) / demographicTotal
+      : row.populationShare;
 
   const fieldView = buildUfFieldView(uf.id, state, content);
   const seriesView = buildUfSeriesView({
@@ -273,7 +282,11 @@ export function UfDetail({
     ],
     ['Desemprego', formatPercent(uf.unemployment), `Brasil ${formatPercent(national.unemployment)}`],
     ['Aprovação do governo', formatPercent(uf.approval, 0), `Brasil ${formatPercent(national.approval, 0)}`],
-    ['PIB per capita (Brasil = 1)', formatNumber(uf.share / row.populationShare, 2), 'Brasil = 1,00'],
+    [
+      'PIB per capita (Brasil = 1)',
+      populationShare > 0 ? formatNumber(uf.share / populationShare, 2) : 'Sem dados',
+      'Brasil = 1,00',
+    ],
     ['Participação no PIB', formatPercent(uf.share, 2), `${formatPercent(startShare, 2)} na posse`],
   ];
 

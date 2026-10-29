@@ -67,7 +67,7 @@ export const opinionStep: MonthStep = (state, ctx) => {
   // Distância do perfil do governo ao eleitor mediano (PLANO_GLOBO.md §5.1, D-G10): termo pequeno e saturado.
   // Não age em cenários sem inclinação das UFs. Entra como pressão sobre a aprovação, como os demais termos.
   const ufs = regionsOf(ctx.content);
-  const medianTerm = nationalTermOf(state.government.profile, medianVoterOf(ufs, populationShares(ufs)));
+  const medianTerm = nationalTermOf(state.government.profile, medianVoterOf(ufs, populationShares(ufs, state)));
   candidates.push({
     indicator: 'approval',
     cause: 'eleitor_mediano',
@@ -77,7 +77,7 @@ export const opinionStep: MonthStep = (state, ctx) => {
 
   // Humor por chuva acima do normal e seca prolongada (PLANO_GLOBO.md §6.2): o nível nacional é a média dos termos das
   // UFs ponderada pela população, somada uma vez aqui; o `regionsStep` só a redistribui (D7). Pequeno e saturado.
-  for (const term of climateMoodTerms(state, ctx.content, populationShares(ufs))) {
+  for (const term of climateMoodTerms(state, ctx.content, populationShares(ufs, state))) {
     candidates.push({ indicator: 'approval', cause: term.cause, label: term.label, delta: adj * term.delta });
   }
 

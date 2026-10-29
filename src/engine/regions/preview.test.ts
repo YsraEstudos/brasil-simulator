@@ -225,3 +225,17 @@ describe('pureza da prévia (AI_INSTRUCTIONS.md §3: motor puro, sem sorteio)', 
     expect(createRng(state.rng).nextUint32()).toBe(createRng(JSON.parse(rngBefore)).nextUint32());
   });
 });
+
+it('prévia usa a mesma chave populacional corrente que a execução', () => {
+  const state = start();
+  state.demography.ufs.find((item) => item.id === 'SP')!.ages.working *= 2;
+  const policy = content.policies.infraestrutura_credito_adicional!;
+  const view = preview(state, policy.id);
+  const weights = keyWeights(
+    ufs,
+    state.regions.ufs.map((uf) => uf.structuralShare),
+    policy.regional!,
+    state,
+  );
+  view.ufs.forEach((item, i) => expect(item.weight).toBeCloseTo(weights[i], 12));
+});

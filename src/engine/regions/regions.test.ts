@@ -311,3 +311,38 @@ describe('campanhas com efeitos regionais (ECONOMIC_MODEL.md §9)', () => {
     expect(regionalDispersion(start().regions.ufs, content)).toBeGreaterThan(0.2);
   });
 });
+
+it('médias regionais acompanham a população atual após redistribuição entre UFs', () => {
+  const state = start();
+  const sp = state.demography.ufs.find((item) => item.id === 'SP')!;
+  sp.ages.working *= 2;
+  const next = advanceMonth(state, EMPTY, content).state;
+  const totals = new Map(
+    next.demography.ufs.map((item) => [item.id, item.ages.young + item.ages.working + item.ages.older]),
+  );
+  const population = ufs.reduce((sum, item) => sum + totals.get(item.id)!, 0);
+  const weighted = (field: 'approval' | 'unemployment') =>
+    next.regions.ufs.reduce((sum, item) => sum + (item[field] * totals.get(item.id)!) / population, 0);
+  expect(weighted('approval')).toBeCloseTo(next.indicators.approval, 10);
+  expect(weighted('unemployment')).toBeCloseTo(next.indicators.unemployment, 10);
+});
+
+it('dispersão per capita acompanha a população corrente', () => {
+  const state = start();
+  const initial = regionalDispersion(state.regions.ufs, content, state);
+  const sp = state.demography.ufs.find((item) => item.id === 'SP')!;
+  sp.ages.working *= 2;
+  expect(regionalDispersion(state.regions.ufs, content, state)).not.toBeCloseTo(initial, 4);
+});
+
+it('chave populacional de políticas acompanha o tamanho atual das UFs', () => {
+  const state = start();
+  const structural = state.regions.ufs.map((item) => item.structuralShare);
+  const regional = { key: 'populacao' as const, scope: [], boost: {} };
+  const before = keyWeights(ufs, structural, regional, state);
+  state.demography.ufs.find((item) => item.id === 'SP')!.ages.working *= 2;
+  const after = keyWeights(ufs, structural, regional, state);
+  const index = ufs.findIndex((item) => item.id === 'SP');
+  expect(after[index]).toBeGreaterThan(before[index]);
+  expect(after.reduce((sum, value) => sum + value, 0)).toBeCloseTo(1, 12);
+});

@@ -51,6 +51,8 @@ const CAMPOS_RELEVANTES = [
   'society',
   'government',
   'climate',
+  'demography',
+  'energy',
   'regions',
   'impulses',
   'court',
