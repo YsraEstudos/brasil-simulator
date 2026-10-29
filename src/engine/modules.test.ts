@@ -11,6 +11,7 @@ import {
   moduleEnabled,
   moduleSpec,
   normalizeModules,
+  type ModuleId,
 } from './modules';
 import { createInitialState } from './state';
 import type { GameState, MonthInput } from './types';
@@ -26,7 +27,7 @@ import type { GameState, MonthInput } from './types';
 const content = loadContent(DEFAULT_SCENARIO_ID);
 const EMPTY_MONTH: MonthInput = { decisions: [] };
 
-function run(months: number, modules: readonly ('clima_detalhado' | 'noticias')[]): GameState {
+function run(months: number, modules: readonly ModuleId[]): GameState {
   let state = createInitialState({ content, difficulty: 'estrategica', seed: 7, modules });
   for (let m = 0; m < months; m++) state = advanceMonth(state, EMPTY_MONTH, content).state;
   return state;
@@ -89,7 +90,7 @@ describe('tabela de módulos opcionais', () => {
 describe('efeito dos módulos', () => {
   it('desligar notícias não altera indicadores, sorteios nem relatório: só a camada publicada', () => {
     const withNews = run(6, [...DEFAULT_ENABLED_MODULES]);
-    const noNews = run(6, ['clima_detalhado']);
+    const noNews = run(6, ['clima_detalhado', 'crises_sanitarias']);
     expect(withNews.events.news.length).toBeGreaterThan(0);
     expect(noNews.events.news).toEqual([]);
     // Tudo o mais é idêntico, inclusive o PRNG principal e o clima (o módulo não consome sorteio).

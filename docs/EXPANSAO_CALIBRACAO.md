@@ -54,3 +54,41 @@ humano inicial ≈ 10,7 anos efetivos de estudo (estacionário da educação, R5
 e parceiro, falha parcial por chave, efeito gradual com soma exata no potencial, energia, certificação, tarifa, missão,
 acordo aprovado e rejeitado, choques por chave e 48 meses do pipeline completo com invariantes. Não houve exploração de
 sensibilidade, robôs específicos para as ações novas, sessões com jogadores nem medição em Android.
+
+## R8: saúde regional, surtos e imprensa
+
+Hipóteses de jogo `PROVISORIO`, não estimativas epidemiológicas. Regras em `src/engine/health/calibration.ts` e
+`src/engine/press/calibration.ts`; capacidade, doenças e medidas em `src/data/health/`; veículos em `src/data/press/`.
+
+| Parâmetro | Valor e unidade | Papel e limites |
+| --- | --- | --- |
+| Leitos SUS de partida | 1,5–1,9 por mil hab., ocupação habitual 75–80% | Folga de 20–25% para um surto antes do colapso. Ordem de grandeza do CNES por região. |
+| Hospitais regionais em operação | +8% dos leitos de partida em plena entrega | A obra de R$ 12 bi/ano por 2,5 anos abre dezenas de milhares de leitos. |
+| Vírus respiratório novo | R0 0,8–2,6; internação 0,8–2,5%; letalidade com leito 12%, sem leito 35%; 0,3%/mês | Abaixo de R0 1 o surto se apaga (alerta que dá em nada). Ver a comparação de estratégias abaixo. |
+| Dengue | R0 1,5–2,2; 30% imunes; sazonal, ×(1 + 0,6 × chuva acima do normal); 5%/mês na estação | Em 10 campanhas de 8 anos sem resposta: epidemias de dezenas de mil a ~7 milhões de casos notificados e de unidades a ~7 mil óbitos, ordem de grandeza de 2024. |
+| Detecção | 1 − exp(−4 × vigilância × notificados em milhares) | Vírus novo costuma virar alerta no 2º ou 3º mês; dengue, no 1º. |
+| Boletim | 60% dos casos e 50% dos óbitos no preliminar; ruído ±8% | A revisão do mês seguinte traz o resto. |
+| Medidas | Restrições: corte 50% × adesão, −2% do PIB em nível em plena adesão, desgaste 0,2 p.p./mês (até 1,6×); leitos: 25 mil, R$ 1,8 bi/mês; auxílio: R$ 9 bi/mês | Cada medida custa algo diferente (dinheiro, atividade, aprovação, ação de agenda); nenhuma resolve sozinha. |
+| Aprovação | 0,3 p.p. por óbito notificado/100 mil no mês; 1,5 p.p. com todo o país em colapso; saturação 5 p.p./mês | Notificado, não real: subnotificação protege no curto prazo e vira rumor verdadeiro. |
+| Confiança | Partida 0,5; transparência +3% da distância até 1 por mês; contradição −6 p.p.; negar verdade −10 p.p. | Muda adesão (0,5 por ponto acima de 0,5) e procura por vacina; nunca aprovação. |
+
+**Comparação de estratégias (semente 3, vírus novo com R0 1,9, internação 1,5%, vacina no mês 12, até o fim da crise):**
+
+| Estratégia | Óbitos notificados | Crédito extraordinário | Atividade perdida (modelo) | Aprovação no fim |
+| --- | --- | --- | --- | --- |
+| Não fazer nada | ~706 mil | R$ 0 | 2,8 pontos do PIB-mês | −17,2 p.p. |
+| Restringir sempre, leitos e vacina | ~386 mil | R$ 36 bi | 14,4 | −18,3 p.p. |
+| Restringir só quando a ocupação passa de 85%, leitos e vacina | ~470 mil | R$ 15 bi | 8,2 | −15,9 p.p. |
+
+Não agir mata quase o dobro; restringir sempre salva mais vidas, mas custa mais dinheiro, atividade e aprovação;
+agir no pico fica no meio e preserva melhor a aprovação. É uma única semente: a sensibilidade a R0, à vacina e às
+sementes ainda precisa ser explorada com robôs.
+
+**Verificação local (29/10/2026):** testes de conservação e não negatividade com parâmetros extremos, mobilidade,
+leitos, vacina, reconciliação das mortes com a demografia, alerta e investigação, faixas estimadas, custo único por mês
+e encerramento, critério de leitos e pedidos, boletins com revisão estável, salvar e reabrir no meio da crise, dois
+surtos ao mesmo tempo, balanço, módulo desligado por 120 meses e campanha de 240 meses com crises sorteadas e
+invariantes; imprensa (categorias, tom, checagem, confiança, desinformação sem efeito na realidade) e telas (sem
+sorteio, sem vazar a verdade). Não houve exploração sistemática de sensibilidade, robôs específicos para as ações
+novas, sessões com jogadores nem medição em Android.
+

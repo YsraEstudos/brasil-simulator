@@ -132,7 +132,10 @@ export function noPrevention(ufs: readonly ScenarioUf[]): Prevention {
 }
 
 /** A UF está no escopo do impulso (vazio = todas), como `inScope` das regiões (copiado para não cruzar módulos). */
-function inImpulseScope(uf: ScenarioUf, impulse: Pick<ScheduledImpulse, 'regional'>): boolean {
+export function inImpulseScope(
+  uf: Pick<ScenarioUf, 'id' | 'region'>,
+  impulse: Pick<ScheduledImpulse, 'regional'>,
+): boolean {
   const scope = impulse.regional?.scope ?? [];
   return scope.length === 0 || scope.includes(uf.region) || scope.includes(uf.id);
 }

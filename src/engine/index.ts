@@ -175,6 +175,11 @@ export {
   ADJUST_TARIFF_ACTION_ID,
   TRADE_MISSION_ACTION_ID,
   NEGOTIATE_AGREEMENT_ACTION_ID,
+  INVESTIGATE_ALERT_ACTION_ID,
+  ADOPT_MEASURE_ACTION_ID,
+  END_MEASURE_ACTION_ID,
+  COMMUNICATE_ACTION_ID,
+  PRESS_RESPONSE_ACTION_ID,
   URGENCY_ACTION_ID,
   VISIT_ACTION_ID,
   type AgendaAction,
@@ -447,6 +452,8 @@ export * from './education';
 export * from './skills';
 export * from './research';
 export * from './trade';
+export * from './health';
+export * from './press';
 export {
   agreementRegional,
   counterpartCoverage,

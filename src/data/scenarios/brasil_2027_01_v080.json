@@ -1207,6 +1207,8 @@
     "rotina_seguranca_viaria",
     "rotina_atencao_basica",
     "rotina_vigilancia_epidemiologica",
+    "rotina_imunizacao",
+    "rotina_controle_vetores",
     "rotina_alfabetizacao",
     "rotina_formacao_docente",
     "rotina_integracao_criminal",

@@ -1,0 +1,214 @@
+{
+  "version": "2026.10.1",
+  "status": "PROVISORIO",
+  "source": "Capacidade de partida por macrorregião em ordens de grandeza arredondadas: leitos de internação SUS por mil habitantes (CNES/DATASUS, série do CFM 2010–2023), cobertura da atenção primária (e-Gestor AB, competência abr/2024, nacional ~83%; série por região descontinuada depois dessa competência) e capacidade de vacinação inspirada no pico da campanha nacional de 2021 (PNI). Vigilância, doenças e medidas são hipóteses de jogo para equilibrar escolhas, não estimativas epidemiológicas; ver docs/EXPANSAO_CALIBRACAO.md (R8).",
+  "regions": {
+    "norte": {
+      "bedsPerThousand": 1.5,
+      "routineOccupancy": 0.75,
+      "primaryCoverage": 0.7,
+      "surveillance": 0.45,
+      "vaccinationPerMonth": 0.12
+    },
+    "nordeste": {
+      "bedsPerThousand": 1.7,
+      "routineOccupancy": 0.75,
+      "primaryCoverage": 0.85,
+      "surveillance": 0.5,
+      "vaccinationPerMonth": 0.15
+    },
+    "sudeste": {
+      "bedsPerThousand": 1.6,
+      "routineOccupancy": 0.8,
+      "primaryCoverage": 0.72,
+      "surveillance": 0.6,
+      "vaccinationPerMonth": 0.15
+    },
+    "sul": {
+      "bedsPerThousand": 1.9,
+      "routineOccupancy": 0.75,
+      "primaryCoverage": 0.8,
+      "surveillance": 0.6,
+      "vaccinationPerMonth": 0.15
+    },
+    "centro_oeste": {
+      "bedsPerThousand": 1.6,
+      "routineOccupancy": 0.75,
+      "primaryCoverage": 0.75,
+      "surveillance": 0.55,
+      "vaccinationPerMonth": 0.14
+    }
+  },
+  "diseases": [
+    {
+      "id": "arbovirose",
+      "name": "Epidemia de dengue",
+      "alertName": "Alta de casos de síndrome febril aguda",
+      "transmission": "vetorial",
+      "r0": [1.5, 2.2],
+      "latentDays": 10,
+      "infectiousDays": 7,
+      "hospitalRate": [0.005, 0.012],
+      "hospitalDays": 4,
+      "fatalityHospital": 0.025,
+      "fatalityOverflow": 0.08,
+      "fatalityCommunity": 0.0001,
+      "ageRisk": {
+        "young": 0.8,
+        "working": 1,
+        "older": 2.5
+      },
+      "mobility": 0.05,
+      "seasonality": [1, 1.1, 1.15, 1, 0.7, 0.4, 0.3, 0.3, 0.35, 0.5, 0.7, 0.85],
+      "rainSensitivity": 0.6,
+      "monthlyProbability": 0.05,
+      "priorImmunity": 0.3,
+      "seedThousands": 2,
+      "ascertainment": 0.35,
+      "workDaysLost": 3,
+      "vaccine": {
+        "monthsUntilAvailable": [0, 0],
+        "supplyPerMonth": 0.003,
+        "efficacy": 0.6
+      }
+    },
+    {
+      "id": "respiratorio_novo",
+      "name": "Vírus respiratório novo",
+      "alertName": "Aglomerado de síndrome respiratória aguda grave sem agente identificado",
+      "transmission": "respiratoria",
+      "r0": [0.8, 2.6],
+      "latentDays": 5,
+      "infectiousDays": 8,
+      "hospitalRate": [0.008, 0.025],
+      "hospitalDays": 10,
+      "fatalityHospital": 0.12,
+      "fatalityOverflow": 0.35,
+      "fatalityCommunity": 0.001,
+      "ageRisk": {
+        "young": 0.2,
+        "working": 1,
+        "older": 6
+      },
+      "mobility": 0.25,
+      "seasonality": [0.9, 0.9, 0.95, 1, 1.1, 1.15, 1.15, 1.1, 1, 0.95, 0.9, 0.9],
+      "rainSensitivity": 0,
+      "monthlyProbability": 0.003,
+      "priorImmunity": 0,
+      "seedThousands": 0.05,
+      "ascertainment": 0.2,
+      "workDaysLost": 2,
+      "vaccine": {
+        "monthsUntilAvailable": [8, 18],
+        "supplyPerMonth": 0.06,
+        "efficacy": 0.7
+      }
+    }
+  ],
+  "measures": [
+    {
+      "id": "testagem_rastreamento",
+      "name": "Testagem e rastreamento",
+      "summary": "Testes, isolamento de casos e busca de contatos pelas equipes de atenção básica. Melhora também os números que o governo enxerga.",
+      "transmissionCut": {
+        "respiratoria": 0.15,
+        "vetorial": 0.02
+      },
+      "monthlyMillions": 400,
+      "rampMonths": 1,
+      "activityLoss": 0,
+      "fatigue": 0,
+      "limits": [
+        "O efeito acompanha a cobertura da atenção básica de cada UF",
+        "Melhora as notificações e estreita as faixas das estimativas"
+      ]
+    },
+    {
+      "id": "controle_vetorial",
+      "name": "Mutirão contra o mosquito",
+      "summary": "Agentes de endemias, eliminação de criadouros e fumacê onde o surto se concentra.",
+      "transmissionCut": {
+        "respiratoria": 0,
+        "vetorial": 0.35
+      },
+      "monthlyMillions": 250,
+      "rampMonths": 1,
+      "activityLoss": 0,
+      "fatigue": 0,
+      "limits": [
+        "Só funciona contra doença transmitida por mosquito",
+        "Depende da adesão das famílias para eliminar criadouros"
+      ]
+    },
+    {
+      "id": "restricoes_circulacao",
+      "name": "Recomendar restrições de circulação",
+      "summary": "Recomendação federal de suspender eventos, aulas presenciais e trabalho não essencial, com apoio à fiscalização local.",
+      "transmissionCut": {
+        "respiratoria": 0.5,
+        "vetorial": 0.05
+      },
+      "monthlyMillions": 150,
+      "rampMonths": 0,
+      "activityLoss": 0.02,
+      "fatigue": 0.002,
+      "limits": [
+        "Governadores e prefeitos decidem as restrições; a União recomenda e coordena (STF, ADI 6.341)",
+        "Custa atividade econômica e aprovação a cada mês; a adesão cai com o cansaço e a desconfiança"
+      ]
+    },
+    {
+      "id": "leitos_emergencia",
+      "name": "Leitos de emergência",
+      "summary": "Hospitais de campanha e habilitação temporária de UTIs, distribuídos entre os estados por um critério escolhido pelo governo.",
+      "transmissionCut": {
+        "respiratoria": 0,
+        "vetorial": 0
+      },
+      "monthlyMillions": 1800,
+      "rampMonths": 1,
+      "activityLoss": 0,
+      "fatigue": 0,
+      "limits": [
+        "Equipamento e equipes são escassos: o lote nacional é limitado e precisa ser repartido",
+        "Não reduz a transmissão; reduz mortes por falta de leito"
+      ]
+    },
+    {
+      "id": "vacinacao_em_massa",
+      "name": "Campanha de vacinação",
+      "summary": "Compra de doses e campanha nacional nas salas de vacina do SUS.",
+      "transmissionCut": {
+        "respiratoria": 0,
+        "vetorial": 0
+      },
+      "monthlyMillions": 300,
+      "rampMonths": 0,
+      "activityLoss": 0,
+      "fatigue": 0,
+      "limits": [
+        "Só existe quando há vacina, e a oferta de doses é limitada",
+        "A velocidade depende da rede de vacinação (rotina de imunização)",
+        "Boatos sobre a vacina reduzem a procura"
+      ]
+    },
+    {
+      "id": "auxilio_emergencial",
+      "name": "Auxílio emergencial focalizado",
+      "summary": "Transferência temporária a trabalhadores informais e famílias pobres afetados pela crise.",
+      "transmissionCut": {
+        "respiratoria": 0,
+        "vetorial": 0
+      },
+      "monthlyMillions": 9000,
+      "rampMonths": 0,
+      "activityLoss": 0,
+      "fatigue": 0,
+      "limits": [
+        "Aumenta a adesão às restrições e reduz o desgaste delas: quem pode ficar em casa fica",
+        "Caro: entra como crédito extraordinário e aumenta a dívida",
+        "Sem restrições ativas, só sustenta a renda"
+      ]
+    }
+  ]
+}

@@ -35,6 +35,8 @@ import rotinaDefesaCivil from '@/data/policies/rotina_defesa_civil.json';
 import rotinaAlfabetizacao from '@/data/policies/rotina_alfabetizacao.json';
 import rotinaAssistenciaTecnicaRural from '@/data/policies/rotina_assistencia_tecnica_rural.json';
 import rotinaAtencaoBasica from '@/data/policies/rotina_atencao_basica.json';
+import rotinaControleVetores from '@/data/policies/rotina_controle_vetores.json';
+import rotinaImunizacao from '@/data/policies/rotina_imunizacao.json';
 import rotinaAtendimentoPrevidenciario from '@/data/policies/rotina_atendimento_previdenciario.json';
 import rotinaAvaliacaoContratos from '@/data/policies/rotina_avaliacao_contratos.json';
 import rotinaBuscaAtivaSocial from '@/data/policies/rotina_busca_ativa_social.json';
@@ -86,6 +88,9 @@ const RAW: readonly unknown[] = [
   rotinaSegurancaViaria,
   rotinaAtencaoBasica,
   rotinaVigilanciaEpidemiologica,
+  // R8 (PLANO_EXPANSAO EX-26): rotinas de saúde que só o cenário v0.8.0 oferece (`HEALTH_POLICY_IDS`).
+  rotinaImunizacao,
+  rotinaControleVetores,
   rotinaAlfabetizacao,
   rotinaFormacaoDocente,
   rotinaIntegracaoCriminal,
@@ -125,6 +130,9 @@ export const RAILWAY_POLICY_IDS: readonly string[] = [
   'projeto_ferrovia_integracao_oeste',
   'projeto_trem_regional_passageiros',
 ];
+
+/** Rotinas de saúde da R8 (PLANO_EXPANSAO EX-26): só o cenário v0.8.0 as oferece. */
+export const HEALTH_POLICY_IDS: readonly string[] = ['rotina_imunizacao', 'rotina_controle_vetores'];
 
 /** Políticas de prevenção climática do PR 13: citadas apenas pelo cenário v0.8.0 (os publicados não mudam). */
 export const PREVENTION_POLICY_IDS: readonly string[] = [

@@ -297,6 +297,18 @@ Código em `src/engine/skills/`; parâmetros em `SKILL_PARAMS`, `PROVISORIO`. A 
 
 ---
 
+### 6.8 Crise sanitária: federalismo, crédito extraordinário e comunicação (onda R8, EX-27/EX-28, motor 0.23.0)
+
+Código em `src/engine/health/` e `src/engine/press/`.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Restrições | A União **recomenda e coordena**; governadores e prefeitos decidem as restrições no seu território (competência comum em saúde, CF art. 23, II; STF, ADI 6.341, 2020). Por isso a adesão em cada UF pesa a relação com o governador (`peso_governador`). |
+| Custo da resposta | Medidas de emergência são pagas por crédito extraordinário (CF art. 167 §3º: despesas imprevisíveis e urgentes, como as de calamidade pública), fora do limite do arcabouço, mas com efeito na dívida. Investigação de campo é custeio. |
+| Pedidos dos governadores | Ocupação notificada ≥ `pedido_ocupacao` gera pedido de leitos; atendido se chegam `pedido_atendido` dos leitos pedidos (relação +), expirado em `pedido_meses` (relação −). O mesmo governador só pede de novo depois de `pedido_intervalo` meses. |
+| Ações | `investigar_alerta`, `adotar_medida` (com `criterion` nos leitos), `encerrar_medida`, `comunicar_crise` (tom) e `responder_imprensa` (`desmentir` ou `esclarecer`): uma ação de agenda cada, uma vez por alvo e mês. |
+| Comunicação | O tom muda adesão, confiança e a divulgação dos boletins; **não** mexe na aprovação. Tom tranquilizador fecha os boletins para a imprensa e torna verdadeiro o rumor de mortes escondidas quando a subnotificação real é grande. |
+
 ## 7. Sanção e veto
 1. Aprovado o projeto, o presidente tem **15 dias úteis** para sancionar ou vetar (no jogo: dentro do mesmo turno ou do seguinte). Silêncio = sanção tácita.
 2. Veto parcial só pode abranger texto integral de artigo, parágrafo, inciso ou alínea.

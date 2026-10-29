@@ -235,6 +235,22 @@ export const policySchema = z
         message: 'alavanca de educação sem efeito algum',
       })
       .optional(),
+    /**
+     * Alavancas de saúde (PLANO_EXPANSAO EX-26): força do programa em plena capacidade (0–1 por alavanca), no escopo
+     * regional da política. A carteira multiplica pela capacidade entregue; só a etapa da saúde lê. O gasto é o da
+     * própria rotina ou obra.
+     */
+    health: z
+      .object({
+        atencao_basica: z.number().min(0).max(1).optional(),
+        vigilancia: z.number().min(0).max(1).optional(),
+        hospitalar: z.number().min(0).max(1).optional(),
+        vacinacao: z.number().min(0).max(1).optional(),
+        prevencao: z.number().min(0).max(1).optional(),
+      })
+      .strict()
+      .refine((h) => Object.values(h).some((v) => (v ?? 0) > 0), { message: 'alavanca de saúde sem efeito algum' })
+      .optional(),
   })
   .strict()
   .superRefine((p, ctx) => {
@@ -247,6 +263,9 @@ export const policySchema = z
         path: ['federative'],
         message: 'obra federativa exige projeto com planejamento (é quando os governadores decidem)',
       });
+    }
+    if (p.health && p.delivery !== 'rotina' && p.delivery !== 'projeto') {
+      ctx.addIssue({ code: 'custom', path: ['health'], message: 'alavanca de saúde exige rotina ou projeto' });
     }
     if (p.education && p.delivery !== 'rotina' && p.delivery !== 'projeto') {
       ctx.addIssue({ code: 'custom', path: ['education'], message: 'alavanca de educação exige rotina ou projeto' });

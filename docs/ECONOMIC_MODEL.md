@@ -514,6 +514,74 @@ depois da árvore de tecnologias e antes da economia.
   importada mais caros). Sorteio por chave (semente, choque, parceiro, mês): não consome o PRNG compartilhado e não
   depende da ordem das outras ações.
 
+### 5.25 Saúde regional, surtos e resposta pública (onda R8 do plano de expansão, EX-26/EX-27, motor 0.23.0)
+
+Código em `src/engine/health/`; parâmetros em `HEALTH_PARAMS`; capacidade de partida, doenças e medidas em
+`src/data/health/saude_regional.json`; `PROVISORIO`. Estado em `GameState.health` (v27), do país. Etapa `healthStep`
+depois da comunicação de crise (§5.26) e antes da demografia.
+
+- **Capacidade (EX-26).** Por UF: leitos SUS (milhares), cobertura da atenção básica, vigilância (0–1), capacidade
+  mensal de vacinação e prevenção contra vetores. A de partida vem da macrorregião; a carteira existente muda o alvo
+  pelas alavancas `saude.<id>` (rotina com dotação liberada × força; hospital em operação × ativo líquido), e a
+  capacidade anda `ajuste_capacidade` por mês até ele. O gasto é o da rotina ou da obra: a saúde nunca emite despesa
+  pela capacidade. Capacidade (leitos permanentes + emergência), demanda (rotina + internados do surto) e utilização
+  (demanda ÷ capacidade) são grandezas separadas.
+- **Modelo compartimental (EX-27).** S → E → I → (H ou R), mortes saindo de I (letalidade fora do hospital) e de H
+  (letalidade com leito ou sem leito, pela fração dos internados acima dos leitos livres). `passos_mes` passos de 2 dias
+  por mês; cada fluxo é `estoque × (1 − exp(−taxa·dt))`, então nenhum compartimento fica negativo e
+  `S+E+I+H+R + mortes do mês = população do início do mês` exatamente. Mobilidade entre UFs: a força de infecção mistura
+  o contato local com o do país (`mobility`); ninguém muda de UF (a migração é da demografia). A população do surto é a
+  da demografia no início do mês (nascimentos e migração entram nos suscetíveis).
+- **Duas dinâmicas, um modelo.** Vírus respiratório novo: pessoa a pessoa, viaja entre UFs, risco etário alto nos
+  idosos, sem vacina por 8–18 meses. Dengue: vetorial, sazonal (verão), sobe com chuva acima do normal e cai com a
+  prevenção estrutural; imunidade prévia de parte da população; vacina existe com oferta pequena. A crise termina
+  quando quase ninguém está infectado ou, na doença endêmica, quando as infecções do mês caem abaixo de
+  `fim_fracao_pico` do pico.
+- **Verdade e observação.** A verdade do surto (R0, internação, mês da vacina) é sorteada por chave no início e nunca
+  mostrada. A vigilância notifica uma fração das infecções (`ascertainment` × vigilância × testagem) com ruído por chave;
+  o boletim do mês sai preliminar (`preliminar_casos`, `preliminar_obitos`) e é revisado no mês seguinte com as
+  notificações atrasadas, como publicação com revisão (§2.4 do plano). O alerta chega com chance
+  `1 − exp(−deteccao × Σ vigilância × notificados)`; o agente é identificado no mês seguinte a uma investigação de
+  campo ou depois de `meses_identificacao`. A estimativa de R e da internação é uma faixa que contém a verdade, nunca
+  centrada nela, mais estreita com vigilância, investigação, testagem e tempo.
+- **Medidas.** Testagem, mutirão contra o mosquito, recomendação de restrições, leitos de emergência (lote nacional
+  `leitos_lote`, repartido por critério: ocupação, população, pedidos ou aliados), vacinação e auxílio emergencial.
+  O corte da transmissão é `corte × execução × rampa`; execução é a adesão (restrições, mosquito) ou a atenção básica
+  (testagem). Adesão por UF: base + confiança (§5.26) + relação com o governador + auxílio + tom − cansaço − boatos,
+  limitada a [`adesao_min`, `adesao_max`].
+- **Canais únicos.** Mortes: contadas aqui (`monthDeaths` por faixa etária, pelo risco etário da doença) e retiradas
+  da população **só** pela demografia (`flows.epidemicDeaths`, dentro de `flows.deaths`), antes da migração do mês.
+  Atividade: afastamentos (`mult_afastamento` × infecções × dias perdidos ÷ força de trabalho) e restrições
+  (`activityLoss` × rampa × adesão) entram no hiato em nível (`choque.hiato` = nível − ρ_h × nível anterior, como a
+  energia e o comércio). Custo das medidas: `gasto.extraordinario` (crédito extraordinário); investigação:
+  `gasto.custeio`. Aprovação: óbitos **notificados** por 100 mil, população em UFs com ocupação **notificada** acima de
+  100% e desgaste das restrições (crescente até `cansaco_teto`, aliviado pelo auxílio), saturados por `tanh` em
+  `aprovacao_saturacao`. Governadores: pedido atendido ou expirado vira `governadores.relacao` na UF.
+- **Balanço.** Ao fim de uma crise visível, `CrisisReport` guarda o notificado (casos, óbitos, pior ocupação, pedidos,
+  gasto exato) e as estimativas (infecções e óbitos reais em faixa a partir do notificado; atividade e aprovação
+  atribuídas pelo modelo), sem copiar a verdade do motor.
+
+### 5.26 Imprensa interpretativa e confiança (onda R8 do plano de expansão, EX-28, motor 0.23.0)
+
+Código em `src/engine/press/`; parâmetros em `PRESS_PARAMS`; veículos fictícios e modelos de rumor em
+`src/data/press/imprensa.json`. Estado em `GameState.press` (v27). Duas etapas: `pressDecisionsStep` antes da saúde
+(tom e respostas valem no mês) e `pressStep` depois (checagem, confiança e itens).
+
+- **Quatro categorias.** Fato reproduz o boletim público (o número publicado, não a verdade) e a revisão relevante;
+  estimativa reproduz a faixa do governo; interpretação é a leitura de um veículo (viés + qualidade dos números
+  publicados, pedidos ignorados e tom tranquilizador); rumor é afirmação não verificada, com verdade decidida pelo motor
+  na origem (ocupação real acima de 100%, subnotificação real com boletins fechados, ou sempre falso) e resolvida pela
+  checagem em `meses_rumor`. Itens publicados não são reescritos (só o status do rumor muda, uma vez).
+- **Confiança.** 0–1, volta devagar ao nível de partida; sobe com transparência durante a crise e com desmentido
+  confirmado; cai com tom tranquilizador desmentido pelos números, alerta sem crise e desmentido de rumor verdadeiro.
+  Cada mudança fica no `trustLog` com causa. A confiança muda a adesão às medidas e a procura por vacina (§5.25);
+  **nunca** a aprovação: comunicar não é botão de popularidade.
+- **Rumor muda comportamento, não a realidade.** Um rumor em circulação reduz adesão e procura por vacina na região
+  onde o veículo circula (audiência × circulação restante); não altera parâmetros, compartimentos nem indicadores.
+  Testado: sem medidas em vigor, o surto é idêntico com ou sem boato.
+- **Leitura de manchete.** A interpretação de um veículo sobre a notícia mais recente é reconstruída pela interface de
+  forma determinística e não vai para o save (projeção que pode ser refeita, plano §2.4).
+
 ## 6. Parâmetros
 
 Os valores, faixas, significados e justificativas estão em `src/engine/economy/calibration.ts`.

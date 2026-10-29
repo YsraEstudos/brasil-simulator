@@ -1,0 +1,119 @@
+{
+  "version": "2026.10.1",
+  "status": "FICTICIO",
+  "source": "Veículos e boatos inventados para o Brasil Simulator (PLANO_EXPANSAO F15/EX-28). Nenhum nome corresponde a veículo real; viés, confiabilidade e alcance são hipóteses de jogo.",
+  "outlets": [
+    {
+      "id": "gazeta_nacional",
+      "name": "Gazeta Nacional",
+      "kind": "jornal",
+      "reach": "nacional",
+      "bias": 0,
+      "reliability": 0.85,
+      "sensationalism": 0.1,
+      "audience": 0.6
+    },
+    {
+      "id": "folha_planalto",
+      "name": "Folha do Planalto",
+      "kind": "jornal",
+      "reach": "nacional",
+      "bias": -0.4,
+      "reliability": 0.75,
+      "sensationalism": 0.2,
+      "audience": 0.5
+    },
+    {
+      "id": "tv_aurora",
+      "name": "TV Aurora",
+      "kind": "tv",
+      "reach": "nacional",
+      "bias": 0.3,
+      "reliability": 0.7,
+      "sensationalism": 0.35,
+      "audience": 1
+    },
+    {
+      "id": "ponto_critico",
+      "name": "Portal Ponto Crítico",
+      "kind": "portal",
+      "reach": "nacional",
+      "bias": -0.6,
+      "reliability": 0.5,
+      "sensationalism": 0.6,
+      "audience": 0.5
+    },
+    {
+      "id": "diario_norte",
+      "name": "Diário do Norte",
+      "kind": "jornal",
+      "reach": "norte",
+      "bias": 0,
+      "reliability": 0.7,
+      "sensationalism": 0.3,
+      "audience": 0.3
+    },
+    {
+      "id": "correio_sertao",
+      "name": "Correio do Sertão",
+      "kind": "jornal",
+      "reach": "nordeste",
+      "bias": 0.2,
+      "reliability": 0.7,
+      "sensationalism": 0.25,
+      "audience": 0.4
+    },
+    {
+      "id": "corrente_zap",
+      "name": "Correntes de mensagens",
+      "kind": "rede",
+      "reach": "nacional",
+      "bias": -0.2,
+      "reliability": 0.25,
+      "sensationalism": 0.95,
+      "audience": 0.9
+    }
+  ],
+  "rumors": [
+    {
+      "id": "leitos_colapso",
+      "headline": "Profissionais relatam falta de leitos em {uf} por causa de {doenca}",
+      "veracity": "ocupacao",
+      "adherenceHit": 0,
+      "vaccineHit": 0,
+      "needsVaccine": false
+    },
+    {
+      "id": "mortes_escondidas",
+      "headline": "Governo estaria escondendo mortes por {doenca}",
+      "veracity": "subnotificacao",
+      "adherenceHit": 0.04,
+      "vaccineHit": 0,
+      "needsVaccine": false
+    },
+    {
+      "id": "cura_caseira",
+      "headline": "Receita caseira curaria {doenca}, garante corrente",
+      "veracity": "falso",
+      "adherenceHit": 0.12,
+      "vaccineHit": 0.05,
+      "needsVaccine": false
+    },
+    {
+      "id": "surto_exagerado",
+      "headline": "{doenca} seria exagero da imprensa, dizem mensagens",
+      "veracity": "falso",
+      "adherenceHit": 0.15,
+      "vaccineHit": 0.05,
+      "needsVaccine": false
+    },
+    {
+      "id": "vacina_perigosa",
+      "headline": "Vacina contra {doenca} teria efeitos graves escondidos",
+      "veracity": "falso",
+      "adherenceHit": 0,
+      "vaccineHit": 0.25,
+      "needsVaccine": true
+    }
+  ]
+}

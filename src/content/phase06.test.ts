@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { parsePolicy } from '@/types/policy';
 
-import { POLICIES, PREVENTION_POLICY_IDS, RAILWAY_POLICY_IDS } from './policies';
+import { HEALTH_POLICY_IDS, POLICIES, PREVENTION_POLICY_IDS, RAILWAY_POLICY_IDS } from './policies';
 import { CAMPAIGN_MONTHS, LEGACY_SCENARIO_ID, PROTOTYPE_MONTHS, SCENARIOS, campaignMonths } from './scenarios';
 
 const validRoutine = {
@@ -96,6 +96,7 @@ describe('contratos de políticas da Fase 06', () => {
       (policy) =>
         !PREVENTION_POLICY_IDS.includes(policy.id) &&
         !RAILWAY_POLICY_IDS.includes(policy.id) &&
+        !HEALTH_POLICY_IDS.includes(policy.id) &&
         !['projeto_geracao_energia', 'projeto_reservatorio_energia'].includes(policy.id) &&
         !policy.id.startsWith('pauta_bomba_') &&
         !['orcamento_ppa', 'orcamento_ldo', 'orcamento_loa'].includes(policy.id),

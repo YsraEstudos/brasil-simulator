@@ -143,6 +143,22 @@ pipeline do INEP com coortes reais e calibrar o estacionário contra elas.
 - Ambos validados por Zod ao carregar (`src/types/technology.ts`, `src/types/trade.ts`). Antes de chamar qualquer valor
   de calibrado, conferir na fonte e registrar a consulta aqui.
 
+### 3.8 Saúde regional, surtos e imprensa (R8 do PLANO_EXPANSAO, EX-26/EX-27/EX-28, 29/10/2026)
+
+- `src/data/health/saude_regional.json` (versão `2026.10.1`, `PROVISORIO`). Capacidade de partida por macrorregião em
+  **ordens de grandeza arredondadas**: leitos de internação SUS por mil habitantes entre 1,5 (Norte) e 1,9 (Sul),
+  inspirados na série de leitos SUS por região do CNES/DATASUS compilada pelo CFM (2010–2023); cobertura da atenção
+  primária entre 70% e 85%, inspirada no e-Gestor AB (nacional ~83% em abr/2024; a série por região deixou de ser
+  acompanhável depois dessa competência); capacidade de vacinação de 12–15% da população por mês, inspirada no pico da
+  campanha nacional de 2021. **Não foram conferidas célula a célula**: o próximo passo é baixar a série do TabNet
+  (leitos de internação SUS por UF) e o painel do e-Gestor AB e registrar a consulta aqui. Ocupação habitual, vigilância,
+  doenças (faixas de R0, internação, letalidade, risco etário, sazonalidade) e medidas (custos, prazos, cortes) são
+  **hipóteses de jogo** para criar trade-offs, não estimativas epidemiológicas. A ordem de grandeza da dengue foi
+  conferida contra o ano de 2024 (milhões de casos prováveis e alguns milhares de óbitos), sem ajuste fino.
+- `src/data/press/imprensa.json` (`FICTICIO`): sete veículos inventados e cinco modelos de rumor. Nenhum nome
+  corresponde a veículo real (§7).
+- Ambos validados por Zod ao carregar (`src/types/health.ts`, `src/types/press.ts`).
+
 ## 4. Variáveis necessárias para o cenário jan/2027
 
 O cenário parte do **último dado oficial disponível** na data de congelamento e completa o intervalo até dez/2026 com `ESTIMADO` ou `PROJETADO`.

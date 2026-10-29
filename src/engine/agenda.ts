@@ -1,5 +1,10 @@
 import {
   ADJUST_TARIFF_ACTION_ID,
+  ADOPT_MEASURE_ACTION_ID,
+  COMMUNICATE_ACTION_ID,
+  END_MEASURE_ACTION_ID,
+  INVESTIGATE_ALERT_ACTION_ID,
+  PRESS_RESPONSE_ACTION_ID,
   AMENDMENTS_ACTION_ID,
   CERTIFY_EXPORT_ACTION_ID,
   FUND_TECHNOLOGY_ACTION_ID,
@@ -32,6 +37,8 @@ import { openCases } from './congress/cases';
 import { directorateOccupant, directoratesOf } from './congress/directorates';
 import { legislativeInstrument } from './congress/congress';
 import { declarationInTermWindow } from './elections/elections';
+import { validateAdoptMeasure, validateEndMeasure, validateInvestigateAlert } from './health/health';
+import { validateCommunicate, validatePressResponse } from './press/press';
 import { validateAdhesionNegotiation } from './publicPolicies/federative';
 import { validatePublicAction } from './publicPolicies/publicPolicies';
 import { validateCertifyExport, validateFundTechnology, validateSuspendTechnology } from './research/research';
@@ -158,6 +165,16 @@ export function validateActionTarget(
       return validateTradeMission(params, state, content);
     case NEGOTIATE_AGREEMENT_ACTION_ID:
       return validateNegotiateAgreement(params, state, content);
+    case INVESTIGATE_ALERT_ACTION_ID:
+      return validateInvestigateAlert(params, state);
+    case ADOPT_MEASURE_ACTION_ID:
+      return validateAdoptMeasure(params, state, content);
+    case END_MEASURE_ACTION_ID:
+      return validateEndMeasure(params, state);
+    case COMMUNICATE_ACTION_ID:
+      return validateCommunicate(params, state, content);
+    case PRESS_RESPONSE_ACTION_ID:
+      return validatePressResponse(params, state);
     default:
       return null;
   }

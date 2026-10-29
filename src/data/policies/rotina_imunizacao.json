@@ -1,0 +1,48 @@
+{
+  "id": "rotina_imunizacao",
+  "name": "Rotina de imunização",
+  "summary": "Amplia salas de vacina, rede de frio e equipes do programa nacional de imunização, para campanhas mais rápidas. Dados e custos PROVISORIO.",
+  "area": "saude",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": 1500,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": {
+    "planningMonths": 0,
+    "expectedLegislativeMonths": 0,
+    "executionMonths": 0,
+    "maturationMonths": 3
+  },
+  "conditions": [],
+  "impacts": [
+    {
+      "channel": "custeio",
+      "magnitude": 1500,
+      "lagMonths": 1
+    }
+  ],
+  "risks": [
+    {
+      "kind": "baixa_adesao",
+      "probability": 0.1
+    }
+  ],
+  "affected": {
+    "groups": ["usuarios_de_servicos_publicos"],
+    "sectors": ["servicos"],
+    "regions": ["nacional"]
+  },
+  "position": {
+    "economic": -0.1,
+    "social": -0.1
+  },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina",
+  "health": {
+    "vacinacao": 1
+  }
+}
