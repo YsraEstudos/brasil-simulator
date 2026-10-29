@@ -10,6 +10,7 @@ import { climateEvolutionStep } from './climate/evolution';
 import { cabinetStep } from './congress/cabinet';
 import { congressStep } from './congress/congress';
 import { economyStep } from './economy/economy';
+import { educationStep } from './education/education';
 import { resolveEventsStep, triggerEventsStep } from './events/events';
 import { pruneImpulses } from './impulses';
 import { appendNews, generateNews } from './news';
@@ -18,6 +19,7 @@ import { opinionStep } from './politics/opinion';
 import { governmentProfileStep } from './politics/profile';
 import { publicPoliciesStep, reservePublicAction } from './publicPolicies/publicPolicies';
 import { budgetDraftOf, isBudgetPolicy } from './publicPolicies/budgetLaws';
+import { skillsStep } from './skills/skills';
 import { societyStep } from './society/society';
 import { proposalsStep, reissueBarredPolicies } from './proposals/proposals';
 import { regionsStep } from './regions/regions';
@@ -40,7 +42,9 @@ import {
 
 /**
  * Etapas do mês, na ordem do pipeline (ECONOMIC_MODEL.md §4): respostas a eventos, nomeações de ministros,
- * propostas e Congresso (negociação, votações, sanção, execução), relações com os blocos, perfil ideológico do
+ * propostas e Congresso (negociação, votações, sanção, execução), carteira de políticas públicas, educação por coorte
+ * (PLANO_EXPANSAO EX-19: lê as alavancas que a carteira acabou de emitir e entrega o capital humano à economia do
+ * mesmo mês), treino de habilidades (EX-21), relações com os blocos, perfil ideológico do
  * governo (PLANO_GLOBO.md §5.1), clima (PLANO_GLOBO.md §6.2: dano agregado antes da economia), economia, opinião
  * pública, eleições (FASE_08.md), distribuição às UFs (ECONOMIC_MODEL.md §5.15; o efeito regional do clima entra aqui), posse dos governadores
  * eleitos, resultado simulado por UF da eleição geral (PLANO_GLOBO.md §5.3; sem sorteio) e, por fim, sorteio dos
@@ -57,6 +61,8 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
   proposalsStep,
   congressStep,
   publicPoliciesStep,
+  educationStep,
+  skillsStep,
   governmentProfileStep,
   climateEvolutionStep,
   economyStep,

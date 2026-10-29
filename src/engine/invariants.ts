@@ -4,6 +4,7 @@ import { usesFormalRules } from './campaignConfig';
 import { electedOutcome } from './career/election';
 import { nationalRecognition } from './career/viability';
 import { checkClimate } from './climate/climate';
+import { checkEducation } from './education/education';
 import { MEMORY_MONTHS } from './elections/elections';
 import { populationShares, regionsOf } from './regions/regions';
 import { checkSociety } from './society/society';
@@ -203,6 +204,11 @@ export function checkInvariants(
 
   if (next.society !== prev.society) errors.push(...checkSociety(next.society, next));
   errors.push(...checkPublicPolicies(next));
+
+  // Educação por coorte (PLANO_EXPANSAO EX-19; plano §6.1): coortes conservadas e fluxo dentro do estoque.
+  if (prev.education && next.education && next.education !== prev.education) {
+    errors.push(...checkEducation(prev.education, next.education));
+  }
 
   // Diretorias de estatais (Fase C6a): cada troca grava um cargo do cenário, um ocupante possível e um mês já vivido.
   if (content && next.congress.directorates) {

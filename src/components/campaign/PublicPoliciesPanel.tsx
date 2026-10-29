@@ -10,6 +10,7 @@ import {
   budgetDraftOf,
   DIRECTIVE_ACTION_ID,
   ministriesOf,
+  NEGOTIATE_ADHESION_ACTION_ID,
   projectCommitments,
   toCalendar,
   validateActionTarget,
@@ -21,8 +22,9 @@ import type { PublicPolicyState, PublicProject } from '@/engine/publicPolicies/t
 import { useTheme } from '@/hooks/use-theme';
 import { decisionCost, fits, gameStore, hasDecision, useGame, type AgendaDraft } from '@/store';
 
+import { agreementView } from './federativeView';
 import { GovernmentBrands } from './GovernmentBrands';
-import { PROPOSAL_IN_PROGRESS, PROPOSAL_STATUS_LABEL } from './labels';
+import { PROJECT_BOTTLENECK_LABEL, PROPOSAL_IN_PROGRESS, PROPOSAL_STATUS_LABEL } from './labels';
 import { currentDirective } from './publicPolicyView';
 
 const DIRECTIVE_ACTION = AGENDA_ACTIONS[DIRECTIVE_ACTION_ID];
@@ -157,6 +159,7 @@ export function PublicPoliciesPanel({ state, content, actionsMax }: PublicPolici
         content={content}
         projects={projects}
         capitalStockMillions={publicState.capitalStockMillions}
+        actionsMax={actionsMax}
       />
       <GovernmentBrands state={state} content={content} actionsMax={actionsMax} />
     </View>
@@ -359,12 +362,15 @@ function ProjectWallet({
   content,
   projects,
   capitalStockMillions,
+  actionsMax,
 }: {
   state: GameState;
   content: GameContent;
   projects: readonly PublicProject[];
   capitalStockMillions: number;
+  actionsMax: number;
 }) {
+  const draft = useGame((s) => s.draft);
   const commitments = projectCommitments(state, content);
   return (
     <Card
@@ -406,13 +412,8 @@ function ProjectWallet({
             project.delayMonths > 0
               ? ` · atraso ${project.delayMonths} ${project.delayMonths === 1 ? 'mês' : 'meses'}`
               : '';
-          const bottleneck = {
-            capacidade: 'capacidade de gestão na etapa',
-            orcamento: 'orçamento disponível',
-            suspensao: 'projeto suspenso',
-            cronograma: 'intervalo previsto no cronograma',
-            nenhum: 'nenhum identificado neste mês',
-          }[project.bottleneck ?? 'nenhum'];
+          const bottleneck = PROJECT_BOTTLENECK_LABEL[project.bottleneck ?? 'nenhum'];
+          const agreement = agreementView(project, state, content);
           return (
             <View key={project.proposalId} style={styles.project}>
               <Text variant="label">{title}</Text>
@@ -425,6 +426,45 @@ function ProjectWallet({
               <Text variant="caption" color="textSecondary">
                 Limitação principal: {bottleneck}.
               </Text>
+              {agreement && (
+                <View style={styles.agreement}>
+                  <Text variant="caption">{agreement.summary}</Text>
+                  <Text variant="caption" color="textSecondary">
+                    {agreement.detail}
+                  </Text>
+                  {agreement.outside && (
+                    <Text variant="caption" color="textSecondary">
+                      {agreement.outside}
+                    </Text>
+                  )}
+                  {agreement.negotiable.map((member) => {
+                    const decision: Decision = {
+                      policyId: NEGOTIATE_ADHESION_ACTION_ID,
+                      agendaCost: decisionCost({ policyId: NEGOTIATE_ADHESION_ACTION_ID, agendaCost: 1 }, content) || 1,
+                      params: { proposalId: project.proposalId, uf: member.uf },
+                    };
+                    const selected = hasDecision(draft, decision);
+                    const available = selected || fits(draft, decision, content, actionsMax);
+                    return (
+                      <View key={member.uf} style={styles.agreement}>
+                        <Text variant="caption" color="textSecondary">
+                          {member.text}
+                        </Text>
+                        <Button
+                          label={
+                            selected ? `Retirar negociação com ${member.uf}` : `Negociar com ${member.uf} (1 ação)`
+                          }
+                          variant={selected ? 'primary' : 'secondary'}
+                          disabled={!available}
+                          accessibilityHint="A União assume parte da contrapartida estadual e o governador decide de novo."
+                          onPress={() => gameStore.getState().toggleDecision(decision)}
+                          block
+                        />
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
             </View>
           );
         })
@@ -444,6 +484,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     paddingTop: Spacing.two,
   },
+  agreement: { gap: Spacing.one, paddingTop: Spacing.one },
   input: {
     minHeight: 48,
     borderWidth: StyleSheet.hairlineWidth,

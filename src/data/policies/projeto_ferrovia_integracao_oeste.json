@@ -1,0 +1,34 @@
+{
+  "id": "projeto_ferrovia_integracao_oeste",
+  "name": "Ferrovia de integração Barreiras–Figueirópolis",
+  "summary": "Obra do trecho planejado que liga o oeste baiano à Ferrovia Norte-Sul, para levar grãos e minério ao litoral por trilho. Prazo longo, licenciamento ambiental pesado e manutenção baixa por tonelada. Dados e custos PROVISORIO.",
+  "area": "infraestrutura",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": { "annualMillions": 3500, "disbursementProfile": [0.15, 0.3, 0.35, 0.2] },
+  "fundingSources": ["credito_adicional"],
+  "timeline": { "planningMonths": 4, "expectedLegislativeMonths": 5, "executionMonths": 48, "maturationMonths": 18 },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    { "channel": "investimento_publico", "magnitude": 3500, "lagMonths": 8 },
+    { "channel": "custeio", "magnitude": 250, "lagMonths": 56 },
+    { "channel": "aprovacao", "magnitude": 0.005, "lagMonths": 8 }
+  ],
+  "risks": [
+    { "kind": "atraso", "probability": 0.4 },
+    { "kind": "sobrecusto", "probability": 0.3 },
+    { "kind": "judicializacao", "probability": 0.15 }
+  ],
+  "affected": {
+    "groups": ["produtores_rurais", "transportadores", "trabalhadores_construcao"],
+    "sectors": ["agropecuaria", "industria", "construcao"],
+    "regions": ["nordeste", "norte"]
+  },
+  "regional": { "key": "pib", "scope": ["BA", "TO"], "boost": {} },
+  "position": { "economic": 0.1, "social": 0 },
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": { "licensingMonths": 18, "procurementMonths": 10, "efficiency": 0.7, "annualMaintenanceRate": 0.025 },
+  "railway": { "segmentId": "fiol_3", "kind": "construcao" }
+}

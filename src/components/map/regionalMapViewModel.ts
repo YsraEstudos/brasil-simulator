@@ -4,6 +4,7 @@ import type { ElectionResult } from '@/engine';
 import { NO_CLIMATE_OVERLAY, type ClimateOverlay } from './climateView';
 import { badgeText } from './electoralView';
 import type { MapMarker } from './markersView';
+import type { RailwayOverlay } from './railwayView';
 
 /**
  * Modelo de dados do mapa regional, independente do renderizador (PLANO_GLOBO.md §3.4): o globo 3D (`GlobeView`) e o
@@ -50,6 +51,8 @@ export interface RegionalMapViewModel {
    * (ele recebe a textura de clima); o 2D leve o ignora.
    */
   climate: ClimateOverlay;
+  /** Camada Ferrovias (`railwayView`): as mesmas linhas no globo e no 2D completo; `null` = camada desligada. */
+  railways: RailwayOverlay | null;
 }
 
 export interface RegionalMapViewModelInput {
@@ -64,6 +67,7 @@ export interface RegionalMapViewModelInput {
   labels?: readonly MapLabel[];
   markers?: readonly MapMarker[];
   climate?: ClimateOverlay;
+  railways?: RailwayOverlay | null;
   /** Última fotografia da eleição geral: dá a data ao selo da camada Resultado. */
   election?: ElectionResult | null;
 }
@@ -96,6 +100,7 @@ export function buildRegionalMapViewModel(input: RegionalMapViewModelInput = {})
     labels,
     markers,
     climate,
+    railways = null,
     election = null,
   } = input;
   const derived = mode === 'indicator' && indicator && fills ? indicatorLegend(indicator, election) : null;
@@ -107,5 +112,6 @@ export function buildRegionalMapViewModel(input: RegionalMapViewModelInput = {})
     labels: labels ?? NONE,
     markers: markers ?? NONE,
     climate: climate ?? NO_CLIMATE_OVERLAY,
+    railways,
   };
 }

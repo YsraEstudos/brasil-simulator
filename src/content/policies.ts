@@ -18,6 +18,8 @@ import transferenciaRendaAmpliacao from '@/data/policies/transferencia_renda_amp
 import projetoArmazenagemAgropecuaria from '@/data/policies/projeto_armazenagem_agropecuaria.json';
 import projetoConectividadePublica from '@/data/policies/projeto_conectividade_publica.json';
 import projetoCorredoresLogisticos from '@/data/policies/projeto_corredores_logisticos.json';
+import projetoFerroviaIntegracaoOeste from '@/data/policies/projeto_ferrovia_integracao_oeste.json';
+import projetoTremRegionalPassageiros from '@/data/policies/projeto_trem_regional_passageiros.json';
 import projetoEscolasTempoIntegral from '@/data/policies/projeto_escolas_tempo_integral.json';
 import projetoHabitacaoInteresseSocial from '@/data/policies/projeto_habitacao_interesse_social.json';
 import projetoHospitaisRegionais from '@/data/policies/projeto_hospitais_regionais.json';
@@ -102,6 +104,9 @@ const RAW: readonly unknown[] = [
   projetoArmazenagemAgropecuaria,
   projetoMobilidadeUrbana,
   projetoRequalificacaoPortuaria,
+  // R5 (PLANO_EXPANSAO EX-30): obras ferroviárias de carga e de passageiros, ligadas a trechos da rede nacional.
+  projetoFerroviaIntegracaoOeste,
+  projetoTremRegionalPassageiros,
   // PR 13 do PLANO_GLOBO (prevenção hídrica e Defesa Civil): só o cenário v0.8.0 as oferece (`PREVENTION_POLICY_IDS`).
   projetoSegurancaHidrica,
   projetoDrenagemContencao,
@@ -109,6 +114,12 @@ const RAW: readonly unknown[] = [
   // Pautas-bomba (PLANO_CAMPANHA.md Fase C6c): fora de `scenario.policies`, só o Congresso as aprova.
   pautaBombaReajusteServidores,
   pautaBombaDesoneracaoFolha,
+];
+
+/** Obras ferroviárias da R5 (PLANO_EXPANSAO EX-30): como as de prevenção, só o cenário v0.8.0 as oferece. */
+export const RAILWAY_POLICY_IDS: readonly string[] = [
+  'projeto_ferrovia_integracao_oeste',
+  'projeto_trem_regional_passageiros',
 ];
 
 /** Políticas de prevenção climática do PR 13: citadas apenas pelo cenário v0.8.0 (os publicados não mudam). */

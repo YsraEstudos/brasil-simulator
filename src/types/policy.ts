@@ -202,9 +202,55 @@ export const policySchema = z
       .optional(),
     /** Metadados de fases de um projeto explícito. */
     project: projectSchema.optional(),
+    /**
+     * Obra ferroviária sobre um trecho da rede nacional (PLANO_EXPANSAO EX-30): o mapa desenha a proposta do governo
+     * em cima do trecho (`src/data/railways/`). Só vale para projeto; o motor não lê este campo.
+     */
+    railway: z
+      .object({ segmentId: contentIdSchema, kind: z.enum(['construcao', 'recuperacao']) })
+      .strict()
+      .optional(),
+    /**
+     * Obra federativa (PLANO_EXPANSAO EX-20; POLITICAL_RULES.md §2.1.1): executada por convênio com os estados do
+     * escopo regional. Cada governador decide aderir no planejamento; quem adere paga `counterpartShare` do valor da obra
+     * no seu território e o convênio vale `termMonths` a partir da assinatura. Só para projeto com planejamento.
+     */
+    federative: z
+      .object({ counterpartShare: z.number().min(0).max(0.9), termMonths: monthsSchema.min(12) })
+      .strict()
+      .optional(),
+    /**
+     * Alavancas de educação (PLANO_EXPANSAO EX-19): força do programa em plena capacidade (0–1 por alavanca). A carteira
+     * multiplica pela capacidade entregue (dotação liberada da rotina, ativo em operação do projeto); só a etapa da
+     * educação lê. Nunca mexe direto na economia.
+     */
+    education: z
+      .object({
+        alfabetizacao: z.number().min(0).max(1).optional(),
+        permanencia: z.number().min(0).max(1).optional(),
+        docentes: z.number().min(0).max(1).optional(),
+      })
+      .strict()
+      .refine((e) => (e.alfabetizacao ?? 0) > 0 || (e.permanencia ?? 0) > 0 || (e.docentes ?? 0) > 0, {
+        message: 'alavanca de educação sem efeito algum',
+      })
+      .optional(),
   })
   .strict()
   .superRefine((p, ctx) => {
+    if (p.railway && p.delivery !== 'projeto') {
+      ctx.addIssue({ code: 'custom', path: ['railway'], message: 'obra ferroviária só existe como projeto' });
+    }
+    if (p.federative && (p.delivery !== 'projeto' || p.timeline.planningMonths < 1)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['federative'],
+        message: 'obra federativa exige projeto com planejamento (é quando os governadores decidem)',
+      });
+    }
+    if (p.education && p.delivery !== 'rotina' && p.delivery !== 'projeto') {
+      ctx.addIssue({ code: 'custom', path: ['education'], message: 'alavanca de educação exige rotina ou projeto' });
+    }
     const legislative = p.instruments.some((i) => LEGISLATIVE_INSTRUMENTS.includes(i));
     if (!legislative && p.timeline.expectedLegislativeMonths > 0) {
       ctx.addIssue({

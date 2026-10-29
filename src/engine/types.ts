@@ -1,3 +1,5 @@
+import type { EducationState } from './education/types';
+import type { SkillsState } from './skills/types';
 import type { GameEvent } from '../types/event';
 import type { Policy } from '../types/policy';
 import type { RegionalKey, RegionalScope } from '../types/regions';
@@ -13,10 +15,10 @@ import type { IllicitState } from './career/illicit';
 import type { CampaignConfigV2 } from './campaignConfig';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 21;
+export const STATE_SCHEMA_VERSION = 23;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.17.0';
+export const ENGINE_VERSION = '0.19.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -205,6 +207,7 @@ export interface EconomyState {
  * | `governadores.relacao` | variação da relação dos governadores do escopo em cada mês ativo (−100…100) | regiões |
  * | `clima.prevencao_seca` | força da prevenção contra a seca nas UFs do escopo enquanto ativo (0–1 por programa; soma por UF, saturada em `prevencao_teto`); não mexe na chuva nem na seca, só no dano | clima |
  * | `clima.prevencao_cheia` | idem, contra o dano das cheias e da chuva excessiva | clima |
+ * | `educacao.alfabetizacao` / `educacao.permanencia` / `educacao.docentes` | força da alavanca educacional enquanto ativo (0–1 por programa × capacidade entregue; saturada em `alavanca_escala`); só muda taxas e aprendizagem das coortes | educação |
  */
 export type ImpulseTarget =
   | 'gasto.investimento'
@@ -234,7 +237,10 @@ export type ImpulseTarget =
   | 'regiao.aprovacao'
   | 'governadores.relacao'
   | 'clima.prevencao_seca'
-  | 'clima.prevencao_cheia';
+  | 'clima.prevencao_cheia'
+  | 'educacao.alfabetizacao'
+  | 'educacao.permanencia'
+  | 'educacao.docentes';
 
 /**
  * Incidência regional de um impulso (ECONOMIC_MODEL.md §5.15): como o efeito se reparte entre as UFs. Sem ela,
@@ -820,6 +826,13 @@ export interface GameState {
   administrations?: AdministrationIdentity[];
   /** Personagem controlado pelo jogador (EX-17); segue a Presidência quando há troca legítima de governo. */
   control?: ControlIdentity;
+  /** Educação por coorte (v23; PLANO_EXPANSAO EX-19): matrículas, fluxo, aprendizagem e escolaridade da força de trabalho. */
+  education: EducationState;
+  /**
+   * Habilidades dos personagens (v23; PLANO_EXPANSAO EX-21), por id de personagem. Ausente até o primeiro treino: antes
+   * dele, o estado é o mesmo com o sistema ligado ou desligado.
+   */
+  skills?: SkillsState;
 }
 
 /** Situação de um pedido de impeachment na Câmara (Fase C6e). */

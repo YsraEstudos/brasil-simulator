@@ -341,3 +341,48 @@ void main() {
   vec3 color = mix(vec3(0.063, 0.078, 0.110), vec3(1.0), fill);
   gl_FragColor = vec4(color, alpha);
 }`;
+
+/**
+ * Ferrovias (PLANO_EXPANSAO EX-30): fita com largura constante em px. `position` é o centro na esfera unitária,
+ * `aOffset` a direção lateral (com o fator de esquina) e `aSide` o lado. A meia largura em px vira distância de mundo
+ * pela distância da câmera até o vértice (`uPxAngle` = ângulo de um px), então a linha não afina na borda do disco.
+ * O traço é medido em px ao longo da linha (`aDist` em rad ÷ rad por px). Some no hemisfério oculto (`vFacing`).
+ */
+export const railVertexShader = /* glsl */ `
+precision highp float;
+attribute vec3 aOffset;
+attribute float aSide;
+attribute float aDist;
+uniform float uRadius;
+uniform float uHalfWidthPx;
+uniform float uPxAngle;
+varying float vFacing;
+varying float vSide;
+varying float vDistPx;
+void main() {
+  vec3 center = position * uRadius;
+  vec4 wc = modelMatrix * vec4(center, 1.0);
+  float radPerPx = length(cameraPosition - wc.xyz) * uPxAngle;
+  vec3 world = center + aOffset * aSide * uHalfWidthPx * radPerPx;
+  vec4 wp = modelMatrix * vec4(world, 1.0);
+  vFacing = dot(normalize(wc.xyz), normalize(cameraPosition - wc.xyz));
+  vSide = aSide;
+  vDistPx = aDist * uRadius / max(radPerPx, 1e-9);
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}`;
+
+export const railFragmentShader = /* glsl */ `
+precision mediump float;
+uniform vec3 uColor;
+uniform float uOpacity;
+uniform vec2 uDash; // traço e vão em px; vão 0 = contínua
+uniform float uFeather; // fração da meia largura usada para suavizar a borda
+varying float vFacing;
+varying float vSide;
+varying float vDistPx;
+void main() {
+  if (vFacing < 0.0) discard;
+  if (uDash.y > 0.0 && mod(vDistPx, uDash.x + uDash.y) > uDash.x) discard;
+  float edge = 1.0 - smoothstep(1.0 - uFeather, 1.0, abs(vSide));
+  gl_FragColor = vec4(uColor, uOpacity * edge);
+}`;

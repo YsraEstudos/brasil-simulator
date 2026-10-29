@@ -1,0 +1,867 @@
+{
+  "version": "2026.10.1",
+  "status": "PROVISORIO",
+  "referenceDate": "2025-12",
+  "source": "Compilação manual a partir de ANTT (Declaração de Rede, relatórios das concessões) e Ministério dos Transportes (Plano Nacional de Logística, Novo PAC). Não importado por pipeline; revisar antes de usar como dado oficial.",
+  "geometry": "Traçado esquemático: linhas retas entre cidades de referência. Não representa o eixo real da via nem todos os ramais.",
+  "corridors": [
+    {
+      "id": "ef_carajas",
+      "name": "Estrada de Ferro Carajás",
+      "shortName": "EFC",
+      "usage": "misto",
+      "gauge": "larga",
+      "operator": "Vale",
+      "ufs": ["PA", "MA"],
+      "connections": ["Terminal Marítimo de Ponta da Madeira (São Luís)", "Ferrovia Norte-Sul (Açailândia)"],
+      "segments": [
+        {
+          "id": "efc_principal",
+          "name": "Carajás – São Luís",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-50.15, -6.06],
+            [-49.9, -6.07],
+            [-49.12, -5.37],
+            [-47.5, -4.95],
+            [-45.38, -3.67],
+            [-44.37, -2.57]
+          ],
+          "lengthKm": 892,
+          "note": "Trem de passageiros regular entre São Luís e Parauapebas."
+        }
+      ],
+      "source": "ANTT, Declaração de Rede da EFC"
+    },
+    {
+      "id": "ef_vitoria_minas",
+      "name": "Estrada de Ferro Vitória a Minas",
+      "shortName": "EFVM",
+      "usage": "misto",
+      "gauge": "metrica",
+      "operator": "Vale",
+      "ufs": ["MG", "ES"],
+      "connections": ["Porto de Tubarão (Vitória)", "Ferrovia Centro-Atlântica (Belo Horizonte)"],
+      "segments": [
+        {
+          "id": "efvm_principal",
+          "name": "Belo Horizonte – Vitória",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-43.94, -19.92],
+            [-43.23, -19.62],
+            [-42.54, -19.47],
+            [-41.95, -18.85],
+            [-41.06, -19.5],
+            [-40.63, -19.54],
+            [-40.25, -20.28]
+          ],
+          "lengthKm": 905,
+          "note": "Trem de passageiros diário entre Belo Horizonte e Cariacica."
+        }
+      ],
+      "source": "ANTT, Declaração de Rede da EFVM"
+    },
+    {
+      "id": "norte_sul",
+      "name": "Ferrovia Norte-Sul",
+      "shortName": "FNS",
+      "usage": "carga",
+      "gauge": "larga",
+      "operator": "VLI (tramo norte); Rumo (tramos central e sul)",
+      "ufs": ["MA", "TO", "GO", "MG", "SP"],
+      "connections": ["Estrada de Ferro Carajás (Açailândia)", "Malha Paulista (Estrela d'Oeste)"],
+      "segments": [
+        {
+          "id": "fns_tramo_norte",
+          "name": "Açailândia – Porto Nacional",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-47.5, -4.95],
+            [-47.49, -5.53],
+            [-47.45, -6.56],
+            [-48.21, -7.19],
+            [-48.51, -8.83],
+            [-48.42, -10.71]
+          ],
+          "lengthKm": 720
+        },
+        {
+          "id": "fns_tramo_central",
+          "name": "Porto Nacional – Anápolis",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-48.42, -10.71],
+            [-49.07, -11.73],
+            [-49.15, -13.44],
+            [-49.14, -14.52],
+            [-48.95, -16.33]
+          ],
+          "lengthKm": 855
+        },
+        {
+          "id": "fns_extensao_sul",
+          "name": "Ouro Verde de Goiás – Estrela d'Oeste",
+          "status": "ativa",
+          "confidence": "media",
+          "path": [
+            [-49.19, -16.22],
+            [-50.93, -17.79],
+            [-50.55, -18.99],
+            [-50.4, -20.29]
+          ],
+          "lengthKm": 682,
+          "note": "Operação comercial iniciada em 2023."
+        }
+      ],
+      "source": "ANTT; Ministério dos Transportes"
+    },
+    {
+      "id": "malha_norte",
+      "name": "Malha Norte e Ferrovia Estadual de Mato Grosso",
+      "shortName": "RMN",
+      "usage": "carga",
+      "gauge": "larga",
+      "operator": "Rumo",
+      "ufs": ["MT", "MS", "SP"],
+      "connections": ["Malha Paulista (Santa Fé do Sul)", "Porto de Santos (via Malha Paulista)"],
+      "segments": [
+        {
+          "id": "rmn_rondonopolis_santa_fe",
+          "name": "Rondonópolis – Santa Fé do Sul",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-54.64, -16.47],
+            [-53.22, -17.31],
+            [-52.62, -18.79],
+            [-51.93, -19.73],
+            [-51.09, -20.09],
+            [-50.93, -20.21]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "rmn_extensao_lucas",
+          "name": "Rondonópolis – Lucas do Rio Verde",
+          "status": "em_construcao",
+          "confidence": "media",
+          "path": [
+            [-54.64, -16.47],
+            [-55.1, -15.55],
+            [-56.1, -15.6],
+            [-56.08, -13.83],
+            [-55.91, -13.05]
+          ],
+          "lengthKm": null,
+          "note": "Ferrovia autorizada pelo governo estadual; obra por etapas a partir de Rondonópolis."
+        }
+      ],
+      "source": "ANTT; Governo de Mato Grosso"
+    },
+    {
+      "id": "malha_paulista",
+      "name": "Malha Paulista",
+      "shortName": "RMP",
+      "usage": "carga",
+      "gauge": "mista",
+      "operator": "Rumo",
+      "ufs": ["SP"],
+      "connections": ["Porto de Santos", "Malha Norte (Santa Fé do Sul)", "Ferrovia Norte-Sul (Estrela d'Oeste)"],
+      "segments": [
+        {
+          "id": "rmp_interior_santos",
+          "name": "Santa Fé do Sul – Campinas – Santos",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-50.93, -20.21],
+            [-50.4, -20.29],
+            [-49.38, -20.82],
+            [-48.18, -21.79],
+            [-47.06, -22.91],
+            [-46.33, -23.96]
+          ],
+          "lengthKm": null
+        }
+      ],
+      "source": "ANTT, Declaração de Rede da Malha Paulista"
+    },
+    {
+      "id": "mrs",
+      "name": "MRS Logística",
+      "shortName": "MRS",
+      "usage": "carga",
+      "gauge": "larga",
+      "operator": "MRS Logística",
+      "ufs": ["SP", "RJ", "MG"],
+      "connections": ["Porto de Santos", "Porto de Itaguaí", "Porto do Rio de Janeiro"],
+      "segments": [
+        {
+          "id": "mrs_sp_rj",
+          "name": "Santos – São Paulo – Rio de Janeiro",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-46.33, -23.96],
+            [-46.63, -23.55],
+            [-45.89, -23.18],
+            [-44.1, -22.52],
+            [-43.83, -22.47],
+            [-43.78, -22.85],
+            [-43.2, -22.9]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "mrs_rj_bh",
+          "name": "Barra do Piraí – Belo Horizonte",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-43.83, -22.47],
+            [-43.35, -21.76],
+            [-43.79, -20.66],
+            [-43.94, -19.92]
+          ],
+          "lengthKm": null
+        }
+      ],
+      "source": "ANTT, Declaração de Rede da MRS"
+    },
+    {
+      "id": "centro_atlantica",
+      "name": "Ferrovia Centro-Atlântica",
+      "shortName": "FCA",
+      "usage": "carga",
+      "gauge": "metrica",
+      "operator": "VLI",
+      "ufs": ["MG", "GO", "DF", "BA", "SE", "ES", "RJ"],
+      "connections": ["Porto de Aratu (BA)", "Terminal de Vitória (ES)", "Estrada de Ferro Vitória a Minas"],
+      "segments": [
+        {
+          "id": "fca_centro_leste",
+          "name": "Belo Horizonte – Triângulo Mineiro – Brasília",
+          "status": "ativa",
+          "confidence": "media",
+          "path": [
+            [-43.94, -19.92],
+            [-44.88, -20.14],
+            [-46.94, -19.59],
+            [-47.93, -19.75],
+            [-48.28, -18.92],
+            [-48.19, -18.65],
+            [-48.95, -16.33],
+            [-47.93, -15.78]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "fca_minas_bahia",
+          "name": "Corinto – Montes Claros – Salvador",
+          "status": "parcial",
+          "confidence": "baixa",
+          "path": [
+            [-44.45, -18.38],
+            [-43.86, -16.73],
+            [-42.87, -15.15],
+            [-41.67, -14.2],
+            [-40.21, -12.77],
+            [-38.47, -12.8]
+          ],
+          "lengthKm": null,
+          "note": "Tráfego irregular em parte do trecho; situação a confirmar."
+        },
+        {
+          "id": "fca_bh_corinto",
+          "name": "Belo Horizonte – Corinto",
+          "status": "ativa",
+          "confidence": "media",
+          "path": [
+            [-43.94, -19.92],
+            [-44.45, -18.38]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "fca_bahia_sergipe",
+          "name": "Alagoinhas – Propriá",
+          "status": "desativada",
+          "confidence": "media",
+          "path": [
+            [-38.47, -12.8],
+            [-38.42, -12.14],
+            [-37.07, -10.91],
+            [-36.84, -10.21]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "fca_litoranea",
+          "name": "Vitória – Campos – Rio de Janeiro (Litorânea)",
+          "status": "desativada",
+          "confidence": "media",
+          "path": [
+            [-40.34, -20.33],
+            [-41.32, -21.75],
+            [-42.03, -22.37],
+            [-43.2, -22.9]
+          ],
+          "lengthKm": null,
+          "note": "Sem tráfego regular de longa distância."
+        }
+      ],
+      "source": "ANTT, Declaração de Rede da FCA"
+    },
+    {
+      "id": "malha_sul",
+      "name": "Malha Sul",
+      "shortName": "RMS",
+      "usage": "carga",
+      "gauge": "metrica",
+      "operator": "Rumo",
+      "ufs": ["PR", "SC", "RS", "SP"],
+      "connections": ["Porto de Paranaguá", "Porto de São Francisco do Sul", "Porto de Rio Grande"],
+      "segments": [
+        {
+          "id": "rms_parana",
+          "name": "Maringá – Ponta Grossa – Paranaguá",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-51.94, -23.42],
+            [-51.16, -23.31],
+            [-50.16, -25.09],
+            [-49.27, -25.43],
+            [-48.51, -25.52]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "rms_ourinhos",
+          "name": "Ponta Grossa – Ourinhos",
+          "status": "ativa",
+          "confidence": "media",
+          "path": [
+            [-50.16, -25.09],
+            [-49.87, -22.98]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "rms_sao_francisco",
+          "name": "Mafra – São Francisco do Sul",
+          "status": "ativa",
+          "confidence": "media",
+          "path": [
+            [-49.81, -26.11],
+            [-48.85, -26.3],
+            [-48.64, -26.24]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "rms_curitiba_mafra",
+          "name": "Curitiba – Mafra – Lages",
+          "status": "parcial",
+          "confidence": "baixa",
+          "path": [
+            [-49.27, -25.43],
+            [-49.81, -26.11],
+            [-50.33, -27.82]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "rms_rio_grande_sul",
+          "name": "Porto Alegre – Santa Maria – Uruguaiana e Rio Grande",
+          "status": "parcial",
+          "confidence": "baixa",
+          "path": [
+            [-51.22, -30.03],
+            [-53.81, -29.68],
+            [-54.83, -29.87],
+            [-57.09, -29.75]
+          ],
+          "lengthKm": null,
+          "note": "Parte da malha gaúcha sem tráfego regular."
+        },
+        {
+          "id": "rms_cacequi_rio_grande",
+          "name": "Cacequi – Pelotas – Rio Grande",
+          "status": "parcial",
+          "confidence": "baixa",
+          "path": [
+            [-54.83, -29.87],
+            [-54.1, -31.33],
+            [-52.34, -31.77],
+            [-52.1, -32.03]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "rms_vale_rio_peixe",
+          "name": "Passo Fundo – Marcelino Ramos – Lages",
+          "status": "desativada",
+          "confidence": "media",
+          "path": [
+            [-53.81, -29.68],
+            [-52.41, -28.26],
+            [-51.91, -27.47],
+            [-50.33, -27.82]
+          ],
+          "lengthKm": null
+        }
+      ],
+      "source": "ANTT, Declaração de Rede da Malha Sul"
+    },
+    {
+      "id": "malha_oeste",
+      "name": "Malha Oeste",
+      "shortName": "RMO",
+      "usage": "carga",
+      "gauge": "metrica",
+      "operator": "Rumo",
+      "ufs": ["SP", "MS"],
+      "connections": ["Corumbá (fronteira com a Bolívia)", "Hidrovia Paraguai-Paraná"],
+      "segments": [
+        {
+          "id": "rmo_bauru_corumba",
+          "name": "Bauru – Campo Grande – Corumbá",
+          "status": "parcial",
+          "confidence": "baixa",
+          "path": [
+            [-49.06, -22.31],
+            [-51.68, -20.75],
+            [-54.62, -20.47],
+            [-55.79, -20.44],
+            [-57.65, -19.01]
+          ],
+          "lengthKm": null,
+          "note": "Concessão em processo de relicitação; tráfego reduzido."
+        },
+        {
+          "id": "rmo_ponta_pora",
+          "name": "Campo Grande – Ponta Porã",
+          "status": "desativada",
+          "confidence": "media",
+          "path": [
+            [-54.62, -20.47],
+            [-55.17, -21.61],
+            [-55.73, -22.54]
+          ],
+          "lengthKm": null
+        }
+      ],
+      "source": "ANTT; Ministério dos Transportes"
+    },
+    {
+      "id": "ferroeste",
+      "name": "Ferroeste e Nova Ferroeste",
+      "shortName": "FEP",
+      "usage": "carga",
+      "gauge": "metrica",
+      "operator": "Ferroeste (Governo do Paraná)",
+      "ufs": ["PR", "MS"],
+      "connections": ["Malha Sul (Guarapuava)", "Porto de Paranaguá (via Malha Sul)"],
+      "segments": [
+        {
+          "id": "ferroeste_atual",
+          "name": "Guarapuava – Cascavel",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-51.46, -25.39],
+            [-53.46, -24.96]
+          ],
+          "lengthKm": 248
+        },
+        {
+          "id": "nova_ferroeste",
+          "name": "Maracaju – Cascavel – Paranaguá (Nova Ferroeste)",
+          "status": "planejada",
+          "confidence": "media",
+          "path": [
+            [-55.17, -21.61],
+            [-54.81, -22.22],
+            [-54.09, -24.07],
+            [-53.46, -24.96],
+            [-51.46, -25.39],
+            [-49.27, -25.43],
+            [-48.51, -25.52]
+          ],
+          "lengthKm": null
+        }
+      ],
+      "source": "Governo do Paraná; ANTT"
+    },
+    {
+      "id": "tereza_cristina",
+      "name": "Ferrovia Tereza Cristina",
+      "shortName": "FTC",
+      "usage": "carga",
+      "gauge": "metrica",
+      "operator": "Ferrovia Tereza Cristina",
+      "ufs": ["SC"],
+      "connections": ["Porto de Imbituba"],
+      "segments": [
+        {
+          "id": "ftc_principal",
+          "name": "Criciúma – Tubarão – Imbituba",
+          "status": "ativa",
+          "confidence": "alta",
+          "path": [
+            [-49.37, -28.68],
+            [-49.01, -28.47],
+            [-48.67, -28.24]
+          ],
+          "lengthKm": 164
+        }
+      ],
+      "source": "ANTT"
+    },
+    {
+      "id": "transnordestina",
+      "name": "Ferrovia Transnordestina",
+      "shortName": "TLSA",
+      "usage": "carga",
+      "gauge": "larga",
+      "operator": "Transnordestina Logística",
+      "ufs": ["PI", "PE", "CE"],
+      "connections": ["Porto do Pecém (CE)"],
+      "segments": [
+        {
+          "id": "tlsa_eliseu_salgueiro",
+          "name": "Eliseu Martins – Trindade – Salgueiro",
+          "status": "em_construcao",
+          "confidence": "media",
+          "path": [
+            [-43.67, -8.1],
+            [-41.4, -7.65],
+            [-40.27, -7.76],
+            [-39.12, -8.07]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "tlsa_salgueiro_pecem",
+          "name": "Salgueiro – Quixadá – Pecém",
+          "status": "em_construcao",
+          "confidence": "media",
+          "path": [
+            [-39.12, -8.07],
+            [-39.14, -7.25],
+            [-39.33, -6.0],
+            [-39.02, -4.97],
+            [-38.83, -3.55]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "tlsa_ramal_suape",
+          "name": "Salgueiro – Suape",
+          "status": "planejada",
+          "confidence": "baixa",
+          "path": [
+            [-39.12, -8.07],
+            [-37.33, -8.04],
+            [-35.95, -8.28],
+            [-35.0, -8.39]
+          ],
+          "lengthKm": null,
+          "note": "Ramal retirado da concessão; modelo de construção em definição."
+        }
+      ],
+      "source": "ANTT; Ministério dos Transportes"
+    },
+    {
+      "id": "malha_nordeste",
+      "name": "Malha Nordeste (bitola métrica)",
+      "shortName": "FTL",
+      "usage": "carga",
+      "gauge": "metrica",
+      "operator": "Ferrovia Transnordestina Logística (FTL)",
+      "ufs": ["MA", "PI", "CE", "RN", "PB", "PE", "AL"],
+      "connections": ["Porto do Itaqui (MA)", "Porto do Mucuripe (CE)"],
+      "segments": [
+        {
+          "id": "ftl_sao_luis_fortaleza",
+          "name": "São Luís – Teresina – Fortaleza",
+          "status": "parcial",
+          "confidence": "media",
+          "path": [
+            [-44.37, -2.57],
+            [-44.06, -3.4],
+            [-42.8, -5.09],
+            [-41.67, -4.33],
+            [-40.35, -3.69],
+            [-38.52, -3.73]
+          ],
+          "lengthKm": null
+        },
+        {
+          "id": "ftl_litoral_nordeste",
+          "name": "Natal – Recife – Maceió",
+          "status": "desativada",
+          "confidence": "media",
+          "path": [
+            [-35.21, -5.79],
+            [-34.86, -7.12],
+            [-34.88, -8.05],
+            [-35.74, -9.67]
+          ],
+          "lengthKm": null,
+          "note": "Sem carga regular; trechos urbanos usados por trens metropolitanos."
+        }
+      ],
+      "source": "ANTT"
+    },
+    {
+      "id": "fiol",
+      "name": "Ferrovia de Integração Oeste-Leste",
+      "shortName": "FIOL",
+      "usage": "carga",
+      "gauge": "larga",
+      "operator": "Bamin (FIOL 1); Infra S.A. (FIOL 2)",
+      "ufs": ["BA", "TO"],
+      "connections": ["Porto Sul (Ilhéus)", "Ferrovia Norte-Sul (Figueirópolis)"],
+      "segments": [
+        {
+          "id": "fiol_1",
+          "name": "Ilhéus – Caetité (FIOL 1)",
+          "status": "em_construcao",
+          "confidence": "media",
+          "path": [
+            [-39.05, -14.79],
+            [-40.84, -14.86],
+            [-42.48, -14.07]
+          ],
+          "lengthKm": 537
+        },
+        {
+          "id": "fiol_2",
+          "name": "Caetité – Barreiras (FIOL 2)",
+          "status": "em_construcao",
+          "confidence": "media",
+          "path": [
+            [-42.48, -14.07],
+            [-43.6, -13.25],
+            [-45.0, -12.15]
+          ],
+          "lengthKm": 485
+        },
+        {
+          "id": "fiol_3",
+          "name": "Barreiras – Figueirópolis (FIOL 3)",
+          "status": "planejada",
+          "confidence": "media",
+          "path": [
+            [-45.0, -12.15],
+            [-46.94, -12.4],
+            [-49.17, -12.13]
+          ],
+          "lengthKm": null
+        }
+      ],
+      "source": "Ministério dos Transportes; Infra S.A."
+    },
+    {
+      "id": "fico",
+      "name": "Ferrovia de Integração Centro-Oeste",
+      "shortName": "FICO",
+      "usage": "carga",
+      "gauge": "larga",
+      "operator": "Infra S.A. (obra)",
+      "ufs": ["GO", "MT"],
+      "connections": ["Ferrovia Norte-Sul (Mara Rosa)"],
+      "segments": [
+        {
+          "id": "fico_1",
+          "name": "Mara Rosa – Água Boa",
+          "status": "em_construcao",
+          "confidence": "media",
+          "path": [
+            [-49.18, -14.02],
+            [-50.65, -14.15],
+            [-52.16, -14.05]
+          ],
+          "lengthKm": 383
+        },
+        {
+          "id": "fico_2",
+          "name": "Água Boa – Lucas do Rio Verde",
+          "status": "planejada",
+          "confidence": "baixa",
+          "path": [
+            [-52.16, -14.05],
+            [-54.0, -13.4],
+            [-55.91, -13.05]
+          ],
+          "lengthKm": null
+        }
+      ],
+      "source": "Ministério dos Transportes; Infra S.A."
+    },
+    {
+      "id": "ferrograo",
+      "name": "Ferrogrão (EF-170)",
+      "shortName": "EF-170",
+      "usage": "carga",
+      "gauge": "larga",
+      "operator": null,
+      "ufs": ["MT", "PA"],
+      "connections": ["Terminais de Miritituba (rio Tapajós)"],
+      "segments": [
+        {
+          "id": "ferrograo_principal",
+          "name": "Sinop – Miritituba",
+          "status": "planejada",
+          "confidence": "media",
+          "path": [
+            [-55.51, -11.86],
+            [-55.2, -9.5],
+            [-55.38, -7.05],
+            [-55.98, -4.28]
+          ],
+          "lengthKm": 933,
+          "note": "Projeto em estudo e sob questionamento judicial e ambiental."
+        }
+      ],
+      "source": "ANTT; Ministério dos Transportes"
+    },
+    {
+      "id": "trem_intercidades_sp",
+      "name": "Trem Intercidades São Paulo – Campinas",
+      "shortName": "TIC",
+      "usage": "passageiros",
+      "gauge": null,
+      "operator": "Concessionária estadual (obra)",
+      "ufs": ["SP"],
+      "connections": ["Estação da Luz (São Paulo)", "Estação de Campinas"],
+      "segments": [
+        {
+          "id": "tic_eixo_norte",
+          "name": "São Paulo – Jundiaí – Campinas",
+          "status": "em_construcao",
+          "confidence": "media",
+          "path": [
+            [-46.63, -23.53],
+            [-46.88, -23.19],
+            [-47.06, -22.91]
+          ],
+          "lengthKm": null,
+          "note": "Concessão estadual contratada em 2024; prazo de obra em andamento."
+        }
+      ],
+      "source": "Governo do Estado de São Paulo"
+    },
+    {
+      "id": "trem_rio_sao_paulo",
+      "name": "Trem de alta velocidade Rio – São Paulo",
+      "shortName": "TAV",
+      "usage": "passageiros",
+      "gauge": null,
+      "operator": null,
+      "ufs": ["RJ", "SP"],
+      "connections": [],
+      "segments": [
+        {
+          "id": "tav_rio_sp",
+          "name": "Rio de Janeiro – São José dos Campos – São Paulo",
+          "status": "planejada",
+          "confidence": "baixa",
+          "path": [
+            [-43.2, -22.9],
+            [-44.1, -22.52],
+            [-45.89, -23.18],
+            [-46.63, -23.55]
+          ],
+          "lengthKm": null,
+          "note": "Proposta em estudo; sem obra contratada."
+        }
+      ],
+      "source": "ANTT (autorização ferroviária em estudo)"
+    },
+    {
+      "id": "trem_brasilia_goiania",
+      "name": "Trem regional Brasília – Anápolis – Goiânia",
+      "shortName": "BSB-GYN",
+      "usage": "passageiros",
+      "gauge": null,
+      "operator": null,
+      "ufs": ["DF", "GO"],
+      "connections": [],
+      "segments": [
+        {
+          "id": "trem_bsb_gyn",
+          "name": "Brasília – Anápolis – Goiânia",
+          "status": "planejada",
+          "confidence": "baixa",
+          "path": [
+            [-47.93, -15.78],
+            [-48.95, -16.33],
+            [-49.25, -16.68]
+          ],
+          "lengthKm": null,
+          "note": "Estudos de viabilidade; sem projeto contratado."
+        }
+      ],
+      "source": "Ministério dos Transportes (estudos)"
+    },
+    {
+      "id": "ef_amapa",
+      "name": "Estrada de Ferro do Amapá",
+      "shortName": "EFA",
+      "usage": "misto",
+      "gauge": "larga",
+      "operator": null,
+      "ufs": ["AP"],
+      "connections": ["Porto de Santana"],
+      "segments": [
+        {
+          "id": "efa_principal",
+          "name": "Serra do Navio – Santana",
+          "status": "desativada",
+          "confidence": "media",
+          "path": [
+            [-52.0, 0.9],
+            [-51.55, 0.38],
+            [-51.18, -0.05]
+          ],
+          "lengthKm": 194
+        }
+      ],
+      "source": "ANTT; Governo do Amapá"
+    },
+    {
+      "id": "madeira_mamore",
+      "name": "Estrada de Ferro Madeira-Mamoré",
+      "shortName": "EFMM",
+      "usage": "misto",
+      "gauge": "metrica",
+      "operator": null,
+      "ufs": ["RO"],
+      "connections": [],
+      "segments": [
+        {
+          "id": "efmm_principal",
+          "name": "Porto Velho – Guajará-Mirim",
+          "status": "desativada",
+          "confidence": "alta",
+          "path": [
+            [-63.9, -8.76],
+            [-64.4, -9.4],
+            [-65.34, -10.78]
+          ],
+          "lengthKm": 366,
+          "note": "Desativada desde 1972; trecho turístico ocasional em Porto Velho."
+        }
+      ],
+      "source": "IPHAN; Governo de Rondônia"
+    }
+  ]
+}

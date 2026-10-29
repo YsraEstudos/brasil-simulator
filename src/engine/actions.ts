@@ -52,6 +52,13 @@ export const SUPPORT_CANDIDATE_ACTION_ID = 'apoiar_candidato';
 export const DIRECTIVE_ACTION_ID = 'definir_diretriz';
 /** Marca de governo por proposta: proposalId, name. */
 export const BRAND_ACTION_ID = 'marcar_governo';
+/**
+ * Negociação com o governador que recusou um convênio de obra federativa (PLANO_EXPANSAO EX-20): a União assume parte
+ * da contrapartida e o governador decide de novo. Uma vez por UF e obra. Params: `proposalId`, `uf`.
+ */
+export const NEGOTIATE_ADHESION_ACTION_ID = 'negociar_adesao';
+/** Treino de uma habilidade do personagem controlado (PLANO_EXPANSAO EX-21), um por mês. Params: `branch`. */
+export const TRAIN_SKILL_ACTION_ID = 'treinar_habilidade';
 /** Pagamento de obrigação privada de campanha, sem ação de agenda. */
 export const PAY_CAMPAIGN_DEBT = 'pagar_divida_campanha';
 
@@ -239,6 +246,26 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
     summary:
       'Declara apoio a um bloco na sucessão, dentro da janela eleitoral e uma vez por campanha: a relação com o ' +
       'bloco sobe e o candidato herdeiro disputa com a intenção de voto do governo.',
+    agendaCost: 1,
+    targetParams: [],
+    listed: false,
+  },
+  [NEGOTIATE_ADHESION_ACTION_ID]: {
+    id: NEGOTIATE_ADHESION_ACTION_ID,
+    name: 'Negociar adesão ao convênio',
+    summary:
+      'Reunião com o governador que recusou o convênio da obra: a União assume parte da contrapartida estadual e ele ' +
+      'decide de novo. A obra fica mais cara para a União; o governador pode recusar outra vez. Só no planejamento.',
+    agendaCost: 1,
+    targetParams: ['proposalId', 'uf'],
+    listed: false,
+  },
+  [TRAIN_SKILL_ACTION_ID]: {
+    id: TRAIN_SKILL_ACTION_ID,
+    name: 'Treinar habilidade',
+    summary:
+      'Dedica parte da agenda do mês a formar a equipe e estudar um tema. Custa uma ação e capital político; o nível ' +
+      'sobe depois de alguns meses de treino e vale a partir do mês seguinte. Um treino por mês.',
     agendaCost: 1,
     targetParams: [],
     listed: false,

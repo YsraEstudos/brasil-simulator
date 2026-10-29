@@ -6,6 +6,7 @@ import { POLICIES } from './policies';
 import { SCENARIOS } from './scenarios';
 
 export { CLIMATOLOGY } from './climate';
+export { RAILWAYS } from './railways';
 export { EVENTS } from './events';
 export { POLICIES } from './policies';
 export {

@@ -11,9 +11,11 @@ import {
   NOMINATE_JUSTICE_ACTION_ID,
   BRAND_ACTION_ID,
   NEGOTIATE_ACTION_ID,
+  NEGOTIATE_ADHESION_ACTION_ID,
   SANCTION_ACTION_ID,
   SANCTION_CHOICES,
   SUPPORT_CANDIDATE_ACTION_ID,
+  TRAIN_SKILL_ACTION_ID,
   URGENCY_ACTION_ID,
   VISIT_ACTION_ID,
   type AgendaAction,
@@ -24,7 +26,9 @@ import { openCases } from './congress/cases';
 import { directorateOccupant, directoratesOf } from './congress/directorates';
 import { legislativeInstrument } from './congress/congress';
 import { declarationInTermWindow } from './elections/elections';
+import { validateAdhesionNegotiation } from './publicPolicies/federative';
 import { validatePublicAction } from './publicPolicies/publicPolicies';
+import { canTrain, isSkillBranch } from './skills/skills';
 import {
   PROPOSAL_IN_CONGRESS,
   TECHNICAL_OCCUPANT,
@@ -130,6 +134,10 @@ export function validateActionTarget(
       // Um apoio por campanha (o campo `apoio` é zerado quando a eleição acontece).
       return state.politics?.apoio ? 'alvo_invalido' : null;
     }
+    case NEGOTIATE_ADHESION_ACTION_ID:
+      return validateAdhesionNegotiation(params, state);
+    case TRAIN_SKILL_ACTION_ID:
+      return isSkillBranch(params.branch) && canTrain(state, params.branch) ? null : 'alvo_invalido';
     default:
       return null;
   }

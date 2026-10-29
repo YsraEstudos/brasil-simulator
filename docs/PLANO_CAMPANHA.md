@@ -1004,6 +1004,74 @@ Onda R4 do plano de expansão (§4, "Tempo político"; EX-15 a EX-18), sobre a R
 
 **Pendente na R4:** homologação visual e em aparelho do cartão "Administrações" e da prestação de contas (mesma limitação de aparelho das ondas anteriores); substituição por vice (F05, item 2) e carreira fora do Executivo (F05, item 4) continuam fora desta onda; a transição ainda não recompõe gabinete nem diretrizes — o governo seguinte herda a estrutura anterior, o que fica para a onda de continuidade administrativa.
 
+#### Expansão R5 (parte A) — mapa ferroviário e investimentos por setor (28/10/2026)
+
+Primeira entrega da onda R5 do plano de expansão (§4, "Desenvolvimento nacional"), sobre a R4: a parte jogável de
+mapa e acompanhamento (EX-30, EX-31 e o MVP de F10). Motor 0.18.0, estado v22.
+
+- **Rede ferroviária (EX-30).** Dados versionados em `src/data/railways/` (Zod em `src/types/railways.ts`), com fonte,
+  data, situação por trecho (ativa, parcial, em construção, planejada, desativada) e grau de confiança. Camada
+  Ferrovias na folha Camadas, combinável com qualquer mapa de calor: no globo, fitas com largura constante em px,
+  contorno escuro e traço por situação no shader; no 2D, os mesmos estilos em SVG. Situação lida por cor **e** padrão.
+  Folha Ferrovias com filtros de situação e uso, lista de corredores, ficha (extensão, bitola, operador, conexões,
+  fonte) e "Mostrar no mapa" (destaca o corredor e leva a câmera até ele). Ver [DATA_SOURCES.md](DATA_SOURCES.md) §3.5.
+- **Obras ferroviárias na carteira (F10).** Duas obras novas no cenário v0.8.0, ligadas a trechos planejados: carga
+  (Barreiras–Figueirópolis) e passageiros (Brasília–Goiânia), com custo, prazo e manutenção diferentes. A proposta do
+  governo tem cor própria (verde): pontilhada em tramitação, cheia no que já foi executado e tracejada no que falta;
+  vira "ativa" só em operação. A rede existente nunca é confundida com a proposta.
+- **Investimentos por setor (EX-31).** `sectorInvestments()` e o cartão da Economia: anunciado, aprovado, contratado,
+  desembolsado e pago no mês, por área, com detalhe até a obra (fase, avanço, atraso, gargalo, manutenção). O total
+  concilia com a carteira e o pago no mês é o mesmo valor do impulso fiscal da obra. Ver
+  [PUBLIC_POLICIES.md](PUBLIC_POLICIES.md), "Investimentos por setor".
+- **Testes:** `src/content/railways.test.ts` (versão, fonte, cobertura de situações, UFs, ids, caixa do Brasil, vínculo
+  das obras a trechos não ativos), `src/components/map/railwayView.test.ts` (estilos, filtros, obra do governo,
+  destaque, lista, extensão sem dado), `src/engine/publicPolicies/sectorInvestments.test.ts` (conciliação com carteira
+  e fiscal, anúncio fora do aprovado, cancelamento, leitura sem efeito), `src/globe/railGeometry.test.ts` (fita no grande
+  círculo, deslocamento tangente, esquina limitada) e `src/components/tabs/sectorInvestmentsView.test.ts`.
+
+**Pendente na R5:** educação por coorte (EX-19), adesão federativa das obras (EX-20) e habilidades iniciais (EX-21)
+ficam para a parte B. Os benefícios ferroviários ainda passam pelos canais gerais da carteira (investimento, capital,
+custeio, aprovação); frete, mudança modal e segurança viária com canais próprios exigem calibração e ficam fora. A rede
+é compilação manual PROVISORIO, não pipeline. Homologação em aparelho Android da camada no globo não foi feita.
+
+#### Expansão R5 (parte B) — educação, obras federativas e habilidades (28/10/2026)
+
+Segunda entrega da onda R5 (§4, "Desenvolvimento nacional"; EX-19, EX-20 e EX-21), sobre a parte A. Fecha os resultados
+"por coorte, obra e UF sem efeitos duplicados" do critério da onda. Motor 0.19.0, estado v23 (sem conversão de saves,
+AI_INSTRUCTIONS.md §2.1).
+
+- **Educação por coorte (EX-19).** Novo `src/engine/education/` e `GameState.education`: fundamental, médio e superior
+  com matrícula, conclusão, evasão e aprendizagem; força de trabalho por escolaridade. Coortes conservadas (invariante
+  em `checkInvariants`), concluintes só a partir do estoque do mês anterior, aprendizagem que anda devagar. As políticas
+  agem por três alavancas que a carteira emite com a capacidade entregue (rotina de alfabetização e de formação
+  docente: horizonte curto; escola de tempo integral: só em operação, horizonte longo). Único canal produtivo: a
+  variação do capital humano vira impulso de potencial; o estado nasce no estacionário, então sem política nada muda.
+  Sem gasto novo e sem bônus duplicado com o capital público ou com pesquisa ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md)
+  §5.22). Cartão "Educação" na subtela Economia.
+- **Obras federativas (EX-20).** `Policy.federative` e `PublicProject.federative`: hospitais regionais e mobilidade
+  urbana passam a depender de convênio. Cada governador decide aderir (relação + habilidade), a União pode negociar uma
+  vez com quem recusou (assume parte da contrapartida), a assinatura fixa escopo, orçamento federal e vigência, o repasse
+  acompanha a contrapartida paga e o aditivo exclui inadimplentes. Troca de governador muda o risco, não o contrato.
+  Tudo dentro da carteira existente, com sorteios por chave estável ([POLITICAL_RULES.md](POLITICAL_RULES.md) §2.1.1).
+  O Gabinete mostra o convênio sob a obra e os botões de negociação.
+- **Habilidades iniciais (EX-21).** `src/engine/skills/` e `GameState.skills` (por personagem): Negociação (menos capital
+  por `negociar_bloco`) e Federalismo (mais chance de adesão a convênio), três níveis por meses de treino, um treino por
+  mês com custo de ação e de capital. Nenhum ramo mexe em PIB, aprovação ou voto. Conteúdo registrado como **proposta
+  para o autor** ([POLITICAL_RULES.md](POLITICAL_RULES.md) §6.6). Cartão "Habilidades" no Gabinete.
+- **Testes:** `src/engine/education/education.test.ts` (estacionário sem bônus, conservação em 240 meses, etapa vazia
+  sem formandos, permanência sem formandos no mesmo mês, defasagem, saturação, canal único, rotina sem gasto extra,
+  escola só em operação), `src/engine/publicPolicies/federative.test.ts` (adesão por governador, PRNG intocado,
+  habilidade, negociação única, assinatura e escopo, cancelamento sem adesão, contrato que persiste, repasse
+  condicionado, aditivo, ativo sem dupla contagem), `src/engine/skills/skills.test.ts` (limiares, custo, um treino por
+  mês, nível só no mês seguinte, habilidade da pessoa, desconto só no capital, bônus de adesão limitado, nenhum efeito
+  macro) e os modelos de tela `educationView`, `federativeView` e `skillsView`.
+
+**Pendente na R5:** o conteúdo das habilidades precisa de aprovação do autor (plano §10); experiência por resultado e
+nomeações como fonte de habilidade ficam fora. A educação não tem dimensão regional nem demografia (coorte de entrada
+constante até a EX-22) e os parâmetros são `PROVISORIO`, sem pipeline do INEP. Finanças estaduais continuam fora: a
+inadimplência é risco calibrado pela relação, não saldo de caixa do estado. Homologação em aparelho Android dos três
+cartões não foi feita.
+
 #### Tutorial jogável — diagnóstico e correção (28/10/2026)
 
 Auditoria do tutorial em execução (semente 42, cenário padrão) encontrou nove defeitos de compreensão, não de motor. A correção fecha todos e documenta o desenho em [TUTORIAL.md](TUTORIAL.md):

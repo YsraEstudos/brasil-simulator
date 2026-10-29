@@ -12,6 +12,8 @@ import {
 } from '@/engine';
 import type { ActiveCampaign } from '@/store';
 
+import { EducationPanel } from './EducationPanel';
+import { SectorInvestmentsCard } from './SectorInvestments';
 import { signedPercent, StatRow } from './StatRow';
 import { SocietyPanel } from './SocietyPanel';
 
@@ -206,11 +208,15 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
         )}
       </Card>
 
+      <SectorInvestmentsCard state={state} content={content} />
+
       <Card title="Último Copom">
         <Text variant="body">{copomText}</Text>
       </Card>
 
       <SocietyPanel state={state} />
+
+      <EducationPanel state={state} />
     </>
   );
 }

@@ -9,7 +9,7 @@ import prototipo from '@/data/scenarios/prototipo_ficticio.json';
 import { parseScenario, type Scenario } from '@/types/scenario';
 import type { DataValue } from '@/types/data';
 
-import { POLICIES, PREVENTION_POLICY_IDS } from './policies';
+import { POLICIES, PREVENTION_POLICY_IDS, RAILWAY_POLICY_IDS } from './policies';
 import {
   CAMPAIGN_MONTHS,
   DEFAULT_SCENARIO_ID,
@@ -290,7 +290,9 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
         institutions,
         policies: scenario.policies.filter(
           (id) =>
-            !PREVENTION_POLICY_IDS.includes(id) && !['orcamento_ppa', 'orcamento_ldo', 'orcamento_loa'].includes(id),
+            !PREVENTION_POLICY_IDS.includes(id) &&
+            !RAILWAY_POLICY_IDS.includes(id) &&
+            !['orcamento_ppa', 'orcamento_ldo', 'orcamento_loa'].includes(id),
         ),
         regions: {
           meta: { ...scenario.regions?.meta, lean: undefined },
