@@ -96,6 +96,7 @@ describe('contratos de políticas da Fase 06', () => {
       (policy) =>
         !PREVENTION_POLICY_IDS.includes(policy.id) &&
         !RAILWAY_POLICY_IDS.includes(policy.id) &&
+        !['projeto_geracao_energia', 'projeto_reservatorio_energia'].includes(policy.id) &&
         !policy.id.startsWith('pauta_bomba_') &&
         !['orcamento_ppa', 'orcamento_ldo', 'orcamento_loa'].includes(policy.id),
     );

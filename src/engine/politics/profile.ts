@@ -194,12 +194,12 @@ export interface AlignmentView {
  * governo" e da camada "Alinhamento" do mapa.
  */
 export function alignmentView(
-  state: Readonly<Pick<GameState, 'government'>>,
+  state: Readonly<Pick<GameState, 'government'> & Partial<Pick<GameState, 'demography'>>>,
   content: Pick<GameContent, 'scenario'>,
   profile: IdeologyPoint = state.government.profile,
 ): AlignmentView | null {
   const ufs = regionsOf(content);
-  const pop = populationShares(ufs);
+  const pop = populationShares(ufs, state);
   const median = medianVoterOf(ufs, pop);
   const regional = regionalAlignmentOf(profile, ufs, pop);
   if (!median || !regional) return null;
@@ -253,7 +253,7 @@ export interface ProfilePushPreview {
  * altera o estado. `null` se a política não existe no conteúdo.
  */
 export function previewProfilePush(
-  state: Readonly<Pick<GameState, 'government'>>,
+  state: Readonly<Pick<GameState, 'government'> & Partial<Pick<GameState, 'demography'>>>,
   content: Pick<GameContent, 'scenario' | 'policies'>,
   policyId: string,
 ): ProfilePushPreview | null {
@@ -262,7 +262,7 @@ export function previewProfilePush(
   const before = state.government.profile;
   const after = movedProfile(before, policy.position, 1, policy.salience ?? 1);
   const ufs = regionsOf(content);
-  const pop = populationShares(ufs);
+  const pop = populationShares(ufs, state);
   const median = medianVoterOf(ufs, pop);
   const regionalBefore = regionalAlignmentOf(before, ufs, pop);
   const regionalAfter = regionalAlignmentOf(after, ufs, pop);

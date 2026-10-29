@@ -210,7 +210,7 @@ function RegionalCard({ state, content }: { state: GameState; content: GameConte
     regionsOf(content).map((u) => ({ share: u.gdpShare })),
     content,
   );
-  const end = regionalDispersion(ufs, content);
+  const end = regionalDispersion(ufs, content, state);
   return (
     <Card
       title="Desenvolvimento regional"

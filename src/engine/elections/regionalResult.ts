@@ -39,12 +39,18 @@ const sigmoid = (x: number): number => 1 / (1 + Math.exp(-x));
 
 /**
  * Peso de cada UF na soma que fecha com o nacional (soma 1). **PROVISORIO:** o cenário não traz o eleitorado por
- * UF, então vale a participação na população total — a mesma que pondera a aprovação regional (D7), de modo que
- * "aprovação ponderada = nacional" e "voto ponderado = nacional" usam o mesmo peso. Trocar por eleitores aptos é
- * mudar só esta função (DATA_SOURCES.md §4.2).
+ * UF, então vale a participação na população total simulada no momento da eleição. A aprovação regional continua
+ * ponderada pela população inicial; o voto fecha com o nacional usando os pesos atuais. População total não equivale
+ * a eleitores aptos, portanto esta aproximação não deve ser apresentada como cadastro eleitoral (DATA_SOURCES.md §4.2).
  */
-export function electorateWeights(ufs: readonly ScenarioUf[]): number[] {
-  return populationShares(ufs);
+export function electorateWeights(ufs: readonly ScenarioUf[], state?: Readonly<GameState>): number[] {
+  if (!state || !state.demography.ufs.length) return populationShares(ufs);
+  const population = new Map(
+    state.demography.ufs.map((uf) => [uf.id, uf.ages.young + uf.ages.working + uf.ages.older]),
+  );
+  const values = ufs.map((uf) => population.get(uf.id) ?? 0);
+  const total = values.reduce((sum, value) => sum + value, 0);
+  return total > 0 ? values.map((value) => value / total) : populationShares(ufs);
 }
 
 export interface CommonShiftSolution {
@@ -109,12 +115,13 @@ export interface ElectionResultInput {
   ufs: readonly ScenarioUf[];
   approvals: readonly number[];
   governorChanges: readonly string[];
+  weights?: readonly number[];
 }
 
 /** Resultado simulado por UF de uma eleição geral: um turno por turno disputado, cada um fechando com o nacional. */
 export function buildElectionResult(input: ElectionResultInput): ElectionResult {
   const { ufs, approvals } = input;
-  const weights = electorateWeights(ufs);
+  const weights = input.weights ?? electorateWeights(ufs);
   const rounds: ElectionRoundResult[] = nationalRounds(input.vote).map(({ round, national }) => {
     const solved = solveCommonShift(approvals, weights, national);
     return {
@@ -146,6 +153,7 @@ export const electionResultStep: MonthStep = (state, ctx) => {
     monthIndex: state.monthIndex,
     vote,
     ufs,
+    weights: electorateWeights(ufs, state),
     approvals: currentUfs(state, ctx.content).map((u) => u.approval),
     governorChanges: ctx.draft.governorChanges ?? [],
   });
@@ -171,7 +179,7 @@ export function regionalVoteIntention(state: Readonly<GameState>, content: GameC
   if (ufs.length === 0 || !content.scenario.elections) return null;
   const solved = solveCommonShift(
     regionsView(state, content).map((u) => u.approval),
-    electorateWeights(ufs),
+    electorateWeights(ufs, state),
     votingIntentionOf(state, content.calibration),
   );
   return {

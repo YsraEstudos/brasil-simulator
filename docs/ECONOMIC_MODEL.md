@@ -24,6 +24,14 @@ Na criação, situações **FICTÍCIAS** podem alterar a condição inicial: pre
 
 ## 2. Unidades e convenções
 
+**Expansão R6 (provisória):** o motor mantém população por UF em milhares, com coortes de 0–19, 20–64 e 65+ anos. Nascimentos, mortes, saldo externo e migração interestadual são fluxos mensais; a migração interna nacional soma zero. O cenário principal aplica a composição etária observada no Censo 2022 aos totais do cenário como aproximação para 2027; os demais usam composição uniforme. As taxas de evolução são hipóteses de jogo. A entrada escolar acompanha a população jovem; na previdência, apenas a variação do crescimento de idosos em relação à tendência inicial ajusta a despesa obrigatória já existente, com saturação. As referências iniciais são calculadas para a composição escolhida, sem introduzir salto artificial. A calibração está em `src/engine/demography/calibration.ts`.
+
+O HUD, o PIB per capita, os pesos da fotografia eleitoral, a normalização regional de aprovação e desemprego e as chaves populacionais de políticas usam a população simulada. A população total por UF é apenas uma aproximação provisória do eleitorado apto; as regras de migração também não representam fluxos observados.
+
+O verificador geral do motor confere, quando as etapas correspondentes rodam, o fechamento demográfico por UF, a soma da migração interna, o estoque dos reservatórios e os balanços de geração, entrega e demanda. Antes do primeiro mês, os fluxos elétricos são zero porque ainda não há período processado.
+
+A eletricidade usa TWh por mês para demanda, geração, entrega e escassez; o reservatório é um estoque em TWh. A seca já simulada determina a entrada hídrica; geração e transmissão limitam a entrega. O consumo acompanha o PIB potencial e pode cair após a maturação da rotina de eficiência financiada. Projetos de geração, transmissão e armazenamento só ampliam capacidade em operação e usam os ativos líquidos da carteira existente. A escassez física afeta o hiato produtivo; o efeito climático preexistente sobre preços continua no clima. Esses projetos não recebem adicionalmente o efeito genérico de produtividade do capital público. Números e relações são `PROVISORIO`, em `src/engine/energy/calibration.ts`, e não constituem previsão ou medição da rede real.
+
 | Grandeza | Unidade interna | Observação |
 | --- | --- | --- |
 | Valores monetários | R$ milhões, nominais, `number` | Exibição converte para bi/tri |

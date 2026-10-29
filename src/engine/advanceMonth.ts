@@ -11,6 +11,8 @@ import { cabinetStep } from './congress/cabinet';
 import { congressStep } from './congress/congress';
 import { economyStep } from './economy/economy';
 import { educationStep } from './education/education';
+import { demographyStep } from './demography/demography';
+import { energyStep } from './energy/energy';
 import { resolveEventsStep, triggerEventsStep } from './events/events';
 import { pruneImpulses } from './impulses';
 import { appendNews, generateNews } from './news';
@@ -61,10 +63,12 @@ export const DEFAULT_STEPS: readonly MonthStep[] = [
   proposalsStep,
   congressStep,
   publicPoliciesStep,
+  demographyStep,
   educationStep,
   skillsStep,
   governmentProfileStep,
   climateEvolutionStep,
+  energyStep,
   economyStep,
   societyStep,
   opinionStep,

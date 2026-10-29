@@ -1,4 +1,7 @@
 import type { EducationState } from './education/types';
+import type { Demography } from './demography/demography';
+import type { Energy } from './energy/energy';
+import type { CensusAgeData } from '../types/demography';
 import type { SkillsState } from './skills/types';
 import type { GameEvent } from '../types/event';
 import type { Policy } from '../types/policy';
@@ -14,11 +17,11 @@ import type { DebtCommitment } from './career/commitments';
 import type { IllicitState } from './career/illicit';
 import type { CampaignConfigV2 } from './campaignConfig';
 
-/** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 23;
+/** Versão da estrutura do GameState; saves de desenvolvimento incompatíveis são recusados (AI_INSTRUCTIONS.md §2.1). */
+export const STATE_SCHEMA_VERSION = 25;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.19.0';
+export const ENGINE_VERSION = '0.21.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -240,7 +243,8 @@ export type ImpulseTarget =
   | 'clima.prevencao_cheia'
   | 'educacao.alfabetizacao'
   | 'educacao.permanencia'
-  | 'educacao.docentes';
+  | 'educacao.docentes'
+  | 'energia.eficiencia';
 
 /**
  * Incidência regional de um impulso (ECONOMIC_MODEL.md §5.15): como o efeito se reparte entre as UFs. Sem ela,
@@ -828,6 +832,10 @@ export interface GameState {
   control?: ControlIdentity;
   /** Educação por coorte (v23; PLANO_EXPANSAO EX-19): matrículas, fluxo, aprendizagem e escolaridade da força de trabalho. */
   education: EducationState;
+  /** População por UF e faixa etária, em milhares de pessoas. */
+  demography: Demography;
+  /** Balanço de eletricidade e reservatório (TWh). */
+  energy: Energy;
   /**
    * Habilidades dos personagens (v23; PLANO_EXPANSAO EX-21), por id de personagem. Ausente até o primeiro treino: antes
    * dele, o estado é o mesmo com o sistema ligado ou desligado.
@@ -1226,6 +1234,8 @@ export interface GameContent {
    * cenários, não parte de um cenário (PLANO_GLOBO.md §6.1). Nenhuma etapa a lê ainda (PR 8).
    */
   climatology: Climatology;
+  /** Distribuição etária observada, opcional e aplicada como aproximação inicial. */
+  censusAgeData?: CensusAgeData;
 }
 
 /** Partes do relatório que as etapas preenchem (o resto é montado pelo `advanceMonth`). */

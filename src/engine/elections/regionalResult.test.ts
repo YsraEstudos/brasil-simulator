@@ -5,7 +5,13 @@ import { advanceMonth, DEFAULT_STEPS } from '@/engine/advanceMonth';
 import { createInitialState } from '@/engine/state';
 import type { GameContent, GameState, NationalElectionVote } from '@/engine/types';
 
-import { electionResultStep, nationalRounds, regionalVoteIntention, solveCommonShift } from './regionalResult';
+import {
+  electionResultStep,
+  electorateWeights,
+  nationalRounds,
+  regionalVoteIntention,
+  solveCommonShift,
+} from './regionalResult';
 import { votingIntentionOf } from './elections';
 
 // PLANO_GLOBO.md §5.3 e §8, teste 8: o resultado simulado por UF fecha com o nacional, sem sorteio novo.
@@ -237,7 +243,7 @@ describe('regionalVoteIntention (camada "Intenção de voto estimada")', () => {
     const estimate = regionalVoteIntention(state, content)!;
     expect(estimate.national).toBeCloseTo(votingIntentionOf(state, content.calibration), 12);
     expect(Object.keys(estimate.ufs)).toHaveLength(27);
-    const weights = ufs.map((u) => u.population);
+    const weights = electorateWeights(ufs, state);
     const sum = weightedSum(
       ufs.map((u) => estimate.ufs[u.id]),
       weights,
@@ -267,4 +273,20 @@ describe('regionalVoteIntention (camada "Intenção de voto estimada")', () => {
     const withElections: GameContent = { ...semUfs, scenario: { ...semUfs.scenario, elections } };
     expect(regionalVoteIntention(state, withElections)).toBeNull();
   });
+});
+
+it('o eleitorado estimado acompanha a população por UF e fecha com o resultado nacional', () => {
+  const state = createInitialState({ content, difficulty: 'estrategica', seed: 1 });
+  const baseline = electorateWeights(ufs, state);
+  const changed = structuredClone(state);
+  const sp = changed.demography.ufs.find((uf) => uf.id === 'SP')!;
+  sp.ages.working *= 2;
+  const updated = electorateWeights(ufs, changed);
+  expect(updated[ufs.findIndex((uf) => uf.id === 'SP')]).toBeGreaterThan(
+    baseline[ufs.findIndex((uf) => uf.id === 'SP')],
+  );
+  expect(updated.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12);
+  const estimate = regionalVoteIntention(changed, content)!;
+  const national = ufs.reduce((sum, uf, i) => sum + updated[i] * estimate.ufs[uf.id], 0);
+  expect(national).toBeCloseTo(estimate.national, 10);
 });

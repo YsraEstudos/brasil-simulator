@@ -1,6 +1,7 @@
 import { calibrationFromScenario, type GameContent } from '@/engine';
 
 import { CLIMATOLOGY } from './climate';
+import { CENSUS_2022 } from './demography';
 import { EVENTS } from './events';
 import { POLICIES } from './policies';
 import { SCENARIOS } from './scenarios';
@@ -36,6 +37,7 @@ export function loadContent(scenarioId: string): GameContent {
     events: EVENTS,
     calibration: calibrationFromScenario(scenario.parameters),
     climatology: CLIMATOLOGY,
+    ...(scenario.id === 'brasil_2027_01_v080' ? { censusAgeData: CENSUS_2022 } : {}),
   };
   cache.set(scenarioId, content);
   return content;

@@ -46,6 +46,52 @@ export function checkInvariants(
   };
   walk(next, 'state');
 
+  // R6: estoques e fluxos só são comparados quando a respectiva etapa foi executada.
+  if (prev.demography && next.demography && prev.demography !== next.demography) {
+    const previous = new Map(prev.demography.ufs.map((uf) => [uf.id, uf]));
+    let internalMigration = 0;
+    for (const uf of next.demography.ufs) {
+      const old = previous.get(uf.id);
+      const total = (ages: typeof uf.ages) => ages.young + ages.working + ages.older;
+      if (Object.values(uf.ages).some((value) => value < 0)) errors.push(`população negativa em ${uf.id}`);
+      if (!old) {
+        errors.push(`UF demográfica sem estoque anterior: ${uf.id}`);
+        continue;
+      }
+      const { births, deaths, internal, external } = uf.flows;
+      if (Math.abs(total(uf.ages) - total(old.ages) - births + deaths - internal - external) > 1e-6)
+        errors.push(`população não reconciliada em ${uf.id}`);
+      internalMigration += internal;
+    }
+    if (next.demography.ufs.length !== prev.demography.ufs.length) errors.push('UFs demográficas alteradas');
+    if (Math.abs(internalMigration) > 1e-6) errors.push('migração interna não soma zero');
+  }
+  if (prev.energy && next.energy && prev.energy !== next.energy) {
+    const e = next.energy;
+    if (
+      [
+        e.reservoir,
+        e.inflow,
+        e.hydro,
+        e.spill,
+        e.otherGeneration,
+        e.delivered,
+        e.curtailment,
+        e.demand,
+        e.shortage,
+      ].some((value) => value < -EPSILON)
+    )
+      errors.push('energia com valor negativo');
+    if (e.reservoir > e.reservoirCapacity + EPSILON) errors.push('energia: reservatório acima da capacidade');
+    if (Math.abs(prev.energy.reservoir + e.inflow - e.hydro - e.spill - e.reservoir) > EPSILON)
+      errors.push('energia: reservatório não reconciliado');
+    if (Math.abs(e.hydro + e.otherGeneration - e.delivered - e.curtailment) > EPSILON)
+      errors.push('energia: geração não reconciliada');
+    if (Math.abs(e.delivered + e.shortage - e.demand) > EPSILON) errors.push('energia: demanda não reconciliada');
+    if (e.delivered > e.transmissionCapacity + EPSILON || e.hydro + e.otherGeneration > e.generationCapacity + EPSILON)
+      errors.push('energia: capacidade excedida');
+  }
+
   // §7.5: valores fisicamente possíveis
   const { indicators: ind, resources: res } = next;
   if (!(ind.unemployment > 0 && ind.unemployment < 1)) errors.push(`desemprego fora de (0, 1): ${ind.unemployment}`);
@@ -122,7 +168,7 @@ export function checkInvariants(
     const structural = ufs.reduce((s, u) => s + u.structuralShare, 0);
     if (Math.abs(shares - 1) > EPSILON) errors.push(`participações das UFs somam ${shares}, esperado 1`);
     if (Math.abs(structural - 1) > EPSILON) errors.push(`participações de tendência somam ${structural}, esperado 1`);
-    const populationWeights = content ? populationShares(regionsOf(content)) : [];
+    const populationWeights = content ? populationShares(regionsOf(content), next) : [];
     if (populationWeights.length === ufs.length) {
       const mean = (pick: (u: (typeof ufs)[number]) => number) =>
         ufs.reduce((s, u, i) => s + populationWeights[i] * pick(u), 0);

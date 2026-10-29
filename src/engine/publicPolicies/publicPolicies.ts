@@ -302,6 +302,17 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
     impulses.push(...routineImpulses(policy, directive, allocated, gdpMillions, t));
     impulses.push(...routinePreventionImpulses(policy, directive, allocated, t));
     impulses.push(...routineEducationImpulses(policy, directive, allocated, t));
+    if (policy.id === 'rotina_eficiencia_energetica' && allocated > 0 && policy.cost.annualMillions > 0) {
+      const startMonth = t + policy.timeline.maturationMonths;
+      impulses.push({
+        sourceId: `${ROUTINE_IMPULSE_PREFIX}${directive.ministryId}:${policy.id}:${directive.year}:${t}`,
+        label: policy.name,
+        target: 'energia.eficiencia',
+        delta: Math.min(1, allocated / policy.cost.annualMillions),
+        startMonth,
+        endMonth: startMonth,
+      });
+    }
   }
 
   for (const run of projectRuns) {
@@ -317,6 +328,13 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
   for (const project of publicState.projects) {
     const deltaAsset = project.assetMillions - (previousAssets.get(project.proposalId) ?? 0);
     const policy = ctx.content.policies[project.policyId];
+    // Transmissão afeta a atividade pela eletricidade entregue, não pelo canal genérico de capital público.
+    if (
+      ['projeto_transmissao_energia', 'projeto_geracao_energia', 'projeto_reservatorio_energia'].includes(
+        project.policyId,
+      )
+    )
+      continue;
     const potentialDelta = (deltaAsset / positiveOr(realGdpMillions, 1)) * c.elast_kg * MONTHS_PER_YEAR;
     if (!policy || !Number.isFinite(potentialDelta) || Math.abs(potentialDelta) <= EPSILON) continue;
     const regional = projectRegional(project, policy);

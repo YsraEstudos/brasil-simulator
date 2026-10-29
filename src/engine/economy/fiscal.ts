@@ -1,4 +1,5 @@
 import { activeImpulses, sumActive } from '../impulses';
+import { DEMOGRAPHY_CALIBRATION } from '../demography/calibration';
 import {
   MANDATORY_GROUPS,
   REVENUE_GROUPS,
@@ -292,6 +293,8 @@ export const EXTRAORDINARY_TARGETS: readonly ImpulseTarget[] = ['gasto.extraordi
 
 export interface SpendingMonth {
   total: number;
+  /** Variação previdenciária adicional do mês por mudança demográfica. */
+  demographicCost: number;
   mandatory: Record<MandatoryGroup, number>;
   linked: number;
   policyMandatory: number;
@@ -336,6 +339,13 @@ export function spendingMonth(
   const mandatory = Object.fromEntries(
     MANDATORY_GROUPS.map((g) => [g, fiscal.mandatory[g] * relative(c[GROWTH_PARAM[g]])]),
   ) as Record<MandatoryGroup, number>;
+  const demographicAdjustment = clamp(
+    state.demography.olderGrowthDeviation * DEMOGRAPHY_CALIBRATION.pensionGrowthSensitivity,
+    -DEMOGRAPHY_CALIBRATION.pensionMonthlyAdjustmentLimit,
+    DEMOGRAPHY_CALIBRATION.pensionMonthlyAdjustmentLimit,
+  );
+  const demographicCost = mandatory.previdencia * demographicAdjustment;
+  mandatory.previdencia += demographicCost;
   const spendingLimit = fiscal.spendingLimit * relative(fiscal.limitRealGrowth);
   const exceptions = fiscal.exceptions;
   const linked = structure.linkedShare * linkedBase;
@@ -355,11 +365,13 @@ export function spendingMonth(
   const total = ruled + policyMandatory + discretionary + plus + exceptions + extraordinary;
   const limitExcess = Math.max(0, total - exceptions - extraordinary - spendingLimit);
 
-  const withoutPolicies = ruled + Math.max(c.discricionaria_minima, spendingLimit - ruled) + exceptions;
-  const compression = total - withoutPolicies - policyMandatory - plus - minus - extraordinary;
+  const withoutPolicies =
+    ruled + Math.max(c.discricionaria_minima, spendingLimit - ruled) + exceptions - demographicCost;
+  const compression = total - withoutPolicies - demographicCost - policyMandatory - plus - minus - extraordinary;
 
   return {
     total,
+    demographicCost,
     mandatory,
     linked,
     policyMandatory,
@@ -380,6 +392,7 @@ export function spendingMonth(
 /** Parcelas da despesa do mês para o "Por que mudou?" (somam `total − withoutPolicies`). */
 export function spendingPieces(s: SpendingMonth): Piece[] {
   return [
+    { cause: 'demografia_previdencia', label: 'Evolução da população idosa', delta: s.demographicCost },
     ...s.impulses.map((i) => impulsePiece(i, i.delta)),
     {
       cause: 'compressao_discricionarias',

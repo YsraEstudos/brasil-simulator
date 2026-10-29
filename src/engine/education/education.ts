@@ -232,11 +232,12 @@ export function educationLevers(impulses: readonly ScheduledImpulse[], month: nu
 export function advanceEducation(
   previous: Readonly<EducationState>,
   levers: readonly EducationLeverState[],
+  entrantsScale = 1,
 ): EducationState {
   const effect = { ...NO_EFFECT };
   for (const lever of levers) effect[lever.id] = lever.effect;
   const r = rates(effect);
-  const entrants = educationParam('entrada_coorte') / MONTHS_PER_YEAR;
+  const entrants = (educationParam('entrada_coorte') * Math.max(0, entrantsScale)) / MONTHS_PER_YEAR;
   const flows = schoolFlows(previous.stages, r, entrants);
   const adjust = educationParam('aprendizagem_ajuste');
   const stages = previous.stages.map((s) => ({
@@ -272,7 +273,13 @@ export function advanceEducation(
 export const educationStep: MonthStep = (state) => {
   const t = state.monthIndex;
   const previous = state.education ?? initialEducation();
-  const next = advanceEducation(previous, educationLevers(state.impulses, t));
+  const initialYoung = state.demography.initialYoung;
+  const young = state.demography.ufs.reduce((sum, uf) => sum + uf.ages.young, 0);
+  const next = advanceEducation(
+    previous,
+    educationLevers(state.impulses, t),
+    initialYoung > 0 ? young / initialYoung : 1,
+  );
   const delta = educationParam('elast_capital_humano') * (next.humanCapital - previous.humanCapital) * MONTHS_PER_YEAR;
   const impulses =
     Math.abs(delta) > EPSILON

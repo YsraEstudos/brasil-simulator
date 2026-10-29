@@ -269,7 +269,7 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
     expect(v070.regions?.meta.lean).toBeUndefined();
   });
 
-  it('difere do v0.7.0 apenas em id, version, na inclinação (lean) das UFs, nas políticas de prevenção do PR 13 e no bloco career (PLANO_CAMPANHA.md Fase C1)', () => {
+  it('preserva o cenário anterior exceto pelas extensões declaradas, incluindo energia da R6', () => {
     const semLean = (scenario: Scenario): Record<string, unknown> => {
       const resto: Record<string, unknown> = { ...scenario };
       delete resto.id;
@@ -292,6 +292,7 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
           (id) =>
             !PREVENTION_POLICY_IDS.includes(id) &&
             !RAILWAY_POLICY_IDS.includes(id) &&
+            !['projeto_geracao_energia', 'projeto_reservatorio_energia'].includes(id) &&
             !['orcamento_ppa', 'orcamento_ldo', 'orcamento_loa'].includes(id),
         ),
         regions: {
@@ -302,6 +303,7 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
     };
     expect(semLean(s)).toEqual(semLean(v070));
     expect(s.policies).toEqual(expect.arrayContaining(['orcamento_ppa', 'orcamento_ldo', 'orcamento_loa']));
+    expect(s.policies).toEqual(expect.arrayContaining(['projeto_geracao_energia', 'projeto_reservatorio_energia']));
     expect(s.regions?.meta.lean?.status).toBe('PROVISORIO');
     expect(s.regions?.meta.lean?.note?.trim().length ?? 0).toBeGreaterThan(0);
   });

@@ -441,7 +441,10 @@ export function hudFromCampaign(
       previous: campaign.previous,
       politicalCapital: state.resources.politicalCapital,
       nominalGdp: currentNominalGdpMillions(state, content),
-      populationThousands: ufs.reduce((n, uf) => n + uf.population, 0),
+      populationThousands: state.demography.ufs.reduce(
+        (n, uf) => n + uf.ages.young + uf.ages.working + uf.ages.older,
+        0,
+      ),
       ufCount: ufs.length,
       monthLabel: label,
       turn,

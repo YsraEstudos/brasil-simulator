@@ -509,6 +509,7 @@ describe('invariantes D7 e somas das explicações com o clima (PLANO_GLOBO.md �
         for (let m = 0; m < 60; m++) {
           const out = advanceMonth(state, strategy ? strategy.decide(state, content) : EMPTY, content);
           errors.push(...checkInvariants(state, out.state, out.report, content));
+          const pop = populationShares(ufs, out.state);
           const mean = out.state.regions.ufs.reduce((s, u, i) => s + pop[i] * u.approval, 0);
           expect(mean, `semente ${seed}, mês ${m}`).toBeCloseTo(out.state.indicators.approval, 9);
           expect(out.state.regions.ufs.reduce((s, u) => s + u.share, 0)).toBeCloseTo(1, 9);
@@ -541,6 +542,7 @@ describe('invariantes D7 e somas das explicações com o clima (PLANO_GLOBO.md �
     for (let m = 0; m < 6; m++) {
       const out = advanceMonth(state, EMPTY, content);
       errors.push(...checkInvariants(state, out.state, out.report, content));
+      const pop = populationShares(ufs, out.state);
       const mean = out.state.regions.ufs.reduce((s, u, i) => s + pop[i] * u.approval, 0);
       expect(mean).toBeCloseTo(out.state.indicators.approval, 9);
       state = out.state;

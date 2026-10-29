@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
-import { alignmentView, createInitialState, type UfExplanation } from '@/engine';
+import { alignmentView, createInitialState, regionalVoteIntention, type UfExplanation } from '@/engine';
 
 import {
   availableIndicators,
@@ -246,4 +246,23 @@ describe('camadas Chuva e Seca (PLANO_GLOBO.md §4.2)', () => {
     expect(formatPiece('chuva', -0.003)).toBe('−0,3 p.p.');
     expect(formatPiece('seca', -0.004)).toBe('−0,4%');
   });
+});
+
+it('PIB per capita usa população atual de cada UF e reconcilia com o nacional', () => {
+  const changed = structuredClone(state);
+  const sp = changed.demography.ufs.find((uf) => uf.id === 'SP')!;
+  sp.ages.working *= 2;
+  const before = mapRows('renda', state, content).find((row) => row.uf.id === 'SP')!;
+  const rows = mapRows('renda', changed, content);
+  const after = rows.find((row) => row.uf.id === 'SP')!;
+  expect(after.value).toBeLessThan(before.value);
+  expect(rows.reduce((sum, row) => sum + row.populationShare * row.value, 0)).toBeCloseTo(1, 10);
+});
+
+it('camada de intenção pondera com a população atual e reproduz a intenção nacional', () => {
+  const changed = structuredClone(state);
+  changed.demography.ufs.find((uf) => uf.id === 'SP')!.ages.working *= 2;
+  const rows = mapRows('intencao', changed, content);
+  const view = regionalVoteIntention(changed, content)!;
+  expect(rows.reduce((sum, row) => sum + row.populationShare * row.value, 0)).toBeCloseTo(view.national, 10);
 });

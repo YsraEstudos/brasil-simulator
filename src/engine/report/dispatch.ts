@@ -260,7 +260,7 @@ function comunicacaoOpinion(
   const honeymoon = state.monthIndex % TERM_MONTHS < content.calibration.meses_lua_de_mel;
   if (impact < 0 && honeymoon) parts.push('Na lua de mel o desgaste é menor.');
 
-  const regional = regionalSentence(policy, content);
+  const regional = regionalSentence(policy, content, state);
   if (regional) parts.push(regional);
 
   return { text: parts.join(' '), tone };
@@ -271,10 +271,10 @@ function comunicacaoOpinion(
  * UF mais concentrada, se for o caso. Benefício ("favorece") quando o saldo é gasto ou desoneração; custo
  * ("pesa mais") quando é corte ou tributo.
  */
-function regionalSentence(policy: Policy, content: GameContent): string | null {
+function regionalSentence(policy: Policy, content: GameContent, state: Readonly<GameState>): string | null {
   const profile = policy.regional;
   if (!profile) return null;
-  const { regions, topUf } = regionalIncidence(content, profile);
+  const { regions, topUf } = regionalIncidence(content, profile, state);
   const high = regions.filter((r) => r.ratio >= ADVICE_PARAMS.regionHigh).sort((a, b) => b.ratio - a.ratio);
   const benefit = fiscalDirection(policy) === 'benefit';
   const verb = benefit ? 'Favorece mais' : 'Pesa mais sobre';

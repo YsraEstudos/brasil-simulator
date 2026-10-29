@@ -280,7 +280,7 @@ export function ufValue(
     case 'aprovacao':
       return uf.approval - state.indicators.approval;
     case 'renda':
-      return uf.share / populationShare;
+      return populationShare > 0 ? uf.share / populationShare : 0;
     case 'governador':
       return uf.governorRelation;
     case 'alinhamento':
@@ -409,7 +409,16 @@ export function mapRows(
 ): UfRow[] {
   const spec = indicatorSpec(id);
   const scenarioUfs = regionsOf(content);
-  const pop = populationShares(scenarioUfs);
+  const demographicPopulation = new Map(
+    state.demography.ufs.map((uf) => [uf.id, uf.ages.young + uf.ages.working + uf.ages.older]),
+  );
+  const totalPopulation = scenarioUfs.reduce((sum, uf) => sum + (demographicPopulation.get(uf.id) ?? 0), 0);
+  const pop =
+    id === 'resultado' && election
+      ? scenarioUfs.map((uf) => election.weights[uf.id] ?? 0)
+      : totalPopulation > 0
+        ? scenarioUfs.map((uf) => (demographicPopulation.get(uf.id) ?? 0) / totalPopulation)
+        : populationShares(scenarioUfs);
   // Só a camada Alinhamento precisa do perfil; sem inclinação no cenário o desvio é 0 (a camada nem é oferecida).
   const deviations = new Map<string, number>(
     id === 'alinhamento' ? (alignmentView(state, content)?.ufs ?? []).map((a) => [a.id, a.approvalDeviation]) : [],

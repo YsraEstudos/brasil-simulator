@@ -1,0 +1,65 @@
+{
+  "id": "projeto_reservatorio_energia",
+  "name": "Armazenamento hídrico para energia",
+  "summary": "Amplia o armazenamento para enfrentar estiagens após licenciamento e obra. Custos e capacidade são PROVISÓRIOS.",
+  "area": "energia",
+  "competence": "federal",
+  "instruments": ["projeto_lei", "ato_execucao"],
+  "agendaCost": 2,
+  "cost": {
+    "annualMillions": 10000,
+    "disbursementProfile": [0.15, 0.55, 0.3]
+  },
+  "fundingSources": ["operacao_credito"],
+  "timeline": {
+    "planningMonths": 3,
+    "expectedLegislativeMonths": 4,
+    "executionMonths": 30,
+    "maturationMonths": 12
+  },
+  "conditions": ["espaco_no_limite_de_despesas"],
+  "impacts": [
+    {
+      "channel": "investimento_publico",
+      "magnitude": 10000,
+      "lagMonths": 7
+    },
+    {
+      "channel": "custeio",
+      "magnitude": 350,
+      "lagMonths": 28
+    },
+    {
+      "channel": "aprovacao",
+      "magnitude": 0.006,
+      "lagMonths": 7
+    }
+  ],
+  "risks": [
+    {
+      "kind": "atraso",
+      "probability": 0.28
+    },
+    {
+      "kind": "sobrecusto",
+      "probability": 0.18
+    }
+  ],
+  "affected": {
+    "groups": ["consumidores", "empresas"],
+    "sectors": ["energia", "industria", "construcao"],
+    "regions": ["norte", "nordeste", "centro_oeste", "nacional"]
+  },
+  "position": {
+    "economic": 0.2,
+    "social": 0
+  },
+  "dataStatus": "PROVISORIO",
+  "delivery": "projeto",
+  "project": {
+    "licensingMonths": 9,
+    "procurementMonths": 7,
+    "efficiency": 0.76,
+    "annualMaintenanceRate": 0.025
+  }
+}

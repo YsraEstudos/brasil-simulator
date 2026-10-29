@@ -75,9 +75,14 @@ export function regionsOf(content: Pick<GameContent, 'scenario'>): readonly Scen
 }
 
 /** Participação de cada UF na população (soma 1), na ordem do cenário. */
-export function populationShares(ufs: readonly ScenarioUf[]): number[] {
-  const total = ufs.reduce((s, u) => s + u.population, 0);
-  return ufs.map((u) => u.population / total);
+export function populationShares(
+  ufs: readonly ScenarioUf[],
+  state?: Readonly<Partial<Pick<GameState, 'demography'>>>,
+): number[] {
+  const byId = new Map(state?.demography?.ufs.map((uf) => [uf.id, uf.ages.young + uf.ages.working + uf.ages.older]));
+  const values = ufs.map((uf) => byId.get(uf.id) ?? uf.population);
+  const total = values.reduce((s, value) => s + value, 0);
+  return total > 0 ? values.map((value) => value / total) : values.map(() => 0);
 }
 
 /** A UF está no escopo (vazio = todas as UFs). */
@@ -89,15 +94,20 @@ export function inScope(uf: ScenarioUf, scope: readonly RegionalScope[]): boolea
  * Pesos da chave de distribuição (soma 1), dadas as participações de tendência no PIB (ECONOMIC_MODEL.md §5.15).
  * Escopo sem nenhuma UF cai na distribuição pelo PIB (sem efeito regional diferente).
  */
-export function keyWeights(ufs: readonly ScenarioUf[], structural: readonly number[], r: ImpulseRegional): number[] {
-  const pop = populationShares(ufs);
+export function keyWeights(
+  ufs: readonly ScenarioUf[],
+  structural: readonly number[],
+  r: ImpulseRegional,
+  state?: Readonly<GameState>,
+): number[] {
+  const pop = populationShares(ufs, state);
   const raw = ufs.map((uf, i) => {
     if (!inScope(uf, r.scope)) return 0;
     const base = {
       populacao: pop[i],
       pobreza: pop[i] * uf.poverty,
       pib: structural[i],
-      renda_alta: (structural[i] * structural[i]) / pop[i],
+      renda_alta: pop[i] > 0 ? (structural[i] * structural[i]) / pop[i] : 0,
     }[r.key];
     return base * (r.boost?.[uf.id] ?? 1);
   });
@@ -169,7 +179,7 @@ function distribute(
   const c = content.calibration;
   const t = state.monthIndex;
   const ufs = regionsOf(content);
-  const pop = populationShares(ufs);
+  const pop = populationShares(ufs, state);
   const { outputGap, termsOfTrade } = state.economy;
   const impulses = state.impulses;
 
@@ -224,7 +234,7 @@ function distribute(
   for (const impulse of activeImpulses(impulses, t, DEMAND_TARGETS)) {
     const gain = DEMAND_GAIN[impulse.target];
     if (!impulse.regional || !gain) continue;
-    const w = keyWeights(ufs, structural, impulse.regional);
+    const w = keyWeights(ufs, structural, impulse.regional, state);
     const level = c[gain.mult] * gain.sign * impulse.delta;
     ufs.forEach((_, i) => {
       activityRaw[i].push({
@@ -237,7 +247,7 @@ function distribute(
   for (const impulse of activeImpulses(impulses, t, FISCAL_TARGETS)) {
     const benefit = FISCAL_BENEFIT[impulse.target];
     if (!impulse.regional || !benefit) continue;
-    const w = keyWeights(ufs, structural, impulse.regional);
+    const w = keyWeights(ufs, structural, impulse.regional, state);
     ufs.forEach((_, i) => {
       approvalRaw[i].push({
         cause: impulse.sourceId,
@@ -335,7 +345,7 @@ function evolveStructural(state: Readonly<GameState>, content: GameContent, prev
   const extra = ufs.map(() => 0);
   for (const impulse of activeImpulses(state.impulses, state.monthIndex, ['oferta.potencial'])) {
     if (!impulse.regional) continue;
-    const w = keyWeights(ufs, previous, impulse.regional);
+    const w = keyWeights(ufs, previous, impulse.regional, state);
     ufs.forEach((_, i) => {
       extra[i] += c.concentracao_regional * impulse.delta * (w[i] / previous[i] - 1);
     });
@@ -464,7 +474,7 @@ export const regionsStep: MonthStep = (input, ctx) => {
 export function meanGovernorRelation(state: Readonly<GameState>, content: GameContent): number {
   const ufs = regionsOf(content);
   if (ufs.length === 0) return 0;
-  const pop = populationShares(ufs);
+  const pop = populationShares(ufs, state);
   const view = regionsView(state, content);
   return view.reduce((s, u, i) => s + pop[i] * u.governorRelation, 0);
 }
@@ -473,11 +483,15 @@ export function meanGovernorRelation(state: Readonly<GameState>, content: GameCo
  * Dispersão da renda per capita entre as UFs (GAME_DESIGN.md §7.2, objetivo "Desenvolver as regiões"):
  * coeficiente de variação ponderado pela população da renda relativa (participação no PIB ÷ na população).
  */
-export function regionalDispersion(ufs: readonly Pick<UfState, 'share'>[], content: GameContent): number {
+export function regionalDispersion(
+  ufs: readonly Pick<UfState, 'share'>[],
+  content: GameContent,
+  state?: Readonly<GameState>,
+): number {
   const scenarioUfs = regionsOf(content);
   if (scenarioUfs.length === 0 || ufs.length !== scenarioUfs.length) return 0;
-  const pop = populationShares(scenarioUfs);
-  const variance = ufs.reduce((s, u, i) => s + pop[i] * (u.share / pop[i] - 1) ** 2, 0);
+  const pop = populationShares(scenarioUfs, state);
+  const variance = ufs.reduce((s, u, i) => s + (pop[i] > 0 ? pop[i] * (u.share / pop[i] - 1) ** 2 : 0), 0);
   return Math.sqrt(variance);
 }
 
@@ -499,10 +513,11 @@ export function ufIncidence(
   ufs: readonly ScenarioUf[],
   structural: readonly number[],
   regional: ImpulseRegional,
+  state?: Readonly<GameState>,
 ): { id: string; weight: number; ratio: number }[] {
-  const pop = populationShares(ufs);
-  const w = keyWeights(ufs, structural, regional);
-  return ufs.map((u, i) => ({ id: u.id, weight: w[i], ratio: w[i] / pop[i] }));
+  const pop = populationShares(ufs, state);
+  const w = keyWeights(ufs, structural, regional, state);
+  return ufs.map((u, i) => ({ id: u.id, weight: w[i], ratio: pop[i] > 0 ? w[i] / pop[i] : 0 }));
 }
 
 /**
@@ -512,14 +527,16 @@ export function ufIncidence(
 export function regionalIncidence(
   content: GameContent,
   regional: ImpulseRegional,
+  state?: Readonly<GameState>,
 ): { regions: { id: string; ratio: number }[]; topUf: { id: string; ratio: number } | null } {
   const ufs = regionsOf(content);
   if (ufs.length === 0) return { regions: [], topUf: null };
-  const pop = populationShares(ufs);
+  const pop = populationShares(ufs, state);
   const ratios = ufIncidence(
     ufs,
-    ufs.map((u) => u.gdpShare),
+    state ? regionsView(state, content).map((uf) => uf.structuralShare) : ufs.map((u) => u.gdpShare),
     regional,
+    state,
   );
   const regions = Object.keys(REGION_NAMES).map((id) => {
     const weight = ufs.reduce((n, u, i) => (u.region === id ? n + ratios[i].weight : n), 0);
@@ -563,7 +580,7 @@ export function expectedAdhesion(
 ): { states: number; populationShare: number } | null {
   const ufs = regionsOf(content);
   if (ufs.length === 0) return null;
-  const pop = populationShares(ufs);
+  const pop = populationShares(ufs, state);
   const probabilities = adhesionProbabilities(state, content);
   return {
     states: probabilities.reduce((n, p) => n + p, 0),
