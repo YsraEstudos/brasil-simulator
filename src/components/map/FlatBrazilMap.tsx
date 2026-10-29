@@ -31,6 +31,7 @@ import {
   hatchedPaths,
 } from './flatClimate';
 import { flatMap, type FlatUf } from './flatProjection';
+import { FlatRailways } from './FlatRailways';
 import { flatSunFor, LIGHT_COLOR, SHADOW_COLOR, SHADOW_OVER_FILL } from './flatSun';
 import { markerPulseKey, type MapMarker } from './markersView';
 import type { RegionalMapViewModel } from './regionalMapViewModel';
@@ -511,6 +512,13 @@ export function FlatBrazilMap({
               </G>
             ))}
           </G>
+        )}
+        {variant === 'full' && viewModel.railways && size.width > 0 && (
+          <FlatRailways
+            overlay={viewModel.railways}
+            flat={flat}
+            unitsPerPx={1 / Math.min(size.width / flat.viewBox.width, size.height / flat.viewBox.height)}
+          />
         )}
         {selected && (
           <Path

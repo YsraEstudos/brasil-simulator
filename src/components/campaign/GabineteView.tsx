@@ -14,6 +14,7 @@ import { AgendaActions } from './AgendaActions';
 import { DecisionPanel } from './DecisionPanel';
 import { DIFFICULTY } from './labels';
 import { PublicPoliciesPanel } from './PublicPoliciesPanel';
+import { SkillsCard } from './SkillsCard';
 
 /**
  * Gabinete (GAME_DESIGN.md §4.2): a agenda presidencial do mês — mesa de despacho das decisões, políticas públicas
@@ -101,6 +102,8 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
       <PublicPoliciesPanel state={state} content={content} actionsMax={actionsMax} />
 
       <ThermometersCard state={state} content={content} />
+
+      <SkillsCard state={state} content={content} actionsMax={actionsMax} />
 
       <AgendaActions
         state={state}

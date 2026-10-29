@@ -425,6 +425,33 @@ Código em `src/engine/climate/effects.ts` (`preventionOf`, `protectionOf`, `res
 - **Invariantes.** D7 e as somas das explicações valem com prevenção forte em 60 meses nas três dificuldades (teste); o PRNG principal não é tocado e o do clima só avança as 33 normais de sempre.
 - **Limitações.** Sem eventos com opções de obra; a proteção é um nível por UF (sem distinguir semiárido rural de metrópole); a eficácia das obras não depende do clima do local; o humor político não é reduzido.
 
+
+### 5.22 Educação por coorte e capital humano (onda R5 do plano de expansão, EX-19, motor 0.19.0)
+
+Código em `src/engine/education/`; parâmetros em `EDUCATION_PARAMS`, `PROVISORIO`; estado em `GameState.education`
+(v23). Etapa `educationStep` logo depois da carteira e antes da economia.
+
+- **Coortes.** Três etapas (fundamental 9 anos, médio 3, superior 4,5) com matriculados e aprendizagem; quatro
+  escolaridades na força de trabalho (sem fundamental, fundamental, médio, superior) com aprendizagem média. A cada mês,
+  dos estoques do início do mês: concluintes = matriculados ÷ (12 × duração), evadidos = matriculados × evasão ÷ 12.
+  Parte dos concluintes segue (transição médio, superior); o resto e os evadidos entram na força de trabalho com a
+  maior etapa concluída, levando a aprendizagem da etapa. A força de trabalho sai a `saida_forca_trabalho` ao ano.
+  **Conservação** (invariante): matriculados + força de trabalho = mês anterior + ingressantes − saídas.
+- **Alavancas.** `educacao.alfabetizacao` (aprendizagem e evasão do fundamental), `educacao.permanencia` (evasão do
+  médio, transição fundamental → médio) e `educacao.docentes` (aprendizagem do fundamental e do médio). Efeito =
+  `tanh(força somada ÷ alavanca_escala)` × teto de cada canal. A aprendizagem anda até o alvo a
+  `aprendizagem_ajuste` por mês.
+- **Capital humano → potencial (único canal).** H = anos efetivos por trabalhador = Σ trabalhadores × anos ×
+  (1 + `retorno_aprendizagem` × (aprendizagem − a de base)) ÷ força de trabalho. Cada mês, um impulso
+  `oferta.potencial` de um mês (`educacao:capital_humano:<mês>`) = `elast_capital_humano × ΔH × 12`, na mesma forma do
+  capital público da carteira (§5.16). O estado inicial é o estacionário das taxas de base, então sem política ΔH = 0
+  e o potencial calibrado (`g_pot_base`, que já contém a tendência do país) não ganha nada.
+- **Sem duplicação.** O prédio escolar entra no capital público pela carteira; aqui só entra a escolaridade. O gasto é
+  o da rotina ou da obra. Não há módulo de pesquisa; quando houver (F07), não pode ler formandos para somar
+  produtividade outra vez.
+- **Defasagem.** Política muda taxas e alvo de aprendizagem; a força de trabalho só muda com as coortes que saem da
+  escola. Em teste, o capital humano anda menos de 1/100 do ganho de 20 anos no primeiro mês e menos de 1/8 no
+  primeiro ano.
 ## 6. Parâmetros
 
 Os valores, faixas, significados e justificativas estão em `src/engine/economy/calibration.ts`.

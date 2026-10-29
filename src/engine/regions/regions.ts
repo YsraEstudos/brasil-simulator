@@ -5,6 +5,7 @@ import type { Calibration } from '../economy/calibration';
 import { DEMAND_GAIN } from '../economy/demand';
 import { activeImpulses } from '../impulses';
 import { regionalAlignmentOf } from '../politics/alignment';
+import { federalismAdhesionBonus } from '../skills/skills';
 import type { RegionalScope, SectorId } from '../../types/regions';
 import type { ScenarioUf } from '../../types/scenario';
 import type {
@@ -537,8 +538,10 @@ export function regionalIncidence(
 export function adhesionProbability(
   c: Pick<Calibration, 'adesao_base' | 'adesao_relacao'>,
   governorRelation: number,
+  /** Probabilidade somada pela habilidade de federalismo do presidente (PLANO_EXPANSAO EX-21); 0 sem ela. */
+  skillBonus = 0,
 ): number {
-  return Math.min(1, Math.max(0, c.adesao_base + (c.adesao_relacao * governorRelation) / RELACAO_MAX));
+  return Math.min(1, Math.max(0, c.adesao_base + (c.adesao_relacao * governorRelation) / RELACAO_MAX + skillBonus));
 }
 
 /** Probabilidade de adesão de cada UF, na ordem do cenário (vazio sem UFs). */
@@ -546,7 +549,8 @@ export function adhesionProbabilities(state: Readonly<GameState>, content: GameC
   const ufs = regionsOf(content);
   if (ufs.length === 0) return [];
   const view = regionsView(state, content);
-  return ufs.map((_, i) => adhesionProbability(content.calibration, view[i].governorRelation));
+  const bonus = federalismAdhesionBonus(state);
+  return ufs.map((_, i) => adhesionProbability(content.calibration, view[i].governorRelation, bonus));
 }
 
 /**

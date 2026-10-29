@@ -6,6 +6,8 @@ import { preventionOf, type Prevention } from '../climate/effects';
 import { annualReview, fiscalStructure, revenueMonth, spendingMonth } from '../economy/fiscal';
 import { BRAND_ACTION_ID, DIRECTIVE_ACTION_ID } from '../actions';
 import { currentNominalGdpMillions, fiscalValues, scenarioEconomyValues } from '../state';
+import { EDUCATION_LEVER_IDS } from '../education/types';
+import { advanceAgreement, agreementRegional, counterpartCoverage, createAgreement } from './federative';
 import type {
   Decision,
   DecisionRejection,
@@ -200,6 +202,11 @@ export function checkPublicPolicies(state: GameState): string[] {
       errors.push(`projeto ${project.proposalId}: desembolso inválido`);
     }
     if (!finiteNonNegative(project.assetMillions)) errors.push(`projeto ${project.proposalId}: ativo inválido`);
+    if (
+      project.monthSpentMillions !== undefined &&
+      (!finiteNonNegative(project.monthSpentMillions) || project.monthSpentMillions > project.spentMillions + EPSILON)
+    )
+      errors.push(`projeto ${project.proposalId}: desembolso do mês inválido`);
     if (!finiteNonNegative(project.maintenanceMillions))
       errors.push(`projeto ${project.proposalId}: manutenção inválida`);
     if (!Number.isInteger(project.phaseMonth) || project.phaseMonth < 0)
@@ -253,9 +260,16 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
   renewDirectives(publicState, t, ctx.draft);
   const previousAssets = new Map(publicState.projects.map((project) => [project.proposalId, project.assetMillions]));
   depreciateAssets(publicState, ctx.content);
+  // O pagamento do mês é recontado a cada passo: obra parada ou concluída não carrega o valor do mês anterior.
+  for (const project of publicState.projects) delete project.monthSpentMillions;
 
   const currentDirectives = publicState.directives.filter((directive) => directive.year === yearOf(t));
   const projectRuns = ensureProjects(publicState, proposals, ctx.content, t, state);
+  // Convênios das obras federativas (PLANO_EXPANSAO EX-20): negociação, assinatura, contrapartida e vigência, antes
+  // de a obra pedir dinheiro. Uma obra cancelada por falta de adesão já sai da alocação do mês.
+  for (const run of projectRuns) {
+    if (run.policy) advanceAgreement(run.project, run.proposal, run.policy, state, ctx);
+  }
   const allocations = [
     ...currentDirectives.map((directive) => ({
       kind: 'directive' as const,
@@ -287,10 +301,13 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
     roomMillions -= allocated;
     impulses.push(...routineImpulses(policy, directive, allocated, gdpMillions, t));
     impulses.push(...routinePreventionImpulses(policy, directive, allocated, t));
+    impulses.push(...routineEducationImpulses(policy, directive, allocated, t));
   }
 
-  for (const run of projectRuns)
+  for (const run of projectRuns) {
     impulses.push(...projectPreventionImpulses(run.project, run.policy, t, state.economy.priceLevel));
+    impulses.push(...projectEducationImpulses(run.project, run.policy, t, state.economy.priceLevel));
+  }
 
   publicState.capitalStockMillions = publicState.projects
     .filter((project) => project.phase === 'operacao')
@@ -302,7 +319,7 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
     const policy = ctx.content.policies[project.policyId];
     const potentialDelta = (deltaAsset / positiveOr(realGdpMillions, 1)) * c.elast_kg * MONTHS_PER_YEAR;
     if (!policy || !Number.isFinite(potentialDelta) || Math.abs(potentialDelta) <= EPSILON) continue;
-    const regional = policyRegional(policy);
+    const regional = projectRegional(project, policy);
     impulses.push({
       sourceId: `projeto:capital:${project.proposalId}:${t}`,
       label: deltaAsset >= 0 ? 'Variação do capital público em operação' : 'Depreciação do capital público',
@@ -443,20 +460,81 @@ function projectPreventionImpulses(
     coverage = climateParam('prevencao_fracao_obra') * project.progress * approvedScale;
   } else if (project.phase === 'operacao') {
     // O ativo entregue está em preços-base (obra ÷ nível de preços): o nominal vai para a mesma unidade.
-    const nominalAsset =
-      (policy.cost.annualMillions *
-        (Math.max(1, policy.timeline.executionMonths) / MONTHS_PER_YEAR) *
-        (policy.project?.efficiency ?? 1)) /
-      positiveOr(priceLevel, 1);
-    coverage = nominalAsset > 0 ? Math.min(1, project.assetMillions / nominalAsset) : 0;
+    coverage = operationCoverage(project, policy, priceLevel);
   }
   return preventionImpulses(
     policy,
     coverage,
     `${PROJECT_IMPULSE_PREFIX}${project.proposalId}:prevencao:${month}`,
     month,
-    policyRegional(policy),
+    projectRegional(project, policy),
   );
+}
+
+/**
+ * Alavancas de educação de uma política (PLANO_EXPANSAO EX-19): um impulso `educacao.<alavanca>` com a força do
+ * programa × a capacidade entregue (0–1). Só a etapa da educação lê esses alvos; o gasto é o da própria rotina ou obra.
+ */
+function educationImpulses(policy: Policy, coverage: number, sourceId: string, startMonth: number): ScheduledImpulse[] {
+  if (!policy.education || !(coverage > 0)) return [];
+  const education = policy.education;
+  return EDUCATION_LEVER_IDS.flatMap((lever) => {
+    const strength = education[lever];
+    return strength !== undefined && strength > 0
+      ? [
+          {
+            sourceId: `${sourceId}:${lever}`,
+            label: policy.name,
+            target: `educacao.${lever}` as const,
+            delta: strength * coverage,
+            startMonth,
+            endMonth: startMonth,
+          },
+        ]
+      : [];
+  });
+}
+
+/** Rotina de educação: força × dotação liberada ÷ custo nominal, depois da maturação (como a prevenção da rotina). */
+function routineEducationImpulses(
+  policy: Policy,
+  directive: MinistryDirective,
+  allocatedMillions: number,
+  month: number,
+): ScheduledImpulse[] {
+  const nominal = policy.cost.annualMillions;
+  if (!policy.education || !(allocatedMillions > 0) || !(nominal > 0)) return [];
+  return educationImpulses(
+    policy,
+    Math.min(1, allocatedMillions / nominal),
+    `${ROUTINE_IMPULSE_PREFIX}${directive.ministryId}:${directive.policyId}:${directive.year}:educacao:${month}`,
+    month + policy.timeline.maturationMonths,
+  );
+}
+
+/**
+ * Projeto de educação: só a escola **em operação** ensina. A força vale o ativo líquido ÷ ativo nominal (no máximo 1),
+ * então o efeito cai quando o governo deixa a obra sem manutenção. Obra em andamento não matricula ninguém.
+ */
+function projectEducationImpulses(
+  project: PublicProject,
+  policy: Policy | undefined,
+  month: number,
+  priceLevel: number,
+): ScheduledImpulse[] {
+  if (!policy?.education || month < project.startMonth || project.phase !== 'operacao') return [];
+  const sourceId = `${PROJECT_IMPULSE_PREFIX}${project.proposalId}:educacao:${month}`;
+  return educationImpulses(policy, operationCoverage(project, policy, priceLevel), sourceId, month);
+}
+
+/** Ativo líquido em operação ÷ ativo nominal do projeto (custo × eficiência, em preços-base), no máximo 1. */
+function operationCoverage(project: PublicProject, policy: Policy, priceLevel: number): number {
+  const nominalAsset =
+    (policy.cost.annualMillions *
+      (Math.max(1, policy.timeline.executionMonths) / MONTHS_PER_YEAR) *
+      (policy.project?.efficiency ?? 1)) /
+    positiveOr(priceLevel, 1);
+  return nominalAsset > 0 ? Math.min(1, project.assetMillions / nominalAsset) : 0;
 }
 
 /**
@@ -507,6 +585,8 @@ function ensureProjects(
       delayMonths: 0,
       startMonth: Math.max(month, proposal.executionStart),
     });
+    const agreement = createAgreement(policy, proposal.id, state, content);
+    if (agreement) publicState.projects[publicState.projects.length - 1].federative = agreement;
     known.add(proposal.id);
   }
   return publicState.projects.map((project) => {
@@ -580,7 +660,7 @@ function processProject(
       const extraDepreciation = (calibration(ctx.content).dep_kg * (1 - maintenanceCoverage)) / MONTHS_PER_YEAR;
       project.assetMillions = Math.max(0, asset * (1 - extraDepreciation));
     }
-    const regional = policyRegional(policy);
+    const regional = projectRegional(project, policy);
     const impulses: ScheduledImpulse[] =
       maintenance > 0 && gdpMillions > 0
         ? [
@@ -654,8 +734,16 @@ function processProject(
     project.progress = Math.max(project.progress, Math.min(1, funded, after));
     return { roomMillions, impulses: [], transition };
   }
+  // Obra federativa (EX-20): a União só repassa na proporção da contrapartida estadual paga.
+  const coverage = counterpartCoverage(project.federative, ctx.content);
+  if (coverage <= EPSILON) {
+    project.bottleneck = 'contrapartida';
+    project.delayMonths += 1;
+    ctx.draft.notes.push(`Projeto ${policy.name}: estados sem pagar a contrapartida; repasse federal parado.`);
+    return { roomMillions, impulses: [], transition };
+  }
   const availableMonthly = roomMillions / MONTHS_PER_YEAR;
-  const allocated = Math.min(due, availableMonthly);
+  const allocated = Math.min(due * coverage, availableMonthly);
   if (allocated <= EPSILON) {
     project.bottleneck = 'orcamento';
     project.delayMonths += 1;
@@ -663,9 +751,11 @@ function processProject(
     return { roomMillions, impulses: [], transition };
   }
   roomMillions -= allocated * MONTHS_PER_YEAR;
+  const spentBefore = project.spentMillions;
   project.spentMillions = Math.min(project.budgetMillions, project.spentMillions + allocated);
+  project.monthSpentMillions = project.spentMillions - spentBefore;
   const share = allocated / due;
-  if (share < 1 - EPSILON) project.bottleneck = 'orcamento';
+  if (share < 1 - EPSILON) project.bottleneck = coverage < 1 - EPSILON ? 'contrapartida' : 'orcamento';
   project.progress = Math.min(
     1,
     project.budgetMillions > EPSILON ? project.spentMillions / project.budgetMillions : 1,
@@ -673,7 +763,7 @@ function processProject(
   );
   if (share >= 1 - EPSILON) project.phaseMonth += 1;
   else project.delayMonths += 1;
-  const regional = policyRegional(policy);
+  const regional = projectRegional(project, policy);
   const impulses: ScheduledImpulse[] =
     gdpMillions > 0
       ? [
@@ -705,8 +795,11 @@ function completeProject(
   project.phase = 'operacao';
   project.phaseMonth = 0;
   project.phaseEffort = 0;
+  // Obra federativa: o ativo é a obra inteira, paga em parte pelos estados; o desembolso federal é só a parcela federal.
+  const federalShare = positiveOr(project.federative?.federalShare ?? 1, 1);
   project.assetMillions =
-    (project.spentMillions / positiveOr(state.economy.priceLevel, 1)) * (policy.project?.efficiency ?? 1);
+    ((project.spentMillions / positiveOr(state.economy.priceLevel, 1)) * (policy.project?.efficiency ?? 1)) /
+    federalShare;
   project.maintenanceMillions =
     project.assetMillions * (policy.project?.annualMaintenanceRate ?? 0) * positiveOr(state.economy.priceLevel, 1);
   if (proposal.status === 'em_execucao') {
@@ -881,6 +974,11 @@ function policyRegional(policy: Policy): ImpulseRegional | undefined {
   };
 }
 
+/** Incidência regional de um projeto: a da política ou, numa obra federativa assinada, só os estados atendidos. */
+function projectRegional(project: PublicProject, policy: Policy): ImpulseRegional | undefined {
+  return agreementRegional(project.federative, policyRegional(policy));
+}
+
 function managedImpulse(impulse: ScheduledImpulse): boolean {
   return impulse.sourceId.startsWith(ROUTINE_IMPULSE_PREFIX) || impulse.sourceId.startsWith(PROJECT_IMPULSE_PREFIX);
 }
@@ -902,7 +1000,17 @@ function withPublicState(state: Readonly<GameState>, publicPolicies: PublicPolic
 function clonePublicState(publicState: PublicPolicyState): PublicPolicyState {
   return {
     directives: publicState.directives.map((directive) => ({ ...directive })),
-    projects: publicState.projects.map((project) => ({ ...project })),
+    projects: publicState.projects.map((project) => ({
+      ...project,
+      ...(project.federative
+        ? {
+            federative: {
+              ...project.federative,
+              members: project.federative.members.map((member) => ({ ...member })),
+            },
+          }
+        : {}),
+    })),
     brands: publicState.brands.map((brand) => ({ ...brand })),
     capitalStockMillions: publicState.capitalStockMillions,
     ...(publicState.budgetLaws ? { budgetLaws: publicState.budgetLaws.map((law) => ({ ...law })) } : {}),

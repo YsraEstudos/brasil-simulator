@@ -42,6 +42,7 @@ import {
   supportsRegionalDistribution,
 } from '../regions/regions';
 import { currentNominalGdpMillions } from '../state';
+import { federalismAdhesionBonus, negotiationDiscount } from '../skills/skills';
 import type { Instrument, Policy } from '../../types/policy';
 import type { Bloc } from '../../types/scenario';
 import type {
@@ -404,7 +405,7 @@ function stateAdhesion(
   let populationShare = 0;
   ufs.forEach((uf, i) => {
     const relation = view[i]?.governorRelation ?? uf.governor.relation;
-    if (ctx.rng.chance(adhesionProbability(c, relation))) {
+    if (ctx.rng.chance(adhesionProbability(c, relation, federalismAdhesionBonus(state)))) {
       adherents.push(uf.id);
       populationShare += pop[i];
     }
@@ -869,9 +870,19 @@ function negotiate(run: Run, p: Proposal, d: Decision): void {
     const blocId = d.params?.blocId;
     if (typeof blocId !== 'string') return;
     n.blocs[blocId] = Math.min(c.negociacao_apoio_max, (n.blocs[blocId] ?? 0) + c.negociacao_apoio);
-    addCapital(run, c.capital_negociacao);
+    // Habilidade de negociação (PLANO_EXPANSAO EX-21): o canal é só o custo de capital; o apoio ganho é o mesmo.
+    const discount = negotiationDiscount(run.state);
+    addCapital(run, c.capital_negociacao * (1 - discount));
     shiftRelation(run, blocId, c.relacao_negociacao);
-    pushTransition(run, p, p.status, 'negociacao', `Negociação com o bloco ${blocName(run, blocId)}.`);
+    pushTransition(
+      run,
+      p,
+      p.status,
+      'negociacao',
+      discount > 0
+        ? `Negociação com o bloco ${blocName(run, blocId)}; a habilidade de negociação poupou ${Math.round(discount * 100)}% do capital.`
+        : `Negociação com o bloco ${blocName(run, blocId)}.`,
+    );
   } else if (d.policyId === AMENDMENTS_ACTION_ID && !n.amendments) {
     n.amendments = true;
     run.impulses.push({

@@ -208,6 +208,7 @@ export const PROJECT_BOTTLENECK_LABEL: Record<string, string> = {
   orcamento: 'orçamento disponível',
   suspensao: 'projeto suspenso',
   cronograma: 'intervalo previsto no cronograma',
+  contrapartida: 'contrapartida estadual não paga',
   nenhum: 'nenhum identificado neste mês',
 };
 

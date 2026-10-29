@@ -61,6 +61,23 @@ Parâmetros em `src/engine/economy/calibration.ts` (seção Federação); distri
 | Obras no mapa (PR 13) | Obra da carteira (projeto) só ganha pin em UF que a **política cita** no escopo regional (`regional.scope`); obra nacional ou de macrorregião não tem pin e nenhuma coordenada é inventada. O pin fica na âncora da UF, só enquanto a obra está em andamento. |
 | Ainda não modelado | Finanças e dívidas estaduais (o evento das dívidas estaduais só mexe em relação, atividade e risco), FPE/FPM por UF, bancadas estaduais no Congresso, eleição de governadores (Fase 08), invasão de competência estadual como risco jurídico. |
 
+#### 2.1.1 Obras federativas por convênio (onda R5 do plano de expansão, EX-20, motor 0.19.0)
+
+Saúde regional e mobilidade urbana são executadas com estados (CF art. 23, competência comum; art. 241, convênios). O
+presidente não decide pelo estado: propõe, negocia e paga a parte federal. Código em
+`src/engine/publicPolicies/federative.ts`; parâmetros em `FEDERATIVE_PARAMS` (`federativeCalibration.ts`), `PROVISORIO`.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Obra federativa | Projeto com `federative: { counterpartShare, termMonths }` e planejamento ≥ 1 mês. No cenário v0.8.0: hospitais regionais (contrapartida 30%) e mobilidade urbana (40%), vigência de 48 meses. Continua sendo uma obra da carteira (Fase 06): não há segunda carteira. |
+| Adesão | Quando a obra entra na carteira, cada governador do escopo decide uma vez, com a mesma fórmula dos programas por convênio (`adesao_base + adesao_relacao × relação/100`, mais a habilidade de federalismo, §6.6). Sorteio por chave estável (semente, obra, UF): não consome o PRNG compartilhado. |
+| Compensação legítima | Com quem recusou, no planejamento, a ação `negociar_adesao` (1 ação, uma vez por UF e obra) faz a União assumir parte da contrapartida (`convenio_contrapartida_negociada`) e o governador decide de novo com chance maior (`convenio_adesao_negociacao`). A obra fica mais cara para a União. |
+| Assinatura | No fim do planejamento: o escopo passa a ser só os estados que aderiram, o orçamento federal = valor da obra nesses estados × (1 − contrapartida de cada um) e a vigência começa. Sem nenhuma adesão, a obra é cancelada com causa `sem_adesao`. Gasto, manutenção, capital e efeitos regionais incidem só nos estados atendidos. |
+| Contrato, não humor | Troca de governador ou de relação não tira o estado da obra. Muda só o risco de descumprir: na obra, um estado em dia fica inadimplente com chance `convenio_inadimplencia_base` + `convenio_inadimplencia_hostil` × relação negativa; um inadimplente regulariza com chance `convenio_regularizacao_base` + `convenio_regularizacao_aliado` × relação positiva (um novo governador eleito muda essa chance). |
+| Repasse condicionado | A União repassa na proporção da contrapartida estadual paga: inadimplência atrasa a obra e aparece como gargalo "contrapartida estadual não paga". |
+| Vigência | No fim, o aditivo renova o convênio só com os estados em dia; os inadimplentes são excluídos e a parte federal ainda não paga do território deles sai do orçamento. Sem nenhum estado em dia, a obra é encerrada (`convenio_encerrado`). |
+| Ativo | O ativo em operação é a obra inteira (desembolso federal ÷ parcela federal × eficiência): a contrapartida estadual vira capital, mas a despesa federal é contada uma vez só. |
+
 ---
 
 ## 3. Instrumentos normativos
@@ -249,6 +266,20 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 | Ministérios (§6.3.1) | Cada pasta tem peso e áreas de política. Indicação de bloco: apoio do bloco em todas as votações (`apoio_ministerio` × peso, saturado), relação melhora na nomeação; a execução depende da competência do indicado, independentemente da origem, e atrasa se o bloco for ideologicamente contrário à política (`atraso_ministerio_contrario`). O risco mensal de escândalo ainda cresce com os anos no cargo (`escandalo_base_mes`, `escandalo_por_ano`, saturado). O evento "Escândalo em ministério" só dispara com pasta de bloco, com probabilidade igual a esse risco; a resposta "Demitir" troca o indicado mais antigo por um técnico. Demitir indicado custa capital e a relação com o bloco. |
 | Medida provisória (§3) | Vigência imediata; se não for convertida em 4 meses (120 dias), perde a eficácia e os efeitos param. A partir do 2º mês (mais de 45 dias) tranca a pauta da Casa em que está: as demais propostas dessa Casa esperam. |
 | Ainda não modelado | Comissões permanentes, emendas de plenário, destaques, obstrução, recesso de julho, convocação extraordinária, CPIs, impeachment e TCU. |
+
+### 6.6 Habilidades do presidente (onda R5 do plano de expansão, EX-21, motor 0.19.0)
+
+**Proposta de conteúdo, pendente de aprovação do autor** (plano de expansão §10: "conteúdo dos perks iniciais").
+Código em `src/engine/skills/`; parâmetros em `SKILL_PARAMS`, `PROVISORIO`. A habilidade é da pessoa
+(`GameState.skills.characters[id]`): o sucessor controlado começa do zero.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Treino | Ação `treinar_habilidade` (1 ação de agenda e `treino_capital` de capital político, pela opinião pública do mês). Um treino por mês, em qualquer ramo (a chave da ação não tem alvo). O nível é derivado dos meses acumulados: `treino_nivel_1` (3), `treino_nivel_2` (8), `treino_nivel_3` (15). O treino entra no fim do mês; o nível novo vale no mês seguinte. |
+| Negociação (3 níveis) | Canal único: cada `negociar_bloco` custa `capital_negociacao × (1 − nível × negociacao_desconto)`. O apoio ganho, a relação e a votação não mudam. A transição da proposta registra quanto a habilidade poupou. |
+| Federalismo (3 níveis) | Canal único: `nível × federalismo_adesao` somado à probabilidade de adesão de cada governador a convênio (programas `adesao_estadual` e obras federativas, §2.1.1), limitada a 1. Governador hostil continua recusando na maioria das vezes. |
+| Proibido | Nenhum ramo soma PIB, aprovação, intenção de voto ou relação diretamente (plano de expansão §10). Teste: seis meses sem ações com habilidade máxima dão indicadores e economia idênticos. |
+| Ainda não modelado | Experiência por resultado (aprender negociando), nomeações que trazem habilidade, os demais ramos do F06 (crises, comunicação, planejamento fiscal, ciência e tecnologia). |
 
 ---
 

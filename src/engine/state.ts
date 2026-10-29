@@ -1,3 +1,4 @@
+import { initialEducation } from './education/education';
 import type { Scenario } from '../types/scenario';
 import { DEFAULT_ENABLED_MODULES, normalizeModules, type ModuleId } from './modules';
 import {
@@ -217,6 +218,7 @@ export function createInitialState(c: NewCampaign): GameState {
     publicPolicies: initialPublicPolicies(),
     government: { profile: presetProfile(c.profile ?? DEFAULT_PROFILE_PRESET) },
     climate: initialClimate(c.seed),
+    education: initialEducation(),
     ...(administration
       ? {
           administrations: [administration],

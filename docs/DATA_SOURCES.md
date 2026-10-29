@@ -99,6 +99,31 @@ Pipeline: `npm run build:cities` (`scripts/data/build_cities.py`; lê `src/globe
 
 Pipeline: `npm run build:globe-climate` (`scripts/data/build_globe_climate.py [--raw data-raw]`; lê só os contornos de UF e os lagos, os mesmos insumos de `build_globe.py`, e **não** regera os tiles). Determinístico. Dado só visual: não entra no motor nem no cenário. O clima em si (chuva e seca por UF) é do motor ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.18–5.19).
 
+### 3.5 Rede ferroviária nacional (R5 do PLANO_EXPANSAO, EX-30, 28/10/2026)
+
+| Dado | Fonte | Uso | Status |
+| --- | --- | --- | --- |
+| `src/data/railways/rede_ferroviaria.json` (v2026.10.1, situação de dez/2025): 21 corredores, 43 trechos, com uso, bitola, operador, UFs, conexões portuárias, extensão e grau de confiança da situação de cada trecho | Compilação manual a partir de ANTT (Declaração de Rede, relatórios das concessões), Ministério dos Transportes (Plano Nacional de Logística, Novo PAC), governos estaduais e IPHAN; a fonte de cada corredor fica no próprio registro | Camada Ferrovias do mapa (globo e 2D) e folha de lista; o motor não lê | **PROVISORIO**. Não vem de pipeline |
+
+Regras da camada: o traçado é **esquemático** (linhas entre cidades de referência, nunca o eixo da via) e a interface
+diz isso ao lado da legenda, com a versão e a data. Extensão só aparece quando a fonte a declara; sem ela, "extensão
+sem dado consolidado" ou "≥ N km (só trechos com dado)". Cada trecho tem confiança `alta`, `media` ou `baixa`;
+`baixa` é mostrada como "situação a confirmar". Corredor sem trecho em operação ou em obra não tem operador. Antes de
+tratar a rede como dado oficial, substituir por pipeline a partir da base georreferenciada da ANTT e subir a versão.
+
+### 3.6 Educação por coorte (R5 do PLANO_EXPANSAO, EX-19, 28/10/2026)
+
+| Dado | Fonte | Uso | Status |
+| --- | --- | --- | --- |
+| Coorte de entrada, duração, evasão e transição por etapa; saída da força de trabalho | Ordens de grandeza arredondadas do Censo Escolar/INEP e da PNAD Contínua/IBGE | `EDUCATION_PARAMS` (`src/engine/education/calibration.ts`) | **PROVISORIO** |
+| Aprendizagem de base (fração com proficiência adequada) | Ordem de grandeza do Saeb e do Enade/INEP | idem | **PROVISORIO** |
+| Elasticidade do PIB potencial a anos de estudo (0,06) | Retorno de Mincer ~10% × participação do trabalho ~0,6 | idem | **PROVISORIO**: hipótese causal, não estimativa |
+
+O estado inicial é o **estacionário** das taxas de base, não a matrícula observada: os estoques ficam na ordem de
+grandeza do país (≈23 mi no fundamental, ≈120 mi na força de trabalho, ≈10,7 anos de estudo), mas não reproduzem o
+Censo Escolar. A coorte de entrada é constante até existir demografia (EX-22). Antes de tratar como dado, trocar por
+pipeline do INEP com coortes reais e calibrar o estacionário contra elas.
+
 > **Códigos de séries:** serão levantados e conferidos na Fase 01/03. Nenhum código deve ser usado sem validação da resposta da API, porque séries são descontinuadas ou renumeradas.
 
 ---

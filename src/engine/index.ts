@@ -49,6 +49,13 @@ export { keySalt } from './career/draw';
 export { managementProfile, ministryManagement, policyCapacity } from './congress/management';
 export { projectCommitments, type ProjectCommitment } from './publicPolicies/commitments';
 export { budgetCalendar } from './publicPolicies/budgetCalendar';
+export {
+  sectorInvestments,
+  type SectorAnnouncement,
+  type SectorInvestmentReport,
+  type SectorInvestmentRow,
+  type SectorProjectRow,
+} from './publicPolicies/sectorInvestments';
 export { BUDGET_POLICY_IDS, budgetDraftOf, isBudgetPolicy } from './publicPolicies/budgetLaws';
 export {
   START_SITUATIONS,
@@ -156,10 +163,12 @@ export {
   BRAND_ACTION_ID,
   isAgendaAction,
   NEGOTIATE_ACTION_ID,
+  NEGOTIATE_ADHESION_ACTION_ID,
   PRESSURE_ACTION_ID,
   SANCTION_ACTION_ID,
   SANCTION_CHOICES,
   SUPPORT_CANDIDATE_ACTION_ID,
+  TRAIN_SKILL_ACTION_ID,
   URGENCY_ACTION_ID,
   VISIT_ACTION_ID,
   type AgendaAction,
@@ -428,3 +437,13 @@ export {
   type LegalLevel,
 } from './events/afterTerm';
 export { NEWS_LIMIT, NEWS_PER_MONTH_MAX, appendNews, generateNews } from './news';
+export * from './education';
+export * from './skills';
+export {
+  agreementRegional,
+  counterpartCoverage,
+  eligibleUfs,
+  memberAdhesionProbability,
+  servedUfs,
+} from './publicPolicies/federative';
+export { FEDERATIVE_PARAMS, federativeParam } from './publicPolicies/federativeCalibration';

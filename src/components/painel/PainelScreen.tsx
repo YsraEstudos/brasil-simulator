@@ -28,7 +28,7 @@ import { MonthSummary } from '@/components/campaign/MonthSummary';
 import { WhyChanged } from '@/components/campaign/WhyChanged';
 import { Alert, Indicator, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
+import { DEFAULT_SCENARIO_ID, loadContent, RAILWAYS } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
 import {
   indicatorsFromScenario,
@@ -47,6 +47,14 @@ import { buildClimateMapData, buildClimateOverlay } from '@/components/map/clima
 import { endMarkerPulse } from '@/components/map/markerSession';
 import { nextMarkerItem, opensStateCard, type MapMarker } from '@/components/map/markersView';
 import { buildRegionalMapViewModel } from '@/components/map/regionalMapViewModel';
+import {
+  ALL_RAILWAYS,
+  buildRailwayOverlay,
+  governmentWorks,
+  railwayListRows,
+  type RailwayFilter,
+} from '@/components/map/railwayView';
+import { findUf } from '@/globe/ufs';
 import { useMapMarkers } from '@/components/map/useMapMarkers';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
@@ -63,6 +71,7 @@ import {
   EmptyNote,
   EndMonthButton,
   GoalCheckRow,
+  LinkRow,
   MapLayerLegend,
   MapLayerRow,
   MenuRow,
@@ -94,6 +103,7 @@ import {
   type RailSheetId,
 } from './mesaNav';
 import { ProfileSheet } from './ProfileSheet';
+import { RailwayLegend, RailwaySheet } from './RailwaySheet';
 import { availableIndicators, indicatorSpec, layerBadge, mapRows, type MapIndicator } from './regionalMetrics';
 import { UfDetail } from './StateDetail';
 import { ReadingList } from './MapReadingPanel';
@@ -156,7 +166,7 @@ const SETTINGS_ICON: SymbolViewProps['name'] = { ios: 'gearshape.fill', android:
 const COMPACT_DOCK_CENTER_MIN_WIDTH = 600;
 
 /** Folhas da mesa: as dos trilhos, mais o cartão do estado (toque no globo) e o menu (botão ☰ do topo). */
-type SheetId = RailSheetId | 'estado' | 'menu';
+type SheetId = RailSheetId | 'estado' | 'menu' | 'ferrovias';
 
 const SHEET_TITLES: Record<SheetId, string> = {
   alertas: 'Alertas e Eventos',
@@ -170,6 +180,7 @@ const SHEET_TITLES: Record<SheetId, string> = {
   perfil: 'Perfil do Governo',
   estado: 'Estado',
   menu: 'Menu',
+  ferrovias: 'Ferrovias',
 };
 
 const CENTER_ICON: SymbolViewProps['name'] = { ios: 'globe.americas', android: 'public', web: 'public' };
@@ -200,6 +211,10 @@ export function PainelScreen() {
   const [elections, setElections] = useState<{ id: string; results: readonly ElectionResult[] } | null>(null);
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
+  // Camada Ferrovias (PLANO_EXPANSAO EX-30): independe do mapa de calor; filtro e corredor destacado são da sessão.
+  const [railwaysOn, setRailwaysOn] = useState(false);
+  const [railFilter, setRailFilter] = useState<RailwayFilter>(ALL_RAILWAYS);
+  const [railCorridor, setRailCorridor] = useState<string | null>(null);
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
   const [mapRegion, setMapRegion] = useState<string | null>(null);
   const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
@@ -327,6 +342,24 @@ export function PainelScreen() {
   const markers = useMapMarkers(active, content);
   const caravanTarget =
     active && isPreInauguration(active.state) ? caravanDestination(active.lastReport?.career?.actions ?? []) : null;
+  // Obras ferroviárias do governo: recalculadas só quando propostas ou carteira mudam (fim do mês).
+  const activeState = active?.state;
+  const railWorks = useMemo(
+    () => (activeState ? governmentWorks(activeState, content) : new Map()),
+    [activeState, content],
+  );
+  const railOverlay = useMemo(
+    () =>
+      railwaysOn
+        ? buildRailwayOverlay({
+            network: RAILWAYS,
+            filter: railFilter,
+            works: railWorks,
+            selectedCorridorId: railCorridor,
+          })
+        : null,
+    [railwaysOn, railFilter, railWorks, railCorridor],
+  );
   const baseMapModel = useMemo(
     () =>
       buildRegionalMapViewModel({
@@ -336,8 +369,9 @@ export function PainelScreen() {
         climate: climateOverlay,
         markers,
         election,
+        railways: railOverlay,
       }),
-    [layer, hud.fills, selectedUf, climateOverlay, markers, election],
+    [layer, hud.fills, selectedUf, climateOverlay, markers, election, railOverlay],
   );
   const actionsLeft = hud.actionsMax - (active ? draftCost(draft, content) : 0);
 
@@ -851,7 +885,49 @@ export function PainelScreen() {
               <MapLayerLegend spec={indicatorSpec(layer)} badge={layerBadge(layer, election)} />
             )}
             {hud.demo && <EmptyNote text="Inicie uma campanha para ativar os mapas por estado." />}
+            <SheetHeading text="Infraestrutura" />
+            <MapLayerRow
+              label="Ferrovias"
+              hint={
+                railWorks.size > 0
+                  ? 'Rede nacional por situação, com as obras do governo em verde. Combina com qualquer mapa de calor.'
+                  : 'Rede nacional por situação: ativa, em construção, planejada e desativada. Combina com qualquer mapa de calor.'
+              }
+              active={railwaysOn}
+              onPress={() => setRailwaysOn((on) => !on)}
+            />
+            {railOverlay && (
+              <>
+                <RailwayLegend entries={railOverlay.legend} caption={railOverlay.caption} />
+                <LinkRow label="Lista, filtros e ficha dos corredores" onPress={() => setSheet('ferrovias')} />
+              </>
+            )}
           </>
+        );
+      case 'ferrovias':
+        return (
+          <RailwaySheet
+            network={RAILWAYS}
+            rows={railwayListRows(RAILWAYS, railFilter, railWorks)}
+            filter={railFilter}
+            onFilter={setRailFilter}
+            legend={railOverlay?.legend ?? []}
+            caption={railOverlay?.caption ?? ''}
+            selectedId={railCorridor}
+            onSelect={setRailCorridor}
+            hasGovernmentWorks={railWorks.size > 0}
+            onShowOnMap={(id) => {
+              setRailwaysOn(true);
+              setRailCorridor(id);
+              closeSheet();
+              // A câmera vai para a UF do meio do traçado (o 2D já mostra o Brasil inteiro).
+              const corridor = RAILWAYS.corridors.find((c) => c.id === id);
+              const path = corridor?.segments.flatMap((sg) => sg.path) ?? [];
+              const mid = path[Math.floor(path.length / 2)];
+              const uf = mid ? findUf(mid[0], mid[1])?.sigla : undefined;
+              globe.current?.flyToUf(uf ?? corridor?.ufs[0] ?? 'DF');
+            }}
+          />
         );
       default:
         return null;

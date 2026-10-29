@@ -1,4 +1,4 @@
-import { Component, useCallback, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import type { GlobeApi, GlobeQuality, GlobeViewProps } from '@/globe/GlobeView';
@@ -11,6 +11,7 @@ import { useGame } from '@/store';
 
 import { FlatBrazilMap } from './FlatBrazilMap';
 import { markerPulseKey, type MapMarker } from './markersView';
+import { globeRailLines } from './railwayView';
 import type { RegionalMapViewModel } from './regionalMapViewModel';
 
 /**
@@ -198,6 +199,10 @@ function MapSurfaceRenderer({
       labels={labels}
     />
   );
+  const railways = useMemo(
+    () => (viewModel.railways ? globeRailLines(viewModel.railways) : null),
+    [viewModel.railways],
+  );
   if (renderer !== 'globe' || globeFailed) return flat(renderer === 'flat-light');
   // O globo devolve a sigla da UF do marcador tocado; o modelo tem um marcador por UF.
   const markerPressed = (sigla: string) => {
@@ -224,6 +229,7 @@ function MapSurfaceRenderer({
         pulseKey={markerPulseKey(viewModel.markers)}
         reduceMotion={reduceMotion}
         caravan={caravan}
+        railways={railways}
         onMarkerPress={markerPressed}
         onPulseDone={onPulseDone}
       />

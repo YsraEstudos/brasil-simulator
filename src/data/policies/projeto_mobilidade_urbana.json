@@ -27,5 +27,6 @@
   "position": { "economic": -0.1, "social": -0.1 },
   "dataStatus": "PROVISORIO",
   "delivery": "projeto",
-  "project": { "licensingMonths": 9, "procurementMonths": 7, "efficiency": 0.75, "annualMaintenanceRate": 0.035 }
+  "project": { "licensingMonths": 9, "procurementMonths": 7, "efficiency": 0.75, "annualMaintenanceRate": 0.035 },
+  "federative": { "counterpartShare": 0.4, "termMonths": 48 }
 }

@@ -24,6 +24,8 @@ import { GlobeLabels, type LabelInsets, type LabelsUpdater } from './GlobeLabels
 import type { Rect } from './labels';
 import type { GlobeMarker } from './markers';
 import { CaravanMarker } from './CaravanMarker';
+import type { GlobeRailLine } from './railGeometry';
+import { RailwayLayer } from './RailwayLayer';
 import { lodPixelsPerRadian, selectTiles } from './lod';
 import type { GlobeBudget } from './qualityProfiles';
 import {
@@ -244,6 +246,8 @@ type Props = {
   onPulseDone?: (instanceIds: readonly string[]) => void;
   reduceMotion: boolean;
   caravan?: { destination: string; key: string } | null;
+  /** Camada Ferrovias; `null` = desligada. */
+  railways?: readonly GlobeRailLine[] | null;
 };
 
 export function GlobeScene({
@@ -265,6 +269,7 @@ export function GlobeScene({
   onPulseDone,
   reduceMotion,
   caravan,
+  railways = null,
 }: Props) {
   'use no memo'; // objetos three.js são mutados a cada quadro; fora do React Compiler
   const { camera, gl, size, invalidate } = useThree();
@@ -794,6 +799,7 @@ export function GlobeScene({
       )}
       <group ref={group} />
       <UfFills fills={fills ?? NO_FILLS} invalidate={invalidate} />
+      {railways && railways.length > 0 && <RailwayLayer lines={railways} />}
       {caravan && (
         <CaravanMarker
           key={caravan.key}

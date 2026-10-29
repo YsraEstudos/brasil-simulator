@@ -147,6 +147,9 @@ recusados.
 | Depois do mandato (influência política, situação jurídica, legado de governo) / desfecho final com o limite de meses | `afterTerm` (`events/afterTerm.ts`) / `finalOutcome` |
 | Eleição da campanha / derrota antes da posse / posse da carreira | `runElection` e `CareerState.election` (`career/election.ts`) / desfecho `derrota_campanha` (`campaignOutcome`, `careerDefeated`) / `career/inauguration.ts` |
 | Índice do turno (identidade de cada turno salvo; = `monthIndex` na partida que começa na posse) / turno da posse | `turnIndexOf(state)` (coluna `turn_index`) / `inaugurationTurnIndex(state)` |
+| Educação por coorte (etapa, escolaridade da força de trabalho, alavanca, capital humano) | `GameState.education` (`education/`; `EducationStageId`, `AttainmentId`, `EducationLeverId`, alvos `educacao.*`) / `humanCapital` |
+| Obra federativa, convênio, contrapartida, inadimplência | `Policy.federative` / `PublicProject.federative` (`FederativeAgreement`, `publicPolicies/federative.ts`) / `counterpartShare` / status `inadimplente`; ação `negociar_adesao` |
+| Habilidade do personagem (ramo, nível, treino) | `GameState.skills` (`skills/`; `SkillBranchId`: `negociacao`, `federalismo`) / `skillLevel` / ação `treinar_habilidade` |
 
 ---
 

@@ -22,5 +22,6 @@
   },
   "position": { "economic": -0.2, "social": -0.2 },
   "dataStatus": "PROVISORIO",
-  "delivery": "rotina"
+  "delivery": "rotina",
+  "education": { "alfabetizacao": 0.8 }
 }

@@ -20,6 +20,7 @@ import type { LabelInsets } from './GlobeLabels';
 import { GlobeScene, type SceneFrame, type SceneStats } from './GlobeScene';
 import type { Rect } from './labels';
 import type { GlobeMarker } from './markers';
+import type { GlobeRailLine } from './railGeometry';
 import { budgetOf, DEFAULT_PROFILE_3D, type Profile3d } from './qualityProfiles';
 import { findUf, ufBySigla, type Uf } from './ufs';
 import { DEFAULT_DAY_TIME, type SkyInput } from './visualClock';
@@ -89,6 +90,8 @@ export interface GlobeViewProps {
   onPulseDone?: (instanceIds: readonly string[]) => void;
   reduceMotion?: boolean;
   caravan?: { destination: string; key: string } | null;
+  /** Camada Ferrovias (linhas já com estilo); `null`/ausente = camada desligada. */
+  railways?: readonly GlobeRailLine[] | null;
 }
 
 const NO_RECTS: readonly Rect[] = [];
@@ -128,6 +131,7 @@ export function GlobeView({
   onPulseDone,
   reduceMotion = false,
   caravan,
+  railways = null,
 }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   useEffect(() => controller.setReduceMotion(reduceMotion), [controller, reduceMotion]);
@@ -294,6 +298,7 @@ export function GlobeView({
                   onPulseDone={onPulseDone}
                   reduceMotion={reduceMotion}
                   caravan={caravan}
+                  railways={railways}
                 />
               </Canvas>
             ) : (
@@ -325,6 +330,7 @@ export function GlobeView({
                   onPulseDone={onPulseDone}
                   reduceMotion={reduceMotion}
                   caravan={caravan}
+                  railways={railways}
                 />
               </NativeGlobeCanvas>
             )}

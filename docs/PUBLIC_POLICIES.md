@@ -73,6 +73,59 @@ o ativo real líquido entra no estoque explícito,
 passa por depreciação mensal a partir de `dep_kg`, exige manutenção anual e gera um único impulso de oferta por
 `elast_kg × (ΔK / PIB real) × 12`. Depreciação negativa é registrada pelo mesmo canal, com a causa correspondente.
 
+### Investimentos por setor (PLANO_EXPANSAO EX-31)
+
+`sectorInvestments(state, content)` é uma **leitura derivada** da carteira e das propostas, mostrada no cartão
+"Investimentos por setor" da Economia: não cria orçamento paralelo, não altera a simulação e não soma efeito. O setor é
+a `area` da política. O dinheiro aparece em estágios que nunca se somam duas vezes:
+
+| Estágio | O que conta | Fonte |
+| --- | --- | --- |
+| Anunciado | Proposta de obra em tramitação ou à espera de sanção, ainda fora da carteira (custo estimado por escala e prazo) | `state.proposals` |
+| Aprovado | Custo total das obras na carteira, com sobrecusto, sem as canceladas | `PublicProject.budgetMillions` |
+| Contratado | Obras que passaram da licitação (fase obra ou operação) | idem |
+| Desembolsado | Pago de fato, acumulado; obra cancelada continua com o que pagou | `PublicProject.spentMillions` |
+| No último mês | Parte do desembolsado paga no mês processado (o mesmo valor do impulso `gasto.investimento` da obra) | `PublicProject.monthSpentMillions` |
+
+O empenho não é modelado em separado, e a interface diz isso. Setor do catálogo sem obra aparece como "nenhuma obra
+aprovada ou anunciada", nunca como falta de dado. `monthSpentMillions` é zerado no início de cada passo da carteira e
+só é gravado quando há pagamento; o invariante `checkPublicPolicies` exige que ele não passe do acumulado.
+
+### Obras ferroviárias (PLANO_EXPANSAO EX-30)
+
+Uma política de projeto pode citar um trecho da rede ferroviária nacional (`railway: { segmentId, kind }`, só com
+`delivery: "projeto"`). O motor ignora o campo; o mapa usa a proposta e a fase da obra para desenhar o trecho na cor
+do governo (verde) em vez do traçado planejado, e só o mostra como ativo quando a obra entra em operação. O cenário
+v0.8.0 oferece duas obras para comparar: carga (Barreiras–Figueirópolis, FIOL 3: mais cara, 48 meses, licenciamento de
+18 meses, manutenção 2,5%/ano) e passageiros (Brasília–Anápolis–Goiânia: mais barata, 36 meses, manutenção
+4,5%/ano e custeio de operação maior). Custos PROVISORIO.
+
+### Obras federativas (PLANO_EXPANSAO EX-20)
+
+Um projeto com `federative: { counterpartShare, termMonths }` é executado por convênio com os estados do escopo
+(regras em [POLITICAL_RULES.md](POLITICAL_RULES.md) §2.1.1). O convênio vive no próprio `PublicProject.federative`
+(membros, assinatura, vigência, parcela federal): **não há segunda carteira**. Na carteira, a obra:
+
+- decide a adesão de cada governador ao entrar e aceita `negociar_adesao` no planejamento;
+- na assinatura, multiplica o orçamento pela parcela federal dos estados que aderiram e passa a incidir só neles;
+- na obra, repassa na proporção da contrapartida paga (`counterpartCoverage`); inadimplência vira gargalo
+  `contrapartida` e atraso;
+- em operação, segue a manutenção de sempre; o ativo é a obra inteira (desembolso federal ÷ parcela federal).
+
+O Gabinete mostra, sob a obra, quem aderiu, quem recusou, inadimplentes, vigência, parcela federal e contrapartida
+paga, com um botão de negociação por governador que recusou (e a chance de aderir depois dela).
+
+### Educação por coorte (PLANO_EXPANSAO EX-19)
+
+Rotinas e projetos podem declarar alavancas de educação (`education: { alfabetizacao?, permanencia?, docentes? }`,
+0–1). A carteira emite impulsos de um mês nos alvos `educacao.<alavanca>` com a força × capacidade entregue — a
+**rotina** na proporção da dotação liberada, depois de `maturationMonths`; o **projeto** só em operação, na proporção
+do ativo conservado (sem manutenção, o efeito cai). O gasto continua sendo o da rotina ou da obra: o módulo de educação
+não cria despesa. No cenário v0.8.0: `rotina_alfabetizacao` (alfabetização 0,8, horizonte curto),
+`rotina_formacao_docente` (docentes 0,8) e `projeto_escolas_tempo_integral` (permanência 1, horizonte longo: só age
+depois de obra pronta). Modelo das coortes em [ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.22; o cartão "Educação" fica na
+subtela Economia.
+
 ## Marcas e relatório
 
 Enquanto uma marca existe, cada mês acrescenta a situação atual do projeto a `report.notes`, incluindo tramitação,

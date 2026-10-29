@@ -15,5 +15,6 @@
   "affected": { "groups": ["professores", "estudantes"], "sectors": ["servicos"], "regions": ["nacional"] },
   "position": { "economic": -0.1, "social": -0.1 },
   "dataStatus": "PROVISORIO",
-  "delivery": "rotina"
+  "delivery": "rotina",
+  "education": { "docentes": 0.8 }
 }
