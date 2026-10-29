@@ -4,6 +4,10 @@ import type { Energy } from './energy/energy';
 import type { CensusAgeData } from '../types/demography';
 import type { ResearchState } from './research/types';
 import type { TradeState } from './trade/types';
+import type { HealthState } from './health/types';
+import type { PressState } from './press/types';
+import type { HealthCatalog } from '../types/health';
+import type { PressCatalog } from '../types/press';
 import type { TechnologyCatalog } from '../types/technology';
 import type { TradeCatalog } from '../types/trade';
 import type { SkillsState } from './skills/types';
@@ -22,10 +26,10 @@ import type { IllicitState } from './career/illicit';
 import type { CampaignConfigV2 } from './campaignConfig';
 
 /** Versão da estrutura do GameState; saves de desenvolvimento incompatíveis são recusados (AI_INSTRUCTIONS.md §2.1). */
-export const STATE_SCHEMA_VERSION = 26;
+export const STATE_SCHEMA_VERSION = 27;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.22.0';
+export const ENGINE_VERSION = '0.23.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -215,6 +219,7 @@ export interface EconomyState {
  * | `clima.prevencao_seca` | força da prevenção contra a seca nas UFs do escopo enquanto ativo (0–1 por programa; soma por UF, saturada em `prevencao_teto`); não mexe na chuva nem na seca, só no dano | clima |
  * | `clima.prevencao_cheia` | idem, contra o dano das cheias e da chuva excessiva | clima |
  * | `educacao.alfabetizacao` / `educacao.permanencia` / `educacao.docentes` | força da alavanca educacional enquanto ativo (0–1 por programa × capacidade entregue; saturada em `alavanca_escala`); só muda taxas e aprendizagem das coortes | educação |
+ * | `saude.atencao_basica` / `saude.vigilancia` / `saude.hospitalar` / `saude.vacinacao` / `saude.prevencao` | força da alavanca de saúde enquanto ativo (0–1 por programa × capacidade entregue), no escopo regional; só muda a capacidade sanitária | saúde |
  */
 export type ImpulseTarget =
   | 'gasto.investimento'
@@ -248,7 +253,12 @@ export type ImpulseTarget =
   | 'educacao.alfabetizacao'
   | 'educacao.permanencia'
   | 'educacao.docentes'
-  | 'energia.eficiencia';
+  | 'energia.eficiencia'
+  | 'saude.atencao_basica'
+  | 'saude.vigilancia'
+  | 'saude.hospitalar'
+  | 'saude.vacinacao'
+  | 'saude.prevencao';
 
 /**
  * Incidência regional de um impulso (ECONOMIC_MODEL.md §5.15): como o efeito se reparte entre as UFs. Sem ela,
@@ -844,6 +854,10 @@ export interface GameState {
   research: ResearchState;
   /** Comércio exterior e diplomacia (v26; EX-25): tarifa, relações, acordos e choques. Do país, não do governo. */
   trade: TradeState;
+  /** Saúde regional e surtos (v27; PLANO_EXPANSAO EX-26/EX-27): capacidade por UF, crises, boletins e balanços. */
+  health: HealthState;
+  /** Imprensa e confiança (v27; EX-28): tom da comunicação, veículos, itens publicados e rumores. */
+  press: PressState;
   /**
    * Habilidades dos personagens (v23; PLANO_EXPANSAO EX-21), por id de personagem. Ausente até o primeiro treino: antes
    * dele, o estado é o mesmo com o sistema ligado ou desligado.
@@ -1248,6 +1262,10 @@ export interface GameContent {
   technology?: TechnologyCatalog;
   /** Comércio exterior (R7). Ausente = módulo inerte (sem tarifa, acordos nem choques). */
   trade?: TradeCatalog;
+  /** Saúde regional, doenças e medidas (R8). Ausente = módulo inerte (sem capacidade nem surtos). */
+  health?: HealthCatalog;
+  /** Veículos de imprensa e modelos de rumor (R8). Ausente = sem imprensa interpretativa. */
+  press?: PressCatalog;
 }
 
 /** Partes do relatório que as etapas preenchem (o resto é montado pelo `advanceMonth`). */

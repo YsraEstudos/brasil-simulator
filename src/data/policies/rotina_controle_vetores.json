@@ -1,0 +1,48 @@
+{
+  "id": "rotina_controle_vetores",
+  "name": "Rotina de controle de vetores",
+  "summary": "Agentes de endemias, eliminação de criadouros e vigilância entomológica permanentes, contra dengue e outras arboviroses. Dados e custos PROVISORIO.",
+  "area": "saude",
+  "competence": "federal",
+  "instruments": ["portaria"],
+  "agendaCost": 1,
+  "cost": {
+    "annualMillions": 900,
+    "disbursementProfile": [1]
+  },
+  "fundingSources": ["dotacao_existente"],
+  "timeline": {
+    "planningMonths": 0,
+    "expectedLegislativeMonths": 0,
+    "executionMonths": 0,
+    "maturationMonths": 4
+  },
+  "conditions": [],
+  "impacts": [
+    {
+      "channel": "custeio",
+      "magnitude": 900,
+      "lagMonths": 1
+    }
+  ],
+  "risks": [
+    {
+      "kind": "baixa_adesao",
+      "probability": 0.15
+    }
+  ],
+  "affected": {
+    "groups": ["usuarios_de_servicos_publicos"],
+    "sectors": ["servicos"],
+    "regions": ["nacional"]
+  },
+  "position": {
+    "economic": -0.1,
+    "social": -0.1
+  },
+  "dataStatus": "PROVISORIO",
+  "delivery": "rotina",
+  "health": {
+    "prevencao": 1
+  }
+}

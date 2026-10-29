@@ -13,8 +13,8 @@ export type JsonValue = string | number | boolean | null | readonly JsonValue[] 
 /** Objeto de publicação: chaves de texto, valores JSON, tudo congelado. */
 export type JsonObject = { readonly [key: string]: JsonValue };
 
-/** Tipos de publicação (§2.4): estimativa de pesquisa e manchete de notícia. */
-export type PublicationKind = 'pesquisa' | 'noticia';
+/** Tipos de publicação (§2.4): estimativa de pesquisa, manchete de notícia e boletim epidemiológico (R8). */
+export type PublicationKind = 'pesquisa' | 'noticia' | 'boletim';
 
 /**
  * Fonte da publicação: sempre fictícia. Atribuir instituto ou veículo real é proibido
@@ -202,7 +202,7 @@ export function checkPublications(publications: readonly Publication[]): string[
   for (const publication of publications) {
     const tag = publication.id?.trim() ? publication.id : '<id vazio>';
     if (!publication.id?.trim()) errors.push('id de publicação vazio');
-    if (publication.kind !== 'pesquisa' && publication.kind !== 'noticia') {
+    if (publication.kind !== 'pesquisa' && publication.kind !== 'noticia' && publication.kind !== 'boletim') {
       errors.push(`${tag}: tipo de publicação inválido: ${String(publication.kind)}`);
     }
     if (!publication.source?.id?.trim() || !publication.source?.name?.trim()) {

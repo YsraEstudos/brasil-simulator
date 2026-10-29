@@ -7,6 +7,7 @@ import { annualReview, fiscalStructure, revenueMonth, spendingMonth } from '../e
 import { BRAND_ACTION_ID, DIRECTIVE_ACTION_ID } from '../actions';
 import { currentNominalGdpMillions, fiscalValues, scenarioEconomyValues } from '../state';
 import { EDUCATION_LEVER_IDS } from '../education/types';
+import { HEALTH_LEVER_IDS } from '../../types/health';
 import { advanceAgreement, agreementRegional, counterpartCoverage, createAgreement } from './federative';
 import type {
   Decision,
@@ -302,6 +303,7 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
     impulses.push(...routineImpulses(policy, directive, allocated, gdpMillions, t));
     impulses.push(...routinePreventionImpulses(policy, directive, allocated, t));
     impulses.push(...routineEducationImpulses(policy, directive, allocated, t));
+    impulses.push(...routineHealthImpulses(policy, directive, allocated, t));
     if (policy.id === 'rotina_eficiencia_energetica' && allocated > 0 && policy.cost.annualMillions > 0) {
       const startMonth = t + policy.timeline.maturationMonths;
       impulses.push({
@@ -318,6 +320,7 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
   for (const run of projectRuns) {
     impulses.push(...projectPreventionImpulses(run.project, run.policy, t, state.economy.priceLevel));
     impulses.push(...projectEducationImpulses(run.project, run.policy, t, state.economy.priceLevel));
+    impulses.push(...projectHealthImpulses(run.project, run.policy, t, state.economy.priceLevel));
   }
 
   publicState.capitalStockMillions = publicState.projects
@@ -544,6 +547,72 @@ function projectEducationImpulses(
   if (!policy?.education || month < project.startMonth || project.phase !== 'operacao') return [];
   const sourceId = `${PROJECT_IMPULSE_PREFIX}${project.proposalId}:educacao:${month}`;
   return educationImpulses(policy, operationCoverage(project, policy, priceLevel), sourceId, month);
+}
+
+/**
+ * Alavancas de saúde de uma política (PLANO_EXPANSAO EX-26): um impulso `saude.<alavanca>` com a força do programa × a
+ * capacidade entregue (0–1), no escopo regional da política. Só a etapa da saúde lê; o gasto é o da rotina ou obra.
+ */
+function healthImpulses(
+  policy: Policy,
+  coverage: number,
+  sourceId: string,
+  startMonth: number,
+  regional: ImpulseRegional | undefined,
+): ScheduledImpulse[] {
+  if (!policy.health || !(coverage > 0)) return [];
+  const health = policy.health;
+  return HEALTH_LEVER_IDS.flatMap((lever) => {
+    const strength = health[lever];
+    return strength !== undefined && strength > 0
+      ? [
+          {
+            sourceId: `${sourceId}:${lever}`,
+            label: policy.name,
+            target: `saude.${lever}` as const,
+            delta: strength * coverage,
+            startMonth,
+            endMonth: startMonth,
+            ...(regional ? { regional } : {}),
+          },
+        ]
+      : [];
+  });
+}
+
+/** Rotina de saúde: força × dotação liberada ÷ custo nominal, depois da maturação (como a educação). */
+function routineHealthImpulses(
+  policy: Policy,
+  directive: MinistryDirective,
+  allocatedMillions: number,
+  month: number,
+): ScheduledImpulse[] {
+  const nominal = policy.cost.annualMillions;
+  if (!policy.health || !(allocatedMillions > 0) || !(nominal > 0)) return [];
+  return healthImpulses(
+    policy,
+    Math.min(1, allocatedMillions / nominal),
+    `${ROUTINE_IMPULSE_PREFIX}${directive.ministryId}:${directive.policyId}:${directive.year}:saude:${month}`,
+    month + policy.timeline.maturationMonths,
+    policyRegional(policy),
+  );
+}
+
+/** Projeto de saúde: só o hospital **em operação** atende; a força segue o ativo líquido (sem manutenção, cai). */
+function projectHealthImpulses(
+  project: PublicProject,
+  policy: Policy | undefined,
+  month: number,
+  priceLevel: number,
+): ScheduledImpulse[] {
+  if (!policy?.health || month < project.startMonth || project.phase !== 'operacao') return [];
+  return healthImpulses(
+    policy,
+    operationCoverage(project, policy, priceLevel),
+    `${PROJECT_IMPULSE_PREFIX}${project.proposalId}:saude:${month}`,
+    month,
+    projectRegional(project, policy),
+  );
 }
 
 /** Ativo líquido em operação ÷ ativo nominal do projeto (custo × eficiência, em preços-base), no máximo 1. */

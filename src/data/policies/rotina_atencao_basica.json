@@ -17,6 +17,7 @@
   "risks": [{ "kind": "baixa_adesao", "probability": 0.12 }],
   "affected": { "groups": ["usuarios_de_servicos_publicos"], "sectors": ["servicos"], "regions": ["nacional"] },
   "position": { "economic": -0.2, "social": -0.2 },
+  "health": { "atencao_basica": 1 },
   "dataStatus": "PROVISORIO",
   "delivery": "rotina"
 }

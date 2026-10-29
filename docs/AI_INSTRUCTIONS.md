@@ -151,6 +151,8 @@ recusados.
 | Obra federativa, convênio, contrapartida, inadimplência | `Policy.federative` / `PublicProject.federative` (`FederativeAgreement`, `publicPolicies/federative.ts`) / `counterpartShare` / status `inadimplente`; ação `negociar_adesao` |
 | Habilidade do personagem (ramo, nível, treino) | `GameState.skills` (`skills/`; `SkillBranchId`: `negociacao`, `federalismo`, `ciencia_tecnologia`, `diplomacia`) / `skillLevel` / ação `treinar_habilidade` |
 | Árvore de tecnologias (nó, rota, estágio, programa, domínio local, certificação) | `TechnologyCatalog` (`src/data/technology/`) / `TechnologyRouteId`: `importar`, `transferir`, `desenvolver` / `TechnologyStageId` / `GameState.research` (`research/`, `ResearchProgram`) / `capability` / ações `financiar_tecnologia`, `suspender_tecnologia`, `certificar_exportacao` |
+| Saúde regional e surto (capacidade, alavanca, compartimento, boletim, medida, pedido, balanço) | `HealthCatalog` (`src/data/health/`) / `GameState.health` (`health/`; `HealthUf`, `Outbreak`, `Compartments`, `CrisisReport`) / alvos `saude.*` / ações `investigar_alerta`, `adotar_medida`, `encerrar_medida` |
+| Imprensa e confiança (veículo, fato, estimativa, interpretação, rumor, checagem, tom) | `PressCatalog` (`src/data/press/`) / `GameState.press` (`press/`; `PressItem`, `CrisisTone`) / ações `comunicar_crise`, `responder_imprensa` |
 | Comércio exterior (tarifa, parceiro, acordo, ratificação, barreira, ruptura de cadeias) | `TradeCatalog` (`src/data/trade/`) / `GameState.trade` (`trade/`; `TradeAgreement`, `TradeShock` `barreira`/`cadeia`, `TradeFlows`) / ações `ajustar_tarifa`, `missao_comercial`, `negociar_acordo` |
 
 ---

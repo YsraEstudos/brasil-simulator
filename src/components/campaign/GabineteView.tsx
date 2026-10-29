@@ -12,7 +12,9 @@ import { decisionCost, draftCost, fits, gameStore, useGame, type ActiveCampaign 
 import { ThermometersCard } from './ThermometersCard';
 import { AgendaActions } from './AgendaActions';
 import { DecisionPanel } from './DecisionPanel';
+import { HealthCard } from './HealthCard';
 import { DIFFICULTY } from './labels';
+import { PressCard } from './PressCard';
 import { PublicPoliciesPanel } from './PublicPoliciesPanel';
 import { SkillsCard } from './SkillsCard';
 import { TechnologyCard } from './TechnologyCard';
@@ -104,6 +106,9 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
       <PublicPoliciesPanel state={state} content={content} actionsMax={actionsMax} />
 
       <ThermometersCard state={state} content={content} />
+
+      <HealthCard state={state} content={content} actionsMax={actionsMax} />
+      <PressCard state={state} content={content} actionsMax={actionsMax} />
 
       <SkillsCard state={state} content={content} actionsMax={actionsMax} />
       <TechnologyCard state={state} content={content} actionsMax={actionsMax} />

@@ -11,6 +11,9 @@ import { checkSociety } from './society/society';
 import { checkPublicPolicies } from './publicPolicies/publicPolicies';
 import { checkResearch } from './research/research';
 import { checkTrade } from './trade/trade';
+import { checkHealth } from './health/health';
+import { checkPress } from './press/press';
+import { checkPublications } from './information/publication';
 import {
   MANDATORY_GROUPS,
   REVENUE_GROUPS,
@@ -34,7 +37,7 @@ export function checkInvariants(
   prev: GameState,
   next: GameState,
   report: MonthReport,
-  content?: Pick<GameContent, 'scenario'> & Partial<Pick<GameContent, 'technology' | 'trade'>>,
+  content?: Pick<GameContent, 'scenario'> & Partial<Pick<GameContent, 'technology' | 'trade' | 'health' | 'press'>>,
 ): string[] {
   const errors: string[] = [];
 
@@ -52,6 +55,21 @@ export function checkInvariants(
   if (content?.technology && prev.research && next.research && prev.research !== next.research)
     errors.push(...checkResearch(prev.research, next.research, content));
   if (content?.trade && next.trade && prev.trade !== next.trade) errors.push(...checkTrade(next.trade, content.trade));
+
+  // R8: compartimentos, mortes entregues à demografia, boletins e imprensa.
+  if (content?.health && next.health && prev.health !== next.health) {
+    errors.push(...checkHealth(next.health, content));
+    errors.push(...checkPublications(next.health.bulletins));
+    if (prev.demography !== next.demography) {
+      for (const d of next.health.monthDeaths) {
+        const flows = next.demography.ufs.find((uf) => uf.id === d.id)?.flows;
+        if (!flows || Math.abs(flows.epidemicDeaths - (d.young + d.working + d.older)) > 1e-9)
+          errors.push(`mortes do surto não reconciliadas com a demografia em ${d.id}`);
+      }
+    }
+  }
+  if (content?.press && next.press && prev.press && prev.press !== next.press)
+    errors.push(...checkPress(prev.press, next.press, content.press));
 
   // R6: estoques e fluxos só são comparados quando a respectiva etapa foi executada.
   if (prev.demography && next.demography && prev.demography !== next.demography) {

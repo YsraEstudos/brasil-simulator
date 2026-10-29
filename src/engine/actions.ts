@@ -74,6 +74,19 @@ export const ADJUST_TARIFF_ACTION_ID = 'ajustar_tarifa';
 export const TRADE_MISSION_ACTION_ID = 'missao_comercial';
 /** Rodada de negociação de acordo comercial com um parceiro (EX-25). Params: `partnerId`. */
 export const NEGOTIATE_AGREEMENT_ACTION_ID = 'negociar_acordo';
+/** Investigação de campo de um alerta sanitário (EX-27): identifica o agente no mês seguinte. Params: `outbreakId`. */
+export const INVESTIGATE_ALERT_ACTION_ID = 'investigar_alerta';
+/**
+ * Adota uma medida de resposta a uma crise sanitária (EX-27). Params: `outbreakId`, `measureId` e, nos leitos de
+ * emergência, `criterion` (`ocupacao`, `populacao`, `pedidos`, `aliados`).
+ */
+export const ADOPT_MEASURE_ACTION_ID = 'adotar_medida';
+/** Encerra uma medida em vigor (EX-27). Params: `outbreakId`, `measureId`. */
+export const END_MEASURE_ACTION_ID = 'encerrar_medida';
+/** Muda o tom da comunicação do governo sobre crises (EX-28). Params: `tone`. */
+export const COMMUNICATE_ACTION_ID = 'comunicar_crise';
+/** Responde a um rumor em circulação (EX-28). Params: `itemId`, `response` (`desmentir`, `esclarecer`). */
+export const PRESS_RESPONSE_ACTION_ID = 'responder_imprensa';
 /** Pagamento de obrigação privada de campanha, sem ação de agenda. */
 export const PAY_CAMPAIGN_DEBT = 'pagar_divida_campanha';
 
@@ -342,6 +355,55 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
       'ratificado, vale por anos, também para os próximos governos.',
     agendaCost: 1,
     targetParams: ['partnerId'],
+    listed: false,
+  },
+  [INVESTIGATE_ALERT_ACTION_ID]: {
+    id: INVESTIGATE_ALERT_ACTION_ID,
+    name: 'Investigar alerta sanitário',
+    summary:
+      'Envia equipe de campo e sequenciamento. O agente é identificado no mês seguinte (sem isso, leva meses) e as ' +
+      'estimativas ficam mais estreitas. Custo pequeno de custeio.',
+    agendaCost: 1,
+    targetParams: ['outbreakId'],
+    listed: false,
+  },
+  [ADOPT_MEASURE_ACTION_ID]: {
+    id: ADOPT_MEASURE_ACTION_ID,
+    name: 'Adotar medida sanitária',
+    summary:
+      'Põe em vigor uma medida de resposta à crise, com custo mensal por crédito extraordinário até ser encerrada. ' +
+      'O efeito depende da execução e da adesão da população.',
+    agendaCost: 1,
+    targetParams: ['outbreakId', 'measureId'],
+    listed: false,
+  },
+  [END_MEASURE_ACTION_ID]: {
+    id: END_MEASURE_ACTION_ID,
+    name: 'Encerrar medida sanitária',
+    summary: 'Retira uma medida em vigor: o custo e o desgaste param, e o efeito também.',
+    agendaCost: 1,
+    targetParams: ['outbreakId', 'measureId'],
+    listed: false,
+  },
+  [COMMUNICATE_ACTION_ID]: {
+    id: COMMUNICATE_ACTION_ID,
+    name: 'Definir comunicação de crise',
+    summary:
+      'Escolhe o tom do governo: transparência (boletins abertos, confiança cresce devagar), tranquilizar (menos ' +
+      'alarme agora, boletins fechados e risco de ser desmentido pelos números) ou alerta (mais adesão, desgaste se ' +
+      'a crise não vier). Não muda a aprovação diretamente.',
+    agendaCost: 1,
+    targetParams: [],
+    listed: false,
+  },
+  [PRESS_RESPONSE_ACTION_ID]: {
+    id: PRESS_RESPONSE_ACTION_ID,
+    name: 'Responder à imprensa',
+    summary:
+      'Responde a um rumor: desmentir corta mais a circulação, mas custa caro se a checagem confirmar o rumor; ' +
+      'esclarecer com dados corta menos e nunca contradiz os fatos.',
+    agendaCost: 1,
+    targetParams: ['itemId'],
     listed: false,
   },
 };

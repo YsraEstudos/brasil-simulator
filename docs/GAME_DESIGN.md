@@ -165,6 +165,28 @@ fluxos do último mês em pontos do PIB (desvio do início), setores afetados, c
 acesso, acordo (com a previsão sem sorteio da ratificação), missão comercial e rodada de negociação. Toda escolha é uma
 ação de agenda; abrir os cartões não muda o estado.
 
+### 4.8 Saúde, crises e imprensa no Gabinete (onda R8 do plano de expansão)
+
+Dois cartões no Gabinete, logo depois dos termômetros. **Saúde e crises sanitárias:** sem crise, a capacidade da rede
+por macrorregião e como ampliá-la (diretriz anual do Ministério da Saúde — uma rotina por ano: atenção básica,
+vigilância, imunização ou controle de vetores — e a obra de hospitais regionais). Com crise: o título é o do alerta
+até o agente ser identificado; "O que os boletins mostram" traz o boletim preliminar, a revisão do mês anterior e a
+ocupação notificada; "Estimativas (com incerteza)" traz faixas de transmissão, de crescimento e de internação e a
+janela estimada da vacina; a adesão esperada vem em faixa; os pedidos dos governadores mostram prazo; cada medida abre
+custo mensal, prazo até o efeito pleno, limites e motivo de bloqueio. Leitos de emergência pedem o critério de
+distribuição. Ao fim, o balanço separa notificado, estimado e contas.
+
+**Imprensa e confiança:** confiança na comunicação com as três últimas causas de mudança; o tom atual e os outros três
+com o efeito de cada um; a leitura de um veículo sobre a manchete mais recente; e os itens da imprensa com rótulo
+(fato, estimativa, interpretação, rumor não verificado, rumor confirmado, falso), veículo, confiabilidade, alcance e
+viés. Rumor em circulação aceita "Desmentir" ou "Esclarecer com dados". Toda escolha é uma ação de agenda; abrir os
+cartões não muda o estado nem sorteia nada, e nenhum texto mostra a verdade do surto ou de um rumor não checado.
+
+**Dilemas pensados:** investigar (uma ação agora) ou agir no escuro; restringir cedo (custa atividade e aprovação
+todo mês) ou esperar os leitos lotarem; repartir um lote limitado de leitos por ocupação, população, pedidos ou
+aliados; pagar o auxílio que sustenta a adesão; tranquilizar (menos alarme hoje, risco de ser desmentido) ou ser
+transparente (números ruins expostos); desmentir com força um rumor que pode ser verdadeiro.
+
 ## 5. Recursos do jogador
 
 | Recurso | Faixa | Como sobe | Como cai |

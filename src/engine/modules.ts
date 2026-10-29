@@ -8,7 +8,7 @@ import type { GameState } from './types';
  * O núcleo não entra nesta lista: o que não está registrado aqui é núcleo e está sempre ligado. Um módulo só existe
  * nesta tabela se tiver efeito verificável; opção decorativa invisível é proibida pelo plano (§5, EX-03).
  */
-export const MODULE_IDS = ['clima_detalhado', 'noticias'] as const;
+export const MODULE_IDS = ['clima_detalhado', 'noticias', 'crises_sanitarias'] as const;
 
 export type ModuleId = (typeof MODULE_IDS)[number];
 
@@ -43,6 +43,14 @@ export const MODULES: readonly ModuleSpec[] = [
     description:
       'Manchetes com causa rastreável no relatório do mês. Desligado, o relatório e os indicadores não mudam; só a camada de notícias deixa de ser publicada.',
     moduleClass: 'desligavel',
+    defaultEnabled: true,
+  },
+  {
+    id: 'crises_sanitarias',
+    name: 'Crises sanitárias',
+    description:
+      'Surtos regionais e pandemias com alerta, medidas e balanço. Desligado, a rede de saúde continua existindo e recebendo investimento da carteira; só deixam de começar surtos novos.',
+    moduleClass: 'detalhamento',
     defaultEnabled: true,
   },
 ];

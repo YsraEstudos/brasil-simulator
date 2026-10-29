@@ -25,6 +25,7 @@
     "regions": ["norte", "nordeste", "nacional"]
   },
   "position": { "economic": -0.2, "social": -0.2 },
+  "health": { "hospitalar": 1 },
   "dataStatus": "PROVISORIO",
   "delivery": "projeto",
   "project": { "licensingMonths": 8, "procurementMonths": 6, "efficiency": 0.78, "annualMaintenanceRate": 0.04 },
