@@ -1,0 +1,269 @@
+{
+  "version": "2026.10.1",
+  "status": "PROVISORIO",
+  "source": "Hipóteses de jogo do Brasil Simulator (PLANO_EXPANSAO F07/EX-32). Prazos, custos e efeitos são ordens de grandeza para equilibrar escolhas, não orçamento de engenharia nem estimativa oficial; ver docs/EXPANSAO_CALIBRACAO.md (R7).",
+  "branches": [
+    { "id": "transporte", "name": "Transporte e logística" },
+    { "id": "energia", "name": "Energia" },
+    { "id": "agricultura", "name": "Agricultura" }
+  ],
+  "nodes": [
+    {
+      "id": "sinalizacao_ferroviaria",
+      "name": "Sinalização e controle de tráfego ferroviário",
+      "branch": "transporte",
+      "summary": "Sistemas de controle que permitem mais trens por trecho com segurança. Base para material rodante e trens rápidos.",
+      "prerequisites": [],
+      "beneficiaries": ["Operadores ferroviários", "Exportadores de grãos e minério"],
+      "adverse": [
+        "Licenças e manutenção em moeda estrangeira quando importado",
+        "Pouco efeito sem ferrovia em operação"
+      ],
+      "humanCapitalReference": 10.7,
+      "requiresProject": [
+        "projeto_ferrovia_integracao_oeste",
+        "projeto_trem_regional_passageiros",
+        "projeto_corredores_logisticos"
+      ],
+      "requiresEnergy": false,
+      "effect": { "channel": "potencial", "value": 0.0003 },
+      "energyDemandTwh": 0,
+      "exportMillions": 400,
+      "routes": {
+        "importar": {
+          "stages": { "adocao": { "months": 12, "annualMillions": 900 } },
+          "stageFailure": 0,
+          "importShare": 0.8,
+          "maintenanceMillions": 120,
+          "capability": 0
+        },
+        "desenvolver": {
+          "stages": {
+            "pesquisa_basica": { "months": 18, "annualMillions": 200 },
+            "prototipagem": { "months": 18, "annualMillions": 350 },
+            "escala_industrial": { "months": 12, "annualMillions": 500 },
+            "adocao": { "months": 12, "annualMillions": 400 }
+          },
+          "stageFailure": 0.2,
+          "importShare": 0.1,
+          "maintenanceMillions": 50,
+          "capability": 1
+        }
+      }
+    },
+    {
+      "id": "material_rodante",
+      "name": "Material rodante (locomotivas e vagões)",
+      "branch": "transporte",
+      "summary": "Fabricação e manutenção de locomotivas e vagões. Pode ser comprada pronta, licenciada com transferência ou desenvolvida por fornecedores nacionais.",
+      "prerequisites": ["sinalizacao_ferroviaria"],
+      "beneficiaries": ["Indústria metalmecânica", "Logística de carga", "Trabalhadores da indústria"],
+      "adverse": ["Compra externa pressiona o câmbio e as importações", "Fornecedor nacional pode atrasar ou falhar"],
+      "humanCapitalReference": 10.7,
+      "requiresProject": ["projeto_ferrovia_integracao_oeste", "projeto_trem_regional_passageiros"],
+      "requiresEnergy": false,
+      "effect": { "channel": "potencial", "value": 0.0006 },
+      "energyDemandTwh": 0,
+      "exportMillions": 1500,
+      "routes": {
+        "importar": {
+          "stages": { "adocao": { "months": 18, "annualMillions": 2400 } },
+          "stageFailure": 0,
+          "importShare": 0.85,
+          "maintenanceMillions": 300,
+          "capability": 0
+        },
+        "transferir": {
+          "stages": {
+            "prototipagem": { "months": 18, "annualMillions": 900 },
+            "escala_industrial": { "months": 18, "annualMillions": 1400 },
+            "adocao": { "months": 12, "annualMillions": 1000 }
+          },
+          "stageFailure": 0.15,
+          "importShare": 0.4,
+          "maintenanceMillions": 180,
+          "capability": 0.5
+        },
+        "desenvolver": {
+          "stages": {
+            "pesquisa_basica": { "months": 24, "annualMillions": 500 },
+            "prototipagem": { "months": 24, "annualMillions": 900 },
+            "escala_industrial": { "months": 24, "annualMillions": 1500 },
+            "adocao": { "months": 12, "annualMillions": 1000 }
+          },
+          "stageFailure": 0.25,
+          "importShare": 0.1,
+          "maintenanceMillions": 120,
+          "capability": 1
+        }
+      }
+    },
+    {
+      "id": "trem_alta_velocidade",
+      "name": "Trem de alta velocidade",
+      "branch": "transporte",
+      "summary": "Trens acima de 250 km/h em corredores de passageiros. Exige demanda, traçado, energia e segurança; só substitui voos onde tempo total e preço concorrem.",
+      "prerequisites": ["material_rodante"],
+      "beneficiaries": ["Passageiros dos corredores atendidos", "Cidades médias ligadas às capitais"],
+      "adverse": [
+        "Consome eletricidade adicional",
+        "Custo alto e longa maturação",
+        "Dependência de licenças se importado"
+      ],
+      "humanCapitalReference": 11.2,
+      "requiresProject": ["projeto_trem_regional_passageiros"],
+      "requiresEnergy": true,
+      "effect": { "channel": "potencial", "value": 0.0012 },
+      "energyDemandTwh": 0.4,
+      "exportMillions": 2500,
+      "routes": {
+        "importar": {
+          "stages": { "adocao": { "months": 30, "annualMillions": 9000 } },
+          "stageFailure": 0,
+          "importShare": 0.8,
+          "maintenanceMillions": 1200,
+          "capability": 0
+        },
+        "transferir": {
+          "stages": {
+            "prototipagem": { "months": 24, "annualMillions": 3000 },
+            "escala_industrial": { "months": 24, "annualMillions": 5000 },
+            "adocao": { "months": 24, "annualMillions": 4000 }
+          },
+          "stageFailure": 0.2,
+          "importShare": 0.45,
+          "maintenanceMillions": 800,
+          "capability": 0.5
+        },
+        "desenvolver": {
+          "stages": {
+            "pesquisa_basica": { "months": 30, "annualMillions": 1500 },
+            "prototipagem": { "months": 30, "annualMillions": 3000 },
+            "escala_industrial": { "months": 30, "annualMillions": 5000 },
+            "adocao": { "months": 24, "annualMillions": 4000 }
+          },
+          "stageFailure": 0.3,
+          "importShare": 0.15,
+          "maintenanceMillions": 600,
+          "capability": 1
+        }
+      }
+    },
+    {
+      "id": "redes_inteligentes",
+      "name": "Redes elétricas inteligentes",
+      "branch": "energia",
+      "summary": "Medição, automação e controle da rede que reduzem perdas e liberam capacidade de transmissão.",
+      "prerequisites": [],
+      "beneficiaries": ["Consumidores de eletricidade", "Indústria eletrointensiva"],
+      "adverse": ["Equipamentos importados encarecem com o câmbio", "Exige manutenção contínua de software e sensores"],
+      "humanCapitalReference": 10.7,
+      "requiresEnergy": false,
+      "effect": { "channel": "transmissao", "value": 1 },
+      "energyDemandTwh": 0,
+      "exportMillions": 300,
+      "routes": {
+        "importar": {
+          "stages": { "adocao": { "months": 12, "annualMillions": 1500 } },
+          "stageFailure": 0,
+          "importShare": 0.75,
+          "maintenanceMillions": 200,
+          "capability": 0
+        },
+        "desenvolver": {
+          "stages": {
+            "pesquisa_basica": { "months": 12, "annualMillions": 250 },
+            "prototipagem": { "months": 18, "annualMillions": 450 },
+            "escala_industrial": { "months": 12, "annualMillions": 700 },
+            "adocao": { "months": 12, "annualMillions": 600 }
+          },
+          "stageFailure": 0.2,
+          "importShare": 0.15,
+          "maintenanceMillions": 90,
+          "capability": 1
+        }
+      }
+    },
+    {
+      "id": "armazenamento_baterias",
+      "name": "Armazenamento em baterias",
+      "branch": "energia",
+      "summary": "Baterias de grande porte guardam energia para os meses de reservatório baixo.",
+      "prerequisites": ["redes_inteligentes"],
+      "beneficiaries": ["Sistema elétrico em períodos de seca", "Fornecedores de minerais e componentes"],
+      "adverse": ["Dependência de minerais e células importadas", "Descarte e reciclagem exigem regulação"],
+      "humanCapitalReference": 11,
+      "requiresEnergy": false,
+      "effect": { "channel": "armazenamento", "value": 3 },
+      "energyDemandTwh": 0,
+      "exportMillions": 800,
+      "routes": {
+        "importar": {
+          "stages": { "adocao": { "months": 18, "annualMillions": 2500 } },
+          "stageFailure": 0,
+          "importShare": 0.85,
+          "maintenanceMillions": 300,
+          "capability": 0
+        },
+        "transferir": {
+          "stages": {
+            "prototipagem": { "months": 18, "annualMillions": 900 },
+            "escala_industrial": { "months": 18, "annualMillions": 1500 },
+            "adocao": { "months": 12, "annualMillions": 1200 }
+          },
+          "stageFailure": 0.15,
+          "importShare": 0.45,
+          "maintenanceMillions": 200,
+          "capability": 0.5
+        },
+        "desenvolver": {
+          "stages": {
+            "pesquisa_basica": { "months": 24, "annualMillions": 400 },
+            "prototipagem": { "months": 24, "annualMillions": 800 },
+            "escala_industrial": { "months": 18, "annualMillions": 1500 },
+            "adocao": { "months": 12, "annualMillions": 1200 }
+          },
+          "stageFailure": 0.3,
+          "importShare": 0.2,
+          "maintenanceMillions": 150,
+          "capability": 1
+        }
+      }
+    },
+    {
+      "id": "bioinsumos",
+      "name": "Bioinsumos agrícolas",
+      "branch": "agricultura",
+      "summary": "Controle biológico e fixação de nutrientes que reduzem a compra de fertilizantes e defensivos importados.",
+      "prerequisites": [],
+      "beneficiaries": ["Produtores rurais", "Pesquisa agropecuária pública"],
+      "adverse": ["Resultado varia por região e cultura", "Adoção lenta sem assistência técnica"],
+      "humanCapitalReference": 10.5,
+      "requiresEnergy": false,
+      "effect": { "channel": "potencial", "value": 0.0004 },
+      "energyDemandTwh": 0,
+      "exportMillions": 600,
+      "routes": {
+        "importar": {
+          "stages": { "adocao": { "months": 12, "annualMillions": 700 } },
+          "stageFailure": 0,
+          "importShare": 0.7,
+          "maintenanceMillions": 150,
+          "capability": 0
+        },
+        "desenvolver": {
+          "stages": {
+            "pesquisa_basica": { "months": 18, "annualMillions": 200 },
+            "prototipagem": { "months": 12, "annualMillions": 300 },
+            "escala_industrial": { "months": 12, "annualMillions": 350 },
+            "adocao": { "months": 12, "annualMillions": 300 }
+          },
+          "stageFailure": 0.15,
+          "importShare": 0.05,
+          "maintenanceMillions": 40,
+          "capability": 1
+        }
+      }
+    }
+  ]
+}

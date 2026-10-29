@@ -11,6 +11,10 @@ import { SKILL_BRANCH_IDS, type CharacterSkills, type SkillBranchId } from './ty
  * - **Negociação:** reduz o capital político gasto em cada `negociar_bloco` (`proposals.ts`). O apoio ganho é o mesmo.
  * - **Federalismo:** soma probabilidade à adesão de cada governador a convênio (`adhesionProbability`, programas e
  *   obras federativas). Não toca na relação nem obriga o estado: governador hostil ainda recusa.
+ * - **Ciência e tecnologia (R7):** reduz a chance de falha parcial ao fim de cada estágio de pesquisa ou absorção da
+ *   árvore de tecnologias (`research/`). Não acelera o estágio nem paga o custo.
+ * - **Diplomacia (R7):** soma avanço a cada rodada de negociação de acordo comercial (`trade/`). Não ratifica: o
+ *   Congresso continua votando o acordo.
  *
  * Nenhum ramo soma PIB, aprovação ou intenção de voto (plano §10). O treino entra no fim do mês: o nível novo vale
  * a partir do mês seguinte.
@@ -26,6 +30,8 @@ const LEVEL_PARAMS = ['treino_nivel_1', 'treino_nivel_2', 'treino_nivel_3'] as c
 export const SKILL_LABEL: Readonly<Record<SkillBranchId, string>> = {
   negociacao: 'Negociação',
   federalismo: 'Federalismo',
+  ciencia_tecnologia: 'Ciência e tecnologia',
+  diplomacia: 'Diplomacia',
 };
 
 export function isSkillBranch(value: unknown): value is SkillBranchId {
@@ -37,7 +43,7 @@ export function controlledCharacterId(state: Pick<GameState, 'control'>): string
   return state.control?.controlledCharacterId ?? DEFAULT_CHARACTER_ID;
 }
 
-const NO_TRAINING: CharacterSkills = { negociacao: 0, federalismo: 0 };
+const NO_TRAINING: CharacterSkills = { negociacao: 0, federalismo: 0, ciencia_tecnologia: 0, diplomacia: 0 };
 
 /** Meses de treino do personagem controlado. */
 export function characterSkills(state: Pick<GameState, 'control' | 'skills'>): CharacterSkills {
@@ -67,6 +73,16 @@ export function negotiationDiscount(state: Pick<GameState, 'control' | 'skills'>
 /** Probabilidade somada à adesão de cada governador a convênio (0 sem habilidade). */
 export function federalismAdhesionBonus(state: Pick<GameState, 'control' | 'skills'>): number {
   return skillLevel(state, 'federalismo') * skillParam('federalismo_adesao');
+}
+
+/** Fração da chance de falha de um estágio da árvore de tecnologias que a habilidade evita (0 sem habilidade). */
+export function researchFailureReduction(state: Pick<GameState, 'control' | 'skills'>): number {
+  return skillLevel(state, 'ciencia_tecnologia') * skillParam('ciencia_falha');
+}
+
+/** Avanço somado a cada rodada de negociação de acordo comercial, em rodadas (0 sem habilidade). */
+export function diplomacyProgressBonus(state: Pick<GameState, 'control' | 'skills'>): number {
+  return skillLevel(state, 'diplomacia') * skillParam('diplomacia_avanco');
 }
 
 /** O ramo ainda pode ser treinado (nível abaixo do máximo). */

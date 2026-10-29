@@ -59,6 +59,21 @@ export const BRAND_ACTION_ID = 'marcar_governo';
 export const NEGOTIATE_ADHESION_ACTION_ID = 'negociar_adesao';
 /** Treino de uma habilidade do personagem controlado (PLANO_EXPANSAO EX-21), um por mês. Params: `branch`. */
 export const TRAIN_SKILL_ACTION_ID = 'treinar_habilidade';
+/**
+ * Financia uma tecnologia da árvore (PLANO_EXPANSAO EX-24/EX-32) por uma rota. Params: `nodeId`, `route` (`importar`,
+ * `transferir`, `desenvolver`) e `partnerId` na transferência.
+ */
+export const FUND_TECHNOLOGY_ACTION_ID = 'financiar_tecnologia';
+/** Suspende um programa de tecnologia em andamento; os estágios concluídos ficam guardados. Params: `nodeId`. */
+export const SUSPEND_TECHNOLOGY_ACTION_ID = 'suspender_tecnologia';
+/** Pede certificação para exportar uma tecnologia dominada no país. Params: `nodeId`. */
+export const CERTIFY_EXPORT_ACTION_ID = 'certificar_exportacao';
+/** Altera a tarifa média de importação por decreto, dentro da faixa (EX-25). Params: `direction` (`elevar`, `reduzir`). */
+export const ADJUST_TARIFF_ACTION_ID = 'ajustar_tarifa';
+/** Missão comercial a um parceiro (EX-25). Params: `partnerId`. */
+export const TRADE_MISSION_ACTION_ID = 'missao_comercial';
+/** Rodada de negociação de acordo comercial com um parceiro (EX-25). Params: `partnerId`. */
+export const NEGOTIATE_AGREEMENT_ACTION_ID = 'negociar_acordo';
 /** Pagamento de obrigação privada de campanha, sem ação de agenda. */
 export const PAY_CAMPAIGN_DEBT = 'pagar_divida_campanha';
 
@@ -268,6 +283,65 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
       'sobe depois de alguns meses de treino e vale a partir do mês seguinte. Um treino por mês.',
     agendaCost: 1,
     targetParams: [],
+    listed: false,
+  },
+  [FUND_TECHNOLOGY_ACTION_ID]: {
+    id: FUND_TECHNOLOGY_ACTION_ID,
+    name: 'Financiar tecnologia',
+    summary:
+      'Começa um programa plurianual para uma tecnologia da árvore: importar (rápido, caro em dólar e sem domínio local), ' +
+      'transferir com um parceiro (absorção parcial) ou desenvolver no país (lento, pode falhar, permite exportar). O ' +
+      'gasto sai do espaço discricionário que as obras deixarem.',
+    agendaCost: 1,
+    targetParams: ['nodeId'],
+    listed: false,
+  },
+  [SUSPEND_TECHNOLOGY_ACTION_ID]: {
+    id: SUSPEND_TECHNOLOGY_ACTION_ID,
+    name: 'Suspender programa de tecnologia',
+    summary: 'Para de financiar o programa. O que já foi gasto não volta; os estágios concluídos ficam guardados.',
+    agendaCost: 1,
+    targetParams: ['nodeId'],
+    listed: false,
+  },
+  [CERTIFY_EXPORT_ACTION_ID]: {
+    id: CERTIFY_EXPORT_ACTION_ID,
+    name: 'Certificar para exportar',
+    summary:
+      'Pede certificação e abre mercados para uma tecnologia dominada no país, com escala industrial. As vendas ' +
+      'começam meses depois e crescem aos poucos, conforme o acesso aos parceiros.',
+    agendaCost: 1,
+    targetParams: ['nodeId'],
+    listed: false,
+  },
+  [ADJUST_TARIFF_ACTION_ID]: {
+    id: ADJUST_TARIFF_ACTION_ID,
+    name: 'Ajustar tarifa de importação',
+    summary:
+      'Altera a tarifa média de importação por decreto, dentro da faixa permitida. Elevar arrecada mais e reduz ' +
+      'importações, mas encarece produtos por um ano, irrita os parceiros e aumenta o risco de retaliação.',
+    agendaCost: 1,
+    targetParams: [],
+    listed: false,
+  },
+  [TRADE_MISSION_ACTION_ID]: {
+    id: TRADE_MISSION_ACTION_ID,
+    name: 'Missão comercial',
+    summary:
+      'Viagem e reuniões com governo e empresas do parceiro: a relação melhora e uma barreira às compras do Brasil ' +
+      'pode ser encurtada.',
+    agendaCost: 1,
+    targetParams: ['partnerId'],
+    listed: false,
+  },
+  [NEGOTIATE_AGREEMENT_ACTION_ID]: {
+    id: NEGOTIATE_AGREEMENT_ACTION_ID,
+    name: 'Negociar acordo comercial',
+    summary:
+      'Uma rodada de negociação com o parceiro. Depois de algumas rodadas o acordo é assinado e vai ao Congresso; se ' +
+      'ratificado, vale por anos, também para os próximos governos.',
+    agendaCost: 1,
+    targetParams: ['partnerId'],
     listed: false,
   },
 };

@@ -267,6 +267,18 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 | Medida provisória (§3) | Vigência imediata; se não for convertida em 4 meses (120 dias), perde a eficácia e os efeitos param. A partir do 2º mês (mais de 45 dias) tranca a pauta da Casa em que está: as demais propostas dessa Casa esperam. |
 | Ainda não modelado | Comissões permanentes, emendas de plenário, destaques, obstrução, recesso de julho, convocação extraordinária, CPIs, impeachment e TCU. |
 
+### 6.7 Comércio exterior: tarifa por decreto e acordos com ratificação (onda R7, EX-25, motor 0.22.0)
+
+Código em `src/engine/trade/`. Os acordos, as relações e a tarifa são do país: atravessam as trocas de governo.
+
+| Regra | Como o motor aplica |
+| --- | --- |
+| Tarifa de importação | Ação `ajustar_tarifa` (1 ação, uma por mês): ±1 passo dentro da faixa do catálogo. O Executivo altera alíquotas do imposto de importação por ato próprio, nos limites da lei (CF art. 153 §1º), e a faixa representa o espaço das exceções à Tarifa Externa Comum do Mercosul. Fora da faixa: `alvo_invalido`. Cada passo para cima custa `relacao_tarifa` de relação com todos os parceiros e aumenta o risco de barreira. |
+| Missão comercial | Ação `missao_comercial` (1 ação por parceiro e mês): `ganho_missao` de relação e encurta em `missao_reduz_barreira` meses uma barreira ativa do parceiro. |
+| Negociação | Ação `negociar_acordo` (1 ação por parceiro e mês), só com parceiro marcado `agreementAvailable` e relação ≥ `relacao_minima_acordo`. Depois de `rodadas_acordo` rodadas (com o bônus da diplomacia, §6.6) o acordo é assinado. Acordos do Brasil com terceiros são negociados no âmbito do Mercosul; o jogo abstrai o consentimento dos sócios e não reproduz o estágio real de nenhuma negociação. |
+| Ratificação | Tratado que acarrete compromisso gravoso depende de aprovação do Congresso (CF art. 49, I), por decreto legislativo. Votação `meses_ratificacao` depois da assinatura, uma por Casa, maioria das cadeiras (aproximação conservadora da maioria simples com quórum de maioria absoluta, CF art. 47). Apoio de cada bloco: ideologia diante de um acordo de liberalização (`posicao_acordo`), relação, aprovação e gabinete; sorteio por chave. Rejeitado: nova negociação só depois de `reabrir_meses`. |
+| Vigência | `vigencia_anos` a partir do mês seguinte à ratificação. Contrapartidas: mais acesso às exportações ao parceiro (`ganho_acesso_acordo`), mais importações dele (`ganho_importacao_acordo`) e `concessao_tarifa` da tarifa sem cobrança nessas importações. No fim, renovar exige nova negociação. |
+
 ### 6.6 Habilidades do presidente (onda R5 do plano de expansão, EX-21, motor 0.19.0)
 
 **Proposta de conteúdo, pendente de aprovação do autor** (plano de expansão §10: "conteúdo dos perks iniciais").
@@ -279,7 +291,9 @@ Código em `src/engine/skills/`; parâmetros em `SKILL_PARAMS`, `PROVISORIO`. A 
 | Negociação (3 níveis) | Canal único: cada `negociar_bloco` custa `capital_negociacao × (1 − nível × negociacao_desconto)`. O apoio ganho, a relação e a votação não mudam. A transição da proposta registra quanto a habilidade poupou. |
 | Federalismo (3 níveis) | Canal único: `nível × federalismo_adesao` somado à probabilidade de adesão de cada governador a convênio (programas `adesao_estadual` e obras federativas, §2.1.1), limitada a 1. Governador hostil continua recusando na maioria das vezes. |
 | Proibido | Nenhum ramo soma PIB, aprovação, intenção de voto ou relação diretamente (plano de expansão §10). Teste: seis meses sem ações com habilidade máxima dão indicadores e economia idênticos. |
-| Ainda não modelado | Experiência por resultado (aprender negociando), nomeações que trazem habilidade, os demais ramos do F06 (crises, comunicação, planejamento fiscal, ciência e tecnologia). |
+| Ciência e tecnologia (R7, 3 níveis) | Canal único: a chance de falha parcial de cada estágio de pesquisa ou absorção da árvore de tecnologias é multiplicada por `1 − nível × ciencia_falha`. Prazo e custo não mudam; no nível 3 resta mais da metade do risco. |
+| Diplomacia (R7, 3 níveis) | Canal único: cada rodada de `negociar_acordo` avança `1 + nível × diplomacia_avanco` rodadas. O Congresso continua ratificando (§6.7). |
+| Ainda não modelado | Experiência por resultado (aprender negociando), nomeações que trazem habilidade, os demais ramos do F06 (crises, comunicação, planejamento fiscal). |
 
 ---
 

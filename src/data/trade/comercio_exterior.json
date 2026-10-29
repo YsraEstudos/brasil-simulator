@@ -1,0 +1,88 @@
+{
+  "version": "2026.10.1",
+  "status": "PROVISORIO",
+  "source": "Ordens de grandeza arredondadas a partir do Comex Stat/MDIC (destino e origem dos bens, 2024) e da tarifa média aplicada; não conferidas célula a célula nesta versão. Choques, probabilidades e a disponibilidade de acordos são hipóteses de jogo; o estágio de negociação dos acordos reais não é reproduzido. Ver docs/DATA_SOURCES.md e docs/EXPANSAO_CALIBRACAO.md (R7).",
+  "tariff": { "base": 0.08, "min": 0.04, "max": 0.14, "step": 0.01 },
+  "exportsGdp": 0.14,
+  "importsGdp": 0.12,
+  "partners": [
+    {
+      "id": "china",
+      "name": "China",
+      "exportShare": 0.28,
+      "importShare": 0.24,
+      "mainSector": "agropecuaria",
+      "initialRelation": 20,
+      "technologyPartner": true,
+      "agreementAvailable": false
+    },
+    {
+      "id": "estados_unidos",
+      "name": "Estados Unidos",
+      "exportShare": 0.12,
+      "importShare": 0.16,
+      "mainSector": "industria",
+      "initialRelation": 5,
+      "technologyPartner": true,
+      "agreementAvailable": false
+    },
+    {
+      "id": "uniao_europeia",
+      "name": "União Europeia",
+      "exportShare": 0.14,
+      "importShare": 0.17,
+      "mainSector": "agropecuaria",
+      "initialRelation": 10,
+      "technologyPartner": true,
+      "agreementAvailable": true
+    },
+    {
+      "id": "mercosul",
+      "name": "Sócios do Mercosul",
+      "exportShare": 0.07,
+      "importShare": 0.06,
+      "mainSector": "industria",
+      "initialRelation": 30,
+      "technologyPartner": false,
+      "agreementAvailable": false
+    },
+    {
+      "id": "japao",
+      "name": "Japão",
+      "exportShare": 0.02,
+      "importShare": 0.03,
+      "mainSector": "extrativa",
+      "initialRelation": 15,
+      "technologyPartner": true,
+      "agreementAvailable": true
+    },
+    {
+      "id": "india",
+      "name": "Índia",
+      "exportShare": 0.02,
+      "importShare": 0.03,
+      "mainSector": "extrativa",
+      "initialRelation": 10,
+      "technologyPartner": false,
+      "agreementAvailable": true
+    }
+  ],
+  "shocks": [
+    {
+      "id": "barreira_parceiro",
+      "name": "Barreira de um parceiro às compras do Brasil",
+      "kind": "barreira",
+      "monthlyProbability": 0.003,
+      "months": 9,
+      "size": 0.15
+    },
+    {
+      "id": "ruptura_cadeias",
+      "name": "Ruptura das cadeias globais de suprimento",
+      "kind": "cadeia",
+      "monthlyProbability": 0.005,
+      "months": 6,
+      "size": 0.1
+    }
+  ]
+}

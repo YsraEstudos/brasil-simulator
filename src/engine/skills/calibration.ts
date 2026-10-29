@@ -33,6 +33,20 @@ export const SKILL_PARAMS = {
     note: 'probabilidade somada, por nível, à adesão de cada governador a convênio (programa ou obra federativa)',
     basis: `${JOGO}; governador hostil continua recusando: o bônus é menor que o peso da relação (adesao_relacao)`,
   },
+  ciencia_falha: {
+    value: 0.15,
+    min: 0.05,
+    max: 0.25,
+    note: 'fração, por nível, da chance de falha parcial de cada estágio de pesquisa ou absorção que a equipe evita',
+    basis: `${JOGO}; no nível 3 ainda resta mais da metade do risco: desenvolver continua incerto (R7)`,
+  },
+  diplomacia_avanco: {
+    value: 0.25,
+    min: 0.1,
+    max: 0.5,
+    note: 'rodadas somadas, por nível, a cada rodada de negociação de acordo comercial',
+    basis: `${JOGO}; no nível 3 a negociação ainda exige mais de uma rodada e a ratificação do Congresso (R7)`,
+  },
 } as const satisfies Record<string, ParamSpec>;
 
 export type SkillParamName = keyof typeof SKILL_PARAMS;

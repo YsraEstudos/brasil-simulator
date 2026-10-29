@@ -1,6 +1,7 @@
 import { ENERGY_CALIBRATION as p } from './calibration';
 import type { MonthStep } from '../types';
 import { sumActive } from '../impulses';
+import { researchEnergyEffects } from '../research/effects';
 
 /** Estoque em TWh; fluxos do último mês em TWh. */
 export interface Energy {
@@ -45,17 +46,29 @@ export function advanceEnergy(
     storageAssetMillions?: number;
     efficiency: number;
     demand?: number;
+    /** Tecnologias adotadas (R7), já em TWh: somam às capacidades e à demanda. */
+    technology?: { generation: number; transmission: number; storage: number; demand: number };
   },
 ): Energy {
+  const tech = input.technology ?? { generation: 0, transmission: 0, storage: 0, demand: 0 };
   const dryness = Math.max(0, Math.min(1, input.dryness));
   const efficiency = Math.max(0, Math.min(1, input.efficiency));
   const inflow = p.normalInflow * (1 - p.droughtInflowReduction * dryness);
   const available = state.reservoir + inflow;
-  const reservoirCapacity = p.reservoirCapacity + Math.max(0, input.storageAssetMillions ?? 0) * p.storageTwhPerMillion;
-  const demand = Math.max(0, input.demand ?? p.demand) * (1 - p.efficiencyMaxReduction * efficiency);
+  const reservoirCapacity =
+    p.reservoirCapacity +
+    Math.max(0, input.storageAssetMillions ?? 0) * p.storageTwhPerMillion +
+    Math.max(0, tech.storage);
+  const demand =
+    (Math.max(0, input.demand ?? p.demand) + Math.max(0, tech.demand)) * (1 - p.efficiencyMaxReduction * efficiency);
   const transmission =
-    p.transmissionCapacity + Math.max(0, input.transmissionAssetMillions) * p.transmissionTwhPerMillion;
-  const otherCapacity = p.otherGeneration + Math.max(0, input.generationAssetMillions ?? 0) * p.generationTwhPerMillion;
+    p.transmissionCapacity +
+    Math.max(0, input.transmissionAssetMillions) * p.transmissionTwhPerMillion +
+    Math.max(0, tech.transmission);
+  const otherCapacity =
+    p.otherGeneration +
+    Math.max(0, input.generationAssetMillions ?? 0) * p.generationTwhPerMillion +
+    Math.max(0, tech.generation);
   const otherGeneration = Math.min(Math.min(demand, transmission), otherCapacity);
   const hydro = Math.min(p.hydroCapacity, available, Math.max(0, Math.min(demand, transmission) - otherGeneration));
   const spill = Math.max(0, available - hydro - reservoirCapacity);
@@ -107,6 +120,7 @@ export const energyStep: MonthStep = (state, ctx) => {
     storageAssetMillions,
     efficiency,
     demand: p.demand * state.economy.potentialIndex,
+    technology: researchEnergyEffects(state, ctx.content),
   });
   const loss = p.shortageGapMax * (energy.demand > 0 ? energy.shortage / energy.demand : 0);
   const previousLoss = p.shortageGapMax * (state.energy.demand > 0 ? state.energy.shortage / state.energy.demand : 0);

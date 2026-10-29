@@ -154,6 +154,17 @@ Sem partida em andamento não há Painel: o modo demonstração (globo sem parti
 
 ---
 
+### 4.7 Ciência, tecnologia e comércio no Gabinete (onda R7 do plano de expansão)
+
+Dois cartões no Gabinete, depois de Habilidades. **Ciência e tecnologia:** a árvore por ramo (transporte e logística,
+energia, agricultura); cada nó abre pré-requisitos, efeito esperado, quem ganha, riscos e custos, exigências de obra e
+energia e as rotas possíveis, cada uma com prazo no ritmo atual, custo total, risco de falha por estágio, parte paga lá
+fora, manutenção e domínio local. O programa em andamento mostra estágio, gargalo do mês, gasto e efeito em vigor; os
+botões suspendem ou pedem certificação de exportação. **Comércio exterior e diplomacia:** tarifa e faixa do decreto,
+fluxos do último mês em pontos do PIB (desvio do início), setores afetados, choques ativos e, por parceiro, relação,
+acesso, acordo (com a previsão sem sorteio da ratificação), missão comercial e rodada de negociação. Toda escolha é uma
+ação de agenda; abrir os cartões não muda o estado.
+
 ## 5. Recursos do jogador
 
 | Recurso | Faixa | Como sobe | Como cai |

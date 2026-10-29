@@ -149,7 +149,9 @@ recusados.
 | Índice do turno (identidade de cada turno salvo; = `monthIndex` na partida que começa na posse) / turno da posse | `turnIndexOf(state)` (coluna `turn_index`) / `inaugurationTurnIndex(state)` |
 | Educação por coorte (etapa, escolaridade da força de trabalho, alavanca, capital humano) | `GameState.education` (`education/`; `EducationStageId`, `AttainmentId`, `EducationLeverId`, alvos `educacao.*`) / `humanCapital` |
 | Obra federativa, convênio, contrapartida, inadimplência | `Policy.federative` / `PublicProject.federative` (`FederativeAgreement`, `publicPolicies/federative.ts`) / `counterpartShare` / status `inadimplente`; ação `negociar_adesao` |
-| Habilidade do personagem (ramo, nível, treino) | `GameState.skills` (`skills/`; `SkillBranchId`: `negociacao`, `federalismo`) / `skillLevel` / ação `treinar_habilidade` |
+| Habilidade do personagem (ramo, nível, treino) | `GameState.skills` (`skills/`; `SkillBranchId`: `negociacao`, `federalismo`, `ciencia_tecnologia`, `diplomacia`) / `skillLevel` / ação `treinar_habilidade` |
+| Árvore de tecnologias (nó, rota, estágio, programa, domínio local, certificação) | `TechnologyCatalog` (`src/data/technology/`) / `TechnologyRouteId`: `importar`, `transferir`, `desenvolver` / `TechnologyStageId` / `GameState.research` (`research/`, `ResearchProgram`) / `capability` / ações `financiar_tecnologia`, `suspender_tecnologia`, `certificar_exportacao` |
+| Comércio exterior (tarifa, parceiro, acordo, ratificação, barreira, ruptura de cadeias) | `TradeCatalog` (`src/data/trade/`) / `GameState.trade` (`trade/`; `TradeAgreement`, `TradeShock` `barreira`/`cadeia`, `TradeFlows`) / ações `ajustar_tarifa`, `missao_comercial`, `negociar_acordo` |
 
 ---
 

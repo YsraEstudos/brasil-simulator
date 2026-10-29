@@ -151,7 +151,14 @@ describe('obras federativas: adesão real (EX-20)', () => {
       {
         ...state,
         skills: {
-          characters: { [state.control?.controlledCharacterId ?? 'presidente']: { negociacao: 0, federalismo: 99 } },
+          characters: {
+            [state.control?.controlledCharacterId ?? 'presidente']: {
+              negociacao: 0,
+              federalismo: 99,
+              ciencia_tecnologia: 0,
+              diplomacia: 0,
+            },
+          },
         },
       },
       content,

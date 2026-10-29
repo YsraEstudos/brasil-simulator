@@ -31,16 +31,25 @@ export interface SkillBranchView {
   trainable: boolean;
 }
 
+const NO_EFFECT: Readonly<Record<SkillBranchId, string>> = {
+  negociacao: 'Sem efeito: cada negociação com bloco custa o capital político cheio.',
+  federalismo: 'Sem efeito: a adesão dos governadores depende só da relação.',
+  ciencia_tecnologia: 'Sem efeito: cada estágio de pesquisa ou absorção tem o risco de falha cheio.',
+  diplomacia: 'Sem efeito: cada rodada de negociação de acordo comercial avança uma rodada.',
+};
+
 function effectText(branch: SkillBranchId, level: number): string {
-  if (level === 0) {
-    return branch === 'negociacao'
-      ? 'Sem efeito: cada negociação com bloco custa o capital político cheio.'
-      : 'Sem efeito: a adesão dos governadores depende só da relação.';
+  if (level === 0) return NO_EFFECT[branch];
+  switch (branch) {
+    case 'negociacao':
+      return `Cada negociação com bloco custa ${formatPercent(level * skillParam('negociacao_desconto'), 0)} menos capital político; o apoio ganho é o mesmo.`;
+    case 'federalismo':
+      return `+${Math.round(level * skillParam('federalismo_adesao') * 100)} pontos percentuais na chance de cada governador aderir a convênio.`;
+    case 'ciencia_tecnologia':
+      return `Cada estágio de pesquisa ou absorção tem ${formatPercent(level * skillParam('ciencia_falha'), 0)} menos chance de falha parcial; prazo e custo não mudam.`;
+    case 'diplomacia':
+      return `Cada rodada de negociação de acordo comercial avança mais ${(level * skillParam('diplomacia_avanco')).toLocaleString('pt-BR')} rodada; o Congresso ainda ratifica.`;
   }
-  if (branch === 'negociacao') {
-    return `Cada negociação com bloco custa ${formatPercent(level * skillParam('negociacao_desconto'), 0)} menos capital político; o apoio ganho é o mesmo.`;
-  }
-  return `+${Math.round(level * skillParam('federalismo_adesao') * 100)} pontos percentuais na chance de cada governador aderir a convênio.`;
 }
 
 export function skillsView(state: GameState): SkillBranchView[] {

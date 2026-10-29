@@ -151,7 +151,7 @@ export function housePresident(content: GameContent, house: House): Bloc | null 
   return blocs.reduce<Bloc | null>((a, b) => (a === null || seatsOf(b, house) > seatsOf(a, house) ? b : a), null);
 }
 
-function ideologicalAffinity(bloc: Bloc, policy: Policy): number {
+function ideologicalAffinity(bloc: Bloc, policy: Pick<Policy, 'position'>): number {
   const distance =
     Math.abs(bloc.ideology.economic - policy.position.economic) +
     Math.abs(bloc.ideology.social - policy.position.social);
@@ -159,7 +159,7 @@ function ideologicalAffinity(bloc: Bloc, policy: Policy): number {
 }
 
 /** Parcela ideológica do apoio (−w_ideo … w_ideo): negativa = o bloco é contrário à política. */
-export function ideologicalSupport(policy: Policy, bloc: Bloc, c: Calibration): number {
+export function ideologicalSupport(policy: Pick<Policy, 'position'>, bloc: Bloc, c: Calibration): number {
   return c.w_ideo * (2 * ideologicalAffinity(bloc, policy) - 1);
 }
 

@@ -359,6 +359,7 @@ export const publicPoliciesStep: MonthStep = (input, ctx) => {
     );
   }
 
+  ctx.draft.publicRoom = { roomMillions, gdpMillions };
   const next = withPublicState({ ...state, proposals, impulses } as GameState, publicState) as PublicGameState;
   return { state: next, contributions: [] };
 };

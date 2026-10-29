@@ -9,7 +9,10 @@ import { skillsView, trainingCostText } from './skillsView';
 
 function withTraining(negociacao: number, federalismo: number): GameState {
   const state = testState();
-  return { ...state, skills: { characters: { presidente: { negociacao, federalismo } } } };
+  return {
+    ...state,
+    skills: { characters: { presidente: { negociacao, federalismo, ciencia_tecnologia: 0, diplomacia: 0 } } },
+  };
 }
 
 describe('cartão Habilidades', () => {

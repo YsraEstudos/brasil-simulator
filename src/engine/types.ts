@@ -2,6 +2,10 @@ import type { EducationState } from './education/types';
 import type { Demography } from './demography/demography';
 import type { Energy } from './energy/energy';
 import type { CensusAgeData } from '../types/demography';
+import type { ResearchState } from './research/types';
+import type { TradeState } from './trade/types';
+import type { TechnologyCatalog } from '../types/technology';
+import type { TradeCatalog } from '../types/trade';
 import type { SkillsState } from './skills/types';
 import type { GameEvent } from '../types/event';
 import type { Policy } from '../types/policy';
@@ -18,10 +22,10 @@ import type { IllicitState } from './career/illicit';
 import type { CampaignConfigV2 } from './campaignConfig';
 
 /** Versão da estrutura do GameState; saves de desenvolvimento incompatíveis são recusados (AI_INSTRUCTIONS.md §2.1). */
-export const STATE_SCHEMA_VERSION = 25;
+export const STATE_SCHEMA_VERSION = 26;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.21.0';
+export const ENGINE_VERSION = '0.22.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -836,6 +840,10 @@ export interface GameState {
   demography: Demography;
   /** Balanço de eletricidade e reservatório (TWh). */
   energy: Energy;
+  /** Programas da árvore de tecnologias (v26; PLANO_EXPANSAO EX-24/EX-32). Do país: atravessam os governos. */
+  research: ResearchState;
+  /** Comércio exterior e diplomacia (v26; EX-25): tarifa, relações, acordos e choques. Do país, não do governo. */
+  trade: TradeState;
   /**
    * Habilidades dos personagens (v23; PLANO_EXPANSAO EX-21), por id de personagem. Ausente até o primeiro treino: antes
    * dele, o estado é o mesmo com o sistema ligado ou desligado.
@@ -1236,6 +1244,10 @@ export interface GameContent {
   climatology: Climatology;
   /** Distribuição etária observada, opcional e aplicada como aproximação inicial. */
   censusAgeData?: CensusAgeData;
+  /** Árvore de tecnologias (R7). Ausente = módulo inerte (nenhum programa possível). */
+  technology?: TechnologyCatalog;
+  /** Comércio exterior (R7). Ausente = módulo inerte (sem tarifa, acordos nem choques). */
+  trade?: TradeCatalog;
 }
 
 /** Partes do relatório que as etapas preenchem (o resto é montado pelo `advanceMonth`). */
@@ -1258,6 +1270,11 @@ export type ReportDraft = Pick<
   careerDebate?: CareerDebateOutcome;
   /** Eleição apurada no turno (Fase C5). */
   careerElection?: CareerElectionResult;
+  /**
+   * Espaço discricionário que a carteira de obras deixou no mês (taxa anual, R$ milhões correntes), preenchido por
+   * `publicPoliciesStep` e consumido pela árvore de tecnologias (R7): os dois disputam o mesmo orçamento.
+   */
+  publicRoom?: { roomMillions: number; gdpMillions: number };
 };
 
 export interface StepContext {

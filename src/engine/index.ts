@@ -169,6 +169,12 @@ export {
   SANCTION_CHOICES,
   SUPPORT_CANDIDATE_ACTION_ID,
   TRAIN_SKILL_ACTION_ID,
+  FUND_TECHNOLOGY_ACTION_ID,
+  SUSPEND_TECHNOLOGY_ACTION_ID,
+  CERTIFY_EXPORT_ACTION_ID,
+  ADJUST_TARIFF_ACTION_ID,
+  TRADE_MISSION_ACTION_ID,
+  NEGOTIATE_AGREEMENT_ACTION_ID,
   URGENCY_ACTION_ID,
   VISIT_ACTION_ID,
   type AgendaAction,
@@ -439,6 +445,8 @@ export {
 export { NEWS_LIMIT, NEWS_PER_MONTH_MAX, appendNews, generateNews } from './news';
 export * from './education';
 export * from './skills';
+export * from './research';
+export * from './trade';
 export {
   agreementRegional,
   counterpartCoverage,
