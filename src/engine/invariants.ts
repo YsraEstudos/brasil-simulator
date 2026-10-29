@@ -9,6 +9,8 @@ import { MEMORY_MONTHS } from './elections/elections';
 import { populationShares, regionsOf } from './regions/regions';
 import { checkSociety } from './society/society';
 import { checkPublicPolicies } from './publicPolicies/publicPolicies';
+import { checkResearch } from './research/research';
+import { checkTrade } from './trade/trade';
 import {
   MANDATORY_GROUPS,
   REVENUE_GROUPS,
@@ -32,7 +34,7 @@ export function checkInvariants(
   prev: GameState,
   next: GameState,
   report: MonthReport,
-  content?: Pick<GameContent, 'scenario'>,
+  content?: Pick<GameContent, 'scenario'> & Partial<Pick<GameContent, 'technology' | 'trade'>>,
 ): string[] {
   const errors: string[] = [];
 
@@ -45,6 +47,11 @@ export function checkInvariants(
     }
   };
   walk(next, 'state');
+
+  // R7: programas de tecnologia e comércio exterior, só quando o conteúdo traz os catálogos.
+  if (content?.technology && prev.research && next.research && prev.research !== next.research)
+    errors.push(...checkResearch(prev.research, next.research, content));
+  if (content?.trade && next.trade && prev.trade !== next.trade) errors.push(...checkTrade(next.trade, content.trade));
 
   // R6: estoques e fluxos só são comparados quando a respectiva etapa foi executada.
   if (prev.demography && next.demography && prev.demography !== next.demography) {

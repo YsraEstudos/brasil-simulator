@@ -130,6 +130,19 @@ pipeline do INEP com coortes reais e calibrar o estacionário contra elas.
 
 ---
 
+### 3.7 Árvore de tecnologias e comércio exterior (R7 do PLANO_EXPANSAO, EX-24/EX-25/EX-32, 29/10/2026)
+
+- `src/data/technology/arvore_tecnologica.json` (versão `2026.10.1`, `PROVISORIO`): três ramos, seis nós, rotas,
+  estágios, custos, prazos, riscos, manutenção, efeitos e potencial de exportação. **São hipóteses de jogo**, não
+  orçamento de engenharia nem estimativa oficial; servem para que as rotas tenham trade-offs comparáveis.
+- `src/data/trade/comercio_exterior.json` (versão `2026.10.1`, `PROVISORIO`): participação dos parceiros nas
+  exportações e importações de bens, exportações e importações em fração do PIB e tarifa média, em **ordens de
+  grandeza arredondadas** a partir do Comex Stat/MDIC (destino e origem, 2024) e da tarifa média aplicada; não foram
+  conferidas célula a célula nesta versão. Choques, probabilidades e a disponibilidade de acordos são hipóteses de jogo;
+  o estágio real das negociações (por exemplo, Mercosul–União Europeia) não é reproduzido.
+- Ambos validados por Zod ao carregar (`src/types/technology.ts`, `src/types/trade.ts`). Antes de chamar qualquer valor
+  de calibrado, conferir na fonte e registrar a consulta aqui.
+
 ## 4. Variáveis necessárias para o cenário jan/2027
 
 O cenário parte do **último dado oficial disponível** na data de congelamento e completa o intervalo até dez/2026 com `ESTIMADO` ou `PROJETADO`.

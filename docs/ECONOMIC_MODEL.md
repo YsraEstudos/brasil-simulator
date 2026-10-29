@@ -455,11 +455,65 @@ Código em `src/engine/education/`; parâmetros em `EDUCATION_PARAMS`, `PROVISOR
   capital público da carteira (§5.16). O estado inicial é o estacionário das taxas de base, então sem política ΔH = 0
   e o potencial calibrado (`g_pot_base`, que já contém a tendência do país) não ganha nada.
 - **Sem duplicação.** O prédio escolar entra no capital público pela carteira; aqui só entra a escolaridade. O gasto é
-  o da rotina ou da obra. Não há módulo de pesquisa; quando houver (F07), não pode ler formandos para somar
-  produtividade outra vez.
+  o da rotina ou da obra. A árvore de tecnologias (§5.23) lê o capital humano só para o **ritmo** dos estágios; não
+  soma produtividade pelos formandos outra vez.
 - **Defasagem.** Política muda taxas e alvo de aprendizagem; a força de trabalho só muda com as coortes que saem da
   escola. Em teste, o capital humano anda menos de 1/100 do ganho de 20 anos no primeiro mês e menos de 1/8 no
   primeiro ano.
+### 5.23 Árvore de tecnologias (onda R7 do plano de expansão, EX-24/EX-32, motor 0.22.0)
+
+Código em `src/engine/research/`; regras comuns em `RESEARCH_PARAMS`; nós, rotas, custos e efeitos em
+`src/data/technology/arvore_tecnologica.json`; tudo `PROVISORIO`. Estado em `GameState.research` (v26), do país: os
+programas atravessam as trocas de governo. Etapa `researchStep` logo depois da carteira de obras.
+
+- **Rotas.** `importar` (só o estágio de adoção; a maior parte do gasto vai a fornecedores externos; domínio local 0),
+  `transferir` (com parceiro que aceite e relação ≥ `relacao_minima_transferencia`; pula a pesquisa básica; domínio
+  parcial) e `desenvolver` (pesquisa básica → prototipagem → escala industrial → adoção; domínio pleno).
+- **Financiamento plurianual sem caixa paralelo.** Cada estágio pede `annualMillions ÷ 12` por mês, em preços de
+  jan/2027 corrigidos: parte nacional × nível de preços + parte importada × (câmbio ÷ câmbio inicial). O dinheiro sai do
+  **mesmo espaço discricionário** da carteira (o que as obras e diretrizes deixaram no mês, `draft.publicRoom`); a
+  manutenção das tecnologias adotadas é paga antes da implantação de novas. O desembolso entra no motor fiscal uma vez,
+  como `gasto.investimento` de um mês (`pesquisa:<nó>:gasto:<mês>`).
+- **Ritmo e risco.** Progresso do estágio = fração financiada × ritmo; ritmo = (capital humano ÷ referência do nó) ^
+  `ritmo_capital_humano`, saturado em [`ritmo_min`, `ritmo_max`]. Ao fim de cada estágio de pesquisa ou absorção, falha
+  parcial com chance `stageFailure × (1 − habilidade de ciência e tecnologia)`, sorteada por chave (semente, nó, rota,
+  estágio, falhas, mês): refaz `perda_falha` do estágio; com `falhas_maximas` o programa é encerrado e os estágios
+  concluídos ficam como resultado intermediário (um programa novo do mesmo nó não os refaz).
+- **Adoção depende de infraestrutura e energia.** Nó com `requiresProject` só conclui a adoção com uma dessas obras da
+  carteira em operação; nó com `requiresEnergy` para se a demanda não atendida passar de `racionamento_maximo`.
+- **Efeito por um canal só.** Depois da adoção, o nível do efeito anda até a fração da manutenção paga a
+  `ajuste_efeito` por mês (gradual na entrada, desgaste sem manutenção). Canal `potencial`: impulso `oferta.potencial`
+  de um mês = Δnível × efeito × 12 (a soma dá exatamente o nível do PIB potencial; testado). Canais de energia: TWh
+  somados à geração, transmissão ou armazenamento no balanço de energia (§2, R6), mais a demanda adicional do nó
+  (efeito adverso, ex.: trem rápido). Nenhum nó de energia passa também pelo potencial.
+- **Exportação condicionada.** A ação `certificar_exportacao` só vale com o nó adotado, escala industrial concluída e
+  domínio ≥ `capacidade_exportar` (importar nunca exporta). As vendas começam `meses_certificacao` depois, crescem até
+  o potencial do nó em `rampa_exportacao` meses, proporcionais ao domínio e ao nível do efeito, e são lidas pelo comércio
+  exterior (§5.24) com o acesso médio aos parceiros.
+
+### 5.24 Comércio exterior e diplomacia (onda R7 do plano de expansão, EX-25, motor 0.22.0)
+
+Código em `src/engine/trade/`; parâmetros em `TRADE_PARAMS`; parceiros, níveis e choques em
+`src/data/trade/comercio_exterior.json`; `PROVISORIO`. Estado em `GameState.trade` (v26), do país. Etapa `tradeStep`
+depois da árvore de tecnologias e antes da economia.
+
+- **Desvio, não nível.** O nível de comércio do cenário já está nos agregados calibrados; o módulo calcula, em fração do
+  PIB anualizada, só o desvio do início: exportações de bens = Σ parceiros exportações × participação × (acesso − 1);
+  importações = −`elast_importacao_tarifa` × importações × (tarifa − base) + importações a mais dos acordos;
+  exportações de tecnologia (§5.23) e importações dos programas de tecnologia. Saldo = exportações − importações.
+- **Canais únicos.** Saldo → hiato como nível (`choque.hiato` = `mult_saldo_externo` × (saldo − ρ_h × saldo anterior),
+  mesma forma da escassez de energia); câmbio só na variação do saldo (`choque.cambio` = −`elast_cambio_saldo` ×
+  Δsaldo); imposto de importação = tarifa × (importações − `concessao_tarifa` × importações dos parceiros com acordo) −
+  arrecadação inicial, como `receita.tributaria` de um mês; preço de importação (alta da tarifa ou ruptura de cadeias)
+  → `choque.inflacao` por `meses_repasse` meses (mudança do nível de preços, não inflação permanente).
+- **Sem duplicar termos de troca.** O preço das commodities continua no processo de termos de troca (§8). O comércio
+  trata volume, acesso e tarifa. A parte importada do gasto em tecnologia já entrou como investimento (§5.23); aqui só
+  sai do saldo, uma vez.
+- **Choques.** Barreira de um parceiro (perde `size` de acesso por `months` meses; risco maior com relação ruim e
+  tarifa acima da base, menor com acordo vigente) e ruptura de cadeias (preços de importação e manutenção de tecnologia
+  importada mais caros). Sorteio por chave (semente, choque, parceiro, mês): não consome o PRNG compartilhado e não
+  depende da ordem das outras ações.
+
 ## 6. Parâmetros
 
 Os valores, faixas, significados e justificativas estão em `src/engine/economy/calibration.ts`.
@@ -536,6 +590,8 @@ consome no máximo três marcas, inclusive se o projeto for cancelado.
 | Clima (seca, enchente) | agropecuária, energia, preços de alimentos, despesa emergencial | sazonal + probabilidade |
 | Choque de confiança | investimento e consumo | eventos políticos |
 | Crise financeira global | fluxo de capital, câmbio, exportações | evento raro |
+| Barreira de parceiro comercial (R7) | volume de exportações do setor exposto → saldo, hiato, câmbio | sorteio por chave, mensal (§5.24) |
+| Ruptura de cadeias globais (R7) | preço de importação → inflação por um ano; manutenção de tecnologia importada | sorteio por chave, mensal (§5.24) |
 
 ---
 

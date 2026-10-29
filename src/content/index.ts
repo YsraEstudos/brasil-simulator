@@ -5,9 +5,11 @@ import { CENSUS_2022 } from './demography';
 import { EVENTS } from './events';
 import { POLICIES } from './policies';
 import { SCENARIOS } from './scenarios';
+import { TECHNOLOGY, TRADE } from './technology';
 
 export { CLIMATOLOGY } from './climate';
 export { RAILWAYS } from './railways';
+export { TECHNOLOGY, TRADE } from './technology';
 export { EVENTS } from './events';
 export { POLICIES } from './policies';
 export {
@@ -37,6 +39,8 @@ export function loadContent(scenarioId: string): GameContent {
     events: EVENTS,
     calibration: calibrationFromScenario(scenario.parameters),
     climatology: CLIMATOLOGY,
+    technology: TECHNOLOGY,
+    trade: TRADE,
     ...(scenario.id === 'brasil_2027_01_v080' ? { censusAgeData: CENSUS_2022 } : {}),
   };
   cache.set(scenarioId, content);

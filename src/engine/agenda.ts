@@ -1,5 +1,11 @@
 import {
+  ADJUST_TARIFF_ACTION_ID,
   AMENDMENTS_ACTION_ID,
+  CERTIFY_EXPORT_ACTION_ID,
+  FUND_TECHNOLOGY_ACTION_ID,
+  NEGOTIATE_AGREEMENT_ACTION_ID,
+  SUSPEND_TECHNOLOGY_ACTION_ID,
+  TRADE_MISSION_ACTION_ID,
   APPOINT_ACTION_ID,
   CONCEDE_ACTION_ID,
   DECLARE_CANDIDACY_ACTION_ID,
@@ -28,7 +34,9 @@ import { legislativeInstrument } from './congress/congress';
 import { declarationInTermWindow } from './elections/elections';
 import { validateAdhesionNegotiation } from './publicPolicies/federative';
 import { validatePublicAction } from './publicPolicies/publicPolicies';
+import { validateCertifyExport, validateFundTechnology, validateSuspendTechnology } from './research/research';
 import { canTrain, isSkillBranch } from './skills/skills';
+import { validateAdjustTariff, validateNegotiateAgreement, validateTradeMission } from './trade/trade';
 import {
   PROPOSAL_IN_CONGRESS,
   TECHNICAL_OCCUPANT,
@@ -138,6 +146,18 @@ export function validateActionTarget(
       return validateAdhesionNegotiation(params, state);
     case TRAIN_SKILL_ACTION_ID:
       return isSkillBranch(params.branch) && canTrain(state, params.branch) ? null : 'alvo_invalido';
+    case FUND_TECHNOLOGY_ACTION_ID:
+      return validateFundTechnology(params, state, content);
+    case SUSPEND_TECHNOLOGY_ACTION_ID:
+      return validateSuspendTechnology(params, state);
+    case CERTIFY_EXPORT_ACTION_ID:
+      return validateCertifyExport(params, state, content);
+    case ADJUST_TARIFF_ACTION_ID:
+      return validateAdjustTariff(params, state, content);
+    case TRADE_MISSION_ACTION_ID:
+      return validateTradeMission(params, state, content);
+    case NEGOTIATE_AGREEMENT_ACTION_ID:
+      return validateNegotiateAgreement(params, state, content);
     default:
       return null;
   }
