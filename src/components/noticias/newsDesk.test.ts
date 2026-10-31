@@ -3,15 +3,27 @@ import { describe, expect, it } from 'vitest';
 import type { NewsItem } from '@/engine';
 
 import { deskLayout, easeInOutCubic, laptopScreenFrame, pcPose, poseAt } from './deskCamera';
-import { newspaperRect, PAPER_MAX_WIDTH, rectStyle, socialScreenRect } from './deskOverlay';
+import {
+  foldedPaperRect,
+  newspaperRect,
+  openPaperRect,
+  PAPER_MAX_WIDTH,
+  rectStyle,
+  socialScreenRect,
+} from './deskOverlay';
 import { keyboardTexture, newspaperTexture, radialTexture, screenTexture, woodTexture } from './deskTextures';
 import {
+  bombshellFontSize,
   buildEditions,
+  buildPages,
   editionIndexOf,
   editionPage,
+  focusedView,
+  isBombshell,
   leadFontSize,
   mastheadFontSize,
   newspaperColumns,
+  regularPage,
 } from './newspaperView';
 import { scaleTypography } from './scaledTypography';
 import {
@@ -253,5 +265,52 @@ describe('modelos de texto das redes', () => {
   it('preenche numa passagem só, sem padrões do replace nem substituição dupla', () => {
     const item = { headline: 'Dólar a R$ 6 e $& e {c}', cause: 'Causa: o câmbio subiu.', kind: 'economia' as const };
     expect(fill('“{h}” — {c} {tag}', item)).toBe('“Dólar a R$ 6 e $& e {c}” — o câmbio subiu #Economia');
+  });
+});
+
+describe('capa-bomba e páginas do jornal', () => {
+  const bomba = item('2_0', 2, { kind: 'institucional', tone: 'negativa', sourceId: 'cpi' });
+
+  it('notícia institucional é bomba; outras só pelo cadastro de fotos', () => {
+    expect(isBombshell(bomba)).toBe(true);
+    expect(isBombshell(item('a', 0))).toBe(false);
+    expect(isBombshell(item('a', 0, { sourceId: 'greve' }), new Set(['greve']))).toBe(true);
+    expect(isBombshell(undefined)).toBe(false);
+  });
+
+  it('edição com bomba ganha capa antes da página comum, que não repete a bomba', () => {
+    const editions = buildEditions([item('0_0', 0), bomba, item('2_1', 2)]);
+    const pages = buildPages(editions);
+    expect(pages.map((p) => `${p.kind}:${p.editionIndex}`)).toEqual(['bomba:0', 'comum:0', 'comum:1']);
+    const regular = pages[1];
+    expect(regular.kind === 'comum' && regularPage(editions[0], 'todas', regular.skip).lead?.id).toBe('2_1');
+    expect(buildPages([])).toEqual([{ kind: 'comum', editionIndex: 0, skip: undefined }]);
+  });
+
+  it('abre a página que contém a notícia focada, inclusive após capa-bomba', () => {
+    const editions = buildEditions([bomba, item('2_1', 2), item('0_0', 0)]);
+    const pages = buildPages(editions);
+    expect(focusedView(editions, pages, bomba.id).page).toBe(0);
+    expect(focusedView(editions, pages, '2_1').page).toBe(1);
+    expect(focusedView(editions, pages, '0_0').page).toBe(2);
+    expect(focusedView(editions, pages, 'ausente').page).toBe(0);
+  });
+
+  it('título da capa é maior que a manchete comum e tem limites', () => {
+    for (const w of [300, 600, 900]) expect(bombshellFontSize(w)).toBeGreaterThan(leadFontSize(w));
+    expect(bombshellFontSize(100)).toBe(34);
+    expect(bombshellFontSize(5000)).toBe(78);
+  });
+
+  it('aberto ocupa a área segura; dobrado é a metade de cima, em escala, dentro do espaço da mesa', () => {
+    const open = openPaperRect({ width: 1600, height: 900 }, { top: 20, bottom: 0, left: 40, right: 0 });
+    expect(open.width).toBe(PAPER_MAX_WIDTH);
+    expect(open.y).toBe(30);
+    expect(open.x + open.width / 2).toBeCloseTo(40 + (1600 - 40) / 2);
+    const slot = { x: 12, y: 12, width: 500, height: 700 };
+    const folded = foldedPaperRect(slot, open);
+    expect(folded.width / folded.height).toBeCloseTo(open.width / (open.height / 2));
+    expect(folded.scale).toBeLessThanOrEqual(1);
+    expect(inside({ ...folded, x: folded.x - slot.x, y: folded.y - slot.y }, slot.width, slot.height)).toBe(true);
   });
 });

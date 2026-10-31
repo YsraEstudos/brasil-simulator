@@ -62,3 +62,31 @@ export function socialScreenRect(
     height: h - insets.top - Math.max(8, insets.bottom) - 8,
   };
 }
+
+/** Margem do jornal aberto em relação à área segura. */
+const OPEN_GAP = 10;
+
+/** O jornal aberto diante do jogador: ocupa a tela (dentro da área segura), até a largura máxima, centralizado. */
+export function openPaperRect(size: { width: number; height: number }, insets: Insets): ScreenRect {
+  const left = insets.left + OPEN_GAP;
+  const right = size.width - insets.right - OPEN_GAP;
+  const top = insets.top + OPEN_GAP;
+  const bottom = size.height - Math.max(OPEN_GAP, insets.bottom);
+  const width = Math.min(PAPER_MAX_WIDTH, right - left);
+  return { x: left + (right - left - width) / 2, y: top, width, height: bottom - top };
+}
+
+/** Fração do espaço do jornal na mesa que o jornal dobrado ocupa (sobra mesa em volta). */
+const FOLDED_FILL = 0.9;
+
+/**
+ * O jornal dobrado ao meio sobre a mesa: é a metade de cima do jornal aberto, em escala, centralizada no espaço
+ * do jornal na mesa. `scale` leva o jornal aberto ao dobrado.
+ */
+export function foldedPaperRect(slot: ScreenRect, open: ScreenRect): ScreenRect & { scale: number } {
+  const half = open.height / 2;
+  const scale = Math.min(1, (slot.width * FOLDED_FILL) / open.width, (slot.height * FOLDED_FILL) / half);
+  const width = open.width * scale;
+  const height = half * scale;
+  return { x: slot.x + (slot.width - width) / 2, y: slot.y + (slot.height - height) / 2, width, height, scale };
+}

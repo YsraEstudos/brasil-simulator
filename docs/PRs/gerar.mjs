@@ -56,7 +56,7 @@ function jsonForScript(value) {
 function replaceOnce(html, from, to, label) {
   const count = html.split(from).length - 1;
   if (count !== 1) throw new Error(`Template inválido: ${label} (${count} ocorrências)`);
-  return html.replace(from, to);
+  return html.replace(from, () => to);
 }
 
 function replaceAll(html, from, to, label) {
@@ -242,15 +242,10 @@ export function build(folderArg) {
   html = replaceOnce(html, '__SNAPSHOT_HTML__', escHtml(snapshot), 'snapshot');
   html = replaceOnce(html, '__FOOTER_RIGHT_HTML__', escHtml(footerRight), 'rodapé');
   html = replaceAll(html, '__EXPORT_BASE__', exportBase, 'nome do arquivo exportado');
-  html = replaceOnce(
-    html,
-    '<script type="application/json" id="dataset">__DATASET_JSON__</script>',
-    `<script type="application/json" id="dataset">${jsonForScript(dataset)}</script>`,
-    'dataset',
-  );
+  html = replaceOnce(html, '__DATASET_JSON__', jsonForScript(dataset), 'dataset');
 
   const note = `<!-- Gerado por docs/PRs/gerar.mjs a partir de ${folderName}/${DATA_FILE}. Edite o JSON e regenere; não edite este HTML. -->`;
-  html = replaceOnce(html, '<!DOCTYPE html>', `<!DOCTYPE html>\n${note}`, 'DOCTYPE');
+  html = replaceOnce(html, '<!doctype html>', `<!doctype html>\n${note}`, 'DOCTYPE');
 
   const outputPath = path.join(folder, OUTPUT_FILE);
   fs.writeFileSync(outputPath, html, 'utf8');

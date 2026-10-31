@@ -1,7 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Button, Card, formatNumber, Text } from '@/components/ui';
+import { Alert, Button, Card, formatNumber, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import {
   AGENDA_ACTIONS,
   BC_BOARD_SIZE,
@@ -11,7 +12,7 @@ import {
   type GameState,
 } from '@/engine';
 
-import { costText } from './labels';
+import { Badge, CostPips, ICONS, IconTile, SectionHeader } from './GabineteBits';
 
 export interface AgendaActionsProps {
   state: GameState;
@@ -37,23 +38,36 @@ function pressureContext(state: GameState, content: GameContent): string {
 
 /** Ações de agenda que não viram proposta (GAME_DESIGN.md §4.3), como pressionar o Banco Central. */
 export function AgendaActions({ state, content, selected, canInclude, onToggle }: AgendaActionsProps) {
+  const { colors } = useTheme();
   return (
     <View style={styles.root}>
-      <Text variant="title">Ações de governo</Text>
+      <SectionHeader
+        icon={ICONS.actions}
+        title="Ações rápidas"
+        description="Gestos do Presidente que não viram proposta nem passam pelo Congresso: o efeito vem ao encerrar o mês."
+      />
       {Object.values(AGENDA_ACTIONS)
         .filter((action) => action.listed)
         .map((action) => {
           const included = selected.includes(action.id);
           const blocked = !included && !canInclude(action.agendaCost);
           return (
-            <Card key={action.id} title={action.name} subtitle={action.summary}>
-              <Text variant="caption" color="textSecondary">
-                Ação imediata · custo: {costText(action.agendaCost)}
-              </Text>
+            <Card key={action.id} style={included && { borderColor: colors.accent, borderWidth: 1.5 }}>
+              <View style={styles.top}>
+                <IconTile name={action.id === PRESSURE_ACTION_ID ? ICONS.bank : ICONS.actions} />
+                <View style={styles.title}>
+                  <Text variant="label">{action.name}</Text>
+                  <Text variant="caption" color="textSecondary">
+                    {action.summary}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.badges}>
+                <Badge icon={ICONS.executive} label="Ação imediata" tone="positive" />
+                <CostPips cost={action.agendaCost} />
+              </View>
               {action.id === PRESSURE_ACTION_ID && (
-                <Text variant="caption" color="warning">
-                  {pressureContext(state, content)}
-                </Text>
+                <Alert tone="warning" title="Risco à credibilidade" message={pressureContext(state, content)} />
               )}
               <Button
                 label={included ? 'Retirar da agenda' : 'Incluir na agenda'}
@@ -72,4 +86,7 @@ export function AgendaActions({ state, content, selected, canInclude, onToggle }
 
 const styles = StyleSheet.create({
   root: { gap: Spacing.two },
+  top: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  title: { flex: 1, gap: Spacing.half },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
 });
