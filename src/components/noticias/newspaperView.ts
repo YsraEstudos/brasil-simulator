@@ -128,9 +128,13 @@ export function focusedView(
   pages: readonly NewspaperPage[],
   newsId: string | undefined,
 ): { page: number; filter: NewsFilter } {
-  if (newsId === undefined) return { page: 0, filter: 'todas' };
+  if (newsId === undefined || !editions.some((edition) => edition.items.some((item) => item.id === newsId))) {
+    return { page: 0, filter: 'todas' };
+  }
   const editionIndex = editionIndexOf(editions, newsId);
-  const page = pages.findIndex((p) => p.editionIndex === editionIndex);
+  const page = pages.findIndex(
+    (p) => p.editionIndex === editionIndex && (p.kind === 'comum' ? p.skip !== newsId : p.item.id === newsId),
+  );
   return { page: Math.max(0, page), filter: 'todas' };
 }
 

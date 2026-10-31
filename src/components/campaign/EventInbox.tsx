@@ -1,6 +1,6 @@
 import type { SymbolViewProps } from 'expo-symbols';
-import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { HudIcon } from '@/components/painel/HudBits';
 import { Text } from '@/components/ui';
@@ -102,6 +102,16 @@ export function EventInbox({
   characters = [],
   focusInstanceId,
 }: EventInboxProps) {
+  const [expanded, setExpanded] = useState<string | null>(() =>
+    items.some(({ pending }) => pending.instanceId === focusInstanceId) ? `event:${focusInstanceId}` : null,
+  );
+  const [seenFocus, setSeenFocus] = useState(focusInstanceId);
+  if (seenFocus !== focusInstanceId) {
+    setSeenFocus(focusInstanceId);
+    setExpanded(
+      items.some(({ pending }) => pending.instanceId === focusInstanceId) ? `event:${focusInstanceId}` : null,
+    );
+  }
   const total = items.length + sanctions.length;
   if (total === 0) {
     return (
@@ -132,7 +142,9 @@ export function EventInbox({
             kicker="Projeto aprovado"
             title={name}
             deadline="Sem resposta neste mês, vale a sanção tácita."
-            answered={selected !== undefined}>
+            answered={selected !== undefined}
+            expanded={expanded === `sanction:${proposal.id}`}
+            onToggle={() => setExpanded(expanded === `sanction:${proposal.id}` ? null : `sanction:${proposal.id}`)}>
             <Text variant="label" color="textSecondary" style={styles.briefing}>
               {proposal.rider > 0
                 ? 'O Congresso aprovou o projeto, e o relator incluiu acréscimos estranhos ao texto, com despesa extra.'
@@ -172,7 +184,11 @@ export function EventInbox({
             title={event.title}
             deadline={`Responda até o fim de ${deadline}; sem resposta, vale o padrão.`}
             answered={selectedId !== undefined}
-            focused={focused}>
+            focused={focused}
+            expanded={expanded === `event:${pending.instanceId}`}
+            onToggle={() =>
+              setExpanded(expanded === `event:${pending.instanceId}` ? null : `event:${pending.instanceId}`)
+            }>
             {character && <CharacterChip character={character} />}
             {pending.location && (
               <Text variant="label" color="textSecondary" style={styles.briefing}>
@@ -263,6 +279,8 @@ function InboxCard({
   deadline,
   answered,
   focused = false,
+  expanded,
+  onToggle,
   children,
 }: {
   icon: SymbolViewProps['name'];
@@ -272,6 +290,8 @@ function InboxCard({
   answered: boolean;
   /** Evento aberto pelo marcador do mapa: contorno de destaque (PLANO_GLOBO.md §7). */
   focused?: boolean;
+  expanded: boolean;
+  onToggle: () => void;
   children: ReactNode;
 }) {
   const { colors } = useTheme();
@@ -285,7 +305,12 @@ function InboxCard({
       ]}>
       <View style={[styles.stripe, { backgroundColor: colors[tone] }]} />
       <View style={styles.cardInner}>
-        <View style={styles.cardHeader}>
+        <Pressable
+          onPress={onToggle}
+          accessibilityRole="button"
+          accessibilityState={{ expanded }}
+          accessibilityLabel={`${title}, ${answered ? 'respondido' : 'sem resposta'}`}
+          style={styles.cardHeader}>
           <View style={[styles.iconBox, { borderColor: colors.border, backgroundColor: colors.surfaceRaised }]}>
             <HudIcon name={icon} size={16} color={colors.accent} />
           </View>
@@ -298,15 +323,22 @@ function InboxCard({
             </Text>
           </View>
           <Tag tone={tone} text={answered ? 'Respondido' : 'Sem resposta'} />
-        </View>
+          <Text variant="caption" color="textSecondary">
+            {expanded ? 'Recolher' : 'Abrir'}
+          </Text>
+        </Pressable>
         <View style={styles.deadline}>
           <HudIcon name={CLOCK_ICON} size={12} color={colors.textMuted} />
           <Text variant="caption" color="textMuted" style={styles.deadlineText}>
             {deadline}
           </Text>
         </View>
-        <View style={[styles.divider, { backgroundColor: colors.border + '55' }]} />
-        {children}
+        {expanded && (
+          <>
+            <View style={[styles.divider, { backgroundColor: colors.border + '55' }]} />
+            {children}
+          </>
+        )}
       </View>
     </View>
   );

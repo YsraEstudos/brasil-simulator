@@ -213,6 +213,7 @@ export function Newspaper({
           />
           {page.kind === 'bomba' ? (
             <BombshellPage
+              key={page.item.id}
               item={page.item}
               width={inner}
               still={still}
@@ -569,7 +570,8 @@ function RegularPage({
             pending.map((p) => (
               <Text key={p.key} style={styles.boxText}>
                 {`• ${p.title} `}
-                <Text style={styles.boxSmall}>{`(${shortMonthLabel(p.monthIndex)} · responda no Gabinete)`}</Text>
+                <Text
+                  style={styles.boxSmall}>{`(${shortMonthLabel(p.monthIndex)} · responda em Alertas e eventos)`}</Text>
               </Text>
             ))
           )}

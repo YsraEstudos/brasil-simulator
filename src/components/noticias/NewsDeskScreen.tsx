@@ -89,7 +89,8 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   const [mode, setMode] = useState<Mode>('mesa');
   // Notícia aberta pelo marcador do mapa (rota `/noticias?noticia=<id>`): o jornal abre nela.
-  const { noticia } = useLocalSearchParams<{ noticia?: string }>();
+  const params = useLocalSearchParams<{ noticia?: string | string[] }>();
+  const noticia = Array.isArray(params.noticia) ? params.noticia[0] : params.noticia;
 
   const feed = state.events.news;
   const editions = useMemo(() => buildEditions(feed), [feed]);

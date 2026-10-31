@@ -18,6 +18,7 @@ import {
   buildPages,
   editionIndexOf,
   editionPage,
+  focusedView,
   isBombshell,
   leadFontSize,
   mastheadFontSize,
@@ -284,6 +285,15 @@ describe('capa-bomba e páginas do jornal', () => {
     const regular = pages[1];
     expect(regular.kind === 'comum' && regularPage(editions[0], 'todas', regular.skip).lead?.id).toBe('2_1');
     expect(buildPages([])).toEqual([{ kind: 'comum', editionIndex: 0, skip: undefined }]);
+  });
+
+  it('abre a página que contém a notícia focada, inclusive após capa-bomba', () => {
+    const editions = buildEditions([bomba, item('2_1', 2), item('0_0', 0)]);
+    const pages = buildPages(editions);
+    expect(focusedView(editions, pages, bomba.id).page).toBe(0);
+    expect(focusedView(editions, pages, '2_1').page).toBe(1);
+    expect(focusedView(editions, pages, '0_0').page).toBe(2);
+    expect(focusedView(editions, pages, 'ausente').page).toBe(0);
   });
 
   it('título da capa é maior que a manchete comum e tem limites', () => {

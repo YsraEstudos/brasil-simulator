@@ -115,7 +115,7 @@ export function GovernmentBrands({ state, content, actionsMax }: GovernmentBrand
       <View
         style={styles.meter}
         accessible
-        accessibilityLabel={`${consumed} de ${BRAND_LIMIT} marcas usadas no mandato`}>
+        accessibilityLabel={`${consumed} de ${BRAND_LIMIT} marcas usadas no mandato. Dê um nome de até 60 caracteres a um projeto em tramitação, execução ou concluído. Custa 1 ação.`}>
         {Array.from({ length: BRAND_LIMIT }, (_, i) => (
           <Icon key={i} name={ICONS.brands} size={22} color={i < consumed ? 'accent' : 'textMuted'} />
         ))}
