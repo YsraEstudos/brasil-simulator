@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { loadContent } from '@/content';
@@ -46,7 +46,6 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
 
   const draft = useGame((s) => s.draft);
   const [expandedPolicy, setExpandedPolicy] = useState<string | null>(null);
-  const [section, setSection] = useState<Section>('decisoes');
 
   const actionsMax = state.resources.agendaActionsPerMonth;
   const actionsUsed = draftCost(draft, content);
@@ -107,45 +106,81 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
         onRemove={toggleDecision}
       />
 
+      <SectionsSwitcher
+        counts={counts}
+        decisoes={
+          <DecisionPanel
+            state={state}
+            content={content}
+            selected={selected}
+            expandedId={expandedPolicy}
+            actionsMax={actionsMax}
+            onExpand={setExpandedPolicy}
+            onToggle={toggleSimple}
+            canInclude={canInclude}
+            isVedada={isVedada}
+            onToggleBypass={toggleBypass}
+          />
+        }
+        diretrizes={<DirectivesPanel state={state} content={content} actionsMax={actionsMax} />}
+        projetos={<ProjectsPanel state={state} content={content} actionsMax={actionsMax} />}
+        acoes={
+          <AgendaActions
+            state={state}
+            content={content}
+            selected={selected}
+            canInclude={(cost) => actionsUsed + cost <= actionsMax}
+            onToggle={toggleSimple}
+          />
+        }
+      />
+    </View>
+  );
+}
+
+/** Mantém painéis já visitados montados e evita recalcular os demais sistemas ao trocar de seção. */
+function SectionsSwitcher({
+  counts,
+  decisoes,
+  diretrizes,
+  projetos,
+  acoes,
+}: {
+  counts: Record<Section, number>;
+  decisoes: ReactNode;
+  diretrizes: ReactNode;
+  projetos: ReactNode;
+  acoes: ReactNode;
+}) {
+  const [section, setSection] = useState<Section>('decisoes');
+  const [visited, setVisited] = useState<ReadonlySet<Section>>(() => new Set(['decisoes']));
+  const panels: Record<Section, ReactNode> = { decisoes, diretrizes, projetos, acoes };
+  return (
+    <>
       <View style={styles.tabs} accessibilityRole="tablist">
-        {SECTIONS.map((s) => (
+        {SECTIONS.map((item) => (
           <SectionTab
-            key={s.id}
-            icon={s.icon}
-            label={s.label}
-            active={section === s.id}
-            count={counts[s.id]}
-            onPress={() => setSection(s.id)}
+            key={item.id}
+            icon={item.icon}
+            label={item.label}
+            active={section === item.id}
+            count={counts[item.id]}
+            onPress={() => {
+              setVisited((previous) => (previous.has(item.id) ? previous : new Set([...previous, item.id])));
+              setSection(item.id);
+            }}
           />
         ))}
       </View>
-
-      {section === 'decisoes' && (
-        <DecisionPanel
-          state={state}
-          content={content}
-          selected={selected}
-          expandedId={expandedPolicy}
-          actionsMax={actionsMax}
-          onExpand={setExpandedPolicy}
-          onToggle={toggleSimple}
-          canInclude={canInclude}
-          isVedada={isVedada}
-          onToggleBypass={toggleBypass}
-        />
+      {SECTIONS.map(
+        ({ id }) =>
+          visited.has(id) && (
+            <View key={id} style={id === section ? undefined : { display: 'none' }}>
+              {panels[id]}
+            </View>
+          ),
       )}
-      {section === 'diretrizes' && <DirectivesPanel state={state} content={content} actionsMax={actionsMax} />}
-      {section === 'projetos' && <ProjectsPanel state={state} content={content} actionsMax={actionsMax} />}
-      {section === 'acoes' && (
-        <AgendaActions
-          state={state}
-          content={content}
-          selected={selected}
-          canInclude={(cost) => actionsUsed + cost <= actionsMax}
-          onToggle={toggleSimple}
-        />
-      )}
-    </View>
+    </>
   );
 }
 
