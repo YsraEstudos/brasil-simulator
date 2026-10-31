@@ -19,6 +19,7 @@ import type { Policy } from '@/types/policy';
 import { decisionCost, draftCost, fits, gameStore, useGame, type ActiveCampaign } from '@/store';
 
 import { AgendaActions } from './AgendaActions';
+import { decisionLabel } from './agendaLabel';
 import { DecisionPanel } from './DecisionPanel';
 import { Icon, ICONS, SectionTab, type IconName } from './GabineteBits';
 import { DIFFICULTY } from './labels';
@@ -146,16 +147,6 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
       )}
     </View>
   );
-}
-
-/** Nome curto de uma decisão do rascunho, para o resumo da agenda. */
-function decisionLabel(decision: Decision, content: GameContent): string {
-  const params = decision.params ?? {};
-  if (decision.policyId === DIRECTIVE_ACTION_ID && typeof params.policyId === 'string') {
-    return `Diretriz: ${content.policies[params.policyId]?.name ?? params.policyId}`;
-  }
-  if (decision.policyId === BRAND_ACTION_ID && typeof params.name === 'string') return `Marca: ${params.name}`;
-  return content.policies[decision.policyId]?.name ?? AGENDA_ACTIONS[decision.policyId]?.name ?? decision.policyId;
 }
 
 /**

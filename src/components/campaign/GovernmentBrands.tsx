@@ -112,13 +112,15 @@ export function GovernmentBrands({ state, content, actionsMax }: GovernmentBrand
     <Card
       title="Marcas de governo"
       subtitle={`Até ${BRAND_LIMIT} no mandato · ${consumed} consumida(s) · seleção entra na agenda`}>
-      <View
-        style={styles.meter}
-        accessible
-        accessibilityLabel={`${consumed} de ${BRAND_LIMIT} marcas usadas no mandato. Dê um nome de até 60 caracteres a um projeto em tramitação, execução ou concluído. Custa 1 ação.`}>
-        {Array.from({ length: BRAND_LIMIT }, (_, i) => (
-          <Icon key={i} name={ICONS.brands} size={22} color={i < consumed ? 'accent' : 'textMuted'} />
-        ))}
+      <View style={styles.meter}>
+        <View
+          accessible
+          accessibilityLabel={`${consumed} de ${BRAND_LIMIT} marcas usadas no mandato`}
+          style={styles.meterIcons}>
+          {Array.from({ length: BRAND_LIMIT }, (_, i) => (
+            <Icon key={i} name={ICONS.brands} size={22} color={i < consumed ? 'accent' : 'textMuted'} />
+          ))}
+        </View>
         <Text variant="caption" color="textSecondary" style={styles.meterText}>
           Dê um nome de até 60 caracteres a um projeto em tramitação, execução ou concluído. Custa 1 ação.
         </Text>
@@ -251,6 +253,7 @@ function BrandRow({
 
 const styles = StyleSheet.create({
   meter: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  meterIcons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   meterText: { flex: 1, marginLeft: Spacing.one },
   row: { gap: Spacing.one, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.two },
   input: {
