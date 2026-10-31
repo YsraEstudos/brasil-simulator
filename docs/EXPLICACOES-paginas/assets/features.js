@@ -1200,7 +1200,15 @@
         });
       });
     }
-    folha.querySelector('.ft-corpo').focus();
+    folha.scrollTop = 0;
+    var corpoEl = folha.querySelector('.ft-corpo');
+    if (corpoEl && window.matchMedia && !window.matchMedia('(pointer: coarse)').matches) {
+      try {
+        corpoEl.focus({ preventScroll: true });
+      } catch (e) {
+        // ignora se o navegador não suportar preventScroll
+      }
+    }
   }
 
   // Fecha a folha. Ela encolhe de volta até o post-it, se ele ainda existir.

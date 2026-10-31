@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Campanha de 4 anos · Brasil Simulator</title>
-<meta name="description" content="A partida dura o número de meses definido pelo cenário, com decisões mensais e um fim por eleição ou derrota.">
+<title>Campanha de 4 a 8 anos · Brasil Simulator</title>
+<meta name="description" content="A partida dura o número de meses definido pelo cenário (até 96 meses com reeleição no padrão atual), com decisões mensais e um fim por eleição, mandato ou derrota.">
 <link rel="stylesheet" href="assets/site.css">
 <script src="assets/site.js" defer></script>
 </head>
@@ -18,31 +18,979 @@
 <div class="layout">
   <aside class="indice" id="indice-lateral" aria-label="Índice do site">
     <a class="inicio-link" href="../EXPLICACOES.html">Início</a>
-    <details><summary><a href="motores.html">Motores</a><span class="contagem">13</span></summary><ul><li><a href="motor-orquestra.html">Orquestração do mês</a></li><li><a href="motor-economia.html">Economia</a></li><li><a href="motor-congresso.html">Congresso (motor)</a></li><li><a href="motor-propostas.html">Propostas</a></li><li><a href="motor-politica.html">Política</a></li><li><a href="motor-regioes.html">Regiões</a></li><li><a href="motor-politicas.html">Políticas públicas (motor)</a></li><li><a href="motor-sociedade.html">Sociedade (motor)</a></li><li><a href="motor-eventos.html">Eventos (motor)</a></li><li><a href="motor-noticias.html">Notícias (motor)</a></li><li><a href="motor-eleicoes.html">Eleições (motor)</a></li><li><a href="motor-relatorio.html">Relatório</a></li><li><a href="motor-simulacao.html">Simulação</a></li></ul></details>
-<details><summary><a href="telas.html">Telas</a><span class="contagem">10</span></summary><ul><li><a href="tela-painel.html">Painel (a mesa do jogo)</a></li><li><a href="tela-gabinete.html">Gabinete (subtela)</a></li><li><a href="tela-economia.html">Economia (subtela)</a></li><li><a href="tela-congresso.html">Congresso (subtela)</a></li><li><a href="tela-noticias.html">Notícias (subtela)</a></li><li><a href="tela-legado.html">Legado (subtela)</a></li><li><a href="tela-novo-jogo.html">Novo jogo</a></li><li><a href="tela-carregar-jogo.html">Carregar jogo</a></li><li><a href="tela-configuracoes.html">Configurações</a></li><li><a href="tela-vitrine.html">Vitrine de design</a></li></ul></details>
-<details open><summary><a href="sistemas.html">Sistemas de jogo</a><span class="contagem">9</span></summary><ul><li><a href="sis-campanha.html" aria-current="page">Campanha de 4 anos</a></li><li><a href="sis-economia.html">Economia (sistema)</a></li><li><a href="sis-federacao.html">Federação</a></li><li><a href="sis-politicas.html">Políticas públicas (jogador)</a></li><li><a href="sis-sociedade.html">Sociedade (jogador)</a></li><li><a href="sis-eventos.html">Eventos e personagens</a></li><li><a href="sis-noticias.html">Notícias (jogador)</a></li><li><a href="sis-eleicoes.html">Eleições e mandatos</a></li><li><a href="sis-globo.html">Globo 3D</a></li></ul></details>
+    <details><summary><a href="motores.html">Motores</a><span class="contagem">13</span></summary><ul><li><a href="motor-orquestra.html">Orquestração do mês</a></li><li><a href="motor-economia.html">Economia<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-congresso.html">Congresso (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-propostas.html">Propostas<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-politica.html">Política<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-regioes.html">Regiões<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-politicas.html">Políticas públicas (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-sociedade.html">Sociedade (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-eventos.html">Eventos (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-noticias.html">Notícias (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-eleicoes.html">Eleições (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-relatorio.html">Relatório<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-simulacao.html">Simulação<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
+<details><summary><a href="telas.html">Telas</a><span class="contagem">10</span></summary><ul><li><a href="tela-painel.html">Painel (a mesa do jogo)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-gabinete.html">Gabinete (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-economia.html">Economia (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-congresso.html">Congresso (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-noticias.html">Notícias (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-legado.html">Legado (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-novo-jogo.html">Novo jogo<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-carregar-jogo.html">Carregar jogo<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-configuracoes.html">Configurações<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-vitrine.html">Vitrine de design</a></li></ul></details>
+<details open><summary><a href="sistemas.html">Sistemas de jogo</a><span class="contagem">11</span></summary><ul><li><a href="sis-campanha.html" aria-current="page">Campanha de 4 a 8 anos<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-economia.html">Economia (sistema)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-impostos.html">Impostos<svg class="marca-nao-implementado" viewBox="0 0 24 24" role="img" aria-label="Não implementado"><title>Não implementado</title><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></a></li><li><a href="sis-mudancas-grandes.html">Mudanças grandes<svg class="marca-nao-implementado" viewBox="0 0 24 24" role="img" aria-label="Não implementado"><title>Não implementado</title><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></a></li><li><a href="sis-federacao.html">Federação<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-politicas.html">Políticas públicas (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-sociedade.html">Sociedade (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-eventos.html">Eventos e personagens<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-noticias.html">Notícias (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-eleicoes.html">Eleições e mandatos<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-globo.html">Globo 3D<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
 <details><summary><a href="congresso.html">Congresso</a><span class="contagem">7</span></summary><ul><li><a href="cong-estrutura.html">Estrutura do Congresso</a></li><li><a href="cong-tramitacao.html">Tramitação de uma lei</a></li><li><a href="cong-apoio.html">Como os blocos votam</a></li><li><a href="cong-arsenal.html">Ferramentas de negociação</a></li><li><a href="cong-conexoes.html">Conexões com o resto do jogo</a></li><li><a href="cong-casual.html">Modo Casual</a></li><li><a href="cong-resumo.html">Resumo para guardar</a></li></ul></details>
-<details><summary><a href="tecnico.html">Camadas técnicas</a><span class="contagem">4</span></summary><ul><li><a href="tec-estado.html">Estado da interface</a></li><li><a href="tec-banco.html">Banco de dados</a></li><li><a href="tec-globo.html">Globo (camada técnica)</a></li><li><a href="tec-dados.html">Dados de conteúdo</a></li></ul></details>
+<details><summary><a href="tecnico.html">Camadas técnicas</a><span class="contagem">4</span></summary><ul><li><a href="tec-estado.html">Estado da interface<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tec-banco.html">Banco de dados<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tec-globo.html">Globo (camada técnica)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tec-dados.html">Dados de conteúdo<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
 <details><summary><a href="tecnologias.html">Tecnologias</a><span class="contagem">14</span></summary><ul><li><a href="stk-linguagens.html">Linguagens</a></li><li><a href="stk-expo.html">Expo e Expo Router</a></li><li><a href="stk-react.html">React e React Native</a></li><li><a href="stk-estado.html">Zustand e Zod</a></li><li><a href="stk-componentes.html">Bibliotecas de interface, gesto e animação</a></li><li><a href="stk-banco.html">SQLite: app e testes</a></li><li><a href="stk-globo.html">Globo 3D: three, R3F e shaders</a></li><li><a href="stk-dados.html">Pipeline de dados (Python)</a></li><li><a href="stk-testes.html">Testes e simulações (Vitest)</a></li><li><a href="stk-qualidade.html">Qualidade: TypeScript, ESLint e Prettier</a></li><li><a href="stk-ci.html">Integração contínua (GitHub Actions)</a></li><li><a href="stk-ferramentas.html">npm, Metro e app.json</a></li><li><a href="stk-site.html">Este site de documentação</a></li><li><a href="stk-regras.html">Regras que as tecnologias respeitam</a></li></ul></details>
 <details><summary><a href="fases.html">Fases do roadmap</a><span class="contagem"></span></summary></details>
 <details><summary><a href="features.html">Features futuras</a><span class="contagem"></span></summary></details>
   </aside>
   <main class="conteudo" id="conteudo">
     
-  <nav class="migalhas" aria-label="Caminho"><a href="../EXPLICACOES.html">Início</a><span class="sep" aria-hidden="true">/</span><a href="sistemas.html">Sistemas de jogo</a><span class="sep" aria-hidden="true">/</span><span aria-current="page">Campanha de 4 anos</span></nav>
+  <nav class="migalhas" aria-label="Caminho"><a href="../EXPLICACOES.html">Início</a><span class="sep" aria-hidden="true">/</span><a href="sistemas.html">Sistemas de jogo</a><span class="sep" aria-hidden="true">/</span><span aria-current="page">Campanha de 4 a 8 anos</span></nav>
   <p class="eyebrow">Sistemas de jogo</p>
-  <h1>Campanha de 4 anos</h1>
-  <p class="resumo">A partida dura o número de meses definido pelo cenário, com decisões mensais e um fim por eleição ou derrota.</p>
-  <div class="linha-meta"><span class="pill parc">Rascunho</span><span>2 caminhos de código</span></div>
-  <section class="bloco"><h2>Como funciona</h2><ul class="bullets"><li>Cada mês: decisões, encerramento, relatório e o mês seguinte.</li><li>Fim de jogo por reeleição, término do mandato ou condenação no Senado.</li><li>A duração depende do cenário; o cenário mais recente tem 96 meses.</li></ul></section>
-  <section class="bloco"><h2>Onde está no código</h2><ul class="codigo-lista"><li><code>src/engine/state.ts</code></li><li><code>src/store/gameStore.ts</code></li></ul></section>
-  <section class="bloco"><h2>Documentos</h2><ul class="bullets"><li><a href="../GAME_DESIGN.md">GAME_DESIGN.md §7 e §13</a></li></ul></section>
-  <section class="bloco"><h2>Veja também</h2><div class="relacionados"><a href="tela-gabinete.html">Gabinete (subtela)</a><a href="tela-painel.html">Painel (a mesa do jogo)</a><a href="tela-novo-jogo.html">Novo jogo</a></div></section>
+  <h1>Campanha de 4 a 8 anos<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></h1>
+  <p class="resumo">A partida dura o número de meses definido pelo cenário (até 96 meses com reeleição no padrão atual), com decisões mensais e um fim por eleição, mandato ou derrota.</p>
+  <div class="linha-meta"><span class="pill parc">Rascunho</span><span>5 caminhos de código</span></div>
+  <section class="bloco"><h2>Como funciona</h2><ul class="bullets"><li>Carreira em 5 camadas: da corrida pré-presidencial (Camada 1 em design) aos dois mandatos de governo e ao pós-presidência.</li><li>Duração por cenário: até 96 meses (8 anos / 2 mandatos) no cenário padrão (v0.8.0), ou 48 meses (4 anos) em cenários de mandato único.</li><li>Governança mensal: decisões de agenda, encerramento, pipeline de 15 etapas e relatório com &quot;Por que mudou?&quot;.</li><li>Ciclo eleitoral: eleições municipais (mês 21 e 69), vedações da Lei das Eleições, janela de declaração e eleições gerais (mês 45 e 93).</li></ul></section>
+  <section class="bloco corpo"><div class="callout ok">
+  <strong>Visão Geral da Carreira no Jogo</strong>
+  No código atual (cenário padrão <code>brasil_2027_01_v080</code>), a partida começa diretamente na posse do presidente em janeiro de 2027 e dura <strong>de 48 a 96 meses (4 a 8 anos / até 2 mandatos)</strong> caso o jogador vença a reeleição. Abaixo, a jornada completa é estruturada em <strong>5 Camadas de Carreira</strong>, integrando a fórmula eleitoral de viabilidade (Reconhecimento × Popularidade) da pré-campanha até os bastidores do poder em Brasília e o julgamento da história no pós-presidência.
+</div>
+
+<div class="callout amarelo">
+  <strong>Convenção visual desta página</strong>
+  Trechos com <span class="nao-no-codigo">destaque em amarelo</span> representam regras, fórmulas e mecânicas (como a pré-campanha antes da posse, vídeos nas redes, viagens com animação de carro, debates na TV, corrupção, CPIs e liminares do STF) que <strong>ainda NÃO estão implementadas no código</strong>. O texto padrão representa o motor já ativo e testado.
+</div>
+
+<hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border);">
+
+<!-- ======================================================== -->
+<!-- CAMADA 1: ANTES DOS 4 ANOS (A CORRIDA AO PLANALTO)       -->
+<!-- ======================================================== -->
+<h3><span class="nao-no-codigo">Camada 1: Antes dos 4 Anos — A Corrida ao Planalto (Pré-Campanha e Eleição)</span></h3>
+
+<div class="callout amarelo">
+  <strong>Mecânica 100% em Design (Não implementada no código atual):</strong><br>
+  No código atual, o jogador já inicia a partida como presidente empossado no mês 0. Toda esta <strong>Camada 1</strong> representa o modo de carreira opcional planejado onde o jogador começa antes da presidência, construindo sua viabilidade política do zero até a vitória nas urnas.
+</div>
+
+<h4>1.1 <span class="nao-no-codigo">A Fórmula Central: Reconhecimento (Conhecimento) × Aprovação (Popularidade)</span></h4>
+<div class="box-amarelo">
+  <p>A mecânica básica da corrida eleitoral é uma conta simples e visual:</p>
+  <p style="text-align: center; font-size: 17px; margin: 12px 0;"><strong>Votos nas Pesquisas = Reconhecimento (Quem te conhece) × Aprovação (Quem gosta de você)</strong></p>
+  <ul class="bullets">
+    <li><strong>Reconhecimento (Visibilidade / Conhecimento):</strong> Quantas pessoas sabem quem você é (0% a 100%). Decai fora de época eleitoral se você sumir do noticiário e das redes. <button type="button" class="link-inline-gaveta" data-gaveta="gaveta-reconhecimento">👉 Ver 10 formas de aumentar</button></li>
+    <li><strong>Aprovação (Imagem / Popularidade):</strong> Das pessoas que te conhecem, quantas votariam em você e quantas te rejeitam.</li>
+    <li><strong>Exemplo Numérico Prático:</strong> Se <strong>20%</strong> do Brasil te conhece e <strong>50%</strong> dessas pessoas aprovam seu nome, sua intenção de voto nas pesquisas é <strong>10%</strong> (20% × 50%). Se você faz campanha, grava vídeos e viaja o país, elevando quem te conhece para <strong>40%</strong> mantendo os mesmos 50% de aprovação, seus votos sobem para <strong>20%</strong> automaticamente.</li>
+  </ul>
+</div>
+
+<h4>1.2 <span class="nao-no-codigo">O Painel de Viabilidade Eleitoral (6 Variáveis de Back-End)</span></h4>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>Variável</th>
+        <th>O que mede</th>
+        <th>Impacto na Corrida Eleitoral</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <button type="button" class="btn-gaveta-gatilho" data-gaveta="gaveta-reconhecimento" title="Clique para abrir painel lateral com todas as formas de aumentar o reconhecimento">
+            <span class="nao-no-codigo">
+              <strong>1. Reconhecimento</strong>
+              <span class="gatilho-sub">👉 Clique para ver formas de aumentar</span>
+            </span>
+          </button>
+        </td>
+        <td>% do eleitorado nacional que sabe quem você é.</td>
+        <td>O teto máximo de votos possíveis. Sobe com vídeos virais, viagens e TV; decai no ostracismo.</td>
+      </tr>
+      <tr>
+        <td><strong>2. Reputação (Valência)</strong></td>
+        <td>Saldo líquido entre imagem positiva e rejeição popular.</td>
+        <td>Define o índice de conversão de quem te conhece em voto real. Rejeição acima de 50% mata a candidatura.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Base Territorial</strong></td>
+        <td>Penetração distribuída por estado e região (o mapa colorido).</td>
+        <td>Evita que os votos fiquem presos em um único estado; essencial para vencer nos colégios eleitorais decisivos.</td>
+      </tr>
+      <tr>
+        <td><strong>4. Influência Partidária</strong></td>
+        <td>Capital com a executiva nacional, caciques e bancadas do partido.</td>
+        <td>Garante a homologação do seu nome na Convenção Partidária e evita que sua vaga seja rifada.</td>
+      </tr>
+      <tr>
+        <td>
+          <button type="button" class="btn-gaveta-gatilho" data-gaveta="gaveta-financas" title="Clique para abrir painel lateral com o sistema financeiro (Pessoal, Partido e Doações)">
+            <span class="nao-no-codigo">
+              <strong>5. Capacidade de Recursos</strong>
+              <span class="gatilho-sub">👉 Ver bolsos: Pessoal, Partido & Doações</span>
+            </span>
+          </button>
+        </td>
+        <td>Doadores privados, autofinanciamento e fatia do Fundo Eleitoral.</td>
+        <td>O combustível do Reconhecimento: financia tráfego pago nos estados vermelhos, caravanas, TV e tracking.</td>
+      </tr>
+      <tr>
+        <td><strong>6. Histórico Eleitoral</strong></td>
+        <td>Vitórias anteriores, votações históricas, tags de lealdade ou traição.</td>
+        <td>Gera bônus de credibilidade nos debates ou vira munição na mão de rivais em ataques sobre incoerências.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>1.3 <span class="nao-no-codigo">O Tripé Financeiro da Campanha: Pessoal, Partido e Doações</span></h4>
+<div class="box-amarelo">
+  <p>O <strong>Reconhecimento não cresce no vácuo</strong>. Para transformar um estado de <em>Vermelho (&lt;20%)</em> em <em>Verde (&gt;75%)</em>, o jogador precisa queimar recursos continuamente. A campanha opera sobre <strong>Três Bolsos Distintos</strong>, cada um com regras legais do TSE, custos políticos e riscos próprios:</p>
+</div>
+
+<div class="grid-2">
+  <div class="card amarelo">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+      <span class="meta">Bolso 1 • Recursos Próprios</span>
+      <span class="nao-no-codigo" style="font-size:11px;">Teto: 10% do limite geral</span>
+    </div>
+    <h4>Dinheiro Pessoal (Patrimônio & Autofinanciamento)</h4>
+    <p>O candidato injeta dinheiro do próprio bolso para bancar a largada da pré-campanha antes de ter a legenda homologada na convenção partidária.</p>
+    <ul class="bullets" style="font-size:13px;">
+      <li><strong>Escalação por Dificuldade:</strong> O patrimônio pessoal varia conforme o nível de dificuldade do jogo:
+        <ul style="margin: 4px 0; padding-left: 16px;">
+          <li><em>Casual (Mega-Influencer):</em> O Influencer começa com <strong>R$ 7.000.000</strong> (topo do mercado digital/cursos), bancando estúdio e anúncios com folga.</li>
+          <li><em>Estratégica (YouTuber/Deputado Consolidado):</em> O Influencer começa com <strong>R$ 2.500.000</strong>. Tem caixa para a arrancada, mas precisa do Pix dos seguidores para não secar a conta.</li>
+          <li><em>Realismo (Ativista de Nicho):</em> O Influencer começa com <strong>R$ 750.000</strong>. Fama alta, mas liquidez enxuta; sofre com desmonetização e depende da militância.</li>
+        </ul>
+      </li>
+      <li><strong>Comparativo com Outros Perfis (Modo Estratégico Padrão):</strong> <em>Empresário</em> (R$ 18M); <em>Governador</em> (R$ 2M patrimônio imobiliário); <em>Militar</em> (R$ 600k soldo); e <em>Líder Sindical</em> (R$ 100k, foco em base social).</li>
+      <li><strong>Risco Real:</strong> Se for derrotado nas urnas, todo o capital aportado foi queimado para sempre. Sobras de dívidas de campanha recaem sobre o CPF do próprio candidato.</li>
+    </ul>
+  </div>
+
+  <div class="card amarelo">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+      <span class="meta">Bolso 2 • Verba Pública</span>
+      <span class="nao-no-codigo" style="font-size:11px;">Maior Fundo do Mundo</span>
+    </div>
+    <h4>Dinheiro do Partido (Fundo Eleitoral & Fundo Partidário)</h4>
+    <p>O Fundo Especial de Financiamento de Campanha (FEFC) divide cerca de R$ 5 bilhões públicos entre as legendas. É o motor pesado da eleição.</p>
+    <ul class="bullets" style="font-size:13px;">
+      <li><strong>O Cabo de Guerra dos Caciques:</strong> O dinheiro não cai automaticamente. Quem assina o repasse é a Executiva Nacional. Se sua <em>Influência Partidária</em> for baixa (&lt;35%), a cúpula repassa apenas o mínimo legal (R$ 3M a R$ 6M). Para destravar R$ 50M a R$ 70M, é preciso dominar a bancada ou ceder ministérios e a vaga de Vice.</li>
+      <li><strong>Custeio Mensal:</strong> Paga pesquisas de tracking semanais (IPEC/Quaest), sede nacional e banca de advogados eleitorais no TSE.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card amarelo" style="margin-top: 14px;">
+  <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+    <span class="meta">Bolso 3 • Recursos de Terceiros</span>
+    <span class="nao-no-codigo" style="font-size:11px;">Pessoas Físicas (PJ Proibida)</span>
+  </div>
+  <h4>Doações de Campanha: Vaquinha Popular, Jantares de Elite e Caixa 2</h4>
+  <p>Desde a proibição de doações de empresas pelo STF em 2015, todas as doações oficiais devem vir de pessoas físicas (limitadas a 10% da renda bruta anual do doador):</p>
+  <div class="grid-2" style="margin-top: 8px;">
+    <div style="padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
+      <strong style="color: var(--ok);">🌱 Vaquinha Virtual (Crowdfunding / Pix)</strong>
+      <p style="margin: 4px 0 0; font-size: 13px;">Pequenas doações populares (R$ 10 a R$ 200). Alimentada diretamente por <strong>Reconhecimento Digital × Engajamento</strong>. Dinheiro 100% limpo, sem amarras com banqueiros ou empreiteiras, com alto valor moral perante os eleitores.</p>
+    </div>
+    <div style="padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
+      <strong style="color: var(--parc);">👔 Grandes Doadores PF (Jantares Morumbi & Agro)</strong>
+      <p style="margin: 4px 0 0; font-size: 13px;">Cheques de R$ 100k a R$ 1M por CPF. Cobram contrapartidas claras: vetar taxação de fortunas, defender marcos de pesticidas e nomear ministros ortodoxos na Fazenda e Agricultura.</p>
+    </div>
+  </div>
+  <div style="margin-top: 10px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--danger); border-radius: 8px;">
+    <strong style="color: var(--danger);">⚠️ Doações Ocultas / Caixa 2 (A Rota Ilegal)</strong>
+    <p style="margin: 4px 0 0; font-size: 13px;">Dinheiro vivo não declarado entregue por operadores de empreiteiras. Fornece caixa infinito para compra de apoios e boca de urna no interior, mas acumula <strong>15% de chance mensal de deflagração de Operação da PF</strong> e cassação de chapa por abuso de poder econômico no TSE.</p>
+  </div>
+</div>
+
+<h4>1.4 <span class="nao-no-codigo">Perfis Iniciais de Origem: O Cabo de Guerra Inicial</span></h4>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>Perfil</th>
+        <th>Reconhecimento</th>
+        <th>Influência Partidária</th>
+        <th>Recursos / Caixa</th>
+        <th>Base Territorial</th>
+        <th>O Grande Desafio de Jogo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Governador de Estado Forte</strong></td>
+        <td>Baixo (15%)</td>
+        <td>Muito Alto (70%)</td>
+        <td>Médio (40%)</td>
+        <td>Forte em 1 estado</td>
+        <td>Tem o partido e a máquina estadual na mão, mas enfrenta desconfiança e pouco nome no resto do país.</td>
+      </tr>
+      <tr>
+        <td><strong>Influencer / Deputado Digital</strong></td>
+        <td>Muito Alto (60%)</td>
+        <td>Quase Zero (10%)</td>
+        <td>Escalável (R$ 750k a R$ 7M)</td>
+        <td>Dispersa no país</td>
+        <td>Famoso nas redes e com patrimônio pessoal proporcional à dificuldade (R$ 750k no Realismo a R$ 7M no Casual + vaquinha Pix), mas sofre boicote total dos caciques do partido e fragilidade no plenário.</td>
+      </tr>
+      <tr>
+        <td><strong>Empresário / Faria Lima</strong></td>
+        <td>Baixo (10%)</td>
+        <td>Baixo (20%)</td>
+        <td>Máximo (90%)</td>
+        <td>Fraca</td>
+        <td>Crédito infinito com investidores e caixa milionário, mas trânsito zero no Congresso e imagem de elitista.</td>
+      </tr>
+      <tr>
+        <td><strong>Militar / Linha-Dura</strong></td>
+        <td>Médio (35%)</td>
+        <td>Médio (30%)</td>
+        <td>Baixo (25%)</td>
+        <td>Média</td>
+        <td>Forte apelo na segurança pública e ordem, mas com caixa escasso, atritos diplomáticos e desconfiança democrática.</td>
+      </tr>
+      <tr>
+        <td><strong>Líder Sindical / Popular</strong></td>
+        <td>Médio (30%)</td>
+        <td>Alto (65%)</td>
+        <td>Baixo / Vaquinha (30%)</td>
+        <td>Polos industriais / periferias</td>
+        <td>Conexão imediata com as massas e movimentos sociais, mas sofre com boicote do mercado financeiro e caixa pessoal mínimo.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>1.5 <span class="nao-no-codigo">Os 3 Pontos de Partida da Campanha</span></h4>
+<div class="grid-2">
+  <div class="card amarelo">
+    <span class="meta">Ponto de Partida 1</span>
+    <h4>Pré-Campanha (12 a 18 meses antes)</h4>
+    <p>O jogador ainda não é o candidato oficial. Precisa criar reconhecimento na internet, viajar os estados, vencer a convenção interna do partido e negociar a vaga na chapa contra os caciques históricos.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Ponto de Partida 2</span>
+    <h4>Corrida Eleitoral (Campanha de 45 dias)</h4>
+    <p>O candidato já foi homologado na convenção. Pula as disputas de bastidor partidário e foca diretamente em programas de TV, matriz digital, debates ao vivo e virada de votos no 1º e 2º turno.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Ponto de Partida 3</span>
+    <h4>Presidência em Exercício (Posse no Mês 0)</h4>
+    <p>Pula toda a campanha e assume direto o Palácio do Planalto em janeiro de 2027 (o modo padrão codificado no jogo atual).</p>
+  </div>
+</div>
+
+<h4>1.6 <span class="nao-no-codigo">O Mapa Territorial de Reconhecimento (Filtro por Estados)</span></h4>
+<div class="box-amarelo">
+  <p>Antes de assumir o Planalto, o globo do Brasil exibe um <strong>Filtro de Reconhecimento e Viabilidade Eleitoral por Estado</strong> com 4 faixas de temperatura eleitoral:</p>
+
+  <div class="escala-estados-lista">
+    <div class="escala-estado-card estado-vermelho">
+      <div class="escala-estado-topo">
+        <span class="escala-estado-badge badge-vermelho">0% a 20%</span>
+        <strong class="escala-estado-titulo">Estado Vermelho • Invisível / Desconhecido</strong>
+      </div>
+      <p class="escala-estado-desc">O eleitor comum nunca ouviu falar de você. Comícios têm efeito mínimo até você furar a bolha local através de caravanas ou impulsionamento digital regional.</p>
+    </div>
+
+    <div class="escala-estado-card estado-ambar">
+      <div class="escala-estado-topo">
+        <span class="escala-estado-badge badge-ambar">21% a 45%</span>
+        <strong class="escala-estado-titulo">Estado Âmbar • Emergente / Dividido</strong>
+      </div>
+      <p class="escala-estado-desc">Conhecido na capital e no meio político, mas o interior ainda é território virgem. Disputa voto a voto contra adversários consolidados.</p>
+    </div>
+
+    <div class="escala-estado-card estado-transicao">
+      <div class="escala-estado-topo">
+        <span class="escala-estado-badge badge-transicao">46% a 75%</span>
+        <strong class="escala-estado-titulo">Transição para Verde • Candidato Viável</strong>
+      </div>
+      <p class="escala-estado-desc">Presença garantida nos grandes jornais e convites para podcasts e TV. Atrai partidos aliados do Centrão e palanques municipais fortes.</p>
+    </div>
+
+    <div class="escala-estado-card estado-verde">
+      <div class="escala-estado-topo">
+        <span class="escala-estado-badge badge-verde">76% a 100%</span>
+        <strong class="escala-estado-titulo">Estado Verde • Consolidado / Onipresença Nacional</strong>
+      </div>
+      <p class="escala-estado-desc">Reconhecido em todas as regiões, feiras e lares do país. Seus redutos eleitorais seguros que garantem presença no 2º turno.</p>
+    </div>
+  </div>
+</div>
+
+<h4>1.7 <span class="nao-no-codigo">Ações de Campanha Pré-Presidência</span></h4>
+<div class="grid-2">
+  <div class="card amarelo">
+    <span class="meta">Redes Sociais</span>
+    <h4>Vídeos na Internet e Viralização</h4>
+    <p>Produzir conteúdo para TikTok, Instagram e YouTube. Baixo custo financeiro com potencial explosivo entre jovens e periferias. Sorteio de dados: 10% de chance de viral positivo (dobra o reconhecimento) e 10% de gafe que vira meme negativo.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Mídia Tradicional</span>
+    <h4>Programas de Rádio e Entrevistas na TV</h4>
+    <p>Desbloqueado conforme sobe a popularidade. Começa com rádios comunitárias do interior; ao cruzar 15% nas pesquisas, surgem convites para podcasts longos de 3 horas e sabatinas ao vivo na TV em horário nobre.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Deslocamento Territorial</span>
+    <h4>Viagens pelo País com Animação de Carro</h4>
+    <p>Viajar pelos estados para fazer carreatas, showmícios e discursos em feiras. Ao selecionar o destino, uma <strong>bela animação de comitiva de carros e ônibus de campanha</strong> corta as rodovias brasileiras em direção ao interior do estado.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Propaganda Obrigatória</span>
+    <h4>Horário Eleitoral Gratuito (HGPE)</h4>
+    <p>Tempo de rádio e TV calculado pela regra dos 90%/10% (Lei 9.504/97) conforme bancadas coligadas. Decidir entre programas longos de 10 minutos (história e carisma) ou dezenas de inserções curtas de 30 segundos nos intervalos comerciais.</p>
+  </div>
+</div>
+
+<h4>1.8 <span class="nao-no-codigo">O Duelo Tático dos Debates Eleitorais na TV</span></h4>
+<div class="box-amarelo">
+  <p>Os debates ao vivo na televisão funcionam como minigames estratégicos em rodadas de confronto direto (pergunta, resposta, réplica e tréplica):</p>
+  <ul class="bullets">
+    <li><strong>Postura / Tom:</strong> Escolha entre <em>Carismático/Esperança</em>, <em>Gestor Técnico</em>, <em>Ataque ao Passado do Rival</em> ou <em>Linha-Dura/Ordem</em> (sistema estilo pedra-papel-tesoura).</li>
+    <li><strong>Efeito Bumerangue:</strong> Atacar um tema em que o rival é honesto ou bem avaliado gera rejeição imediata contra você; responder a tragédias sociais com números frios passa imagem de arrogância.</li>
+    <li><strong>Direito de Resposta:</strong> Ataques que descambam para a ofensa pessoal rendem direito de resposta concedido pelo mediador, queimando o tempo do jogador.</li>
+    <li><strong>Cortes Pós-Debate:</strong> Gafes e momentos de destaque viram clipes na internet nas 48h seguintes, mudando o tracking das pesquisas.</li>
+  </ul>
+</div>
+
+<h4>1.9 <span class="nao-no-codigo">A Escolha do Vice-Presidente e a "Herança Maldita" da Campanha</span></h4>
+<div class="box-amarelo">
+  <p><strong>O vice não é decorativo:</strong> Para conquistar tempo de TV no HGPE e ter votos nas bancadas do Congresso, o candidato frequentemente se coliga com o Centrão e aceita um Vice fisiológico. No dia da posse, a conta chega: o partido do Vice exige diretorias de estatais e emendas; se você negar, ele rompe e conspira nos bastidores na primeira crise aguda de impeachment.</p>
+</div>
+
+<hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border);">
+
+<!-- ======================================================== -->
+<!-- CAMADA 2: O PRIMEIRO MANDATO (GOVERNANÇA E DECISÕES)     -->
+<!-- ======================================================== -->
+<h3>Camada 2: O Primeiro Mandato (Meses 0 a 47 — 4 Anos)</h3>
+
+<div class="callout ok">
+  <strong>Núcleo Atual do Jogo (Fases 01 a 08):</strong><br>
+  Esta camada já está implementada e jogável no código. Começa com a posse em 5 de janeiro de 2027 (mês 0) e avança em 48 turnos mensais até dezembro de 2030.
+</div>
+
+<h4>2.1 A Dinâmica do Turno Mensal</h4>
+<ul class="bullets">
+  <li><strong>Unidade de Tempo:</strong> 1 turno = 1 mês (<code>monthIndex</code> inteiro). A posse em 5/1/2027 segue a EC 111/2021.</li>
+  <li><strong>Ações de Agenda:</strong> Orçamento mensal de ações (3 no modo Casual; 2 no Estratégico/Realismo) gastas na Mesa de Despacho (Gabinete), no plenário (Congresso) ou em visitas oficiais às 27 UFs.</li>
+  <li><strong>Encerramento e Motor em 15 Etapas:</strong> O botão <em>"Encerrar o mês"</em> roda o pipeline determinístico (<code>advanceMonth</code>) que calcula inflação, PIB, aprovação popular, contas públicas e eventos.</li>
+  <li><strong>Relatório de Consequências:</strong> Apresenta o jornal do mês, notificações e o detalhamento de <em>"Por que mudou?"</em> de cada indicador.</li>
+</ul>
+
+<h4>2.2 Ciclo Político dos 48 Meses</h4>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>Fase do Mandato</th>
+        <th>Meses</th>
+        <th>Regra de Jogo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Lua de Mel</strong></td>
+        <td>Meses 0 a 5 <small>(jan–jun/2027)</small></td>
+        <td>Tolerância maior da opinião pública: perda de aprovação reduzida pelo <code>fator_lua_de_mel</code>. Janela ideal para medidas impopulares e reformas duras.</td>
+      </tr>
+      <tr>
+        <td><strong>Meio de Mandato</strong></td>
+        <td>Meses 6 a 38 <small>(jul/2027–fev/2030)</small></td>
+        <td>Custo de manutenção da coalizão cresce gradualmente; desgaste normal de governo.</td>
+      </tr>
+      <tr>
+        <td><strong>Eleições Municipais</strong></td>
+        <td>Mês 21 <small>(out/2028)</small></td>
+        <td>Pleito municipal que afeta o alinhamento de prefeitos, bases parlamentares e governadores com base na memória recente do eleitor.</td>
+      </tr>
+      <tr>
+        <td><strong>Vedações Eleitorais</strong></td>
+        <td>Meses 18–20 e 42–44</td>
+        <td>Lei 9.504/97 art. 73 §10: proibido criar novos benefícios sociais gratuitos no ano eleitoral. Forçar criação exige <code>vedacao_bypass</code> e penaliza intenção de voto com risco de multa.</td>
+      </tr>
+      <tr>
+        <td><strong>Janela de Declaração</strong></td>
+        <td>Meses 39 a 44 <small>(abr–set/2030)</small></td>
+        <td>O presidente usa ação de agenda para <strong>declarar candidatura à reeleição</strong> (custo 0) ou apoiar um sucessor aliado.</td>
+      </tr>
+      <tr>
+        <td><strong>Eleição Geral</strong></td>
+        <td>Mês 45 <small>(out/2030)</small></td>
+        <td>Apuração nacional para presidente e governadores. Votos > 50% = vitória em 1º turno; caso contrário, disputa-se 2º turno no mesmo passo.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>2.3 Desfechos ao Fim do 1º Mandato</h4>
+<div class="grid-2">
+  <div class="card">
+    <span class="meta">Continuidade</span>
+    <h4>Vitória na Reeleição</h4>
+    <p>Se declarou candidatura e venceu a eleição no mês 45, o mandato é renovado e o jogo avança diretamente para a <strong>Camada 4 (2º Mandato)</strong>.</p>
+  </div>
+  <div class="card">
+    <span class="meta">Fim de Jogo</span>
+    <h4>Derrota Eleitoral</h4>
+    <p>Perder a disputa pela reeleição no mês 45 encerra a campanha imediatamente como <code>derrota_eleitoral</code>.</p>
+  </div>
+  <div class="card">
+    <span class="meta">Encerramento Pacífico</span>
+    <h4>Fim de Mandato sem Reeleição</h4>
+    <p>Optar por não se candidatar faz o mandato expirar pacificamente no mês 48 (janeiro/2031, posse do sucessor) como <code>fim_de_mandato</code>.</p>
+  </div>
+  <div class="card">
+    <span class="meta">Fim de Jogo</span>
+    <h4>Impeachment</h4>
+    <p>Em qualquer momento do mandato, a autorização por 2/3 da Câmara e condenação por 2/3 do Senado encerra a partida como derrota.</p>
+  </div>
+</div>
+
+<hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border);">
+
+<!-- ======================================================== -->
+<!-- CAMADA 3: BASTIDORES DE BRASÍLIA E FREIOS DA REPÚBLICA   -->
+<!-- ======================================================== -->
+<h3><span class="nao-no-codigo">Camada 3: Os Bastidores de Brasília e os Freios da República (Durante o Governo)</span></h3>
+
+<div class="callout amarelo">
+  <strong>Mecânicas Institucionais em Design (NÃO implementadas no código):</strong><br>
+  No código atual, as decisões tramitam de forma institucional. As mecânicas desta camada trazem as pressões reais do presidencialismo de coalizão brasileiro, opções de corrupção, guerras com o STF, CPIs e o Copom.
+</div>
+
+<h4>3.1 <span class="nao-no-codigo">A Chave do Cofre das Estatais & Opções de Corrupção</span></h4>
+<div class="grid-2">
+  <div class="card amarelo">
+    <span class="meta">Dilema das Estatais</span>
+    <h4>Indicação Técnica vs. Fisiológica</h4>
+    <p>Nomear técnicos em diretorias de estatais (Petrobras, Caixa, BB, Codevasf, Dnit) gera eficiência e aplausos do mercado, mas rende zero votos na base; entregar ao Centrão compra 40 votos fiéis para PECs, mas acumula risco contínuo de Operação da PF.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Mecânica Ilegal</span>
+    <h4>Caixa 2 e Propinas de Grandes Obras</h4>
+    <p>Aceitar repasses ocultos de empreiteiras abastece o caixa eleitoral para contratar os melhores marqueteiros e comprar palanques, mas cria rastro financeiro auditável pelo TCU e pela Polícia Federal.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Mecânica Ilegal</span>
+    <h4>Mensalão / Mesada Parlamentar</h4>
+    <p>Pagamento mensal recorrente a líderes de bancadas do Centrão para blindar PECs polêmicas. Garante fidelidade cega nas votações, mas o risco de uma delação premiada de operador financeiro explode em crise de cassação.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Mecânica Ilegal</span>
+    <h4>Desvios em Emendas (Orçamento Secreto)</h4>
+    <p>Liberar emendas de relator sem transparência para redutos de parlamentares aliados em troca de silêncio na CPI, aumentando o índice de superfaturamento em obras públicas municipais.</p>
+  </div>
+</div>
+
+<h4>3.2 <span class="nao-no-codigo">Dossiês, Chantagem e Pautas-Bomba</span></h4>
+<div class="box-amarelo">
+  <p><strong>Moeda de troca suja (estilo Crusader Kings):</strong> Acumular relatórios do Coaf e investigações secretas para dobrar votos da oposição, com risco de vazamento de áudios gravados no gabinete.</p>
+  <p><strong>Pautas-Bomba:</strong> O Congresso aprova aumentos de 40% para corporações para forçar o presidente a vetar (comprando briga) ou sancionar (cometendo pedalada fiscal).</p>
+</div>
+
+<h4>3.3 <span class="nao-no-codigo">Poderes que Emparedam o Executivo</span></h4>
+<ul class="bullets">
+  <li><strong>O STF Ativo e Liminares Monocráticas:</strong> A oposição entra com Ação Direta de Inconstitucionalidade (ADI); um ministro do STF sorteado suspende decretos presidenciais às 23h de uma sexta-feira. Sabatinas aos 75 anos abrem vagas estratégicas no Supremo e na PGR.</li>
+  <li><strong>O Minigame da CPI:</strong> 1/3 de assinaturas instala a comissão; 3 a 5 meses de tumulto onde o presidente escala sua tropa de choque para blindar ministros contra pedidos de indiciamento.</li>
+  <li><strong>O Termômetro da Gaveta da Câmara:</strong> Pedidos de impeachment se acumulam na mesa do presidente da Câmara. Se aliado, ele engaveta; se rompido, deflagra a Comissão Especial.</li>
+  <li><strong>Guerra do Copom & Boletim Focus:</strong> Banco Central autônomo com mandato fixo: atacar o presidente do BC no microfone rende aplauso da militância, mas piora o Focus, sobe os juros futuros e encarece o combustível.</li>
+  <li><strong>Dois Feeds Vivos de Opinião Pública:</strong> A divisão entre o <em>Zap das Ruas</em> (feijão, gás, carinho popular e memes) e o <em>Editorial da Faria Lima</em> (responsabilidade fiscal e previsibilidade).</li>
+  <li><strong>Pronunciamento com Panelaço:</strong> Falar em cadeia obrigatória de TV em momentos de crise pode acalmar os ânimos ou provocar panelaços massivos em todas as capitais.</li>
+  <li><strong>Diplomacia Internacional:</strong> Manter o não-alinhamento pragmático entre EUA e China/BRICS, e fazer o discurso inaugural na Assembleia Geral da ONU.</li>
+</ul>
+
+<hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border);">
+
+<!-- ======================================================== -->
+<!-- CAMADA 4: O SEGUNDO MANDATO (REELEIÇÃO ATÉ 8 ANOS)        -->
+<!-- ======================================================== -->
+<h3>Camada 4: O Segundo Mandato (Meses 48 a 95 — Reeleição até 8 Anos)</h3>
+
+<div class="callout ok">
+  <strong>Implementado no Código (Cenário Padrão v0.8.0):</strong><br>
+  Disponível quando o jogador vence a reeleição em outubro de 2030. Cobre de janeiro de 2031 (mês 48) a dezembro de 2034 (mês 95), somando 96 meses no total da campanha.
+</div>
+
+<h4>4.1 Regras Constitucionais do 2º Mandato</h4>
+<ul class="bullets">
+  <li><strong>Sem 2ª Reeleição Consecutiva:</strong> Pelo Art. 14 §5º da Constituição Federal, o presidente reeleito não pode disputar novo mandato em sequência. O motor impõe <code>termOf(monthIndex) === 0</code> para permitir candidatura própria; no 2º mandato, a declaração de candidatura própria fica permanentemente bloqueada.</li>
+  <li><strong>Renovação Política do Congresso:</strong> A eleição renova o Congresso com deslocamento de forças e relações entre blocos partidários, além de trocas de comando em governos estaduais.</li>
+  <li><strong>Eleições Municipais do 2º Mandato:</strong> Ocorrem no mês 69 (outubro de 2032).</li>
+  <li><strong>Eleição Geral da Sucessão:</strong> Ocorre no mês 93 (outubro de 2034). O presidente não pode concorrer, mas usa sua agenda para <strong>apoiar um candidato sucessor</strong> de um bloco aliado, transferindo parte de sua aprovação e intenção de voto.</li>
+  <li><strong>Término Definitivo da Partida:</strong> Ao alcançar 96 meses (dezembro de 2034 / posse do sucessor em janeiro de 2035), a partida atinge o teto do cenário (<code>campaignMonths = 96</code>). A doca do Painel exibe <em>"Ver legado"</em> e abre a subtela <strong>Legado</strong>, com o comparativo do país recebido em 2027 versus o país entregue em 2035.</li>
+</ul>
+
+<hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border);">
+
+<!-- ======================================================== -->
+<!-- CAMADA 5: O PÓS-PRESIDÊNCIA E DESTINO POLÍTICO           -->
+<!-- ======================================================== -->
+<h3><span class="nao-no-codigo">Camada 5: O Pós-Presidência e Destino Político (Fim de Carreira)</span></h3>
+
+<div class="callout amarelo">
+  <strong>Mecânica em Design (NÃO implementada no código):</strong><br>
+  No código atual, o jogo termina exibindo o Relatório de Legado estatístico. O design prevê consequências dinâmicas de longo prazo para o destino pessoal do político.
+</div>
+
+<div class="grid-2">
+  <div class="card amarelo">
+    <span class="meta">Consagração</span>
+    <h4>Cacique e Padrinho da Sucessão</h4>
+    <p>Ao deixar o cargo com aprovação superior a 60%, o presidente elege seu sucessor, assume o comando vitalício do partido e mantém influência decisiva sobre os rumos do país nos anos seguintes.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Sobrevivência</span>
+    <h4>Corrida ao Senado por Foro Privilegiado</h4>
+    <p>Se acumulou investigações ou enfrentou escândalos, o ex-presidente precisa disputar uma vaga de Senador de 8 anos para manter foro por prerrogativa de função e escapar da prisão em 1ª instância.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Punição Judicial</span>
+    <h4>Inelegibilidade e Processos no TSE</h4>
+    <p>Abuso de poder político, estouro de gastos ou condenação no Senado geram perda de direitos políticos por 8 anos, com processos criminais que mancham o legado histórico entregue.</p>
+  </div>
+  <div class="card amarelo">
+    <span class="meta">Prestígio Global</span>
+    <h4>Liderança Internacional</h4>
+    <p>Se destacou na diplomacia, meio ambiente ou comércio exterior, o ex-mandatário é convidado para presidir organismos multilaterais ou atuar como conferencista global em cúpulas mundiais.</p>
+  </div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- GAVETA LATERAL DIREITA: FORMAS DE AUMENTAR O RECONHECIMENTO           -->
+<!-- ===================================================================== -->
+<div id="gaveta-reconhecimento" class="gaveta-lateral" role="dialog" aria-modal="true" aria-labelledby="gaveta-rec-titulo" hidden>
+  <div class="gaveta-conteudo">
+    <div class="gaveta-cabecalho">
+      <div>
+        <span class="nao-no-codigo" style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px;">Painel de Estratégia Pré-Presidência</span>
+        <h3 id="gaveta-rec-titulo" class="gaveta-titulo"><span class="nao-no-codigo">Formas de Aumentar o Reconhecimento</span></h3>
+        <p class="gaveta-subtitulo"><span class="nao-no-codigo">Como sair de 0% (ilustre desconhecido) até 100% (onipresença nacional)</span></p>
+      </div>
+      <button type="button" class="gaveta-fechar" aria-label="Fechar painel lateral" data-fecha-gaveta title="Fechar (Esc)">&times;</button>
+    </div>
+
+    <div class="gaveta-corpo">
+      <!-- Regra fundamental da variável -->
+      <div class="box-amarelo">
+        <h4 style="margin: 0 0 6px;">A Lei do Reconhecimento: O Teto da Sua Eleição</h4>
+        <p style="margin: 0 0 8px; font-size: 13.5px;">Na fórmula <code>Votos = Reconhecimento × Aprovação</code>, você pode ter 99% de aprovação entre os amigos e no seu bairro, mas se o país não sabe quem você é (ex: Reconhecimento = 6%), seu teto nas pesquisas será de apenas <strong>5,94%</strong>. O eleitor não vota em quem não conhece.</p>
+        <p style="margin: 0; font-size: 13px;">⚠️ <strong>O Fenômeno do Ostracismo:</strong> A cada mês sem agendas públicas, sem vídeos e fora do noticiário, o candidato sofre um decaimento passivo de <strong>-1% a -3%</strong> no Reconhecimento nacional por esquecimento popular.</p>
+      </div>
+
+      <!-- Escala de cores no mapa territorial com UI aprimorada -->
+      <div style="margin: 16px 0;">
+        <h5 style="margin: 0 0 8px; font-size: 14px; color: var(--text);">Escala de Reconhecimento no Mapa dos Estados:</h5>
+        <div class="escala-estados-lista">
+          <div class="escala-estado-card estado-vermelho">
+            <div class="escala-estado-topo">
+              <span class="escala-estado-badge badge-vermelho">0% a 20%</span>
+              <strong class="escala-estado-titulo">Estado Vermelho • Invisível / Desconhecido</strong>
+            </div>
+            <p class="escala-estado-desc">O eleitor comum nunca ouviu falar de você. Comícios têm efeito mínimo até você furar a bolha local.</p>
+          </div>
+
+          <div class="escala-estado-card estado-ambar">
+            <div class="escala-estado-topo">
+              <span class="escala-estado-badge badge-ambar">21% a 45%</span>
+              <strong class="escala-estado-titulo">Estado Âmbar • Emergente / Dividido</strong>
+            </div>
+            <p class="escala-estado-desc">Conhecido na capital e no meio político, mas o interior ainda é território virgem. Disputa voto a voto.</p>
+          </div>
+
+          <div class="escala-estado-card estado-transicao">
+            <div class="escala-estado-topo">
+              <span class="escala-estado-badge badge-transicao">46% a 75%</span>
+              <strong class="escala-estado-titulo">Transição para Verde • Candidato Viável</strong>
+            </div>
+            <p class="escala-estado-desc">Presença garantida nos grandes jornais e convites para podcasts e TV. Atrai partidos aliados e palanques fortes.</p>
+          </div>
+
+          <div class="escala-estado-card estado-verde">
+            <div class="escala-estado-topo">
+              <span class="escala-estado-badge badge-verde">76% a 100%</span>
+              <strong class="escala-estado-titulo">Estado Verde • Consolidado / Onipresença</strong>
+            </div>
+            <p class="escala-estado-desc">Reconhecido em todas as regiões, feiras e lares do país. Disputa as primeiras colocações da eleição.</p>
+          </div>
+        </div>
+      </div>
+
+      <h4 style="margin: 20px 0 12px; font-size: 16px; border-bottom: 2px solid var(--border); padding-bottom: 6px;"><span class="nao-no-codigo">As 10 Formas de Aumentar o Reconhecimento</span></h4>
+
+      <!-- 1. Redes Sociais e Vídeos Curtos -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">1. Vídeos Curtos & Redes Sociais (TikTok, Reels, Shorts)</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Custo: Quase Zero</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Público-alvo: Jovens (16-29 anos), centros urbanos e periferias conectadas</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Produzir 3 a 5 vídeos diários comentando notícias em tempo real, gravando bastidores informais ou criando esquetes bem-humoradas com linguagem popular.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>Mecânica de Dados:</strong> Rolação mensal com <strong>10% de chance de Viralizar</strong> (+5% a +10% de Reconhecimento) e <strong>10% de Gafe</strong> (+3% de Reconhecimento, mas +8% de Rejeição e enxurrada de memes negativos).</li>
+          <li><strong>Vantagem:</strong> Não depende de concessão de TV nem do aval dos caciques do partido.</li>
+        </ul>
+        <div style="margin-top: 8px; font-size: 12.5px;">
+          <a href="features.html" class="link-inline-gaveta" style="display:inline-flex; align-items:center; gap:4px; font-weight:600; text-decoration:none;">📱 Ver pasta "Redes Sociais" completa no Backlog de Features Futuras →</a>
+        </div>
+      </div>
+
+      <!-- 2. Caravana Pé na Estrada -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">2. Caravana Rodoviária & Viagens pelo Interior ("Pé na Estrada")</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Custo: Médio | 1-2 semanas</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Público-alvo: Cidades polo regionais e o interior profundo do país</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Embarcar num ônibus de campanha ou comitiva de carros, acompanhado por uma animação do veículo cruzando as rodovias interestaduais no mapa do jogo com rastro de poeira.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>Ações de Rua:</strong> Visita a feiras livres para comer pastel com caldo de cana, caminhadas nos calçadões comerciais, fotos com transeuntes e carreatas com buzinaço.</li>
+          <li><strong>Efeito no Mapa:</strong> Transforma <strong>Estados Vermelhos</strong> em <strong>Âmbar</strong> com alta taxa de simpatia popular e matérias de capa na imprensa regional.</li>
+        </ul>
+      </div>
+
+      <!-- 3. Rádios Comunitárias e Matinais do Interior -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">3. Rádios Comunitárias e Programas Matinais AM/FM</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Custo: Baixo | Agenda matutina</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Público-alvo: Trabalhadores rurais, motoristas, aposentados e donas de casa (45+ anos)</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Agendar participações ao vivo das 07h às 09h nos programas matinais de maior audiência nas rádios do interior de Minas, Nordeste e Centro-Oeste.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>Penetração Oculta:</strong> No interior do país, mais de 65% dos eleitores começam o dia ouvindo o radialista local antes de abrir redes sociais.</li>
+          <li><strong>Impacto:</strong> Conquista eleitores fiéis e tradicionais que o algoritmo do TikTok não alcança.</li>
+        </ul>
+      </div>
+
+      <!-- 4. Podcasts Longos e Sabatinas na Mídia -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">4. Podcasts Gigantes (Flow, Podpah) & Sabatinas da Imprensa</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Desbloqueio: &gt; 8% a 12%</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Público-alvo: Classe média, universitários, investidores e formadores de opinião</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Bate-papos de 2 a 4 horas sem edição em canais com milhões de inscritos e sabatinas ao vivo em estúdios da GloboNews, CNN, UOL e Folha.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>Poder da Conversa Longa:</strong> Desmonta a imagem engessada de político tradicional, permitindo explicar reformas econômicas complexas e humanizar sua história de vida.</li>
+          <li><strong>Risco de Sabatina:</strong> Jornalistas experientes cavoucam escândalos antigos, bens não declarados e posicionamentos contraditórios do candidato.</li>
+        </ul>
+      </div>
+
+      <!-- 5. HGPE (Horário Eleitoral Gratuito) -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">5. Horário Gratuito de Propaganda Eleitoral (HGPE na TV Aberta)</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Exige Bancada / Coligações</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Público-alvo: 80 milhões de famílias em horário nobre simultâneo</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Dois blocos diários de 10 minutos (às 13h e às 20h30) na TV aberta e no rádio, somados a dezenas de pílulas de 30 segundos durante os comerciais de novelas e jornais.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>A Regra dos 90/10:</strong> 10% do tempo dividido igualmente entre todos; 90% dividido proporcionalmente ao número de deputados federais da sua coligação na Câmara.</li>
+          <li><strong>O Efeito Centrão:</strong> Aliar-se a partidos médios traz 3 a 5 minutos na TV, catapultando o Reconhecimento de 25% para 85%+ em apenas 4 semanas de campanha no ar.</li>
+        </ul>
+      </div>
+
+      <!-- 6. Debates Televisionados -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">6. Debates Televisionados ao Vivo em Rede Nacional</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Prime Time / Alta Tensão</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Público-alvo: Eleitores indecisos, analistas políticos e a militância nas redes</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Minigame de confronto direto com cronômetro rígido no estúdio. O jogador escolhe a quem perguntar e se arrisca respostas com frases de efeito.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>Botão de Frase de Efeito ("Lacrada"):</strong> Acertar o tom cria cortes virais que circulam nos grupos de WhatsApp por dias; errar o tom soa agressivo e eleva a rejeição entre mulheres e moderados.</li>
+          <li><strong>Direito de Resposta:</strong> Acionar a assessoria jurídica ao vivo para ganhar 1 minuto extra de fala se for ofendido na honra.</li>
+        </ul>
+      </div>
+
+      <!-- 7. Tráfego Pago & Anúncios Segmentados -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">7. Tráfego Pago & Anúncios Digitais Segmentados por Estado</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Custo: Alto (Fundo Eleitoral)</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Público-alvo: Estados específicos onde você é desconhecido (&lt;20%)</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Injetar verba do Fundo Eleitoral em anúncios patrocinados no Meta (Instagram/Facebook) e Google/YouTube com filtro por CEP, idade e renda.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>Ataque aos Estados Vermelhos:</strong> Se você é desconhecido no Rio Grande do Sul ou no Ceará, injeta R$ 3 milhões em vídeos focados nos temas mais sensíveis daquele estado.</li>
+          <li><strong>Regras do TSE:</strong> Requer prestação de contas diária, menção explícita ao CNPJ de campanha e respeito ao teto legal de gastos.</li>
+        </ul>
+      </div>
+
+      <!-- 8. Palanques Municipais e Apoio de Prefeitos -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">8. Palanques Municipais & Prefeitos como "Cabos Eleitorais"</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Exige Alianças Políticas</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Público-alvo: Eleitores de bairros periféricos e cidades médias</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Costurar alianças com centenas de prefeitos populares. O prefeito coloca sua base de vereadores, líderes comunitários e carros de som na rua para distribuir o santinho conjunto.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>Transferência Imediata:</strong> O eleitor que confia no prefeito local adota o candidato presidencial indicado por ele ("Palanque Casado").</li>
+          <li><strong>Preço Cobrado:</strong> Prefeitos exigem compromisso formal de liberação de emendas parlamentares e verbas de saúde e saneamento no primeiro orçamento federal.</li>
+        </ul>
+      </div>
+
+      <!-- 9. Festas Populares e Agropecuárias -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">9. Presença em Festas Populares, Religiosas e Feiras do Agro</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Eventos de Massa Sazonais</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Público-alvo: Multidões regionais e identificação cultural profunda</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Marcar presença física nos maiores acontecimentos culturais e de negócios do calendário nacional:</span></p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>São João de Campina Grande (PB) e Caruaru (PE):</strong> +15% de Reconhecimento no Nordeste com fotos usando chapéu de couro e dançando forró.</li>
+          <li><strong>Agrishow (Ribeirão Preto/SP) e Festa do Peão de Barretos (SP):</strong> Conexão instantânea com o PIB do agronegócio e o eleitor conservador do interior paulista e centro-oeste.</li>
+          <li><strong>Círio de Nazaré (Belém/PA):</strong> A maior procissão religiosa do Brasil, transmitindo respeito à fé e quebrando resistências no Norte.</li>
+        </ul>
+      </div>
+
+      <!-- 10. Polêmicas Estratégicas e Furo de Bolha -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">10. Polêmicas Calculadas & "Furo de Bolha" na Imprensa</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Alto Risco / Retorno Imediato</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Público-alvo: Manchetes de jornais, Trending Topics e eleitorado indignado</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Fazer discursos inflamados e iconoclastas, propor medidas radicais contra privilégios de castas estatais ou peitar publicamente ministros do STF e banqueiros.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>Furo Meteórico da Bolha:</strong> Em 24 a 48 horas, o nome do candidato passa a ser debatido por todos os telejornais do país (+10% a +15% de Reconhecimento relâmpago).</li>
+          <li><strong>O Preço da Rejeição:</strong> Quem adota essa estratégia consolida uma legião de defensores fanáticos, mas atrai rejeição de 40%+ entre os eleitores moderados.</li>
+        </ul>
+      </div>
+
+      <!-- Resumo Estratégico no Fim da Gaveta -->
+      <div class="box-amarelo" style="margin-top: 18px;">
+        <h5 style="margin: 0 0 6px;">Roteiro Ideal de Campanha para Subir o Reconhecimento:</h5>
+        <p style="margin: 0; font-size: 13px;">1. <strong>Início (Meses -24 a -12):</strong> Foque em <em>Redes Sociais (TikTok)</em> e <em>Caravanas de Carro</em> nos estados vizinhos para sair do 0% e pintar o primeiro estado de âmbar.<br>
+        2. <strong>Crescimento (Meses -12 a -4):</strong> Ao atingir 12% nas pesquisas, faça <em>Podcasts Gigantes</em> e <em>Rádios Matinais</em> para furar a bolha nacional.<br>
+        3. <strong>Reta Final (Meses -3 a 0):</strong> O salto decisivo de 40% para 90% só acontece conquistando <em>Tempo de TV no HGPE</em> com coligações e vencendo os <em>Debates ao Vivo</em>.</p>
+      </div>
+
+      <!-- Ligação com o Sistema Financeiro -->
+      <div class="card amarelo" style="margin-top: 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <strong style="font-size:13.5px; color:var(--text);">💰 Como bancar essas ações de Reconhecimento?</strong>
+            <p style="margin:3px 0 0; font-size:12.5px; color:var(--text);">Conheça o sistema de 3 bolsos: Dinheiro Pessoal, Repasses do Fundo Eleitoral e Doações.</p>
+          </div>
+          <button type="button" class="link-inline-gaveta" data-gaveta="gaveta-financas">👉 Abrir Painel Financeiro</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="gaveta-rodape">
+      <span class="nao-no-codigo" style="font-size:12px;">Pressione Esc ou clique fora para fechar</span>
+      <button type="button" class="btn-gaveta-fechar-rodape" data-fecha-gaveta style="padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text);">Fechar Painel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- GAVETA LATERAL DIREITA: SISTEMA FINANCEIRO DA CAMPANHA                -->
+<!-- ===================================================================== -->
+<div id="gaveta-financas" class="gaveta-lateral" role="dialog" aria-modal="true" aria-labelledby="gaveta-fin-titulo" hidden>
+  <div class="gaveta-conteudo">
+    <div class="gaveta-cabecalho">
+      <div>
+        <span class="nao-no-codigo" style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px;">Painel de Finanças de Campanha</span>
+        <h3 id="gaveta-fin-titulo" class="gaveta-titulo"><span class="nao-no-codigo">O Sistema Financeiro da Eleição</span></h3>
+        <p class="gaveta-subtitulo"><span class="nao-no-codigo">Os Três Bolsos: Dinheiro Pessoal, Repasses do Partido e Doações</span></p>
+      </div>
+      <button type="button" class="gaveta-fechar" aria-label="Fechar painel lateral" data-fecha-gaveta title="Fechar (Esc)">&times;</button>
+    </div>
+
+    <div class="gaveta-corpo">
+      <!-- Regra fundamental da variável -->
+      <div class="box-amarelo">
+        <h4 style="margin: 0 0 6px;">O Dinheiro como Combustível do Reconhecimento</h4>
+        <p style="margin: 0 0 8px; font-size: 13.5px;">Na corrida eleitoral, o <strong>Reconhecimento não sobe sozinho</strong>. Sem dinheiro, o candidato depende puramente de sorte algorítmica orgânica (+1% a +2% ao mês) e fica preso ao próprio estado. Com caixa farto, é possível comprar anúncios direcionados no Meta/Google nos 26 estados onde você é desconhecido, bancar comitivas de caravanas, contratar marqueteiro estrela e produzir programas de TV de padrão cinematográfico.</p>
+        <p style="margin: 0; font-size: 13px;">⚠️ <strong>Custo de Campanha Presidencial:</strong> Uma corrida competitiva ao Planalto consome de <strong>R$ 50 a R$ 90 milhões</strong> em gastos declarados no TSE.</p>
+      </div>
+
+      <h4 style="margin: 20px 0 12px; font-size: 16px; border-bottom: 2px solid var(--border); padding-bottom: 6px;"><span class="nao-no-codigo">Os Três Bolsos da Campanha</span></h4>
+
+      <!-- Bolso 1: Dinheiro Pessoal -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">Bolso 1: Dinheiro Pessoal (Patrimônio & Autofinanciamento)</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Teto TSE: 10% do limite geral</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Origem: Conta corrente, poupança e patrimônio declarado no IRPF do candidato</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> O candidato injeta recursos do próprio bolso diretamente na conta de campanha. Permite bancar o início da pré-campanha antes de ter a vaga homologada pelo partido.</p>
+        <div style="margin: 10px 0; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
+          <strong style="font-size: 13.5px; color: var(--text);">Calibração do Caixa Pessoal por Dificuldade (Teto TSE 10%):</strong>
+          <p style="margin: 3px 0 8px; font-size: 12.5px; color: var(--muted);">O dinheiro disponível no bolso do candidato depende do nível de desafio escolhido no Novo Jogo:</p>
+          <div class="table-wrap">
+            <table class="summary" style="font-size: 12.5px; margin: 0;">
+              <thead>
+                <tr>
+                  <th>Perfil de Origem</th>
+                  <th>Casual (Abundância)</th>
+                  <th>Estratégica (Balanceado)</th>
+                  <th>Realismo (Escassez)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Empresário / Faria Lima</strong></td>
+                  <td>R$ 25.000.000</td>
+                  <td>R$ 18.000.000</td>
+                  <td>R$ 10.000.000</td>
+                </tr>
+                <tr>
+                  <td><strong>Influencer / Deputado Digital</strong></td>
+                  <td><strong>R$ 7.000.000</strong> <small>(Mega-coach/cursos)</small></td>
+                  <td><strong>R$ 2.500.000</strong> <small>(YouTuber consolidado)</small></td>
+                  <td><strong>R$ 750.000</strong> <small>(Ativista de nicho)</small></td>
+                </tr>
+                <tr>
+                  <td><strong>Governador de Estado</strong></td>
+                  <td>R$ 3.500.000</td>
+                  <td>R$ 2.000.000</td>
+                  <td>R$ 1.000.000</td>
+                </tr>
+                <tr>
+                  <td><strong>Militar / Linha-Dura</strong></td>
+                  <td>R$ 1.000.000</td>
+                  <td>R$ 600.000</td>
+                  <td>R$ 350.000</td>
+                </tr>
+                <tr>
+                  <td><strong>Líder Sindical / Popular</strong></td>
+                  <td>R$ 250.000</td>
+                  <td>R$ 100.000</td>
+                  <td>R$ 50.000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <small style="color: var(--muted); display: block; margin-top: 6px;">* No modo <em>Realismo</em>, auditorias do TSE e custos fixos de assessoria jurídica e contábil consomem grande fatia do aporte pessoal.</small>
+        </div>
+
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>Dinâmica da Liquidez:</strong> Enquanto o empresário tem dinheiro preso em fábricas ou terras, o <em>Influencer</em> goza de alta liquidez imediata (aplicações financeiras prontas para uso), conseguindo bancar estúdio próprio e testes de anúncios sem pedir aval a caciques.</li>
+          <li><strong>Risco do Autofinanciamento:</strong> Se for derrotado nas urnas, todo o capital aportado foi queimado para sempre. Sobras de dívidas de campanha recaem sobre o CPF do próprio candidato.</li>
+        </ul>
+      </div>
+
+      <!-- Bolso 2: Dinheiro do Partido -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">Bolso 2: Dinheiro do Partido (Fundo Eleitoral & Fundo Partidário)</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Maior Fundo do Mundo (~R$ 5 bi)</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Origem: Tesouro Nacional repassado proporcionalmente à bancada de deputados na Câmara</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> A fatia bilionária do Fundo Especial de Financiamento de Campanha (FEFC) distribuída à legenda. É a principal fonte de dinheiro de qualquer campanha presidencial brasileira.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>A Batalha da Torneira (Influência Partidária):</strong> O repasse NÃO cai automaticamente na sua conta. Quem assina o Pix é a Executiva Nacional (o "Cacique" do partido):
+            <ul style="margin: 4px 0; padding-left: 16px;">
+              <li><em>Influência &lt; 35%:</em> A cúpula vê sua candidatura como risco ou tampão. Repassa apenas a cota mínima legal (R$ 3M a R$ 6M) e canaliza 90% da grana para reeleger os deputados da bancada tradicional.</li>
+              <li><em>Influência 36% a 70%:</em> Negociação dura. Cada repasse de R$ 15 milhões exige concessões: entregar palanques estaduais, prometer diretorias em estatais ou aceitar o Vice imposto pelo partido.</li>
+              <li><em>Influência &gt; 70%:</em> Você é o líder supremo da legenda. Direciona até <strong>R$ 70 milhões</strong> do Fundão diretamente para a campanha presidencial.</li>
+            </ul>
+          </li>
+          <li><strong>Fundo Partidário Mensal:</strong> Verba contínua para custear a sede nacional, banca de advogados eleitorais (para derrubar inserções adversárias no TSE) e pesquisas semanais de tracking (IPEC/Quaest/Datafolha).</li>
+        </ul>
+      </div>
+
+      <!-- Bolso 3: Doações de Campanha -->
+      <div class="card amarelo" style="margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:4px;">
+          <h5 style="margin: 0 0 4px; font-size: 15px;">Bolso 3: Doações Eleitorais (Vaquinha Popular vs. Grandes Doadores)</h5>
+          <span class="nao-no-codigo" style="font-size:11px;">Pessoas Físicas (PJ é Proibida)</span>
+        </div>
+        <div class="meta" style="margin-bottom: 6px;">Origem: Pix de militantes e cheques de investidores / ruralistas</div>
+        <p style="margin: 0 0 8px; font-size: 13.5px;"><strong>Como funciona:</strong> Desde que o STF baniu doações de empresas (PJ) em 2015, todas as doações privadas devem vir de Pessoas Físicas (CPF), limitadas a 10% do rendimento bruto do doador.</p>
+        <ul style="margin: 0; padding-left: 16px; font-size: 13px;">
+          <li><strong>Vaquinha Virtual (Crowdfunding Popular / Pix):</strong>
+            <ul style="margin: 4px 0; padding-left: 16px;">
+              <li>Plataformas autorizadas pelo TSE que arrecadam microdoações (R$ 10 a R$ 200).</li>
+              <li><em>Mecânica no Jogo:</em> O volume arrecadado depende diretamente do <strong>Reconhecimento Digital × Engajamento nas Redes</strong>. Um vídeo viral ou um debate arrebatador geram enxurrada de Pix no mesmo dia.</li>
+              <li><em>Vantagem Moral:</em> Dinheiro 100% limpo, sem amarras com banqueiros ou empreiteiras ("Campanha bancada pelo povo").</li>
+            </ul>
+          </li>
+          <li><strong>Grandes Doadores PF (Jantares Morumbi, Faria Lima & Agro):</strong>
+            <ul style="margin: 4px 0; padding-left: 16px;">
+              <li>Jantares fechados com empresários, ruralistas e banqueiros. Cheques individuais de R$ 100k a R$ 1M por CPF.</li>
+              <li><em>O Custo Político:</em> Doadores pesados exigem cartas de compromisso: vetar tributação de dividendos, defender marcos de pesticidas ou indicar nomes de confiança para o Ministério da Fazenda e Agricultura.</li>
+            </ul>
+          </li>
+          <li><strong>Doações Ocultas / Caixa 2 (A Rota Criminosa):</strong>
+            <ul style="margin: 4px 0; padding-left: 16px;">
+              <li>Dinheiro vivo não declarado entregue por operadores de empreiteiras e fornecedores com notas frias.</li>
+              <li><em>Poder:</em> Caixa ilimitado para pagar cabos eleitorais e boca de urna em centenas de cidades do interior.</li>
+              <li><em>Risco Fatal:</em> 15% de chance mensal de deflagração de Operação da Polícia Federal, mandados de busca e processo de cassação no TSE por abuso de poder econômico.</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Tabela de Conversão: Dinheiro em Reconhecimento -->
+      <h4 style="margin: 20px 0 10px; font-size: 15px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">Como o Dinheiro se Converte em Reconhecimento</h4>
+      <div class="table-wrap">
+        <table class="summary" style="font-size:13px;">
+          <thead>
+            <tr>
+              <th>Ação de Campanha</th>
+              <th>Custo Médio</th>
+              <th>Bolso Ideal</th>
+              <th>Impacto no Reconhecimento</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Tráfego Pago (Meta / Google)</strong></td>
+              <td>R$ 500k a R$ 2M/mês</td>
+              <td>Fundão / Doações</td>
+              <td>Fura a bolha nos estados vermelhos (&lt;20%) e acelera a conversão para âmbar.</td>
+            </tr>
+            <tr>
+              <td><strong>Caravana Rodoviária ("Pé na Estrada")</strong></td>
+              <td>R$ 300k a R$ 800k/mês</td>
+              <td>Pessoal / Partido</td>
+              <td>Custeia combustível, comitiva, segurança e eventos populares no interior.</td>
+            </tr>
+            <tr>
+              <td><strong>Marqueteiro Estrela & Produtora de TV</strong></td>
+              <td>R$ 8M a R$ 20M (pacote)</td>
+              <td>Fundão Eleitoral</td>
+              <td>Programas de TV cinematográficos no HGPE e dezenas de inserções diárias de 30s.</td>
+            </tr>
+            <tr>
+              <td><strong>Pesquisas Semanais de Tracking</strong></td>
+              <td>R$ 120k / semana</td>
+              <td>Fundo Partidário</td>
+              <td>Revela em tempo real quais estados estão subindo e onde há aumento de rejeição.</td>
+            </tr>
+            <tr>
+              <td><strong>Logística Aérea / Jatinhos na Reta Final</strong></td>
+              <td>R$ 1,5M a R$ 4M/mês</td>
+              <td>Fundão / Doadores</td>
+              <td>Permite ao candidato visitar 4 estados no mesmo dia para comícios e debates ao vivo.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="box-amarelo" style="margin-top: 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <strong style="font-size:13.5px;">🎯 Pronto para gastar os recursos?</strong>
+            <p style="margin:2px 0 0; font-size:12.5px; color:var(--text);">Veja como direcionar os recursos para as 10 formas de alavancar o Reconhecimento.</p>
+          </div>
+          <button type="button" class="link-inline-gaveta" data-gaveta="gaveta-reconhecimento">👉 Ver Formas de Reconhecimento</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="gaveta-rodape">
+      <span class="nao-no-codigo" style="font-size:12px;">Pressione Esc ou clique fora para fechar</span>
+      <button type="button" class="btn-gaveta-fechar-rodape" data-fecha-gaveta style="padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text);">Fechar Painel</button>
+    </div>
+  </div>
+</div></section>
+  <section class="bloco"><h2>Onde está no código</h2><ul class="codigo-lista"><li><code>src/engine/calendar.ts</code></li><li><code>src/engine/elections/elections.ts</code></li><li><code>src/engine/events/outcome.ts</code></li><li><code>src/content/scenarios.ts</code></li><li><code>src/store/gameStore.ts</code></li></ul></section>
+  <section class="bloco"><h2>Documentos</h2><ul class="bullets"><li><a href="../GAME_DESIGN.md">GAME_DESIGN.md §7 e §13</a></li><li><a href="../FASE_08.md">FASE_08.md</a></li><li><a href="../POLITICAL_RULES.md">POLITICAL_RULES.md §11</a></li></ul></section>
+  <section class="bloco"><h2>Veja também</h2><div class="relacionados"><a href="tela-painel.html">Painel (a mesa do jogo)</a><a href="tela-gabinete.html">Gabinete (subtela)</a><a href="tela-novo-jogo.html">Novo jogo</a><a href="sis-eleicoes.html">Eleições e mandatos</a><a href="motor-eleicoes.html">Eleições (motor)</a></div></section>
   <section class="bloco"><h2>Estado do texto</h2><p>Resumo do tema. Os detalhes completos entram na revisão com o autor.</p></section>
   <nav class="paginacao" aria-label="Página anterior e próxima"><a class="ant" href="tela-vitrine.html"><small>← Anterior</small><span>Vitrine de design</span></a><a class="prox" href="sis-economia.html"><small>Próxima →</small><span>Economia (sistema)</span></a></nav>
     <footer class="rodape">Gerado por <code>docs/explicacoes/build.mjs</code> a partir de <code>docs/explicacoes/src/</code>. Para mudar um texto, edite a fonte e rode o build.</footer>
   </main>
 </div>
-<script type="application/json" id="indice">[{"t":"Motores","g":"Grupo","s":"Como o código calcula cada mês. Cada motor é uma pasta de src/engine/, em TypeScript puro, sem interface.","h":"motores.html"},{"t":"Telas","g":"Grupo","s":"O que o jogador vê e toca. Cada tela é uma rota em src/app/.","h":"telas.html"},{"t":"Sistemas de jogo","g":"Grupo","s":"Como o jogador experimenta cada parte do jogo. Cada sistema se apoia em um ou mais motores.","h":"sistemas.html"},{"t":"Congresso","g":"Grupo","s":"No jogo, você é o Presidente da República. Para aprovar reformas, impostos e orçamentos, precisa do aval de deputados e senadores: é o presidencialismo de coalizão.","h":"congresso.html"},{"t":"Camadas técnicas","g":"Grupo","s":"Estado da interface, banco de dados, globo 3D e dados de conteúdo. O motor não depende de nenhuma delas.","h":"tecnico.html"},{"t":"Tecnologias","g":"Grupo","s":"As linguagens, os frameworks, as bibliotecas e as ferramentas do projeto, com o papel de cada uma. As versões vêm do package.json.","h":"tecnologias.html"},{"t":"Fases do roadmap","g":"Grupo","s":"Onde cada fase está hoje, segundo o roadmap do projeto.","h":"fases.html"},{"t":"Features futuras","g":"Grupo","s":"Ideias e funcionalidades planejadas, separadas por categoria. Cada feature tem um post-it para anotar o que quiser.","h":"features.html"},{"t":"Orquestração do mês","g":"Motores","s":"Avança o jogo um mês: ordem de cálculo, estado inicial, decisões, sementes e migração de saves.","h":"motor-orquestra.html"},{"t":"Economia","g":"Motores","s":"Atividade, inflação, Banco Central, contas públicas, dívida e setor externo.","h":"motor-economia.html"},{"t":"Congresso (motor)","g":"Motores","s":"Blocos, votação, relatores, presidentes das Casas, ministérios e negociação.","h":"motor-congresso.html"},{"t":"Propostas","g":"Motores","s":"Tramitação de cada proposta, da entrada na pauta até a execução.","h":"motor-propostas.html"},{"t":"Política","g":"Motores","s":"Opinião pública e aprovação do presidente, com a lua de mel no início do mandato.","h":"motor-politica.html"},{"t":"Regiões","g":"Motores","s":"As 27 UFs recebem uma distribuição do agregado nacional, sem motor macroeconômico próprio.","h":"motor-regioes.html"},{"t":"Políticas públicas (motor)","g":"Motores","s":"Catálogo de políticas, diretrizes ministeriais e carteira de projetos.","h":"motor-politicas.html"},{"t":"Sociedade (motor)","g":"Motores","s":"Setores, quintis de renda, renda real, salário mínimo, desemprego e pobreza.","h":"motor-sociedade.html"},{"t":"Eventos (motor)","g":"Motores","s":"Gatilhos, escolhas, cadeias com atraso e marcas que guardam a memória da campanha.","h":"motor-eventos.html"},{"t":"Notícias (motor)","g":"Motores","s":"Manchetes geradas pelo motor, cada uma com a causa que a originou.","h":"motor-noticias.html"},{"t":"Eleições (motor)","g":"Motores","s":"Pleitos, mandatos, memória curta do eleitor e vedações do ano eleitoral.","h":"motor-eleicoes.html"},{"t":"Relatório","g":"Motores","s":"Relatório mensal com “Por que mudou?”, mesa de despacho e relatório de legado.","h":"motor-relatorio.html"},{"t":"Simulação","g":"Motores","s":"Estratégias-robô e campanhas automáticas, usadas para calibrar e testar.","h":"motor-simulacao.html"},{"t":"Painel (a mesa do jogo)","g":"Telas","s":"A casa do jogo: o globo do Brasil com HUD, trilhos de folhas, doca de subtelas e o botão Encerrar o mês.","h":"tela-painel.html"},{"t":"Gabinete (subtela)","g":"Telas","s":"A agenda presidencial do mês: decisões com mesa de despacho, políticas públicas, marcas de governo e ações de agenda.","h":"tela-gabinete.html"},{"t":"Economia (subtela)","g":"Telas","s":"Juros, atividade, câmbio, contas públicas, teto de gastos, receitas, Copom e sociedade.","h":"tela-economia.html"},{"t":"Congresso (subtela)","g":"Telas","s":"Hemiciclo, Mesas e pauta, propostas em tramitação, blocos, ministérios e negociações.","h":"tela-congresso.html"},{"t":"Notícias (subtela)","g":"Telas","s":"Mesa 3D com o jornal do mês e o notebook das redes sociais.","h":"tela-noticias.html"},{"t":"Legado (subtela)","g":"Telas","s":"Relatório de fim de campanha: o que o governo deixou ao país.","h":"tela-legado.html"},{"t":"Novo jogo","g":"Telas","s":"Criação de uma campanha a partir de um cenário e de uma dificuldade.","h":"tela-novo-jogo.html"},{"t":"Carregar jogo","g":"Telas","s":"Lista as partidas salvas e retoma uma delas.","h":"tela-carregar-jogo.html"},{"t":"Configurações","g":"Telas","s":"Preferências do jogo, como o tamanho do texto.","h":"tela-configuracoes.html"},{"t":"Vitrine de design","g":"Telas","s":"Tela de desenvolvimento com os componentes base: cards, indicadores, alertas e botões.","h":"tela-vitrine.html"},{"t":"Campanha de 4 anos","g":"Sistemas de jogo","s":"A partida dura o número de meses definido pelo cenário, com decisões mensais e um fim por eleição ou derrota.","h":"sis-campanha.html"},{"t":"Economia (sistema)","g":"Sistemas de jogo","s":"Como a economia aparece para o jogador: indicadores, causas e as escolhas que a movem.","h":"sis-economia.html"},{"t":"Federação","g":"Sistemas de jogo","s":"As decisões federais têm efeitos diferentes em cada um dos 27 estados.","h":"sis-federacao.html"},{"t":"Políticas públicas (jogador)","g":"Sistemas de jogo","s":"Você escolhe políticas de rotina, diretrizes e projetos, e eles aparecem no legado.","h":"sis-politicas.html"},{"t":"Sociedade (jogador)","g":"Sistemas de jogo","s":"Como as decisões chegam às pessoas: renda por quintil, salário mínimo, desemprego e pobreza.","h":"sis-sociedade.html"},{"t":"Eventos e personagens","g":"Sistemas de jogo","s":"Eventos com escolhas, cadeias como CPI, TCU e impeachment, e prestígio de personagens.","h":"sis-eventos.html"},{"t":"Notícias (jogador)","g":"Sistemas de jogo","s":"Manchetes com tom e causa, no jornal do mês e nas redes sociais do notebook.","h":"sis-noticias.html"},{"t":"Eleições e mandatos","g":"Sistemas de jogo","s":"Ao fim do mandato há eleição; a reeleição depende do cenário.","h":"sis-eleicoes.html"},{"t":"Globo 3D","g":"Sistemas de jogo","s":"Mapa interativo do Brasil: relevo, zoom até os estados e mapa de calor por indicador.","h":"sis-globo.html"},{"t":"Estrutura do Congresso","g":"Congresso","s":"O Poder Legislativo é bicameral: duas Casas, com papéis diferentes.","h":"cong-estrutura.html"},{"t":"Tramitação de uma lei","g":"Congresso","s":"Quando você envia uma proposta pelo Gabinete, ela passa por etapas realistas.","h":"cong-tramitacao.html"},{"t":"Como os blocos votam","g":"Congresso","s":"Cada bloco calcula uma pontuação de apoio para cada proposta. Ela soma vários fatores.","h":"cong-apoio.html"},{"t":"Ferramentas de negociação","g":"Congresso","s":"Na subtela Congresso, você tem ações diretas para virar votos. Cada ação gasta uma das suas ações de agenda mensais.","h":"cong-arsenal.html"},{"t":"Conexões com o resto do jogo","g":"Congresso","s":"O Congresso não fica isolado: o que acontece nele mexe na economia, na popularidade e no impeachment.","h":"cong-conexoes.html"},{"t":"Modo Casual","g":"Congresso","s":"A dificuldade Casual tem proteções para quem está aprendendo. As regras abaixo foram conferidas no código.","h":"cong-casual.html"},{"t":"Resumo para guardar","g":"Congresso","s":"Os elementos mais importantes do Congresso e o que acontece se você ignorá-los.","h":"cong-resumo.html"},{"t":"Estado da interface","g":"Camadas técnicas","s":"Store Zustand que liga a interface ao motor e guarda a partida atual.","h":"tec-estado.html"},{"t":"Banco de dados","g":"Camadas técnicas","s":"SQLite com migrações versionadas: o estado e o histórico da partida ficam aqui.","h":"tec-banco.html"},{"t":"Globo (camada técnica)","g":"Camadas técnicas","s":"Renderização 3D com three.js e React Three Fiber, com quadtree, LOD e cache.","h":"tec-globo.html"},{"t":"Dados de conteúdo","g":"Camadas técnicas","s":"Cenários, políticas e eventos em JSON, validados com Zod.","h":"tec-dados.html"},{"t":"Linguagens","g":"Tecnologias","s":"Cinco linguagens, cada uma numa parte diferente: TypeScript no app e no motor, Python só na preparação de dados, GLSL nos shaders do globo, JSON para o conteúdo e HTML, CSS e JavaScript para este site.","h":"stk-linguagens.html"},{"t":"Expo e Expo Router","g":"Tecnologias","s":"Expo é a plataforma que roda, empacota e gera a versão web do app. Expo Router organiza as telas como arquivos dentro de src/app/.","h":"stk-expo.html"},{"t":"React e React Native","g":"Tecnologias","s":"React descreve a interface como componentes. React Native transforma esses componentes em telas nativas no Android e no iPhone. react-native-web leva o mesmo código ao navegador.","h":"stk-react.html"},{"t":"Zustand e Zod","g":"Tecnologias","s":"Zustand guarda o estado que a interface usa. Zod valida o conteúdo do jogo antes de ele entrar na partida.","h":"stk-estado.html"},{"t":"Bibliotecas de interface, gesto e animação","g":"Tecnologias","s":"Bibliotecas que dão comportamento às telas: animação, gestos, área segura do aparelho, ícones e imagens.","h":"stk-componentes.html"},{"t":"SQLite: app e testes","g":"Tecnologias","s":"SQLite guarda a partida no aparelho. Nos testes, a mesma base roda pelo módulo SQLite embutido no Node, sem precisar do aparelho.","h":"stk-banco.html"},{"t":"Globo 3D: three, R3F e shaders","g":"Tecnologias","s":"O globo usa three.js, biblioteca de gráficos 3D sobre WebGL, ligada ao React pelo @react-three/fiber. No aparelho, o WebGL vem do expo-gl.","h":"stk-globo.html"},{"t":"Pipeline de dados (Python)","g":"Tecnologias","s":"Um pipeline em Python baixa dados públicos e transforma o resultado nos arquivos que o globo carrega. Roda na máquina de desenvolvimento, nunca no aparelho.","h":"stk-dados.html"},{"t":"Testes e simulações (Vitest)","g":"Tecnologias","s":"Vitest roda os testes do motor, do banco e da lógica de tela. As simulações rodam o motor com estratégias-robô e muitas sementes, para testar o equilíbrio do jogo.","h":"stk-testes.html"},{"t":"Qualidade: TypeScript, ESLint e Prettier","g":"Tecnologias","s":"Três ferramentas checam o código antes de ele entrar: o compilador de tipos, o ESLint e o Prettier. O comando npm run check roda as três e os testes.","h":"stk-qualidade.html"},{"t":"Integração contínua (GitHub Actions)","g":"Tecnologias","s":"A cada push na main e a cada pull request, o GitHub roda a mesma checagem do npm run check em um servidor limpo, com Node 22.","h":"stk-ci.html"},{"t":"npm, Metro e app.json","g":"Tecnologias","s":"npm instala e fixa as dependências. Metro empacota o app. app.json define o que o Expo gera. Os scripts do package.json reúnem os comandos do dia a dia.","h":"stk-ferramentas.html"},{"t":"Este site de documentação","g":"Tecnologias","s":"Páginas de HTML, CSS e JavaScript puros, geradas por um script em Node. Não tem framework nem dependências externas e funciona sem internet.","h":"stk-site.html"},{"t":"Regras que as tecnologias respeitam","g":"Tecnologias","s":"Algumas escolhas técnicas valem para o projeto inteiro. Elas explicam por que o motor é separado e por que o jogo funciona offline.","h":"stk-regras.html"}]</script>
+<script type="application/json" id="indice">[{"t":"Motores","g":"Grupo","s":"Como o código calcula cada mês. Cada motor é uma pasta de src/engine/, em TypeScript puro, sem interface.","h":"motores.html"},{"t":"Telas","g":"Grupo","s":"O que o jogador vê e toca. Cada tela é uma rota em src/app/.","h":"telas.html"},{"t":"Sistemas de jogo","g":"Grupo","s":"Como o jogador experimenta cada parte do jogo. Cada sistema se apoia em um ou mais motores.","h":"sistemas.html"},{"t":"Congresso","g":"Grupo","s":"No jogo, você é o Presidente da República. Para aprovar reformas, impostos e orçamentos, precisa do aval de deputados e senadores: é o presidencialismo de coalizão.","h":"congresso.html"},{"t":"Camadas técnicas","g":"Grupo","s":"Estado da interface, banco de dados, globo 3D e dados de conteúdo. O motor não depende de nenhuma delas.","h":"tecnico.html"},{"t":"Tecnologias","g":"Grupo","s":"As linguagens, os frameworks, as bibliotecas e as ferramentas do projeto, com o papel de cada uma. As versões vêm do package.json.","h":"tecnologias.html"},{"t":"Fases do roadmap","g":"Grupo","s":"Onde cada fase está hoje, segundo o roadmap do projeto.","h":"fases.html"},{"t":"Features futuras","g":"Grupo","s":"Ideias e funcionalidades planejadas, separadas por categoria. Cada feature tem um post-it para anotar o que quiser.","h":"features.html"},{"t":"Orquestração do mês","g":"Motores","s":"Avança o jogo um mês: função pura, pipeline de 15 etapas, triagem constitucional, rastreabilidade contábil, PRNG estável e migração de saves.","h":"motor-orquestra.html"},{"t":"Economia","g":"Motores","s":"Atividade, inflação, Banco Central, contas públicas, dívida e setor externo.","h":"motor-economia.html"},{"t":"Congresso (motor)","g":"Motores","s":"Blocos, votação, relatores, presidentes das Casas, ministérios e negociação.","h":"motor-congresso.html"},{"t":"Propostas","g":"Motores","s":"Tramitação de cada proposta, da entrada na pauta até a execução.","h":"motor-propostas.html"},{"t":"Política","g":"Motores","s":"Opinião pública e aprovação do presidente, com a lua de mel no início do mandato.","h":"motor-politica.html"},{"t":"Regiões","g":"Motores","s":"As 27 UFs recebem uma distribuição do agregado nacional, sem motor macroeconômico próprio.","h":"motor-regioes.html"},{"t":"Políticas públicas (motor)","g":"Motores","s":"Catálogo de políticas, diretrizes ministeriais e carteira de projetos.","h":"motor-politicas.html"},{"t":"Sociedade (motor)","g":"Motores","s":"Setores, quintis de renda, renda real, salário mínimo, desemprego e pobreza.","h":"motor-sociedade.html"},{"t":"Eventos (motor)","g":"Motores","s":"Gatilhos, escolhas, cadeias com atraso e marcas que guardam a memória da campanha.","h":"motor-eventos.html"},{"t":"Notícias (motor)","g":"Motores","s":"Manchetes geradas pelo motor, cada uma com a causa que a originou.","h":"motor-noticias.html"},{"t":"Eleições (motor)","g":"Motores","s":"Pleitos, mandatos, memória curta do eleitor e vedações do ano eleitoral.","h":"motor-eleicoes.html"},{"t":"Relatório","g":"Motores","s":"Relatório mensal com “Por que mudou?”, mesa de despacho e relatório de legado.","h":"motor-relatorio.html"},{"t":"Simulação","g":"Motores","s":"Estratégias-robô e campanhas automáticas, usadas para calibrar e testar.","h":"motor-simulacao.html"},{"t":"Painel (a mesa do jogo)","g":"Telas","s":"A casa do jogo: o globo do Brasil com HUD, trilhos de folhas, doca de subtelas e o botão Encerrar o mês.","h":"tela-painel.html"},{"t":"Gabinete (subtela)","g":"Telas","s":"A agenda presidencial do mês: decisões com mesa de despacho, políticas públicas, marcas de governo e ações de agenda.","h":"tela-gabinete.html"},{"t":"Economia (subtela)","g":"Telas","s":"Painel com todos os indicadores econômicos, projeção anual e ícones que levam às outras áreas, como os impostos.","h":"tela-economia.html"},{"t":"Congresso (subtela)","g":"Telas","s":"Hemiciclo, Mesas e pauta, propostas em tramitação, blocos, ministérios e negociações.","h":"tela-congresso.html"},{"t":"Notícias (subtela)","g":"Telas","s":"Mesa 3D com o jornal do mês e o notebook das redes sociais.","h":"tela-noticias.html"},{"t":"Legado (subtela)","g":"Telas","s":"Relatório de fim de campanha: o que o governo deixou ao país.","h":"tela-legado.html"},{"t":"Novo jogo","g":"Telas","s":"Criação de uma campanha a partir de um cenário e de uma dificuldade.","h":"tela-novo-jogo.html"},{"t":"Carregar jogo","g":"Telas","s":"Lista as partidas salvas e retoma uma delas.","h":"tela-carregar-jogo.html"},{"t":"Configurações","g":"Telas","s":"Preferências do jogo, como o tamanho do texto.","h":"tela-configuracoes.html"},{"t":"Vitrine de design","g":"Telas","s":"Tela de desenvolvimento com os componentes base: cards, indicadores, alertas e botões.","h":"tela-vitrine.html"},{"t":"Campanha de 4 a 8 anos","g":"Sistemas de jogo","s":"A partida dura o número de meses definido pelo cenário (até 96 meses com reeleição no padrão atual), com decisões mensais e um fim por eleição, mandato ou derrota.","h":"sis-campanha.html"},{"t":"Economia (sistema)","g":"Sistemas de jogo","s":"Como a economia aparece para o jogador: indicadores, causas e as escolhas que a movem.","h":"sis-economia.html"},{"t":"Impostos","g":"Sistemas de jogo","s":"Os 14 tributos-tronco, cada um aberto em alavancas que o jogador mexe, alterados por despacho na Agenda: decreto ou projeto de lei, em quatro fases. Inclui a pauta de estados e municípios, os incentivos e as receitas não tributárias.","h":"sis-impostos.html"},{"t":"Mudanças grandes","g":"Sistemas de jogo","s":"Jogadas de grande porte: mudanças constitucionais, destino do dinheiro, indicações ao PGR e ao STF, combate à corrupção, incentivos e os índices demográficos do país, com opções para o número de cidades e de nascimentos.","h":"sis-mudancas-grandes.html"},{"t":"Federação","g":"Sistemas de jogo","s":"As decisões federais têm efeitos diferentes em cada um dos 27 estados.","h":"sis-federacao.html"},{"t":"Políticas públicas (jogador)","g":"Sistemas de jogo","s":"Você escolhe políticas de rotina, diretrizes e projetos, e eles aparecem no legado.","h":"sis-politicas.html"},{"t":"Sociedade (jogador)","g":"Sistemas de jogo","s":"Como as decisões chegam às pessoas: renda por quintil, salário mínimo, desemprego e pobreza.","h":"sis-sociedade.html"},{"t":"Eventos e personagens","g":"Sistemas de jogo","s":"Eventos com escolhas, cadeias como CPI, TCU e impeachment, e prestígio de personagens.","h":"sis-eventos.html"},{"t":"Notícias (jogador)","g":"Sistemas de jogo","s":"Manchetes com tom e causa, no jornal do mês e nas redes sociais do notebook.","h":"sis-noticias.html"},{"t":"Eleições e mandatos","g":"Sistemas de jogo","s":"Ao fim do mandato há eleição; a reeleição depende do cenário.","h":"sis-eleicoes.html"},{"t":"Globo 3D","g":"Sistemas de jogo","s":"Mapa interativo do Brasil: relevo, zoom até os estados e mapa de calor por indicador.","h":"sis-globo.html"},{"t":"Estrutura do Congresso","g":"Congresso","s":"O Poder Legislativo é bicameral: duas Casas, com papéis diferentes.","h":"cong-estrutura.html"},{"t":"Tramitação de uma lei","g":"Congresso","s":"Quando você envia uma proposta pelo Gabinete, ela passa por etapas realistas.","h":"cong-tramitacao.html"},{"t":"Como os blocos votam","g":"Congresso","s":"Cada bloco calcula uma pontuação de apoio para cada proposta. Ela soma vários fatores.","h":"cong-apoio.html"},{"t":"Ferramentas de negociação","g":"Congresso","s":"Na subtela Congresso, você tem ações diretas para virar votos. Cada ação gasta uma das suas ações de agenda mensais.","h":"cong-arsenal.html"},{"t":"Conexões com o resto do jogo","g":"Congresso","s":"O Congresso não fica isolado: o que acontece nele mexe na economia, na popularidade e no impeachment.","h":"cong-conexoes.html"},{"t":"Modo Casual","g":"Congresso","s":"A dificuldade Casual tem proteções para quem está aprendendo. As regras abaixo foram conferidas no código.","h":"cong-casual.html"},{"t":"Resumo para guardar","g":"Congresso","s":"Os elementos mais importantes do Congresso e o que acontece se você ignorá-los.","h":"cong-resumo.html"},{"t":"Estado da interface","g":"Camadas técnicas","s":"Store Zustand que liga a interface ao motor e guarda a partida atual.","h":"tec-estado.html"},{"t":"Banco de dados","g":"Camadas técnicas","s":"SQLite com migrações versionadas: o estado e o histórico da partida ficam aqui.","h":"tec-banco.html"},{"t":"Globo (camada técnica)","g":"Camadas técnicas","s":"Renderização 3D com three.js e React Three Fiber, com quadtree, LOD e cache.","h":"tec-globo.html"},{"t":"Dados de conteúdo","g":"Camadas técnicas","s":"Cenários, políticas e eventos em JSON, validados com Zod.","h":"tec-dados.html"},{"t":"Linguagens","g":"Tecnologias","s":"Cinco linguagens, cada uma numa parte diferente: TypeScript no app e no motor, Python só na preparação de dados, GLSL nos shaders do globo, JSON para o conteúdo e HTML, CSS e JavaScript para este site.","h":"stk-linguagens.html"},{"t":"Expo e Expo Router","g":"Tecnologias","s":"Expo é a plataforma que roda, empacota e gera a versão web do app. Expo Router organiza as telas como arquivos dentro de src/app/.","h":"stk-expo.html"},{"t":"React e React Native","g":"Tecnologias","s":"React descreve a interface como componentes. React Native transforma esses componentes em telas nativas no Android e no iPhone. react-native-web leva o mesmo código ao navegador.","h":"stk-react.html"},{"t":"Zustand e Zod","g":"Tecnologias","s":"Zustand guarda o estado que a interface usa. Zod valida o conteúdo do jogo antes de ele entrar na partida.","h":"stk-estado.html"},{"t":"Bibliotecas de interface, gesto e animação","g":"Tecnologias","s":"Bibliotecas que dão comportamento às telas: animação, gestos, área segura do aparelho, ícones e imagens.","h":"stk-componentes.html"},{"t":"SQLite: app e testes","g":"Tecnologias","s":"SQLite guarda a partida no aparelho. Nos testes, a mesma base roda pelo módulo SQLite embutido no Node, sem precisar do aparelho.","h":"stk-banco.html"},{"t":"Globo 3D: three, R3F e shaders","g":"Tecnologias","s":"O globo usa three.js, biblioteca de gráficos 3D sobre WebGL, ligada ao React pelo @react-three/fiber. No aparelho, o WebGL vem do expo-gl.","h":"stk-globo.html"},{"t":"Pipeline de dados (Python)","g":"Tecnologias","s":"Um pipeline em Python baixa dados públicos e transforma o resultado nos arquivos que o globo carrega. Roda na máquina de desenvolvimento, nunca no aparelho.","h":"stk-dados.html"},{"t":"Testes e simulações (Vitest)","g":"Tecnologias","s":"Vitest roda os testes do motor, do banco e da lógica de tela. As simulações rodam o motor com estratégias-robô e muitas sementes, para testar o equilíbrio do jogo.","h":"stk-testes.html"},{"t":"Qualidade: TypeScript, ESLint e Prettier","g":"Tecnologias","s":"Três ferramentas checam o código antes de ele entrar: o compilador de tipos, o ESLint e o Prettier. O comando npm run check roda as três e os testes.","h":"stk-qualidade.html"},{"t":"Integração contínua (GitHub Actions)","g":"Tecnologias","s":"A cada push na main e a cada pull request, o GitHub roda a mesma checagem do npm run check em um servidor limpo, com Node 22.","h":"stk-ci.html"},{"t":"npm, Metro e app.json","g":"Tecnologias","s":"npm instala e fixa as dependências. Metro empacota o app. app.json define o que o Expo gera. Os scripts do package.json reúnem os comandos do dia a dia.","h":"stk-ferramentas.html"},{"t":"Este site de documentação","g":"Tecnologias","s":"Páginas de HTML, CSS e JavaScript puros, geradas por um script em Node. Não tem framework nem dependências externas e funciona sem internet.","h":"stk-site.html"},{"t":"Regras que as tecnologias respeitam","g":"Tecnologias","s":"Algumas escolhas técnicas valem para o projeto inteiro. Elas explicam por que o motor é separado e por que o jogo funciona offline.","h":"stk-regras.html"}]</script>
 </body>
 </html>

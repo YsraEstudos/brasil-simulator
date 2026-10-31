@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impostos · Brasil Simulator</title>
+<meta name="description" content="Os 14 tributos-tronco, cada um aberto em alavancas que o jogador mexe, alterados por despacho na Agenda: decreto ou projeto de lei, em quatro fases. Inclui a pauta de estados e municípios, os incentivos e as receitas não tributárias.">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<a class="pular" href="#conteudo">Ir para o conteúdo</a>
+<header class="topo">
+  <button class="menu-btn" type="button" data-menu aria-label="Abrir índice" aria-controls="indice-lateral" aria-expanded="false">☰</button>
+  <a class="marca" href="../EXPLICACOES.html">Brasil Simulator <span>· Documentação</span></a>
+  <div class="busca-wrap"><input class="busca" type="search" placeholder="Buscar motor, tela, sistema… (tecla /)" aria-label="Buscar no site" data-busca autocomplete="off"><div class="resultados" data-resultados hidden></div></div>
+</header>
+<div class="layout">
+  <aside class="indice" id="indice-lateral" aria-label="Índice do site">
+    <a class="inicio-link" href="../EXPLICACOES.html">Início</a>
+    <details><summary><a href="motores.html">Motores</a><span class="contagem">13</span></summary><ul><li><a href="motor-orquestra.html">Orquestração do mês</a></li><li><a href="motor-economia.html">Economia<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-congresso.html">Congresso (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-propostas.html">Propostas<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-politica.html">Política<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-regioes.html">Regiões<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-politicas.html">Políticas públicas (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-sociedade.html">Sociedade (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-eventos.html">Eventos (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-noticias.html">Notícias (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-eleicoes.html">Eleições (motor)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-relatorio.html">Relatório<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="motor-simulacao.html">Simulação<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
+<details><summary><a href="telas.html">Telas</a><span class="contagem">10</span></summary><ul><li><a href="tela-painel.html">Painel (a mesa do jogo)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-gabinete.html">Gabinete (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-economia.html">Economia (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-congresso.html">Congresso (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-noticias.html">Notícias (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-legado.html">Legado (subtela)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-novo-jogo.html">Novo jogo<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-carregar-jogo.html">Carregar jogo<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-configuracoes.html">Configurações<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tela-vitrine.html">Vitrine de design</a></li></ul></details>
+<details open><summary><a href="sistemas.html">Sistemas de jogo</a><span class="contagem">11</span></summary><ul><li><a href="sis-campanha.html">Campanha de 4 a 8 anos<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-economia.html">Economia (sistema)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-impostos.html" aria-current="page">Impostos<svg class="marca-nao-implementado" viewBox="0 0 24 24" role="img" aria-label="Não implementado"><title>Não implementado</title><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></a></li><li><a href="sis-mudancas-grandes.html">Mudanças grandes<svg class="marca-nao-implementado" viewBox="0 0 24 24" role="img" aria-label="Não implementado"><title>Não implementado</title><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></a></li><li><a href="sis-federacao.html">Federação<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-politicas.html">Políticas públicas (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-sociedade.html">Sociedade (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-eventos.html">Eventos e personagens<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-noticias.html">Notícias (jogador)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-eleicoes.html">Eleições e mandatos<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="sis-globo.html">Globo 3D<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
+<details><summary><a href="congresso.html">Congresso</a><span class="contagem">7</span></summary><ul><li><a href="cong-estrutura.html">Estrutura do Congresso</a></li><li><a href="cong-tramitacao.html">Tramitação de uma lei</a></li><li><a href="cong-apoio.html">Como os blocos votam</a></li><li><a href="cong-arsenal.html">Ferramentas de negociação</a></li><li><a href="cong-conexoes.html">Conexões com o resto do jogo</a></li><li><a href="cong-casual.html">Modo Casual</a></li><li><a href="cong-resumo.html">Resumo para guardar</a></li></ul></details>
+<details><summary><a href="tecnico.html">Camadas técnicas</a><span class="contagem">4</span></summary><ul><li><a href="tec-estado.html">Estado da interface<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tec-banco.html">Banco de dados<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tec-globo.html">Globo (camada técnica)<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li><li><a href="tec-dados.html">Dados de conteúdo<svg class="marca-rascunho" viewBox="0 0 24 24" role="img" aria-label="Rascunho"><title>Rascunho</title><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a></li></ul></details>
+<details><summary><a href="tecnologias.html">Tecnologias</a><span class="contagem">14</span></summary><ul><li><a href="stk-linguagens.html">Linguagens</a></li><li><a href="stk-expo.html">Expo e Expo Router</a></li><li><a href="stk-react.html">React e React Native</a></li><li><a href="stk-estado.html">Zustand e Zod</a></li><li><a href="stk-componentes.html">Bibliotecas de interface, gesto e animação</a></li><li><a href="stk-banco.html">SQLite: app e testes</a></li><li><a href="stk-globo.html">Globo 3D: three, R3F e shaders</a></li><li><a href="stk-dados.html">Pipeline de dados (Python)</a></li><li><a href="stk-testes.html">Testes e simulações (Vitest)</a></li><li><a href="stk-qualidade.html">Qualidade: TypeScript, ESLint e Prettier</a></li><li><a href="stk-ci.html">Integração contínua (GitHub Actions)</a></li><li><a href="stk-ferramentas.html">npm, Metro e app.json</a></li><li><a href="stk-site.html">Este site de documentação</a></li><li><a href="stk-regras.html">Regras que as tecnologias respeitam</a></li></ul></details>
+<details><summary><a href="fases.html">Fases do roadmap</a><span class="contagem"></span></summary></details>
+<details><summary><a href="features.html">Features futuras</a><span class="contagem"></span></summary></details>
+  </aside>
+  <main class="conteudo" id="conteudo">
+    
+  <nav class="migalhas" aria-label="Caminho"><a href="../EXPLICACOES.html">Início</a><span class="sep" aria-hidden="true">/</span><a href="sistemas.html">Sistemas de jogo</a><span class="sep" aria-hidden="true">/</span><span aria-current="page">Impostos</span></nav>
+  <p class="eyebrow">Sistemas de jogo</p>
+  <h1>Impostos<svg class="marca-nao-implementado" viewBox="0 0 24 24" role="img" aria-label="Não implementado"><title>Não implementado</title><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.9 7.9 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.9 7.9 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></h1>
+  <p class="resumo">Os 14 tributos-tronco, cada um aberto em alavancas que o jogador mexe, alterados por despacho na Agenda: decreto ou projeto de lei, em quatro fases. Inclui a pauta de estados e municípios, os incentivos e as receitas não tributárias.</p>
+  <div class="linha-meta"><span class="pill nao">Não implementado</span><span>4 caminhos de código</span></div>
+  <section class="bloco"><h2>Como funciona</h2><ul class="bullets"><li>Os 14 tributos-tronco formam o regime tributário vigente, guardado no estado da partida. Cada um se abre em 37 alavancas, e cada alavanca tem sua janela de detalhe. Estados e municípios entram como pauta, e incentivos e receitas não tributárias completam o caixa.</li><li>Nenhuma mudança entra na hora: vira despacho na Agenda do mês, como decreto ou projeto de lei.</li><li>Cinco engrenagens ligam cada imposto ao resto do jogo: <span class="com-dica" tabindex="0"><span class="destaque-dica">arcabouço</span><span class="dica" role="tooltip"><span class="dica-linha">Regra real: o limite anual de despesas primárias é fixado por lei e só pode crescer, em termos reais, 70% do crescimento real da receita primária dos 12 meses anteriores (cai para 50% se a meta de resultado primário foi descumprida), sempre dentro de uma banda entre 0,6% e 2,5% acima da inflação.</span><span class="dica-linha">No motor (fiscal.ts): todo janeiro, annualReview() roda a revisão do limite. Crescimento real da receita = (1 + PIB) × receita 12m ÷ receita 12m na revisão − 1. Limite real = clamp(share × crescimento real da receita; 0,006; 0,025).</span><span class="dica-linha">Se a receita real cresceu forte em 2027, o teto de janeiro de 2028 sobe até +2,5% real. Se a receita caiu ou estagnou, o crescimento trava no piso de +0,6% real.</span><span class="dica-linha">Dilema: despesas obrigatórias (previdência, pessoal, pisos de saúde e educação) crescem sozinhas pela demografia e pela inflação. Com teto de só 0,6%, as discricionárias são espremidas (obras, bolsas, ministérios) até disparar o evento de paralisação da máquina pública.</span><span class="dica-linha">Decisão do jogador: você sobe imposto em 2027 não só para fechar o superávit do mês, mas para ampliar o teto de 2028 e 2029 e financiar seus projetos sem quebrar o limite fiscal.</span><span class="dica-linha">Pergunta da mesa: este aumento de receita basta para o teto crescer no próximo janeiro e liberar minhas obras?</span></span></span>, <span class="com-dica" tabindex="0"><span class="destaque-dica">federação</span><span class="dica" role="tooltip"><span class="dica-linha">Nem todo real que entra vai para o seu bolso; e quando você dá desconto, metade da conta cai no colo dos governadores.</span><span class="dica-linha">Regra real (CF, art. 159): do que a União arrecada com IRPF, IRPJ e IPI, 49% vai para fundos constitucionais: 21,5% para o FPE (sustenta Norte e Nordeste), 25,5% para o FPM e 3% para os fundos regionais (FCO, FNO, FNE). CSLL, CBS, PIS/Cofins, IOF e contribuições previdenciárias ficam 100% no caixa federal.</span><span class="dica-linha">No motor (fiscal.ts e regions.ts): a receita líquida da União usa transferShares, que é 0,43 na renda e 0 nas contribuições. Cada UF tem um indicador de dependência de repasses: Maranhão, Piauí, Bahia e Amapá têm orçamentos fortemente presos ao FPE.</span><span class="dica-linha">O truque da Fazenda: a CSLL fica 100% em Brasília, enquanto o IRPJ perde metade do caminho para governadores e prefeitos.</span><span class="dica-linha">A armadilha da desoneração do IR: ampliar a isenção do IRPF para R$ 5.000 faz 49% da perda sair do caixa de estados e municípios. O eleitor comemora e a aprovação sobe, mas os 27 governadores reagem: a relação com o Planalto (governorRelation) despenca e eles acionam o STF exigindo compensação federal.</span><span class="dica-linha">Pergunta da mesa: quanto desse imposto fica no meu caixa (União) e quanto vaza para os governadores (FPE)?</span></span></span>, <span class="com-dica" tabindex="0"><span class="destaque-dica">anterioridade</span><span class="dica" role="tooltip"><span class="dica-linha">Regra real (CF, art. 150, III): IRPF, IRPJ, tributação de dividendos e IGF só são cobrados no exercício seguinte àquele em que a lei foi publicada. É a anterioridade anual, a partir de 1º de janeiro.</span><span class="dica-linha">No motor (proposals.ts): ao sancionar uma política, scheduleImpulses() agenda os impulsos. Com anterioridade anual, os impulsos de receita são adiados para o primeiro mês do ano seguinte (múltiplo de 12).</span><span class="dica-linha">Dilema: se a sanção ocorrer em janeiro do ano seguinte, a anterioridade empurra a vigência para o janeiro subsequente, e você perde 12 meses inteiros de arrecadação.</span><span class="dica-linha">A corrida contra o tempo: entre outubro e dezembro, os líderes partidários sabem do desespero do governo para aprovar projetos tributários antes do recesso, e cobram um pedágio em emendas e cargos bem mais alto.</span><span class="dica-linha">Pergunta da mesa: dá tempo de aprovar antes do recesso de dezembro para valer no ano que vem, ou vou perder 12 meses?</span></span></span>, <span class="com-dica" tabindex="0"><span class="destaque-dica">preços</span><span class="dica" role="tooltip"><span class="dica-linha">Regra real: tributos sobre renda e patrimônio (IRPF, dividendos, lucros) são diferentes dos que incidem sobre produção e preços (CBS, CIDE-combustíveis, Imposto de Importação, Imposto Seletivo). Ao subir a alíquota da CBS ou a tarifa sobre combustíveis e importados, as empresas repassam o imposto ao preço final. Isso gera um choque de oferta (IPCA sobe), e o Banco Central, vendo a inflação furar o teto da meta, eleva a Selic.</span><span class="dica-linha">No motor (monetary.ts e demand.ts): o tributo sobre consumo gera dois vetores opostos. Demanda: tira renda disponível das famílias e esfria o hiato do produto (Δh &lt; 0). Preços: aplica um impulso de choque.inflacao proporcional à variação da alíquota média dos bens tributados.</span><span class="dica-linha">No Copom, a Selic alvo = r neutro + π esperada + α(π 12 meses − π meta) + β·h. Se o repasse empurrar a inflação de 12 meses para cima, o Banco Central sobe a Selic, e cada ponto a mais na Selic encarece a dívida em bilhões de reais por ano.</span><span class="dica-linha">Dilema: subir pesado a CBS, a CIDE ou as tarifas de importação melhora a receita primária, mas compra uma alta de juros. A despesa financeira explode, o investimento desacelera e o desemprego sobe. O ganho do caixa primário sai pela conta de juros.</span><span class="dica-linha">Pergunta da mesa: se eu subir este imposto sobre consumo, quanta inflação imediata ele gera e quanto isso força a Selic a subir?</span></span></span> e <span class="com-dica" tabindex="0"><span class="destaque-dica">defasagem da tabela do IR</span><span class="dica" role="tooltip"><span class="dica-linha">Regra real: a tabela progressiva do IRPF tem valores fixados em reais nominais (isento até R$ 2.826,65; alíquota máxima acima de R$ 4.664,68). Com a inflação, os salários nominais sobem. Se o governo não reajustar a tabela, quem era isento passa a pagar imposto, e quem estava numa faixa intermediária vai para a alíquota de 27,5%, mesmo com o mesmo poder de compra. É o arrasto fiscal (bracket creep).</span><span class="dica-linha">No motor (fiscal.ts e society.ts): no encerramento de cada ano, o motor avalia o regime da tabela. Tabela congelada: o ganho de arrecadação oculto cresce com a inflação de 12 meses sobre a massa salarial, e a renda real dos quintis Q2, Q3 e Q4 cai.</span><span class="dica-linha">Correção integral pela inflação: protege o poder de compra de Q2 a Q4 e preserva a aprovação, mas gera uma renúncia fiscal contínua que reduz o ritmo de crescimento da receita.</span><span class="dica-linha">Dilema: deixar a tabela congelada dá dinheiro fácil e ajuda a cumprir a meta do primário sem negociar com o Congresso. Mas a classe média sente o desconto maior no holerite, perde renda disponível e cobra o presidente nas urnas e nas pesquisas.</span><span class="dica-linha">Pergunta da mesa: vale colher a arrecadação invisível da inflação na tabela do IR ao custo de irritar a classe média?</span></span></span>.</li><li>Três mecânicas dão forma às votações: pacote compensado, desidratação na relatoria e simulador de arrecadação.</li><li>Implementação em quatro fases, de T1 a T4, descritas abaixo.</li></ul></section>
+  <section class="bloco corpo"><h3>Por que um código tributário vivo</h3>
+<p>Hoje, depois que o jogador envia <code>irpf_tabela</code> uma vez no mandato, o assunto Imposto de Renda morre pelo resto do jogo. No novo desenho, o estado da partida guarda o <strong>regime tributário vigente</strong> (<code>taxRegime</code>), com os 14 tributos-tronco. Cada imposto tem uma alíquota atual que pode ser mudada ao longo do jogo.</p>
+
+<h3>Fases de implementação</h3>
+<p>O sistema entra em quatro fases. Cada uma funciona sozinha e prepara a seguinte.</p>
+
+<div class="fase">
+  <span class="fase-tag">Fase T1 · leitura</span>
+  <h4>Painel tributário (Receita e Fazenda)</h4>
+  <p>Mostra a fotografia do país: os 14 tributos-tronco, com a alíquota atual de cada alavanca, arrecadação em R$ bi por ano e em % do PIB, e a divisão entre União e estados. Nada muda ainda.</p>
+</div>
+<div class="fase">
+  <span class="fase-tag">Fase T2 · decisão</span>
+  <h4>Despacho tributário na Agenda</h4>
+  <p>Escolher um novo patamar numa alavanca não muda na hora. Vira um <strong>despacho</strong> na Agenda do mês, e o rito depende do veículo da alavanca:</p>
+  <ul class="bullets">
+    <li><strong>Decreto presidencial, imediato</strong> (IOF, Imposto de Importação, CIDE, IPI e Imposto de Exportação): não passa pelo Congresso.</li>
+    <li><strong>PL ou PLP</strong> (IRPF, dividendos, IRPJ e CSLL, folha, CBS, Seletivo, gastos tributários, IGF e ITR): passa pela Câmara e pelo Senado, com relator, emendas, desidratação e veto.</li>
+    <li><strong>Resolução do Senado</strong> (IBS): a alíquota de referência passa só pelo Senado.</li>
+    <li><strong>Ato executivo ou MP</strong> (bloco +15): entra na hora, sem votação.</li>
+  </ul>
+</div>
+<div class="fase">
+  <span class="fase-tag">Fase T3 · engrenagens</span>
+  <h4>Cinco engrenagens que ligam o imposto ao resto do jogo</h4>
+  <p>Arcabouço, federação, anterioridade, canal de preços e defasagem da tabela do IR. Detalhes abaixo.</p>
+</div>
+<div class="fase">
+  <span class="fase-tag">Fase T4 · mecânicas</span>
+  <h4>Pacote compensado, desidratação e simulador</h4>
+  <p>As três mecânicas de Brasília e o simulador de arrecadação, com a curva de Laffer visível e o mapa de calor por UF.</p>
+</div>
+
+<div class="callout warn">
+  <strong>PROVISÓRIO</strong>
+  Os valores de exemplo (R$ bi por ano, alíquotas como a CBS de 8,8%) não são dados oficiais. Serão revisados antes de entrar no motor, com o status marcado no código.
+</div>
+
+<h3>Os 14 tributos-tronco e suas 37 alavancas</h3>
+<p>A tabela tem dois níveis. No primeiro estão os 14 tributos-tronco, mais um bloco extra de receitas extraordinárias e fiscalização. No segundo, cada tributo se abre em <strong>alavancas</strong>: são elas que o jogador mexe de fato, cada uma com rito, efeito e reação próprios. <strong>Toque numa alavanca</strong> para abrir a janela com o detalhe.</p>
+<div class="table-wrap">
+  <table class="summary tabela-alavancas">
+    <thead>
+      <tr><th>#</th><th>Tributo-tronco</th><th>Rito e vigência</th><th>União / Estados</th><th>Alavancas</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td><td>IOF</td><td>Decreto · imediato</td><td>100% União</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-1a">1a · IOF crédito</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-1b">1b · IOF câmbio e remessas</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>2</td><td>Imposto de Importação (II)</td><td>Decreto · imediato</td><td>100% União</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-2a">2a · Tarifa industrial e tecnologia</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-2b">2b · Taxa das blusinhas</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-2c">2c · Tarifa de alimentos e insumos</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>3</td><td>CIDE-Combustíveis</td><td>Decreto · baixa imediata, alta em 90 dias</td><td>71% União / 29% estados</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-3a">3a · Gasolina e etanol</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-3b">3b · Diesel</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>4</td><td>Tabela do IRPF</td><td>PL · 1º de janeiro</td><td>51% União / 49% FPE-FPM</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-4a">4a · Faixa de isenção</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-4b">4b · Topo salarial</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-4c">4c · Deduções de saúde e educação</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>5</td><td>Dividendos e IR mínimo (super-ricos)</td><td>PL · 1º de janeiro</td><td>51% União / 49% FPE-FPM</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-5a">5a · Lucros e dividendos</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-5b">5b · Fim do JCP</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-5c">5c · Fundos exclusivos, offshores e LCI/LCA</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>6</td><td>IRPJ, CSLL e grandes lucros</td><td>CSLL: PL · 90 dias · IRPJ: PL · 1º de janeiro</td><td>CSLL: 100% União · IRPJ: 51% União</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-6a">6a · Alíquota base IRPJ e CSLL</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-6b">6b · Sobretaxa sobre bancos e petroleiras</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>7</td><td>Contribuição sobre a folha e Simples</td><td>PL/PLP · noventena (90 dias)</td><td>100% RGPS / União</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-7a">7a · INSS patronal</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-7b">7b · Desoneração de 17 setores</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-7c">7c · Simples e teto do MEI</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>8</td><td>CBS (consumo federal)</td><td>PLP · noventena (90 dias)</td><td>100% União</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-8a">8a · Alíquota geral (base 8,8%)</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-8b">8b · Cesta básica isenta</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-8c">8c · Cashback para baixa renda</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>9</td><td>Imposto Seletivo ("pecado")</td><td>PL · noventena (90 dias)</td><td>Parcial</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-9a">9a · Apostas online</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-9b">9b · Tabaco, álcool e ultraprocessados</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-9c">9c · Mineração e petróleo</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-9d">9d · Armas e veículos poluentes</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>10</td><td>Gastos tributários (incentivos)</td><td>PLP · noventena (90 dias)</td><td>Parcial</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-10a">10a · Agronegócio</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-10b">10b · Indústria e P&amp;D</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-10c">10c · Serviços, saúde e cultura</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>11</td><td>IPI (industrializados e ZFM)</td><td>Decreto · imediato (baixa) e 90 dias (alta)</td><td>41% União / 59% FPE-FPM-FPEx</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-11a">11a · Proteção da Zona Franca</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-11b">11b · Bens duráveis e linha branca</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>12</td><td>Grandes fortunas (IGF) e ITR rural</td><td>PLP / PL · 1º de janeiro</td><td>IGF: 100% União · ITR: 50% municípios</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-12a">12a · IGF sobre grandes patrimônios</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-12b">12b · ITR sobre terras improdutivas</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>13</td><td>Imposto de Exportação (IE)</td><td>Decreto · imediato</td><td>100% União</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-13a">13a · Retenção sobre grãos, carne e óleo cru</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>14</td><td>IBS (estados e municípios)</td><td>Resolução do Senado · noventena</td><td>0% União (100% estados e municípios)</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-14a">14a · Alíquota de referência e FNDR</button></li>
+        </ul></td>
+      </tr>
+      <tr>
+        <td>+15</td><td>Receita extraordinária e fiscalização</td><td>Ato executivo ou MP · imediato</td><td>100% União / royalties</td>
+        <td><ul class="alavancas">
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-15a">15a · Voto de qualidade no CARF</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-15b">15b · REFIS e litígio zero</button></li>
+          <li><button type="button" class="alavanca" data-alavanca="alavanca-15c">15c · Dividendos extraordinários de estatais</button></li>
+        </ul></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Pauta de estados e municípios</h3>
+<p>Estes tributos não são alavancas do governo federal. O jogador não muda a alíquota: eles aparecem como pauta de governadores e prefeitos, que pode ser negociada (convênio, apoio ou pedido de compensação).</p>
+<ul class="bullets">
+  <li><strong>IPVA</strong> (veículos, estadual): pouco impacto na economia, mas afeta a imagem do governador.</li>
+  <li><strong>ITCMD</strong> (herança e doação, estadual): tema de disputa com as bancadas de maior renda.</li>
+  <li><strong>IPTU</strong> (imóveis, municipal): sensível nas grandes cidades, como São Paulo e Rio de Janeiro, e cobrado pelos prefeitos.</li>
+</ul>
+
+<h3>Incentivos fiscais (gasto tributário)</h3>
+<p>Incentivo não é imposto novo: é uma renúncia de tributo que já existe. Entra na alavanca 10 (gastos tributários) e segue a LRF: criar uma renúncia exige compensação. Exemplos: Zona Franca de Manaus (IPI e IE reduzidos para a região), regime do Simples (alíquota menor para pequenas empresas) e crédito setorial (desoneração de uma indústria).</p>
+
+<h3>Receitas não tributárias</h3>
+<p>Entram no caixa sem imposto e sem votação direta no Congresso: são contratos e decisões do governo.</p>
+<ul class="bullets">
+  <li><strong>Concessões e leilões</strong> (rodovias, aeroportos, petróleo): receita única e grande, que depende do momento do mercado.</li>
+  <li><strong>Dividendos de estatais</strong>: lucro das empresas públicas que vai para o caixa da União (alavanca 15c).</li>
+  <li><strong>Royalties e participações especiais</strong> (petróleo e mineração): já existem no código como grupo próprio de receita, com repasse de 50%, e têm peso regional forte.</li>
+</ul>
+
+<h3>As 5 engrenagens</h3>
+<p>Para que mexer em imposto não seja só “mais dinheiro contra menos popularidade”, cada tributo se liga a engrenagens que já existem, ou estão semiprontas, no motor.</p>
+<div class="grid-2">
+  <div class="card dica-hover" tabindex="0"><span class="meta">Arcabouço</span><h4>Por que arrecadar</h4>
+    <div class="dica" role="tooltip">
+      <p>No Brasil de 2027, o governo não pode gastar de imediato o que arrecada a mais. O limite anual de despesas primárias é fixado por lei e só cresce em termos reais 70% do crescimento real da receita primária dos 12 meses anteriores (cai para 50% se a meta de resultado primário foi descumprida), sempre dentro de uma banda entre 0,6% e 2,5% acima da inflação.</p>
+      <p><strong>No motor (<code>fiscal.ts</code>):</strong> todo janeiro, <code>annualReview()</code> recalcula o limite.</p>
+      <p><code>crescimento real da receita = (1 + PIB) × receita12m / receita12mNaRevisão − 1</code></p>
+      <p><code>limitRealGrowth = clamp(share × crescimento real da receita, 0,006, 0,025)</code></p>
+      <p>Se a receita real cresceu forte em 2027, o teto de despesas de janeiro de 2028 sobe até +2,5% real. Se a receita caiu ou estagnou, o crescimento trava no piso de +0,6% real.</p>
+      <p><strong>O dilema:</strong> despesas obrigatórias (previdência, pessoal, pisos de saúde e educação) crescem sozinhas com a demografia e a inflação. Com teto de só 0,6%, as discricionárias são espremidas (obras, bolsas, ministérios) até disparar o evento de paralisação da máquina pública.</p>
+      <p><strong>A decisão do jogador:</strong> você sobe imposto em 2027 não só para fechar o superávit do mês, mas para ampliar o teto de 2028 e 2029 e financiar seus projetos sem quebrar o limite fiscal.</p>
+    </div><p>Em <code>annualReview</code> (<code>src/engine/economy/fiscal.ts</code>), o teto de gastos cresce em janeiro: 70% do crescimento real da receita, ou 50% se a meta não foi cumprida. Arrecadar mais em um ano é o que abre espaço para obras e programas no seguinte.</p></div>
+  <div class="card dica-hover" tabindex="0"><span class="meta">Federação</span><h4>IR contra contribuições</h4>
+    <div class="dica" role="tooltip">
+      <p><em>Nem todo real que entra vai para o seu bolso; e quando você dá desconto, metade da conta cai no colo dos governadores.</em></p>
+      <p><strong>A regra real (CF, art. 159).</strong> Do que a União arrecada com IRPF, IRPJ e IPI, 49% não fica com o Presidente. Vai para os fundos constitucionais: 21,5% para o FPE (sustenta Norte e Nordeste), 25,5% para o FPM (municípios) e 3% para os fundos regionais (FCO, FNO, FNE). CSLL, CBS, PIS/Cofins, IOF e contribuições previdenciárias ficam 100% no caixa federal.</p>
+      <p><strong>No motor (<code>fiscal.ts</code> e <code>regions.ts</code>).</strong> A receita líquida da União usa <code>transferShares</code>:</p>
+      <p><code>Receita líquida da União = soma de Carga_g × (1 − transferShare_g)</code></p>
+      <p><code>transferShare</code> vale 0,43 na renda (IR) e 0 nas contribuições (consumo e folha). Em <code>regions.ts</code>, cada UF tem um indicador de dependência de repasses: Maranhão, Piauí, Bahia e Amapá têm orçamentos muito presos ao FPE.</p>
+      <p><strong>O truque da Fazenda.</strong> Presidentes preferem subir a CSLL ou a CBS a subir o IRPJ: a CSLL fica 100% em Brasília, enquanto o IRPJ perde metade do caminho para governadores e prefeitos.</p>
+      <p><strong>A armadilha da desoneração do IR.</strong> Se você ampliar a isenção do IRPF para R$ 5.000 para ganhar votos, 49% da perda sai do caixa de estados e municípios. O eleitor comemora e a aprovação sobe, mas os 27 governadores reagem: a relação com o Planalto (<code>governorRelation</code>) despenca e eles acionam o STF exigindo compensação federal.</p>
+    </div><p>IRPF e IRPJ: 49% vai para FPE e FPM. CSLL, CBS e IOF ficam 100% com a União. Hoje, <code>regions.ts</code> dá bônus ao eleitor da UF e ao governador pela desoneração do IR. Na prática, a isenção agrada o eleitor, mas tira do FPE do governador. Os dois efeitos precisam ser separados.</p></div>
+  <div class="card"><span class="meta">Anterioridade</span><h4>A corrida de dezembro</h4><p>IRPF, IRPJ e Dividendos só valem em janeiro se forem aprovados e sancionados até dezembro (<code>proposals.ts</code>). Se a votação escorregar para janeiro, perde-se um ano inteiro de arrecadação. Em outubro e novembro, os líderes do Centrão sabem que há pressa.</p></div>
+  <div class="card"><span class="meta">Preços</span><h4>Do imposto indireto ao Copom</h4><p>Subir CBS, CIDE ou tarifas de importação gera repasse imediato ao IPCA, um choque de custo. Se a inflação estiver perto do teto, o próprio aumento de imposto faz o Banco Central subir a Selic, e a conta de juros da dívida cresce.</p></div>
+  <div class="card"><span class="meta">Defasagem</span><h4>O imposto inflacionário</h4><p>Se o jogador não corrige a tabela do IRPF em janeiro, a inflação empurra trabalhadores para faixas mais altas. A União ganha receita sem votar nada, mas perde aprovação nos quintis Q2 e Q3 (<code>society.ts</code>) e enfrenta pressão sindical.</p></div>
+</div>
+
+<h3>As 3 mecânicas de Brasília</h3>
+<div class="grid-2">
+  <div class="card"><span class="meta">Mecânica A</span><h4>Pacote compensado (LRF, art. 14)</h4><p>Reduzir imposto exige compensação. Enviar sem compensação dá ganho político rápido, mas derruba a credibilidade, arrisca suspensão no STF e gera alerta do TCU. Com medida compensatória no mesmo projeto (ex.: dividendos a 15%, ou corte de gastos tributários), o projeto fica blindado na LRF, mas as duas partes entram na mesma votação.</p></div>
+  <div class="card"><span class="meta">Mecânica B</span><h4>Desidratação na relatoria</h4><p>O Congresso pode aprovar um projeto pela metade. Exemplo: isenção do IRPF (−R$ 35 bi) junto com dividendos (+R$ 35 bi). Sem articulação na Câmara, os deputados aprovam a isenção e cortam a compensação pela metade (R$ 15 bi), ou penduram um jabuti. Na sanção, você engole o rombo ou veta o trecho alterado.</p></div>
+  <div class="card"><span class="meta">Mecânica C</span><h4>Simulador e curva de Laffer visível</h4><p>Antes de despachar, o painel mostra em tempo real a arrecadação bruta contra a perda por sonegação e elisão (<code>lossRate</code>, a curva tanh de <code>fiscal.ts</code>), a divisão entre União, FPE e FPM e os mínimos de saúde e educação. Tocar num tributo colore as 27 UFs e mostra quem ganha e quem perde.</p></div>
+</div>
+
+<!-- Conteúdo das janelas de alavanca. Cada <template> é aberto pelo botão com o mesmo id em data-alavanca. -->
+<template id="alavanca-1a">
+  <p class="janela-meta">1 · IOF · Decreto · imediato · 100% União · ainda não implementado</p>
+  <h4>IOF crédito</h4>
+  <p><strong>Em uma frase:</strong> é o imposto pago quando alguém pega empréstimo ou financia algo. Se o governo sobe o imposto, o crédito fica mais caro. Se desce, fica mais barato. Você mexe nele com uma caneta, sem o Congresso.</p>
+
+  <h5 class="sec-azul">1. O que você faz</h5>
+  <p>Na Agenda do mês, você escolhe uma nova alíquota para o IOF crédito. A alíquota é o percentual cobrado em cada operação. Você só escolhe valores entre <strong>0% e 1,50%</strong>, em passos de 0,05%. O teto é uma regra do jogo, não da lei (veja a seção 5). É um decreto: vale no mesmo mês e custa uma ação da sua agenda.</p>
+
+  <h5 class="sec-verde">2. O que acontece, mês a mês</h5>
+  <div class="etapa etapa-1"><strong>Mês da decisão.</strong> O caixa muda na hora. Se você baixou o imposto, entra menos dinheiro.</div>
+  <div class="etapa etapa-2"><strong>Mês seguinte.</strong> O crédito muda de preço. Os bancos emprestam mais (ou menos), a compra acompanha e a atividade sobe (ou desce) um pouco.</div>
+  <div class="etapa etapa-3"><strong>Meses depois.</strong> O efeito vai diminuindo, porque a economia se acostuma com o novo imposto.</div>
+  <div class="etapa etapa-4"><strong>Janeiro.</strong> O teto de gastos do ano seguinte é recalculado com a receita. Receita menor significa teto que cresce menos.</div>
+
+  <h5 class="sec-laranja">3. As consequências</h5>
+  <p><strong>Se você corta:</strong> o caixa perde → o resultado das contas piora → o crédito fica barato → o consumo sobe → a inflação sobe um pouco → se a inflação encostar no teto, o Banco Central sobe os juros → a dívida fica mais cara. Por um mês, o varejo e quem toma crédito aprovam mais o governo.</p>
+  <p><strong>Se você sobe:</strong> o caminho inverso. O caixa ganha, o crédito encarece, o consumo cai no mês seguinte e a inflação cede um pouco. Quem toma empréstimo sente no bolso, e a aprovação cai.</p>
+  <p><strong>Quem sente mais:</strong> o imposto pesa em quem toma crédito. Isso é a classe trabalhadora e a classe média (Q2 a Q4), que parcela compras e financia carro ou casa, e as empresas do comércio e da indústria que dependem de financiamento. Os mais pobres (Q1) sentem pouco, porque usam pouco crédito formal. Os mais ricos (Q5) vivem mais de renda do que de empréstimo.</p>
+  <p><strong>Governadores:</strong> o IOF é 100% da União, então eles não recebem nada dele. Sentem só o efeito geral na economia. O efeito sobre o ICMS (imposto estadual sobre vendas) ainda não está modelado.</p>
+  <div class="callout ok"><strong>LRF: sem compensação exigida</strong>
+    A Lei de Responsabilidade Fiscal (LC 101/2000, art. 14, §3º, I) dispensa o presidente de apontar outra receita para compensar a mudança de alíquota do IOF. Mas o buraco vai direto para a meta primária do ano. Se a meta for furada, a credibilidade cai e a Fazenda precisa cortar despesas.
+  </div>
+
+  <h5 class="sec-azul">4. Simulação</h5>
+  <p><strong>Premissas de exemplo (não são dados oficiais):</strong> base de crédito tributado de R$ 6 tri por ano, alíquota de hoje de 0,50% (arrecada R$ 30 bi por ano) e PIB de R$ 13,6 tri. Cada 1 ponto de alíquota a mais faz o crédito cair 2,5% da base; cada 1 ponto a menos faz ele subir 2,5%.</p>
+  <table class="summary">
+    <thead>
+      <tr><th>Alíquota</th><th>Arrecadação por ano</th><th>Caixa vs. hoje</th><th>Crédito</th><th>Atividade</th><th>Sem o crédito encolher</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>0,00%</td><td>R$ 0 bi</td><td class="ruim">−R$ 30,0 bi (−0,22% do PIB)</td><td class="bom">+R$ 75,0 bi</td><td class="bom">+0,25 p.p.</td><td>R$ 0 bi</td></tr>
+      <tr><td>0,25%</td><td>R$ 15,1 bi</td><td class="ruim">−R$ 14,9 bi (−0,11% do PIB)</td><td class="bom">+R$ 37,5 bi</td><td class="bom">+0,13 p.p.</td><td>R$ 15 bi</td></tr>
+      <tr><td><strong>0,50% (hoje)</strong></td><td>R$ 30 bi</td><td>—</td><td>—</td><td>—</td><td>R$ 30 bi</td></tr>
+      <tr><td>0,75%</td><td>R$ 44,7 bi</td><td class="bom">+R$ 14,7 bi (+0,11% do PIB)</td><td class="ruim">−R$ 37,5 bi</td><td class="ruim">−0,13 p.p.</td><td>R$ 45 bi</td></tr>
+      <tr><td>1,00%</td><td>R$ 59,3 bi</td><td class="bom">+R$ 29,3 bi (+0,22% do PIB)</td><td class="ruim">−R$ 75,0 bi</td><td class="ruim">−0,25 p.p.</td><td>R$ 60 bi</td></tr>
+      <tr><td>1,50%</td><td>R$ 87,8 bi</td><td class="bom">+R$ 57,8 bi (+0,42% do PIB)</td><td class="ruim">−R$ 150,0 bi</td><td class="ruim">−0,50 p.p.</td><td>R$ 90 bi</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Calculadora:</strong> arraste o controle ou aperte um atalho. O resultado muda na hora.</p>
+  <div class="simulador" data-base="6000000" data-atual="0.5" data-pib="13600000" data-razao="2.5" data-mult-consumo="0.4" data-mult-credito="0.3">
+    <div class="sim-cabeca">
+      <span>Nova alíquota</span>
+      <strong class="sim-aliquota-texto" data-saida="aliquota-texto">0,25%</strong>
+    </div>
+    <input type="range" class="sim-slider" data-campo="aliquota" min="0" max="1.5" step="0.05" value="0.25" aria-label="Nova alíquota do IOF crédito">
+    <div class="sim-escala"><span>0%</span><span>0,50% hoje</span><span>1,00%</span><span>1,50% teto</span></div>
+    <div class="sim-predef">
+      <button type="button" data-predef="0" data-tom="ruim">Zerar</button>
+      <button type="button" data-ajuste="-0.25" data-tom="ruim">−0,25</button>
+      <button type="button" data-predef="0.5" data-tom="base">Hoje</button>
+      <button type="button" data-ajuste="0.25" data-tom="bom">+0,25</button>
+      <button type="button" data-predef="1" data-tom="bom">Dobrar (1%)</button>
+      <button type="button" data-predef="1.5" data-tom="alerta">Teto (1,5%)</button>
+    </div>
+    <label class="sim-check"><input type="checkbox" data-campo="comparar"> Mostrar a conta sem o crédito encolher</label>
+    <div class="sim-cartoes">
+      <div class="sim-cartao"><span>Caixa vs. hoje</span><strong data-saida="caixa">—</strong></div>
+      <div class="sim-cartao"><span>Arrecadação por ano</span><strong data-saida="receita">—</strong><small data-saida="receita-linear" hidden></small></div>
+      <div class="sim-cartao"><span>Crédito na economia</span><strong data-saida="credito">—</strong></div>
+      <div class="sim-cartao"><span>Atividade (hiato)</span><strong data-saida="hiato">—</strong></div>
+      <div class="sim-cartao"><span>Resultado das contas</span><strong data-saida="primario">—</strong></div>
+    </div>
+    <p class="sim-legenda">Linha azul: arrecadação com o crédito encolhendo. Tracejada: sem encolhimento. Bolinha: sua escolha. Verde é melhora, vermelho é piora.</p>
+    <svg class="sim-curva" viewBox="0 0 320 180" role="img" aria-label="Curva de arrecadação por alíquota" data-saida="curva"></svg>
+    <p class="simulador-veredito" data-saida="veredito"></p>
+  </div>
+
+  <p><strong>Como ler:</strong> “Caixa” é o dinheiro que entra ou sai do governo. “Atividade (hiato)” mostra se a economia está acima (positivo) ou abaixo (negativo) do que consegue produzir sem esquentar a inflação. “p.p.” são pontos percentuais. “Resultado das contas” é o saldo do governo sem contar juros: negativo é déficit.</p>
+  <div class="callout warn"><strong>O que a conta mostra</strong>
+    Com essa sensibilidade, o encolhimento do crédito come pouco: dobrar a alíquota quase dobra a arrecadação (de R$ 30 bi para R$ 59 bi). O retorno só cai de verdade se o crédito reagir muito mais forte. Essa é uma escolha de calibração, ainda em aberto.
+  </div>
+  <p><strong>Limites:</strong> o IOF real é cobrado operação por operação, com parcela fixa e parcela por dia. O jogo trata tudo como uma base única.</p>
+
+  <h5 class="sec-amarelo">5. Regras que estamos propondo (não decididas)</h5>
+  <ul class="bullets">
+    <li><strong>Teto de 1,50%:</strong> o jogo não deixa passar disso. Na lei, o limite vem de regras de decreto e de lei, não de um número fixo na Constituição.</li>
+    <li><strong>Gangorra:</strong> mudar o IOF crédito duas vezes em menos de 6 meses custa credibilidade (“insegurança nas regras de crédito”). A primeira mudança é livre.</li>
+    <li><strong>Assimetria:</strong> subir o imposto tira aprovação de imediato. Cortar dá um bônus menor. O eleitor pune o aumento mais do que premia o corte.</li>
+    <li><strong>Passos, não digitação:</strong> o controle vai de 0% a 1,50%, em passos de 0,05%. Isso evita valores quebrados e funciona bem no celular.</li>
+  </ul>
+
+  <h5 class="sec-azul">6. Palavrinhas</h5>
+  <ul class="bullets">
+    <li><strong>Alíquota:</strong> o percentual cobrado sobre cada operação.</li>
+    <li><strong>PIB:</strong> tudo o que o país produz em um ano.</li>
+    <li><strong>Selic:</strong> a taxa de juros básica. Quem a controla é o Banco Central.</li>
+    <li><strong>Teto de gastos:</strong> o limite anual de despesas. Cresce com a receita.</li>
+    <li><strong>Pontos percentuais (p.p.):</strong> a diferença entre dois percentuais. Ir de 2% a 3% é +1 p.p.</li>
+  </ul>
+
+  <h5 class="sec-amarelo">7. Status</h5>
+  <p>Nada disso está no jogo ainda. Os valores são de exemplo e serão calibrados antes de entrar no motor. A regra de quem sente mais, o teto e o encolhimento da base são propostas de design: o motor ainda não faz isso. A LC 224/2025 alterou o art. 14 da LRF; o texto consolidado precisa ser conferido antes de virar regra.</p>
+</template>
+<template id="alavanca-1b">
+  <p class="janela-meta">1 · IOF · Decreto · imediato · 100% União</p>
+  <h4>IOF câmbio, remessas e cartão internacional</h4>
+  <p><strong>O que faz:</strong> freia a saída de dólares em crises cambiais e arrecada no mês seguinte.</p>
+  <p><strong>Quem reage:</strong> a classe alta e o mercado financeiro.</p>
+</template>
+<template id="alavanca-2a">
+  <p class="janela-meta">2 · Imposto de Importação · Decreto · imediato · 100% União</p>
+  <h4>Tarifa industrial e tecnologia</h4>
+  <p><strong>O que faz:</strong> subir protege as fábricas do Sudeste e do Sul e a Zona Franca de Manaus, mas encarece máquinas e pressiona a inflação. Baixar moderniza a produção e barateia preços, mas fecha vagas na indústria.</p>
+  <p><strong>Quem reage:</strong> a indústria, que pede proteção, e o consumidor, que pede preço baixo.</p>
+</template>
+<template id="alavanca-2b">
+  <p class="janela-meta">2 · Imposto de Importação · Decreto ou portaria · imediato · 100% União</p>
+  <h4>Remessas internacionais (“taxa das blusinhas”)</h4>
+  <p><strong>O que faz:</strong> taxar compras online de até US$ 50 agrada o varejo nacional e a indústria têxtil, mas causa perda imediata de aprovação em Q2 e Q3.</p>
+  <p><strong>Quem reage:</strong> os consumidores de renda baixa e média, e as plataformas de comércio exterior.</p>
+</template>
+<template id="alavanca-2c">
+  <p class="janela-meta">2 · Imposto de Importação · Decreto · imediato · 100% União</p>
+  <h4>Tarifa de alimentos e insumos</h4>
+  <p><strong>O que faz:</strong> zerar a tarifa sobre alimentos e insumos segura o preço da comida no mercado interno, mas tira a proteção da produção nacional desses itens.</p>
+  <p><strong>Quem reage:</strong> os produtores nacionais de insumos, que perdem proteção. O consumidor de renda baixa é quem ganha.</p>
+</template>
+<template id="alavanca-3a">
+  <p class="janela-meta">3 · CIDE-Combustíveis · Decreto · baixa imediata, alta em 90 dias · 71% União / 29% estados</p>
+  <h4>Gasolina e etanol</h4>
+  <p><strong>O que faz:</strong> é o amortecedor de choques de petróleo. Zerar anula o repasse da alta e evita greve, mas custa caro no primário. Subir arrecada, mas encarece o combustível.</p>
+  <p><strong>Quem reage:</strong> os motoristas, e os estados, que dividem 29% da receita.</p>
+</template>
+<template id="alavanca-3b">
+  <p class="janela-meta">3 · CIDE-Combustíveis · Decreto · baixa imediata, alta em 90 dias · 71% União / 29% estados</p>
+  <h4>Diesel</h4>
+  <p><strong>O que faz:</strong> é o gatilho direto do frete e dos caminhoneiros. Mexer no diesel encarece o transporte do país inteiro e pressiona o IPCA em poucas semanas.</p>
+  <p><strong>Quem reage:</strong> os caminhoneiros, as transportadoras e os estados.</p>
+</template>
+<template id="alavanca-4a">
+  <p class="janela-meta">4 · Tabela do IRPF · PL · 1º de janeiro · 51% União / 49% FPE-FPM</p>
+  <h4>Faixa de isenção</h4>
+  <p><strong>O que faz:</strong> congelar a tabela arrecada pela inflação e corrói a aprovação em Q2 e Q3. Isentar até R$ 5 mil dá um salto de aprovação, mas derruba o FPE.</p>
+  <p><strong>Quem reage:</strong> os governadores, porque perdem 49% da renúncia.</p>
+</template>
+<template id="alavanca-4b">
+  <p class="janela-meta">4 · Tabela do IRPF · PL · 1º de janeiro · 51% União / 49% FPE-FPM</p>
+  <h4>Alíquota do topo salarial (27,5% a 32,5% ou 35%)</h4>
+  <p><strong>O que faz:</strong> cria faixas progressivas para salários altos, acima de R$ 20 mil e até R$ 50 mil. Alivia o custo de isentar a base.</p>
+  <p><strong>Quem reage:</strong> a classe média alta (Q4 e Q5), que sente a faixa nova no contracheque.</p>
+</template>
+<template id="alavanca-4c">
+  <p class="janela-meta">4 · Tabela do IRPF · PL · 1º de janeiro · 51% União / 49% FPE-FPM</p>
+  <h4>Limite de deduções de saúde e educação privada</h4>
+  <p><strong>O que faz:</strong> limitar o abatimento de gastos médicos e escolares arrecada R$ 15 bi ou mais por ano, sem subir a alíquota.</p>
+  <p><strong>Quem reage:</strong> a classe média (Q4) e o setor privado de saúde e educação.</p>
+</template>
+<template id="alavanca-5a">
+  <p class="janela-meta">5 · Dividendos e IR mínimo · PL · 1º de janeiro · 51% União / 49% FPE-FPM</p>
+  <h4>Taxação de lucros e dividendos (0% para 10% a 20%)</h4>
+  <p><strong>O que faz:</strong> hoje a alíquota é zero. Taxar entre 10% e 20% arrecada muito, e 49% dessa receita é repartido com os governadores.</p>
+  <p><strong>Quem reage:</strong> o mercado financeiro e os investidores, que veem menos investimento.</p>
+</template>
+<template id="alavanca-5b">
+  <p class="janela-meta">5 · Dividendos e IR mínimo · PL · 1º de janeiro · 51% União / 49% FPE-FPM</p>
+  <h4>Fim dos juros sobre capital próprio (JCP)</h4>
+  <p><strong>O que faz:</strong> o JCP é o mecanismo que grandes empresas e bancos usam para pagar menos IRPJ. Extinguir arrecada R$ 15 bi ou mais por ano.</p>
+  <p><strong>Quem reage:</strong> a centro-direita, que defende o instrumento.</p>
+</template>
+<template id="alavanca-5c">
+  <p class="janela-meta">5 · Dividendos e IR mínimo · PL · 1º de janeiro · 51% União / 49% FPE-FPM</p>
+  <h4>Tributação de fundos exclusivos, offshores e LCI, LCA e FIIs</h4>
+  <p><strong>O que faz:</strong> são títulos isentos que financiam o agro (LCA) e a construção (LCI). Tributar arrecada dos mais ricos, mas encarece o crédito rural e imobiliário.</p>
+  <p><strong>Quem reage:</strong> o agro e a construção.</p>
+</template>
+<template id="alavanca-6a">
+  <p class="janela-meta">6 · IRPJ, CSLL e grandes lucros · CSLL: PL · 90 dias · IRPJ: PL · 1º de janeiro · CSLL 100% União, IRPJ 51% União</p>
+  <h4>Alíquota base de IRPJ e CSLL das empresas</h4>
+  <p><strong>O que faz:</strong> reduzir atrai investimento no longo prazo, mas custa caro para a União e os estados.</p>
+  <p><strong>Quem reage:</strong> os governadores, que perdem 49% do IRPJ, e o setor produtivo, que ganha.</p>
+</template>
+<template id="alavanca-6b">
+  <p class="janela-meta">6 · IRPJ, CSLL e grandes lucros · CSLL: PL · 90 dias · 100% União</p>
+  <h4>Sobretaxa de CSLL sobre bancos e petroleiras</h4>
+  <p><strong>O que faz:</strong> fica 100% com a União e vale em 90 dias. Dá caixa rápido, com pouco desgaste popular. Mas reduz o investimento privado.</p>
+  <p><strong>Quem reage:</strong> os bancos, as petroleiras e o investimento privado em geral.</p>
+</template>
+<template id="alavanca-7a">
+  <p class="janela-meta">7 · Contribuição sobre a folha e Simples · PL/PLP · noventena · 100% RGPS / União</p>
+  <h4>INSS patronal sobre a folha (20%)</h4>
+  <p><strong>O que faz:</strong> é o custo de contratar com carteira assinada. Reduzir baixa o desemprego e a informalidade, mas exige outra fonte para a Previdência.</p>
+  <p><strong>Quem reage:</strong> a Previdência e a equipe da Fazenda, que perdem receita.</p>
+</template>
+<template id="alavanca-7b">
+  <p class="janela-meta">7 · Contribuição sobre a folha e Simples · PL/PLP · noventena · 100% RGPS / União</p>
+  <h4>Desoneração da folha dos 17 setores</h4>
+  <p><strong>O que faz:</strong> manter a desoneração protege empregos na construção, na indústria e nos serviços, mas custa cerca de R$ 20 bi por ano. Reonerar melhora o fiscal, mas gera demissões.</p>
+  <p><strong>Quem reage:</strong> os setores desonerados e a bancada do Congresso ligada a eles.</p>
+</template>
+<template id="alavanca-7c">
+  <p class="janela-meta">7 · Contribuição sobre a folha e Simples · PLP · 1º de janeiro · 100% RGPS / União</p>
+  <h4>Simples Nacional e teto do MEI</h4>
+  <p><strong>O que faz:</strong> ampliar o teto do MEI e reduzir o Simples dá aprovação forte na classe trabalhadora e nos pequenos comércios. Mas aumenta a pejotização, com perda na folha e no IRPF.</p>
+  <p><strong>Quem reage:</strong> as empresas que perdem o regime e a Receita, que vê a base do IRPF encolher.</p>
+</template>
+<template id="alavanca-8a">
+  <p class="janela-meta">8 · CBS · PLP · noventena (90 dias) · 100% União</p>
+  <h4>Alíquota geral de referência (base 8,8%)</h4>
+  <p><strong>O que faz:</strong> é o grande IVA federal. Cada +0,5 ponto percentual gera dezenas de bilhões, mas empurra o IPCA e pode fazer o Copom subir a Selic.</p>
+  <p><strong>Quem reage:</strong> todo o consumo e o Banco Central.</p>
+</template>
+<template id="alavanca-8b">
+  <p class="janela-meta">8 · CBS · PLP · noventena (90 dias) · 100% União</p>
+  <h4>Escopo da cesta básica isenta (alimentos e carnes)</h4>
+  <p><strong>O que faz:</strong> zerar mais alimentos tira famílias da pobreza em Q1 rapidamente, mas exige alíquota geral maior no resto da economia.</p>
+  <p><strong>Quem reage:</strong> a classe média, que paga a alíquota maior.</p>
+</template>
+<template id="alavanca-8c">
+  <p class="janela-meta">8 · CBS · PLP · noventena (90 dias) · 100% União</p>
+  <h4>Cashback da CBS para baixa renda (CadÚnico)</h4>
+  <p><strong>O que faz:</strong> devolve parte da CBS paga pelas famílias inscritas no CadÚnico. Protege Q1 e Q2 sem zerar produtos, mas exige que a alíquota geral seja maior.</p>
+  <p><strong>Quem reage:</strong> a classe média, que paga a alíquota maior.</p>
+</template>
+<template id="alavanca-9a">
+  <p class="janela-meta">9 · Imposto Seletivo · PL · noventena (90 dias) · parcial</p>
+  <h4>Apostas online (bets)</h4>
+  <p><strong>O que faz:</strong> cria arrecadação nova com ótimo apoio popular e de parte da bancada religiosa.</p>
+  <p><strong>Quem reage:</strong> o lobby parlamentar do Centrão e do setor de esportes.</p>
+</template>
+<template id="alavanca-9b">
+  <p class="janela-meta">9 · Imposto Seletivo · PL · noventena (90 dias) · parcial</p>
+  <h4>Tabaco, álcool e ultraprocessados</h4>
+  <p><strong>O que faz:</strong> arrecada e reduz a pressão futura sobre o custo da Saúde. Bebidas açucaradas atingem o agro e a indústria, e tabaco muito caro aumenta o contrabando.</p>
+  <p><strong>Quem reage:</strong> o agro, a indústria de alimentos e a de bebidas.</p>
+</template>
+<template id="alavanca-9c">
+  <p class="janela-meta">9 · Imposto Seletivo · PL · noventena (90 dias) · parcial</p>
+  <h4>Extração mineral e petróleo (até 1%)</h4>
+  <p><strong>O que faz:</strong> cobrança pesada sobre minério de ferro e óleo cru. Rende muito mais que as bets, mas gera crise direta com governadores.</p>
+  <p><strong>Quem reage:</strong> os governadores de MG, PA e RJ, e o setor extrativo.</p>
+</template>
+<template id="alavanca-9d">
+  <p class="janela-meta">9 · Imposto Seletivo e IPI · decreto ou PL · 90 dias · parcial</p>
+  <h4>Armas, munições e veículos poluentes</h4>
+  <p><strong>O que faz:</strong> nas armas, o impacto é ideológico: agrada a esquerda e enfurece a direita e a bancada da bala. Nos veículos, sobretaxa motores a combustão para financiar a descarbonização.</p>
+  <p><strong>Quem reage:</strong> a bancada da bala e a indústria automobilística.</p>
+</template>
+<template id="alavanca-10a">
+  <p class="janela-meta">10 · Gastos tributários · PLP · noventena (90 dias) · parcial</p>
+  <h4>Incentivos ao agronegócio (defensivos e insumos)</h4>
+  <p><strong>O que faz:</strong> cortar a renúncia sobre insumos agrícolas devolve caixa à União, mas custa apoio da bancada do agro.</p>
+  <p><strong>Quem reage:</strong> o agro e a Frente Parlamentar da Agropecuária (FPA).</p>
+</template>
+<template id="alavanca-10b">
+  <p class="janela-meta">10 · Gastos tributários · PLP · noventena (90 dias) · parcial</p>
+  <h4>Incentivos à indústria e P&amp;D (automotivo e Mover)</h4>
+  <p><strong>O que faz:</strong> dar crédito tributário para a indústria verde ou automotiva acelera o PIB potencial. Cortar isenções históricas fecha o rombo fiscal.</p>
+  <p><strong>Quem reage:</strong> os setores beneficiados, que vão à Justiça contra cortes, e o STF.</p>
+</template>
+<template id="alavanca-10c">
+  <p class="janela-meta">10 · Gastos tributários · PLP · noventena (90 dias) · parcial</p>
+  <h4>Regimes diferenciados de serviços, saúde e cultura</h4>
+  <p><strong>O que faz:</strong> cada corte isolado rende pouco, e a soma gera reação de bancadas diversas.</p>
+  <p><strong>Quem reage:</strong> os setores de serviço, saúde e cultura, e o STF.</p>
+</template>
+<template id="alavanca-11a">
+  <p class="janela-meta">11 · IPI · decreto · imediato (baixa) e 90 dias (alta) · 41% União / 59% FPE-FPM-FPEx</p>
+  <h4>IPI de proteção da Zona Franca (eletrônicos e motos)</h4>
+  <p><strong>O que faz:</strong> manter as alíquotas protege a Zona Franca e a indústria local. Subir arrecada, mas encarece eletrônicos e motos.</p>
+  <p><strong>Quem reage:</strong> a indústria de Manaus e os consumidores de eletrônicos.</p>
+</template>
+<template id="alavanca-11b">
+  <p class="janela-meta">11 · IPI · decreto · imediato (baixa) e 90 dias (alta) · 41% União / 59% FPE-FPM-FPEx</p>
+  <h4>IPI residual de bens duráveis e linha branca</h4>
+  <p><strong>O que faz:</strong> alíquota rápida sobre geladeira, fogão e outros duráveis. Protege ou pressiona a indústria por decreto, mas parte da receita vai para FPE e FPM na mesma hora.</p>
+  <p><strong>Quem reage:</strong> a indústria de linha branca e os governadores, que sentem o repasse.</p>
+</template>
+<template id="alavanca-12a">
+  <p class="janela-meta">12 · Grandes fortunas (IGF) e ITR · PLP · 1º de janeiro · IGF 100% União</p>
+  <h4>IGF sobre grandes patrimônios (CF, art. 153, VII)</h4>
+  <p><strong>Regra real:</strong> o imposto está previsto na Constituição, mas nunca foi instituído por lei complementar.</p>
+  <p><strong>O que faz:</strong> arrecada do 0,1% mais rico. Com alíquota baixa, o efeito é pequeno; com alíquota alta, dispara a fuga de capitais, o dólar sobe e o prêmio de risco sobe.</p>
+  <p><strong>Quem reage:</strong> o topo da renda e o mercado. É uma bandeira histórica da esquerda.</p>
+</template>
+<template id="alavanca-12b">
+  <p class="janela-meta">12 · Grandes fortunas (IGF) e ITR · PL · 1º de janeiro · ITR 50% municípios</p>
+  <h4>ITR progressivo sobre grandes terras improdutivas</h4>
+  <p><strong>O que faz:</strong> o ITR hoje é simbólico. Subir o imposto sobre grandes propriedades improdutivas baixa o preço da comida no Brasil.</p>
+  <p><strong>Quem reage:</strong> a FPA, que vê nisso uma guerra direta.</p>
+</template>
+<template id="alavanca-13a">
+  <p class="janela-meta">13 · Imposto de Exportação · Decreto · imediato · 100% União</p>
+  <h4>Taxa de retenção sobre grãos, carne e óleo cru</h4>
+  <p><strong>O que faz:</strong> segura o preço interno na marra, mas derruba o dólar e o saldo comercial e enfurece o agro. Reduz o caixa dos estados exportadores.</p>
+  <p><strong>Quem reage:</strong> o agro e os estados exportadores.</p>
+</template>
+<template id="alavanca-14a">
+  <p class="janela-meta">14 · IBS · Resolução do Senado · noventena · 0% União (100% estados e municípios)</p>
+  <h4>Alíquota de referência no Senado e aporte no FNDR</h4>
+  <p><strong>O que faz:</strong> é o maior imposto de governadores e prefeitos. A alíquota passa pelo Senado, então quem vota a alíquota é quem mais sente o efeito no caixa local. O aporte no Fundo de Desenvolvimento Regional (FNDR) é a moeda de troca mais forte com os 27 governadores.</p>
+  <p><strong>Quem reage:</strong> os governadores e os prefeitos.</p>
+</template>
+<template id="alavanca-15a">
+  <p class="janela-meta">+15 · Receita extraordinária e fiscalização · ato executivo ou MP · imediato · 100% União</p>
+  <h4>Voto de qualidade no CARF e fiscalização digital</h4>
+  <p><strong>O que faz:</strong> não sobe nenhuma alíquota. Reduz a perda por elisão e sonegação na curva de Laffer (<code>lossRate</code> cai) e destrava processos bilionários no conselho da Receita.</p>
+  <p><strong>Quem reage:</strong> os grandes empresários, que aumentam as disputas no STF.</p>
+</template>
+<template id="alavanca-15b">
+  <p class="janela-meta">+15 · Receita extraordinária e fiscalização · MP ou PL · imediato · 100% União</p>
+  <h4>REFIS e programa de transação (“litígio zero”)</h4>
+  <p><strong>O que faz:</strong> dá desconto em multas e juros para o devedor quitar agora. Gera uma bolada por 12 meses e ajuda a meta do ano, mas incentiva o contribuinte a não pagar, o que aumenta a sonegação estrutural nos anos seguintes.</p>
+  <p><strong>Quem reage:</strong> os contribuintes em dia, que se sentem punidos.</p>
+</template>
+<template id="alavanca-15c">
+  <p class="janela-meta">+15 · Receita extraordinária e fiscalização · ato executivo · imediato · 100% União</p>
+  <h4>Dividendos extraordinários de estatais (Petrobras, BNDES, BB)</h4>
+  <p><strong>O que faz:</strong> obriga as estatais federais a repassarem dividendos extras ao Tesouro. Salva o resultado primário na hora, sem Congresso, mas reduz a capacidade de investimento público em energia e crédito.</p>
+  <p><strong>Quem reage:</strong> os setores que dependem do investimento dessas estatais.</p>
+</template></section>
+  <section class="bloco"><h2>Onde está no código</h2><ul class="codigo-lista"><li><code>src/engine/economy/fiscal.ts</code></li><li><code>src/engine/regions/regions.ts</code></li><li><code>src/engine/society/society.ts</code></li><li><code>src/engine/proposals/proposals.ts</code></li></ul></section>
+  <section class="bloco"><h2>Veja também</h2><div class="relacionados"><a href="tela-economia.html">Economia (subtela)</a><a href="sis-economia.html">Economia (sistema)</a><a href="motor-economia.html">Economia</a><a href="sis-federacao.html">Federação</a><a href="sis-eventos.html">Eventos e personagens</a></div></section>
+  <section class="bloco"><h2>Estado do texto</h2><p>Nada disso está implementado no motor ainda. Os valores em R$ bi e alíquotas são provisórios.</p></section>
+  <nav class="paginacao" aria-label="Página anterior e próxima"><a class="ant" href="sis-economia.html"><small>← Anterior</small><span>Economia (sistema)</span></a><a class="prox" href="sis-mudancas-grandes.html"><small>Próxima →</small><span>Mudanças grandes</span></a></nav>
+    <footer class="rodape">Gerado por <code>docs/explicacoes/build.mjs</code> a partir de <code>docs/explicacoes/src/</code>. Para mudar um texto, edite a fonte e rode o build.</footer>
+  </main>
+</div>
+<script type="application/json" id="indice">[{"t":"Motores","g":"Grupo","s":"Como o código calcula cada mês. Cada motor é uma pasta de src/engine/, em TypeScript puro, sem interface.","h":"motores.html"},{"t":"Telas","g":"Grupo","s":"O que o jogador vê e toca. Cada tela é uma rota em src/app/.","h":"telas.html"},{"t":"Sistemas de jogo","g":"Grupo","s":"Como o jogador experimenta cada parte do jogo. Cada sistema se apoia em um ou mais motores.","h":"sistemas.html"},{"t":"Congresso","g":"Grupo","s":"No jogo, você é o Presidente da República. Para aprovar reformas, impostos e orçamentos, precisa do aval de deputados e senadores: é o presidencialismo de coalizão.","h":"congresso.html"},{"t":"Camadas técnicas","g":"Grupo","s":"Estado da interface, banco de dados, globo 3D e dados de conteúdo. O motor não depende de nenhuma delas.","h":"tecnico.html"},{"t":"Tecnologias","g":"Grupo","s":"As linguagens, os frameworks, as bibliotecas e as ferramentas do projeto, com o papel de cada uma. As versões vêm do package.json.","h":"tecnologias.html"},{"t":"Fases do roadmap","g":"Grupo","s":"Onde cada fase está hoje, segundo o roadmap do projeto.","h":"fases.html"},{"t":"Features futuras","g":"Grupo","s":"Ideias e funcionalidades planejadas, separadas por categoria. Cada feature tem um post-it para anotar o que quiser.","h":"features.html"},{"t":"Orquestração do mês","g":"Motores","s":"Avança o jogo um mês: função pura, pipeline de 15 etapas, triagem constitucional, rastreabilidade contábil, PRNG estável e migração de saves.","h":"motor-orquestra.html"},{"t":"Economia","g":"Motores","s":"Atividade, inflação, Banco Central, contas públicas, dívida e setor externo.","h":"motor-economia.html"},{"t":"Congresso (motor)","g":"Motores","s":"Blocos, votação, relatores, presidentes das Casas, ministérios e negociação.","h":"motor-congresso.html"},{"t":"Propostas","g":"Motores","s":"Tramitação de cada proposta, da entrada na pauta até a execução.","h":"motor-propostas.html"},{"t":"Política","g":"Motores","s":"Opinião pública e aprovação do presidente, com a lua de mel no início do mandato.","h":"motor-politica.html"},{"t":"Regiões","g":"Motores","s":"As 27 UFs recebem uma distribuição do agregado nacional, sem motor macroeconômico próprio.","h":"motor-regioes.html"},{"t":"Políticas públicas (motor)","g":"Motores","s":"Catálogo de políticas, diretrizes ministeriais e carteira de projetos.","h":"motor-politicas.html"},{"t":"Sociedade (motor)","g":"Motores","s":"Setores, quintis de renda, renda real, salário mínimo, desemprego e pobreza.","h":"motor-sociedade.html"},{"t":"Eventos (motor)","g":"Motores","s":"Gatilhos, escolhas, cadeias com atraso e marcas que guardam a memória da campanha.","h":"motor-eventos.html"},{"t":"Notícias (motor)","g":"Motores","s":"Manchetes geradas pelo motor, cada uma com a causa que a originou.","h":"motor-noticias.html"},{"t":"Eleições (motor)","g":"Motores","s":"Pleitos, mandatos, memória curta do eleitor e vedações do ano eleitoral.","h":"motor-eleicoes.html"},{"t":"Relatório","g":"Motores","s":"Relatório mensal com “Por que mudou?”, mesa de despacho e relatório de legado.","h":"motor-relatorio.html"},{"t":"Simulação","g":"Motores","s":"Estratégias-robô e campanhas automáticas, usadas para calibrar e testar.","h":"motor-simulacao.html"},{"t":"Painel (a mesa do jogo)","g":"Telas","s":"A casa do jogo: o globo do Brasil com HUD, trilhos de folhas, doca de subtelas e o botão Encerrar o mês.","h":"tela-painel.html"},{"t":"Gabinete (subtela)","g":"Telas","s":"A agenda presidencial do mês: decisões com mesa de despacho, políticas públicas, marcas de governo e ações de agenda.","h":"tela-gabinete.html"},{"t":"Economia (subtela)","g":"Telas","s":"Painel com todos os indicadores econômicos, projeção anual e ícones que levam às outras áreas, como os impostos.","h":"tela-economia.html"},{"t":"Congresso (subtela)","g":"Telas","s":"Hemiciclo, Mesas e pauta, propostas em tramitação, blocos, ministérios e negociações.","h":"tela-congresso.html"},{"t":"Notícias (subtela)","g":"Telas","s":"Mesa 3D com o jornal do mês e o notebook das redes sociais.","h":"tela-noticias.html"},{"t":"Legado (subtela)","g":"Telas","s":"Relatório de fim de campanha: o que o governo deixou ao país.","h":"tela-legado.html"},{"t":"Novo jogo","g":"Telas","s":"Criação de uma campanha a partir de um cenário e de uma dificuldade.","h":"tela-novo-jogo.html"},{"t":"Carregar jogo","g":"Telas","s":"Lista as partidas salvas e retoma uma delas.","h":"tela-carregar-jogo.html"},{"t":"Configurações","g":"Telas","s":"Preferências do jogo, como o tamanho do texto.","h":"tela-configuracoes.html"},{"t":"Vitrine de design","g":"Telas","s":"Tela de desenvolvimento com os componentes base: cards, indicadores, alertas e botões.","h":"tela-vitrine.html"},{"t":"Campanha de 4 a 8 anos","g":"Sistemas de jogo","s":"A partida dura o número de meses definido pelo cenário (até 96 meses com reeleição no padrão atual), com decisões mensais e um fim por eleição, mandato ou derrota.","h":"sis-campanha.html"},{"t":"Economia (sistema)","g":"Sistemas de jogo","s":"Como a economia aparece para o jogador: indicadores, causas e as escolhas que a movem.","h":"sis-economia.html"},{"t":"Impostos","g":"Sistemas de jogo","s":"Os 14 tributos-tronco, cada um aberto em alavancas que o jogador mexe, alterados por despacho na Agenda: decreto ou projeto de lei, em quatro fases. Inclui a pauta de estados e municípios, os incentivos e as receitas não tributárias.","h":"sis-impostos.html"},{"t":"Mudanças grandes","g":"Sistemas de jogo","s":"Jogadas de grande porte: mudanças constitucionais, destino do dinheiro, indicações ao PGR e ao STF, combate à corrupção, incentivos e os índices demográficos do país, com opções para o número de cidades e de nascimentos.","h":"sis-mudancas-grandes.html"},{"t":"Federação","g":"Sistemas de jogo","s":"As decisões federais têm efeitos diferentes em cada um dos 27 estados.","h":"sis-federacao.html"},{"t":"Políticas públicas (jogador)","g":"Sistemas de jogo","s":"Você escolhe políticas de rotina, diretrizes e projetos, e eles aparecem no legado.","h":"sis-politicas.html"},{"t":"Sociedade (jogador)","g":"Sistemas de jogo","s":"Como as decisões chegam às pessoas: renda por quintil, salário mínimo, desemprego e pobreza.","h":"sis-sociedade.html"},{"t":"Eventos e personagens","g":"Sistemas de jogo","s":"Eventos com escolhas, cadeias como CPI, TCU e impeachment, e prestígio de personagens.","h":"sis-eventos.html"},{"t":"Notícias (jogador)","g":"Sistemas de jogo","s":"Manchetes com tom e causa, no jornal do mês e nas redes sociais do notebook.","h":"sis-noticias.html"},{"t":"Eleições e mandatos","g":"Sistemas de jogo","s":"Ao fim do mandato há eleição; a reeleição depende do cenário.","h":"sis-eleicoes.html"},{"t":"Globo 3D","g":"Sistemas de jogo","s":"Mapa interativo do Brasil: relevo, zoom até os estados e mapa de calor por indicador.","h":"sis-globo.html"},{"t":"Estrutura do Congresso","g":"Congresso","s":"O Poder Legislativo é bicameral: duas Casas, com papéis diferentes.","h":"cong-estrutura.html"},{"t":"Tramitação de uma lei","g":"Congresso","s":"Quando você envia uma proposta pelo Gabinete, ela passa por etapas realistas.","h":"cong-tramitacao.html"},{"t":"Como os blocos votam","g":"Congresso","s":"Cada bloco calcula uma pontuação de apoio para cada proposta. Ela soma vários fatores.","h":"cong-apoio.html"},{"t":"Ferramentas de negociação","g":"Congresso","s":"Na subtela Congresso, você tem ações diretas para virar votos. Cada ação gasta uma das suas ações de agenda mensais.","h":"cong-arsenal.html"},{"t":"Conexões com o resto do jogo","g":"Congresso","s":"O Congresso não fica isolado: o que acontece nele mexe na economia, na popularidade e no impeachment.","h":"cong-conexoes.html"},{"t":"Modo Casual","g":"Congresso","s":"A dificuldade Casual tem proteções para quem está aprendendo. As regras abaixo foram conferidas no código.","h":"cong-casual.html"},{"t":"Resumo para guardar","g":"Congresso","s":"Os elementos mais importantes do Congresso e o que acontece se você ignorá-los.","h":"cong-resumo.html"},{"t":"Estado da interface","g":"Camadas técnicas","s":"Store Zustand que liga a interface ao motor e guarda a partida atual.","h":"tec-estado.html"},{"t":"Banco de dados","g":"Camadas técnicas","s":"SQLite com migrações versionadas: o estado e o histórico da partida ficam aqui.","h":"tec-banco.html"},{"t":"Globo (camada técnica)","g":"Camadas técnicas","s":"Renderização 3D com three.js e React Three Fiber, com quadtree, LOD e cache.","h":"tec-globo.html"},{"t":"Dados de conteúdo","g":"Camadas técnicas","s":"Cenários, políticas e eventos em JSON, validados com Zod.","h":"tec-dados.html"},{"t":"Linguagens","g":"Tecnologias","s":"Cinco linguagens, cada uma numa parte diferente: TypeScript no app e no motor, Python só na preparação de dados, GLSL nos shaders do globo, JSON para o conteúdo e HTML, CSS e JavaScript para este site.","h":"stk-linguagens.html"},{"t":"Expo e Expo Router","g":"Tecnologias","s":"Expo é a plataforma que roda, empacota e gera a versão web do app. Expo Router organiza as telas como arquivos dentro de src/app/.","h":"stk-expo.html"},{"t":"React e React Native","g":"Tecnologias","s":"React descreve a interface como componentes. React Native transforma esses componentes em telas nativas no Android e no iPhone. react-native-web leva o mesmo código ao navegador.","h":"stk-react.html"},{"t":"Zustand e Zod","g":"Tecnologias","s":"Zustand guarda o estado que a interface usa. Zod valida o conteúdo do jogo antes de ele entrar na partida.","h":"stk-estado.html"},{"t":"Bibliotecas de interface, gesto e animação","g":"Tecnologias","s":"Bibliotecas que dão comportamento às telas: animação, gestos, área segura do aparelho, ícones e imagens.","h":"stk-componentes.html"},{"t":"SQLite: app e testes","g":"Tecnologias","s":"SQLite guarda a partida no aparelho. Nos testes, a mesma base roda pelo módulo SQLite embutido no Node, sem precisar do aparelho.","h":"stk-banco.html"},{"t":"Globo 3D: three, R3F e shaders","g":"Tecnologias","s":"O globo usa three.js, biblioteca de gráficos 3D sobre WebGL, ligada ao React pelo @react-three/fiber. No aparelho, o WebGL vem do expo-gl.","h":"stk-globo.html"},{"t":"Pipeline de dados (Python)","g":"Tecnologias","s":"Um pipeline em Python baixa dados públicos e transforma o resultado nos arquivos que o globo carrega. Roda na máquina de desenvolvimento, nunca no aparelho.","h":"stk-dados.html"},{"t":"Testes e simulações (Vitest)","g":"Tecnologias","s":"Vitest roda os testes do motor, do banco e da lógica de tela. As simulações rodam o motor com estratégias-robô e muitas sementes, para testar o equilíbrio do jogo.","h":"stk-testes.html"},{"t":"Qualidade: TypeScript, ESLint e Prettier","g":"Tecnologias","s":"Três ferramentas checam o código antes de ele entrar: o compilador de tipos, o ESLint e o Prettier. O comando npm run check roda as três e os testes.","h":"stk-qualidade.html"},{"t":"Integração contínua (GitHub Actions)","g":"Tecnologias","s":"A cada push na main e a cada pull request, o GitHub roda a mesma checagem do npm run check em um servidor limpo, com Node 22.","h":"stk-ci.html"},{"t":"npm, Metro e app.json","g":"Tecnologias","s":"npm instala e fixa as dependências. Metro empacota o app. app.json define o que o Expo gera. Os scripts do package.json reúnem os comandos do dia a dia.","h":"stk-ferramentas.html"},{"t":"Este site de documentação","g":"Tecnologias","s":"Páginas de HTML, CSS e JavaScript puros, geradas por um script em Node. Não tem framework nem dependências externas e funciona sem internet.","h":"stk-site.html"},{"t":"Regras que as tecnologias respeitam","g":"Tecnologias","s":"Algumas escolhas técnicas valem para o projeto inteiro. Elas explicam por que o motor é separado e por que o jogo funciona offline.","h":"stk-regras.html"}]</script>
+</body>
+</html>
