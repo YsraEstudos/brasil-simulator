@@ -65,6 +65,8 @@
     "build:cities": "python scripts/data/build_cities.py",
     "build:globe-climate": "python scripts/data/build_globe_climate.py",
     "build:climate": "python scripts/data/build_climatology.py",
+    "pr:novo": "node docs/PRs/novo.mjs",
+    "pr:gerar": "node docs/PRs/gerar.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "sim:globe": "vitest run --config vitest.balance.config.mts scripts/sim/globe.sim.ts",

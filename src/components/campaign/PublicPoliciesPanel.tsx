@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+
+import { ministryIcon } from '@/components/painel/HudBits';
 
 import { Button, Card, formatMoneyMillions, formatPercent, Text } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
@@ -17,6 +19,7 @@ import type { PublicPolicyState, PublicProject } from '@/engine/publicPolicies/t
 import { useTheme } from '@/hooks/use-theme';
 import { decisionCost, fits, gameStore, hasDecision, useGame, type AgendaDraft } from '@/store';
 
+import { Badge, Icon, ICONS, IconTile, ProgressBar, SectionHeader } from './GabineteBits';
 import { GovernmentBrands } from './GovernmentBrands';
 import { PROPOSAL_STATUS_LABEL } from './labels';
 import { currentDirective } from './publicPolicyView';
@@ -61,14 +64,12 @@ function phaseLabel(phase: string): string {
   );
 }
 
-/** Diretrizes, carteira e marcas da Fase 06 no Gabinete. */
-export function PublicPoliciesPanel({ state, content, actionsMax }: PublicPoliciesPanelProps) {
+/** Diretrizes ministeriais da Fase 06 no Gabinete: uma pasta por linha, aberta para escolher rotina e orçamento. */
+export function DirectivesPanel({ state, content, actionsMax }: PublicPoliciesPanelProps) {
   const { colors } = useTheme();
   const draft = useGame((s) => s.draft);
   const [openMinistryId, setOpenMinistryId] = useState<string | null>(null);
-  const publicState: PublicPolicyState = state.publicPolicies;
-  const directives = publicState.directives;
-  const projects = publicState.projects;
+  const directives = state.publicPolicies.directives;
   const currentYear = toCalendar(state.monthIndex).year;
   const routineMinistries = ministriesOf(content)
     .map((ministry) => ({ ministry, policies: routinePolicies(content, ministry.areas) }))
@@ -76,60 +77,96 @@ export function PublicPoliciesPanel({ state, content, actionsMax }: PublicPolici
 
   return (
     <View style={styles.root}>
-      <Card
+      <SectionHeader
+        icon={ICONS.ministries}
         title="Diretrizes ministeriais"
-        subtitle="Políticas de rotina com orçamento anual em R$ milhões. A seleção entra na agenda e só é aplicada ao encerrar o mês.">
-        {routineMinistries.length === 0 ? (
-          <Text variant="body" color="textSecondary">
-            Nenhuma política de rotina disponível para as pastas deste cenário.
-          </Text>
-        ) : (
-          routineMinistries.map(({ ministry, policies }) => {
-            const current = currentDirective(directives, ministry.id, state.monthIndex);
-            const open = openMinistryId === ministry.id;
-            const currentPolicy = current ? content.policies[current.policyId] : undefined;
-            const summary = current
-              ? `Vigente: ${currentPolicy?.name ?? current.policyId} · ${formatMoneyMillions(current.annualMillions)}/ano`
-              : `${policies.length} rotina${policies.length === 1 ? '' : 's'} · nenhuma diretriz vigente`;
-            return (
-              <View key={ministry.id} style={styles.ministry}>
-                <Card
-                  title={ministry.name}
-                  subtitle={`${summary} · ${open ? 'toque para fechar' : 'toque para abrir opções'}`}
-                  onPress={() => setOpenMinistryId(open ? null : ministry.id)}
-                  accessibilityLabel={`${open ? 'Fechar' : 'Abrir'} diretrizes de ${ministry.name}`}
-                />
-                {open && (
-                  <View style={styles.ministryBody}>
-                    <Text variant="caption" color="textSecondary">
-                      Ano-base {currentYear}. O custo e o lag abaixo vêm do catálogo; selecionar só prepara a agenda.
+        description="Diga a cada ministério qual programa de rotina tocar e quanto gastar por ano. Custa 1 ação e vale ao encerrar o mês."
+      />
+      {routineMinistries.length === 0 ? (
+        <Text variant="body" color="textSecondary">
+          Nenhuma política de rotina disponível para as pastas deste cenário.
+        </Text>
+      ) : (
+        routineMinistries.map(({ ministry, policies }) => {
+          const current = currentDirective(directives, ministry.id, state.monthIndex);
+          const open = openMinistryId === ministry.id;
+          const currentPolicy = current ? content.policies[current.policyId] : undefined;
+          const pending = draft.decisions.some(
+            (decision) => decision.policyId === DIRECTIVE_ACTION_ID && decision.params?.ministryId === ministry.id,
+          );
+          return (
+            <View
+              key={ministry.id}
+              style={[
+                styles.ministry,
+                { backgroundColor: colors.surface, borderColor: pending ? colors.accent : colors.border },
+              ]}>
+              <Pressable
+                onPress={() => setOpenMinistryId(open ? null : ministry.id)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: open }}
+                accessibilityLabel={`${open ? 'Fechar' : 'Abrir'} diretrizes de ${ministry.name}`}
+                style={({ pressed }) => [styles.ministryHead, pressed && styles.pressed]}>
+                <IconTile name={ministryIcon(ministry.areas)} />
+                <View style={styles.grow}>
+                  <Text variant="label">{ministry.name}</Text>
+                  {current ? (
+                    <Text variant="caption" color="positive">
+                      {`Vigente: ${currentPolicy?.name ?? current.policyId} · ${formatMoneyMillions(current.annualMillions)}/ano`}
                     </Text>
-                    {policies.map((policy) => (
-                      <DirectiveRow
-                        key={`${ministry.id}:${policy.id}`}
-                        ministryId={ministry.id}
-                        ministryName={ministry.name}
-                        policy={policy}
-                        state={state}
-                        content={content}
-                        draft={draft}
-                        actionsMax={actionsMax}
-                        current={current?.policyId === policy.id ? current : undefined}
-                        colors={colors}
-                      />
-                    ))}
-                  </View>
-                )}
-              </View>
-            );
-          })
-        )}
-      </Card>
+                  ) : (
+                    <Text variant="caption" color="textMuted">
+                      {`Sem diretriz · ${policies.length} ${policies.length === 1 ? 'programa disponível' : 'programas disponíveis'}`}
+                    </Text>
+                  )}
+                </View>
+                {pending && <Icon name={ICONS.check} size={20} />}
+                <Icon name={open ? ICONS.collapse : ICONS.expand} size={20} color="textSecondary" />
+              </Pressable>
+              {open && (
+                <View style={styles.ministryBody}>
+                  <Text variant="caption" color="textSecondary">
+                    Ano-base {currentYear}. Ajuste o orçamento anual (R$ milhões) e defina a diretriz; o efeito chega
+                    depois do prazo indicado.
+                  </Text>
+                  {policies.map((policy) => (
+                    <DirectiveRow
+                      key={`${ministry.id}:${policy.id}`}
+                      ministryId={ministry.id}
+                      ministryName={ministry.name}
+                      policy={policy}
+                      state={state}
+                      content={content}
+                      draft={draft}
+                      actionsMax={actionsMax}
+                      current={current?.policyId === policy.id ? current : undefined}
+                      colors={colors}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })
+      )}
+    </View>
+  );
+}
 
+/** Obras e marcas: a carteira de projetos em execução e as marcas de governo dadas a eles. */
+export function ProjectsPanel({ state, content, actionsMax }: PublicPoliciesPanelProps) {
+  const publicState: PublicPolicyState = state.publicPolicies;
+  return (
+    <View style={styles.root}>
+      <SectionHeader
+        icon={ICONS.projects}
+        title="Obras e marcas"
+        description="Acompanhe o andamento dos projetos aprovados e dê um nome de marca aos que quer associar ao seu governo."
+      />
       <ProjectWallet
         state={state}
         content={content}
-        projects={projects}
+        projects={publicState.projects}
         capitalStockMillions={publicState.capitalStockMillions}
       />
       <GovernmentBrands state={state} content={content} actionsMax={actionsMax} />
@@ -193,13 +230,22 @@ function DirectiveRow({
   };
 
   return (
-    <View style={styles.directiveRow}>
-      <Text variant="label">{policy.name}</Text>
+    <View style={[styles.directiveRow, { borderColor: selected ? colors.accent : colors.border }]}>
+      <View style={styles.rowTop}>
+        <Text variant="label" style={styles.grow}>
+          {policy.name}
+        </Text>
+        {current && <Badge icon={ICONS.check} label="Vigente" tone="positive" />}
+      </View>
       <Text variant="caption" color="textSecondary">
         {policy.summary}
       </Text>
-      <Text variant="caption" color="textSecondary">
-        {routineMeta(policy)}
+      <View style={styles.badges}>
+        <Badge icon={ICONS.fazenda} label={`Catálogo: ${formatMoneyMillions(policy.cost.annualMillions)}/ano`} />
+        <Badge icon={ICONS.inProgress} label={lagText(policy)} />
+      </View>
+      <Text variant="caption" color="textMuted">
+        Orçamento anual (R$ milhões)
       </Text>
       <TextInput
         accessibilityLabel={`Orçamento anual para ${policy.name} em ${ministryName}`}
@@ -230,15 +276,12 @@ function DirectiveRow({
   );
 }
 
-function routineMeta(policy: NonNullable<GameContent['policies'][string]>): string {
+/** Prazo até o efeito: "efeito em 3 meses", "efeito em 1, 6 meses". */
+function lagText(policy: NonNullable<GameContent['policies'][string]>): string {
   const lags = [...new Set(policy.impacts.map((impact) => impact.lagMonths))].sort((a, b) => a - b);
-  const lagText =
-    lags.length === 0
-      ? 'lag não informado'
-      : lags.length === 1
-        ? `lag ${lags[0]} ${lags[0] === 1 ? 'mês' : 'meses'}`
-        : `lags ${lags.join(', ')} meses`;
-  return `Custo de catálogo: ${formatMoneyMillions(policy.cost.annualMillions)}/ano · ${lagText}`;
+  if (lags.length === 0) return 'prazo não informado';
+  if (lags.length === 1) return `efeito em ${lags[0]} ${lags[0] === 1 ? 'mês' : 'meses'}`;
+  return `efeito em ${lags.join(', ')} meses`;
 }
 
 function ProjectWallet({
@@ -255,11 +298,14 @@ function ProjectWallet({
   return (
     <Card
       title="Carteira de projetos"
-      subtitle="Execução mensal, desembolso, atrasos e manutenção aparecem juntos para evitar confundir projeto com efeito já entregue.">
-      <Text variant="body" color="textSecondary">
-        Capital público líquido em operação: {formatMoneyMillions(capitalStockMillions)} · manutenção anual:{' '}
-        {formatMoneyMillions(projects.reduce((sum, project) => sum + project.maintenanceMillions, 0))}
-      </Text>
+      subtitle="Projeto aprovado não é obra entregue: o efeito só aparece quando a obra entra em operação.">
+      <View style={styles.badges}>
+        <Badge icon={ICONS.ministries} label={`Capital em operação: ${formatMoneyMillions(capitalStockMillions)}`} />
+        <Badge
+          icon={ICONS.projects}
+          label={`Manutenção: ${formatMoneyMillions(projects.reduce((sum, project) => sum + project.maintenanceMillions, 0))}/ano`}
+        />
+      </View>
       {projects.length === 0 ? (
         <Text variant="body" color="textSecondary">
           Nenhum projeto explícito na carteira.
@@ -269,19 +315,38 @@ function ProjectWallet({
           const proposal = state.proposals.find((item) => item.id === project.proposalId);
           const title = content.policies[project.policyId]?.name ?? project.policyId;
           const status = proposal ? PROPOSAL_STATUS_LABEL[proposal.status] : 'Proposta não encontrada';
-          const delay =
-            project.delayMonths > 0
-              ? ` · atraso ${project.delayMonths} ${project.delayMonths === 1 ? 'mês' : 'meses'}`
-              : '';
+          const late = project.delayMonths > 0;
           return (
             <View key={project.proposalId} style={styles.project}>
-              <Text variant="label">{title}</Text>
+              <View style={styles.rowTop}>
+                <Text variant="label" style={styles.grow}>
+                  {title}
+                </Text>
+                <Text variant="label" color="accent" tabular>
+                  {formatPercent(project.progress, 0)}
+                </Text>
+              </View>
+              <ProgressBar
+                value={project.progress}
+                color={project.phase === 'cancelado' ? 'negative' : late ? 'warning' : 'accent'}
+              />
+              <View style={styles.badges}>
+                <Badge
+                  label={phaseLabel(project.phase)}
+                  tone={project.phase === 'operacao' ? 'positive' : 'textSecondary'}
+                />
+                <Badge label={status} />
+                {late && (
+                  <Badge
+                    icon={ICONS.warning}
+                    label={`atraso de ${project.delayMonths} ${project.delayMonths === 1 ? 'mês' : 'meses'}`}
+                    tone="warning"
+                  />
+                )}
+              </View>
               <Text
                 variant="caption"
-                color="textSecondary">{`${status} · ${phaseLabel(project.phase)} · ${formatPercent(project.progress, 0)} executado${delay}`}</Text>
-              <Text
-                variant="caption"
-                color="textSecondary">{`${formatMoneyMillions(project.spentMillions)} de ${formatMoneyMillions(project.budgetMillions)} · manutenção anual ${formatMoneyMillions(project.maintenanceMillions)}`}</Text>
+                color="textSecondary">{`Gasto ${formatMoneyMillions(project.spentMillions)} de ${formatMoneyMillions(project.budgetMillions)} · manutenção anual ${formatMoneyMillions(project.maintenanceMillions)}`}</Text>
             </View>
           );
         })
@@ -291,16 +356,16 @@ function ProjectWallet({
 }
 
 const styles = StyleSheet.create({
-  root: { gap: Spacing.three },
-  ministry: { gap: Spacing.two, paddingTop: Spacing.two },
-  ministryBody: { gap: Spacing.two, paddingHorizontal: Spacing.one },
-  directiveRow: { gap: Spacing.one, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.two },
-  project: {
-    gap: Spacing.one,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'transparent',
-    paddingTop: Spacing.two,
-  },
+  root: { gap: Spacing.two },
+  grow: { flex: 1 },
+  pressed: { opacity: 0.75 },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
+  rowTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  ministry: { borderWidth: 1, borderRadius: Radius.lg, overflow: 'hidden' },
+  ministryHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, padding: Spacing.three },
+  ministryBody: { gap: Spacing.two, paddingHorizontal: Spacing.three, paddingBottom: Spacing.three },
+  directiveRow: { gap: Spacing.one, borderWidth: 1, borderRadius: Radius.md, padding: Spacing.two },
+  project: { gap: Spacing.one, paddingTop: Spacing.two },
   input: {
     minHeight: 48,
     borderWidth: StyleSheet.hairlineWidth,
