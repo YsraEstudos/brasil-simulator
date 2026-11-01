@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Button, Card, Text } from '@/components/ui';
-import { Spacing } from '@/constants/theme';
+import { ministryIcon } from '@/components/painel/HudBits';
+import { Text } from '@/components/ui';
+import { Radius, Spacing } from '@/constants/theme';
 import { reissueBarredPolicies, type GameContent, type GameState, type Proposal } from '@/engine';
 import { legislativeInstrument } from '@/engine/congress/congress';
+import { useTheme } from '@/hooks/use-theme';
 import type { Policy } from '@/types/policy';
 
 import { DispatchCard } from './DispatchCard';
-import { INSTRUMENT_LABEL, PROPOSAL_IN_PROGRESS, PROPOSAL_STATUS_LABEL, areaLabel, costText } from './labels';
+import { Badge, CostPips, FilterChip, Icon, ICONS, IconTile, SectionHeader } from './GabineteBits';
+import { INSTRUMENT_LABEL, PROPOSAL_IN_PROGRESS, PROPOSAL_STATUS_LABEL, areaLabel } from './labels';
 
 export interface DecisionPanelProps {
   state: GameState;
@@ -17,7 +20,6 @@ export interface DecisionPanelProps {
   selected: readonly string[];
   /** Política com a mesa de despacho aberta. */
   expandedId: string | null;
-  actionsUsed: number;
   actionsMax: number;
   onExpand: (id: string | null) => void;
   onToggle: (id: string) => void;
@@ -35,7 +37,6 @@ export function DecisionPanel({
   content,
   selected,
   expandedId,
-  actionsUsed,
   actionsMax,
   onExpand,
   onToggle,
@@ -43,6 +44,7 @@ export function DecisionPanel({
   isVedada,
   onToggleBypass,
 }: DecisionPanelProps) {
+  const { colors } = useTheme();
   const policies = content.scenario.policies.flatMap((id) => {
     const policy = content.policies[id];
     return policy && policy.delivery !== 'rotina' ? [policy] : [];
@@ -54,23 +56,31 @@ export function DecisionPanel({
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Text variant="title">Agenda presidencial</Text>
-        <Text variant="body" color="textSecondary" tabular>
-          Ações usadas: {actionsUsed} de {actionsMax}
-        </Text>
+      <SectionHeader
+        icon={ICONS.decisions}
+        title="Decisões de governo"
+        description="Leis, medidas provisórias e decretos. Toque numa decisão para ouvir os ministros e incluí-la na agenda."
+      />
+      <View style={styles.legend}>
+        <Badge icon={ICONS.executive} label="Ato do Executivo: vale ao encerrar o mês" tone="positive" />
+        <Badge icon={ICONS.congress} label="Passa pelo Congresso: precisa de votos" tone="info" />
       </View>
-      <View style={styles.filters} accessibilityLabel="Filtrar catálogo de políticas por área">
-        <Button label="Todas" variant={area === null ? 'secondary' : 'ghost'} onPress={() => setArea(null)} />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filters}
+        accessibilityLabel="Filtrar catálogo de políticas por área">
+        <FilterChip label="Todas" icon={ICONS.decisions} active={area === null} onPress={() => setArea(null)} />
         {areas.map((id) => (
-          <Button
+          <FilterChip
             key={id}
             label={areaLabel(id)}
-            variant={area === id ? 'secondary' : 'ghost'}
+            icon={ministryIcon([id])}
+            active={area === id}
             onPress={() => setArea(id)}
           />
         ))}
-      </View>
+      </ScrollView>
       {visiblePolicies.length === 0 && (
         <Text variant="body" color="textSecondary">
           Nenhuma política legislativa ou executiva disponível nesta área.
@@ -79,53 +89,88 @@ export function DecisionPanel({
       {visiblePolicies.map((policy) => {
         const current = latestProposal(state.proposals, policy.id);
         const inProgress = current !== undefined && PROPOSAL_IN_PROGRESS.has(current.status);
+        const locked = inProgress || barred.has(policy.id);
         const isSelected = selected.includes(policy.id);
         const instrument = legislativeInstrument(policy);
-        const instrumentText = instrument
-          ? `${INSTRUMENT_LABEL[instrument]} — passa pelo Congresso`
-          : 'Ato do Executivo';
-        const meta = (
-          <>
-            <Text variant="caption" color="textSecondary">
-              {instrumentText} · custo: {costText(policy.agendaCost)}
-            </Text>
-            {current && (
-              <Text variant="caption" color={inProgress ? 'warning' : 'textMuted'}>
-                Situação: {PROPOSAL_STATUS_LABEL[current.status]}
-              </Text>
+        const expanded = !locked && expandedId === policy.id;
+        const badges = (
+          <View style={styles.badges}>
+            {instrument ? (
+              <Badge icon={ICONS.congress} label={INSTRUMENT_LABEL[instrument]} tone="info" />
+            ) : (
+              <Badge icon={ICONS.executive} label="Ato do Executivo" tone="positive" />
             )}
-          </>
+            <CostPips cost={policy.agendaCost} max={Math.min(actionsMax, 3)} />
+            {current && (
+              <Badge
+                icon={inProgress ? ICONS.inProgress : undefined}
+                label={PROPOSAL_STATUS_LABEL[current.status]}
+                tone={inProgress ? 'warning' : 'textMuted'}
+              />
+            )}
+          </View>
         );
-
-        if (inProgress || barred.has(policy.id)) {
-          return (
-            <Card key={policy.id} title={policy.name} subtitle={policy.summary}>
-              {meta}
+        const body = (
+          <>
+            <View style={styles.cardTop}>
+              <IconTile name={ministryIcon([policy.area])} color={locked ? 'textMuted' : 'accent'} />
+              <View style={styles.cardTitle}>
+                <Text variant="caption" color="textMuted">
+                  {areaLabel(policy.area).toUpperCase()}
+                </Text>
+                <Text variant="label" color={locked ? 'textSecondary' : 'text'}>
+                  {policy.name}
+                </Text>
+              </View>
+              {locked ? (
+                <Icon name={ICONS.locked} size={18} color="textMuted" />
+              ) : isSelected ? (
+                <Icon name={ICONS.check} size={22} />
+              ) : (
+                <Icon name={expanded ? ICONS.collapse : ICONS.expand} size={20} color="textSecondary" />
+              )}
+            </View>
+            <Text variant="caption" color="textSecondary" numberOfLines={expanded ? undefined : 2}>
+              {policy.summary}
+            </Text>
+            {badges}
+            {locked && (
               <Text variant="caption" color="textMuted">
                 {inProgress
                   ? 'Já está em andamento; não pode ser enviada de novo agora.'
                   : 'Medida provisória rejeitada ou caducada: só pode ser reeditada no ano que vem (CF art. 62 §10).'}
               </Text>
-            </Card>
+            )}
+          </>
+        );
+        const frame = [
+          styles.card,
+          {
+            backgroundColor: colors.surface,
+            borderColor: isSelected ? colors.accent : colors.border,
+            borderWidth: isSelected ? 1.5 : StyleSheet.hairlineWidth,
+          },
+          locked && styles.locked,
+        ];
+
+        if (locked) {
+          return (
+            <View key={policy.id} style={frame}>
+              {body}
+            </View>
           );
         }
-
-        const expanded = expandedId === policy.id;
-        // A mesa de despacho fica fora do cartão: o cartão é um botão, e botões não podem conter botões.
+        // A mesa de despacho fica fora do botão do cartão: botões não podem conter botões.
         return (
-          <View key={policy.id} style={styles.item}>
-            <Card
-              title={policy.name}
-              subtitle={policy.summary}
+          <View key={policy.id} style={frame}>
+            <Pressable
               onPress={() => onExpand(expanded ? null : policy.id)}
-              accessibilityLabel={`${policy.name}. ${isSelected ? 'Na agenda. ' : ''}${expanded ? 'Fechar mesa de despacho' : 'Abrir mesa de despacho'}`}>
-              {meta}
-              {isSelected && (
-                <Text variant="caption" color="accent">
-                  ● Na agenda deste mês
-                </Text>
-              )}
-            </Card>
+              accessibilityRole="button"
+              accessibilityState={{ expanded }}
+              accessibilityLabel={`${policy.name}. ${isSelected ? 'Na agenda. ' : ''}${expanded ? 'Fechar mesa de despacho' : 'Abrir mesa de despacho'}`}
+              style={({ pressed }) => [styles.cardBody, pressed && styles.pressed]}>
+              {body}
+            </Pressable>
             {expanded && (
               <DispatchCard
                 policy={policy}
@@ -156,7 +201,13 @@ function latestProposal(proposals: readonly Proposal[], policyId: string): Propo
 
 const styles = StyleSheet.create({
   root: { gap: Spacing.two },
-  header: { gap: Spacing.half },
-  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
-  item: { gap: Spacing.two },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
+  filters: { gap: Spacing.one, paddingVertical: Spacing.one },
+  card: { borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.two },
+  cardBody: { gap: Spacing.two },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  cardTitle: { flex: 1 },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
+  locked: { opacity: 0.7 },
+  pressed: { opacity: 0.75 },
 });

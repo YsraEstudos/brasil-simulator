@@ -18,6 +18,7 @@ import type { PublicPolicyState, PublicProject } from '@/engine/publicPolicies/t
 import { useTheme } from '@/hooks/use-theme';
 import { fits, gameStore, hasDecision, type AgendaDraft, useGame } from '@/store';
 
+import { Icon, ICONS } from './GabineteBits';
 import { PROPOSAL_STATUS_LABEL } from './labels';
 
 const BRAND_LIMIT = 3;
@@ -111,9 +112,19 @@ export function GovernmentBrands({ state, content, actionsMax }: GovernmentBrand
     <Card
       title="Marcas de governo"
       subtitle={`Até ${BRAND_LIMIT} no mandato · ${consumed} consumida(s) · seleção entra na agenda`}>
-      <Text variant="caption" color="textSecondary">
-        Escolha um projeto em tramitação, execução ou concluído e dê a ele um nome de até 60 caracteres.
-      </Text>
+      <View style={styles.meter}>
+        <View
+          accessible
+          accessibilityLabel={`${consumed} de ${BRAND_LIMIT} marcas usadas no mandato`}
+          style={styles.meterIcons}>
+          {Array.from({ length: BRAND_LIMIT }, (_, i) => (
+            <Icon key={i} name={ICONS.brands} size={22} color={i < consumed ? 'accent' : 'textMuted'} />
+          ))}
+        </View>
+        <Text variant="caption" color="textSecondary" style={styles.meterText}>
+          Dê um nome de até 60 caracteres a um projeto em tramitação, execução ou concluído. Custa 1 ação.
+        </Text>
+      </View>
       {proposals.length === 0 ? (
         <Text variant="body" color="textSecondary">
           Nenhum projeto elegível para marca neste momento.
@@ -201,7 +212,10 @@ function BrandRow({
         </Text>
       )}
       {existingName ? (
-        <Text variant="body" color="accent">{`Marca: ${existingName}`}</Text>
+        <View style={styles.meter}>
+          <Icon name={ICONS.brands} size={18} />
+          <Text variant="body" color="accent">{`Marca: ${existingName}`}</Text>
+        </View>
       ) : (
         <>
           <TextInput
@@ -238,6 +252,9 @@ function BrandRow({
 }
 
 const styles = StyleSheet.create({
+  meter: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  meterIcons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  meterText: { flex: 1, marginLeft: Spacing.one },
   row: { gap: Spacing.one, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.two },
   input: {
     minHeight: 48,
