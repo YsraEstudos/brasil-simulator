@@ -1,4 +1,4 @@
-import { inVedacaoWindow, monthOfTerm, type GameState, type Proposal } from '@/engine';
+import { inVedacaoWindow, monthOfTerm, turnIndexOf, type GameState, type Proposal } from '@/engine';
 import type { ScenarioElections } from '@/types/scenario';
 
 /**
@@ -85,8 +85,8 @@ export function endMonthControl(input: {
   };
 }
 
-/** O mês avançou entre duas leituras da store? (abre o relatório sozinho; recusa de encerramento não abre nada). */
-export function monthAdvanced(before: number | undefined, after: number | undefined): boolean {
+/** O turno avançou entre duas leituras da store? (recusa de encerramento não abre relatório). */
+export function turnAdvanced(before: number | undefined, after: number | undefined): boolean {
   return before !== undefined && after !== undefined && after > before;
 }
 
@@ -148,10 +148,12 @@ export function newsBadge(state: Readonly<GameState>, seenMonth: number | null):
 export type EndMonthOutcome = 'nada' | 'relatorio' | 'legado';
 
 export function endMonthOutcome(
-  before: number | undefined,
-  after: number | undefined,
+  before: Pick<GameState, 'monthIndex' | 'career'> | undefined,
+  after: Pick<GameState, 'monthIndex' | 'career'> | undefined,
   finished: boolean,
 ): EndMonthOutcome {
-  if (!monthAdvanced(before, after)) return 'nada';
+  if (before === undefined || after === undefined || !turnAdvanced(turnIndexOf(before), turnIndexOf(after))) {
+    return 'nada';
+  }
   return finished ? 'legado' : 'relatorio';
 }

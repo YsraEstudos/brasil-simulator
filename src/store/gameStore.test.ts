@@ -397,8 +397,8 @@ describe('migração 2 (configurações)', () => {
       scenarioVersion: '0.1.0',
       state: createInitialState({ content: loadContent('prototipo_ficticio'), difficulty: 'casual', seed: 1 }),
     });
-    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6]);
-    expect(LATEST_DB_VERSION).toBe(6);
+    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6, 7]);
+    expect(LATEST_DB_VERSION).toBe(7);
     await v1.getState().init();
     expect(v1.getState().campaigns.map((c) => c.name)).toEqual(['Campanha da v1']);
   });

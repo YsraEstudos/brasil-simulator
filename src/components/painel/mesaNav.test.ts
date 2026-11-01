@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
-import { createInitialState, TERM_MONTHS, type GameState, type NewsItem, type Proposal } from '@/engine';
+import { advanceMonth, createInitialState, TERM_MONTHS, type GameState, type NewsItem, type Proposal } from '@/engine';
 import { VEDACAO_MESES } from '@/engine/elections';
 
 import {
@@ -13,7 +13,7 @@ import {
   endMonthOutcome,
   LEFT_RAIL,
   leftRail,
-  monthAdvanced,
+  turnAdvanced,
   newsBadge,
   RIGHT_RAIL,
 } from './mesaNav';
@@ -56,15 +56,15 @@ describe('Encerrar o mês na doca', () => {
 });
 
 describe('Abertura automática do relatório', () => {
-  it('abre só quando o mês avançou', () => {
-    expect(monthAdvanced(0, 1)).toBe(true);
-    expect(monthAdvanced(4, 4)).toBe(false);
-    expect(monthAdvanced(4, 3)).toBe(false);
+  it('abre só quando o turno avançou', () => {
+    expect(turnAdvanced(0, 1)).toBe(true);
+    expect(turnAdvanced(4, 4)).toBe(false);
+    expect(turnAdvanced(4, 3)).toBe(false);
   });
 
   it('sem partida antes ou depois não abre', () => {
-    expect(monthAdvanced(undefined, 1)).toBe(false);
-    expect(monthAdvanced(2, undefined)).toBe(false);
+    expect(turnAdvanced(undefined, 1)).toBe(false);
+    expect(turnAdvanced(2, undefined)).toBe(false);
   });
 });
 
@@ -193,17 +193,30 @@ describe('Selos da doca', () => {
 });
 
 describe('Depois de encerrar o mês', () => {
+  const government = createInitialState({ content, difficulty: 'estrategica', seed: 7 });
+  const atMonth = (monthIndex: number): GameState => ({ ...government, monthIndex });
+
+  it('abre o relatório quando avança um turno pré-posse mesmo sem avançar o mês do mandato', () => {
+    let before = createInitialState({ content, difficulty: 'estrategica', seed: 7, startPoint: 'corrida' });
+    for (let i = 0; i < 3; i++) before = advanceMonth(before, { decisions: [] }, content).state;
+    const after = advanceMonth(before, { decisions: [] }, content).state;
+
+    expect(before.monthIndex).toBe(0);
+    expect(after.monthIndex).toBe(0);
+    expect(endMonthOutcome(before, after, false)).toBe('relatorio');
+  });
+
   it('mês avançou: abre o relatório', () => {
-    expect(endMonthOutcome(2, 3, false)).toBe('relatorio');
+    expect(endMonthOutcome(atMonth(2), atMonth(3), false)).toBe('relatorio');
   });
 
   it('mês avançou e a campanha terminou: vai ao legado, não ao relatório', () => {
-    expect(endMonthOutcome(47, 48, true)).toBe('legado');
+    expect(endMonthOutcome(atMonth(47), atMonth(48), true)).toBe('legado');
   });
 
   it('recusa (mês igual ou sem partida): nada acontece, mesmo com a campanha já encerrada', () => {
-    expect(endMonthOutcome(2, 2, false)).toBe('nada');
-    expect(endMonthOutcome(2, 2, true)).toBe('nada');
+    expect(endMonthOutcome(atMonth(2), atMonth(2), false)).toBe('nada');
+    expect(endMonthOutcome(atMonth(2), atMonth(2), true)).toBe('nada');
     expect(endMonthOutcome(undefined, undefined, false)).toBe('nada');
   });
 });

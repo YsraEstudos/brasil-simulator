@@ -38,6 +38,9 @@ export function upgradeGameState(version: number, raw: unknown): GameState {
   if (version < 10) state = v9ToV10(state);
   if (version < 11) state = v10ToV11(state);
   if (version < 12) state = v11ToV12(state);
+  // v12 → v13 (PLANO_CAMPANHA.md Fase C1): só entra o campo opcional `career`; ausente = partida que começa na posse,
+  // idêntica à v12. Antes do lançamento não há conversão (AI_INSTRUCTIONS.md §2.1): só o número da versão muda.
+  if (version < 13) state = { ...state, schemaVersion: 13 };
   return state as unknown as GameState;
 }
 

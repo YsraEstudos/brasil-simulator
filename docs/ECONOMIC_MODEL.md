@@ -500,6 +500,7 @@ Para o estado não crescer sem limite em campanhas longas (240+ meses) em celula
 - A compactação roda ao gravar o mês, na mesma transação.
 - Implementado na Fase 03 (migração 4 do banco): `month_reports` guarda os últimos 12 relatórios; `snapshots` guarda o estado completo só do mês atual e dos 12 anteriores; `indicator_history` guarda, para a campanha inteira, os indicadores, a Selic, a dívida, a credibilidade, o câmbio e o prêmio de risco (preenchida a partir dos snapshots existentes ao migrar).
 - Migração 5: `regional_indicator_history` (série por UF, campanha inteira). Migração 6 (PR 12 do PLANO_GLOBO): `election_results`, a fotografia da eleição geral por UF (resultado simulado; [POLITICAL_RULES.md](POLITICAL_RULES.md) §11.3), campanha inteira, gravada na transação do mês do pleito.
+- Migração 7 ([PLANO_CAMPANHA.md](PLANO_CAMPANHA.md) Fase C1): `snapshots`, `month_reports`, `decisions` e `events` passam a ser identificados pelo **índice do turno** (`turn_index`), e a retenção conta turnos. Numa partida que começa na posse, turno = mês do mandato. As séries de governo (`indicator_history`, `regional_indicator_history`, `election_results`) continuam por mês do mandato e começam na posse; turnos anteriores à posse ficam só num resumo compacto (`career_summaries`), fora da retenção.
 
 ---
 

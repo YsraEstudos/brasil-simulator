@@ -2,19 +2,21 @@ import type { GameEvent } from '../types/event';
 import type { Policy } from '../types/policy';
 import type { RegionalKey, RegionalScope } from '../types/regions';
 import type { Climatology } from '../types/climate';
-import type { Scenario } from '../types/scenario';
+import type { PRE_INAUGURATION_STAGES, Scenario } from '../types/scenario';
 import type { Calibration } from './economy/calibration';
 import type { Rng, RngState } from './rng';
 import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 12;
+export const STATE_SCHEMA_VERSION = 13;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
 export const ENGINE_VERSION = '0.9.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
+
+export type PreInaugurationStage = (typeof PRE_INAUGURATION_STAGES)[number];
 
 /**
  * Indicadores do protótipo (GAME_DESIGN.md §8.1). Todos em **fração decimal** (0,045 = 4,5%), nunca
@@ -515,7 +517,13 @@ export type DecisionRejection =
   /** Novo benefício na janela de vedação eleitoral, sem quebra declarada (Lei 9.504/97 art. 73 §10; Fase 08). */
   | 'vedacao_eleitoral'
   | 'evento_nao_pendente'
-  | 'escolha_invalida';
+  | 'escolha_invalida'
+  /** Decisão que não existe no estágio atual da carreira (ex.: política de governo antes da posse; PLANO_CAMPANHA.md Fase C1). */
+  | 'fora_do_estagio'
+  /** Recursos de campanha insuficientes (PLANO_CAMPANHA.md Fase C3; reservado). */
+  | 'sem_recursos'
+  /** Acima de um teto legal de campanha (PLANO_CAMPANHA.md Fase C3; reservado). */
+  | 'teto_legal';
 
 /** Parcela de uma variação, com causa, para o "Por que mudou?" (ECONOMIC_MODEL.md §1.6). */
 export interface Contribution {
@@ -700,6 +708,47 @@ export interface GameState {
   climate: ClimateState;
   /** Eleições e intenção de voto (Fase 08); cenários sem eleições e saves antigos ficam sem o campo. */
   politics?: PoliticsState;
+  /**
+   * Carreira antes da posse (v13; PLANO_CAMPANHA.md Fase C1). Ausente = partida que começa na posse: o índice do
+   * turno é o próprio `monthIndex` e nada muda no jogo.
+   */
+  career?: CareerState;
+}
+
+/** Estágio da carreira (PLANO_CAMPANHA.md Fase C5); `governo` = da posse em diante. */
+export type CareerStage = PreInaugurationStage | 'governo';
+
+/** Pontos de partida antes da posse; `'posse'` é a partida de sempre, sem o bloco `career`. */
+export type CareerStartPoint = 'pre_campanha' | 'corrida';
+export type StartPoint = CareerStartPoint | 'posse';
+
+/**
+ * Carreira (PLANO_CAMPANHA.md §2.3, D-C1 na forma "índice sequencial"). Dois relógios explícitos:
+ * - `turnIndex` identifica cada turno salvo da partida (0 = primeiro turno, antes ou depois da posse) e é a chave de
+ *   banco, retenção e store;
+ * - `GameState.monthIndex` continua sendo o mês do mandato (0 = posse); antes da posse fica parado em 0 e nenhuma
+ *   etapa de governo roda (economia congelada, D-C12).
+ */
+export interface CareerState {
+  startPoint: CareerStartPoint;
+  /** Perfil de candidato do cenário (`Scenario.career.profiles`). */
+  profileId: string;
+  stage: CareerStage;
+  /** Turno que está para ser jogado. */
+  turnIndex: number;
+  /** Reconhecimento por UF, 0–1 (Fase C2 o faz evoluir; aqui só o valor inicial do perfil). */
+  recognition: Record<string, number>;
+  /** Valência nacional, −1…1. */
+  valence: number;
+}
+
+/** Turno pré-posse no relatório: o estágio jogado e os meses do calendário civil que ele cobriu. */
+export interface CareerTurnReport {
+  stage: PreInaugurationStage;
+  /** "AAAA-MM" */
+  from: string;
+  /** "AAAA-MM"; igual a `from` num turno de um mês. */
+  to: string;
 }
 
 /**
@@ -762,8 +811,12 @@ export interface CopomDecision {
 }
 
 export interface MonthReport {
-  /** Mês processado. */
+  /** Mês do mandato processado (antes da posse, 0: o mandato ainda não começou). */
   monthIndex: number;
+  /** Turno processado (PLANO_CAMPANHA.md §2.3); ausente nas partidas que começam na posse, em que é `monthIndex`. */
+  turnIndex?: number;
+  /** Turno pré-posse processado; ausente nos turnos de governo. */
+  career?: CareerTurnReport;
   accepted: Decision[];
   rejected: { decision: Decision; reason: DecisionRejection }[];
   /** Variação de cada indicador no mês, decomposta por causa. */

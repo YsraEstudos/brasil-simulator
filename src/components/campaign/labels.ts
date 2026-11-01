@@ -1,4 +1,16 @@
-import { toCalendar, type DecisionRejection, type Difficulty, type IndicatorKey, type ProposalStatus } from '@/engine';
+import {
+  calendarAt,
+  currentCareerTurn,
+  offsetOfKey,
+  toCalendar,
+  type DecisionRejection,
+  type Difficulty,
+  type GameContent,
+  type GameState,
+  type IndicatorKey,
+  type PreInaugurationStage,
+  type ProposalStatus,
+} from '@/engine';
 import type { Instrument } from '@/types/policy';
 
 const MONTHS = [
@@ -26,6 +38,44 @@ export function monthLabel(monthIndex: number): string {
 export function shortMonthLabel(monthIndex: number): string {
   const { year, month } = toCalendar(monthIndex);
   return `${MONTHS[month - 1].slice(0, 3).toLowerCase()}/${year}`;
+}
+
+/** Estágios antes da posse (PLANO_CAMPANHA.md Fase C5), como o jogador os lê. */
+export const CAREER_STAGE_LABEL: Record<PreInaugurationStage, string> = {
+  pre_campanha: 'Pré-campanha',
+  convencao: 'Convenção',
+  corrida: 'Corrida eleitoral',
+  eleicao: 'Eleição',
+  transicao: 'Transição',
+};
+
+/** Turno antes da posse: "Agosto de 2026" ou, condensado, "Novembro a dezembro de 2026". */
+export function careerTurnLabel(turn: { from: string; to?: string }): string {
+  const from = calendarAt(offsetOfKey(turn.from));
+  const to = calendarAt(offsetOfKey(turn.to ?? turn.from));
+  if (from.month === to.month && from.year === to.year) return `${MONTHS[from.month - 1]} de ${from.year}`;
+  const start = from.year === to.year ? MONTHS[from.month - 1] : `${MONTHS[from.month - 1]} de ${from.year}`;
+  return `${start} a ${MONTHS[to.month - 1].toLowerCase()} de ${to.year}`;
+}
+
+/** Turno antes da posse, curto: "ago/2026" ou "nov–dez/2026". */
+export function shortCareerTurnLabel(turn: { from: string; to?: string }): string {
+  const from = calendarAt(offsetOfKey(turn.from));
+  const to = calendarAt(offsetOfKey(turn.to ?? turn.from));
+  const short = (m: number) => MONTHS[m - 1].slice(0, 3).toLowerCase();
+  if (from.month === to.month && from.year === to.year) return `${short(from.month)}/${from.year}`;
+  if (from.year === to.year) return `${short(from.month)}–${short(to.month)}/${to.year}`;
+  return `${short(from.month)}/${from.year}–${short(to.month)}/${to.year}`;
+}
+
+/**
+ * Rótulo curto do turno em jogo: o do calendário da campanha antes da posse e o mês do mandato depois. Encerrada,
+ * a partida mostra o último mês jogado (`monthIndex` já é o seguinte).
+ */
+export function shortTurnLabel(state: GameState, content: GameContent, finished = false): string {
+  const career = currentCareerTurn(state, content);
+  if (career) return shortCareerTurnLabel(career);
+  return shortMonthLabel(finished ? Math.max(0, state.monthIndex - 1) : state.monthIndex);
 }
 
 export const DIFFICULTY: Record<Difficulty, { name: string; description: string }> = {
@@ -123,6 +173,9 @@ export const REJECTION_REASON_LABEL: Record<DecisionRejection, string> = {
   vedacao_eleitoral: 'novo benefício vedado nos meses antes da eleição (inclua com quebra declarada)',
   evento_nao_pendente: 'o evento não está mais pendente',
   escolha_invalida: 'escolha inválida',
+  fora_do_estagio: 'ainda não disponível nesta etapa da campanha',
+  sem_recursos: 'sem recursos de campanha suficientes',
+  teto_legal: 'acima do limite legal da campanha',
 };
 
 export const INSTRUMENT_LABEL: Record<Instrument, string> = {

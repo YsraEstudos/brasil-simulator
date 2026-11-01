@@ -29,6 +29,7 @@ import {
 } from '@/store';
 
 import {
+  createActionLabel,
   difficultyView,
   durationLabel,
   SCENARIO_KIND_LABEL,
@@ -39,6 +40,7 @@ import {
   scenarioTitle,
   setupSummary,
   startLabel,
+  startPointViews,
 } from './campaignSetupView';
 import {
   Badge,
@@ -95,7 +97,14 @@ export function NewCampaignScreen() {
 }
 
 function initialForm(prefs: SetupPrefs): CampaignSetupForm {
-  return { name: '', difficulty: prefs.difficulty, scenarioId: prefs.scenarioId, profileId: 'centro', seedText: '' };
+  return {
+    name: '',
+    difficulty: prefs.difficulty,
+    scenarioId: prefs.scenarioId,
+    profileId: 'centro',
+    startPoint: 'posse',
+    seedText: '',
+  };
 }
 
 function NewCampaignForm({
@@ -164,10 +173,18 @@ function NewCampaignForm({
   const seedError = errors.seed ?? null;
   const locked = submitting || busy;
 
+  const startPoints = startPointViews(form.scenarioId);
+
   const update = (patch: Partial<CampaignSetupForm>) => {
     setForm((f) => ({ ...f, ...patch }));
     setSubmitError(null);
   };
+  // Trocar de cenário mantém o ponto de partida só se o novo cenário o oferece.
+  const selectScenario = (scenarioId: string) =>
+    update({
+      scenarioId,
+      startPoint: startPointViews(scenarioId).some((p) => p.id === form.startPoint) ? form.startPoint : 'posse',
+    });
 
   const create = async () => {
     if (submitLock.current) return;
@@ -371,7 +388,7 @@ function NewCampaignForm({
                     option={o}
                     selected={form.scenarioId === o.id}
                     disabled={locked}
-                    onSelect={() => update({ scenarioId: o.id })}
+                    onSelect={() => selectScenario(o.id)}
                   />
                 ))}
               </View>
@@ -392,11 +409,33 @@ function NewCampaignForm({
                         option={o}
                         selected={form.scenarioId === o.id}
                         disabled={locked}
-                        onSelect={() => update({ scenarioId: o.id })}
+                        onSelect={() => selectScenario(o.id)}
                       />
                     ))}
                   </View>
                 </Collapsible>
+              )}
+              {startPoints.length > 1 && (
+                <>
+                  <Text variant="label" color="textSecondary">
+                    Ponto de partida
+                  </Text>
+                  <View style={styles.options} accessibilityRole="radiogroup">
+                    {startPoints.map((p) => (
+                      <OptionCard
+                        key={p.id}
+                        selected={(form.startPoint ?? 'posse') === p.id}
+                        disabled={locked}
+                        onPress={() => update({ startPoint: p.id })}
+                        accessibilityLabel={`${p.name}. ${p.description}`}>
+                        <Text variant="heading">{p.name}</Text>
+                        <Text variant="caption" color="textSecondary">
+                          {p.description}
+                        </Text>
+                      </OptionCard>
+                    ))}
+                  </View>
+                </>
               )}
             </Card>
           </Animated.View>
@@ -452,6 +491,7 @@ function NewCampaignForm({
               <SummaryRow label="Ações de agenda" value={`${summary.actionsPerMonth} por mês`} />
               <SummaryRow label="Perfil inicial" value={summary.profile} />
               <SummaryRow label="Cenário" value={summary.scenario} />
+              <SummaryRow label="Ponto de partida" value={summary.startPoint} />
               <SummaryRow label="Versão" value={summary.version} />
               <SummaryRow label="Duração máxima" value={summary.duration} />
               <SummaryRow label="Semente" value={summary.seed} muted={summary.seed === 'Aleatória'} />
@@ -466,7 +506,7 @@ function NewCampaignForm({
 
           <Animated.View entering={enterAt(6)} layout={LAYOUT} style={styles.actions}>
             <PrimaryAction
-              label={submitting ? 'TOMANDO POSSE…' : 'TOMAR POSSE'}
+              label={createActionLabel(form.startPoint, submitting)}
               onPress={onSubmit}
               disabled={!check.ok || busy}
               loading={submitting}

@@ -5,6 +5,7 @@ import { DIFFICULTIES } from '@/store/campaignSetup';
 import { campaignMonths, SCENARIOS } from '@/store/scenarios';
 
 import {
+  createActionLabel,
   difficultyView,
   durationLabel,
   profilePresetView,
@@ -15,6 +16,7 @@ import {
   scenarioTitle,
   setupSummary,
   startLabel,
+  startPointViews,
 } from './campaignSetupView';
 
 // GAME_DESIGN.md §6 descreve metas; a tela só pode prometer o que o motor faz. Os números vêm das constantes do motor.
@@ -178,5 +180,25 @@ describe('resumo da campanha', () => {
 
   it('a mesma dificuldade devolve sempre o mesmo objeto (montado uma vez)', () => {
     expect(difficultyView('casual')).toBe(difficultyView('casual'));
+  });
+});
+
+// PLANO_CAMPANHA.md Fase C1 (tarefa C1.7): entrada mínima com o ponto de partida 'corrida'.
+describe('pontos de partida no NOVO JOGO', () => {
+  it('o cenário padrão oferece posse e corrida; o texto diz que a campanha ainda não tem ações', () => {
+    const views = startPointViews('brasil_2027_01_v080');
+    expect(views.map((v) => v.id)).toEqual(['posse', 'corrida']);
+    expect(views[1].description).toContain('agosto de 2026');
+    expect(views[1].description).toContain('ainda não têm ações');
+    expect(startPointViews('prototipo_ficticio').map((v) => v.id)).toEqual(['posse']);
+  });
+
+  it('botão e resumo acompanham o ponto de partida', () => {
+    expect(createActionLabel('posse', false)).toBe('TOMAR POSSE');
+    expect(createActionLabel('corrida', false)).toBe('INICIAR A CAMPANHA');
+    expect(createActionLabel('corrida', true)).toBe('INICIANDO A CAMPANHA…');
+    const form = { name: 'X', difficulty: 'casual' as const, scenarioId: 'brasil_2027_01_v080', seedText: '' };
+    expect(setupSummary(form).startPoint).toBe('Posse');
+    expect(setupSummary({ ...form, startPoint: 'corrida' }).startPoint).toBe('Corrida eleitoral');
   });
 });

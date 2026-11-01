@@ -295,6 +295,7 @@ describe('checkNewCampaignInput', () => {
         difficulty: 'casual',
         scenarioId: DEFAULT_SCENARIO_ID,
         profileId: 'centro',
+        startPoint: 'posse',
         seed: null,
       },
     });
@@ -315,6 +316,7 @@ describe('checkNewCampaignInput', () => {
         difficulty: 'realismo',
         scenarioId: 'prototipo_ficticio',
         profileId: 'centro',
+        startPoint: 'posse',
         seed: 7,
       },
     });

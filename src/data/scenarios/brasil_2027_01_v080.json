@@ -1229,5 +1229,33 @@
         "name": "Wagner Castilho"
       }
     ]
+  },
+  "career": {
+    "dataStatus": "FICTICIO",
+    "startPoints": {
+      "corrida": {
+        "turns": [
+          { "stage": "corrida", "from": "2026-08" },
+          { "stage": "corrida", "from": "2026-09" },
+          { "stage": "eleicao", "from": "2026-10" },
+          { "stage": "transicao", "from": "2026-11", "to": "2026-12" }
+        ]
+      }
+    },
+    "profiles": [
+      {
+        "id": "ex_governador",
+        "name": "Ex-governador",
+        "description": "Governou um estado do Sudeste por dois mandatos: conhecido na própria região, pouco lembrado no resto do país.",
+        "recognition": 0.3,
+        "valence": 0.1,
+        "partyInfluence": 0.6,
+        "wealth": 2500,
+        "liquidity": 0.3,
+        "fundraisingCapacity": 800,
+        "territorialBase": { "MG": 0.5, "ES": 0.25, "RJ": 0.15, "SP": 0.1 },
+        "dataStatus": "FICTICIO"
+      }
+    ]
   }
 }

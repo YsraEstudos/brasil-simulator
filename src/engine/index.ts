@@ -1,5 +1,21 @@
 export { advanceMonth, DEFAULT_STEPS } from './advanceMonth';
 export {
+  advanceCareerTurn,
+  availableStartPoints,
+  careerProfile,
+  careerSchedule,
+  createCareerState,
+  currentCareerTurn,
+  inaugurationTurnIndex,
+  INAUGURATION_NOTE,
+  isPreInauguration,
+  PRE_INAUGURATION_STEPS,
+  turnIndexOf,
+} from './career';
+export {
+  calendarAt,
+  keyOfCalendar,
+  offsetOfKey,
   monthKey,
   monthOfTerm,
   START_YEAR,
