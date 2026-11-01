@@ -28,6 +28,8 @@ export const CONCEDE_ACTION_ID = 'ceder_texto';
 export const URGENCY_ACTION_ID = 'pedir_urgencia';
 /** Nomeia o ocupante de um ministério (§6.3.1). Params: `ministryId`, `occupant` (`tecnico` ou id do bloco). */
 export const APPOINT_ACTION_ID = 'nomear_ministro';
+/** Indicação ao STF numa vaga aberta (§8.1, Fase C6d). Params: `vacancyId`, `profile` (`jurista` ou `aliado`). */
+export const NOMINATE_JUSTICE_ACTION_ID = 'indicar_ministro_stf';
 /** Sanção ou veto de projeto aprovado (§7). Params: `proposalId`, `choice` (`SanctionChoice`). */
 export const SANCTION_ACTION_ID = 'sancao';
 /** Visita presidencial a uma UF (POLITICAL_RULES.md §2.1). Params: `uf` (sigla). */
@@ -117,6 +119,17 @@ export const AGENDA_ACTIONS: Readonly<Record<string, AgendaAction>> = {
       'de escândalo cresce com o tempo; demitir ministro de bloco custa capital e a relação com o bloco.',
     agendaCost: 1,
     targetParams: ['ministryId'],
+    listed: false,
+  },
+  [NOMINATE_JUSTICE_ACTION_ID]: {
+    id: NOMINATE_JUSTICE_ACTION_ID,
+    name: 'Indicar ministro do STF',
+    summary:
+      'Indica um nome para a vaga aberta no STF. O Senado sabatina e vota no mês seguinte e precisa de maioria ' +
+      'absoluta (41 de 81). Jurista de carreira passa com mais facilidade; aliado do governo depende da afinidade ' +
+      'dos blocos com o governo. Rejeição custa capital político e a vaga continua aberta.',
+    agendaCost: 1,
+    targetParams: ['vacancyId'],
     listed: false,
   },
   [SANCTION_ACTION_ID]: {

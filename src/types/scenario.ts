@@ -136,6 +136,28 @@ export const scenarioInstitutionsSchema = z
   .object({
     housePresidents: z.object({ camara: contentIdSchema, senado: contentIdSchema }).strict(),
     ministries: z.array(ministrySchema),
+    /**
+     * STF (PLANO_CAMPANHA.md Fase C6d): calendário de vagas do mandato, dado do cenário (`FICTICIO`), sem idade dos
+     * ministros no estado. Ausente = sistema desligado.
+     */
+    supremeCourt: z
+      .object({
+        vacancies: z
+          .array(
+            z
+              .object({
+                id: contentIdSchema,
+                /** Mês do mandato em que a vaga abre (0 = jan/2027). */
+                monthIndex: z.number().int().min(1).max(95),
+                /** Motivo, para o texto: aposentadoria compulsória (EC 88/2015) ou saída antecipada. */
+                reason: z.enum(['aposentadoria_compulsoria', 'saida_antecipada']),
+              })
+              .strict(),
+          )
+          .min(1),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 export type ScenarioInstitutions = z.infer<typeof scenarioInstitutionsSchema>;

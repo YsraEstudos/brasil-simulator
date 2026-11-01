@@ -1,6 +1,6 @@
 # Brasil Simulator — Regras Políticas e Institucionais
 
-Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1)
+Versão 0.2 do documento • 13/10/2026 • ✅ Revisado pelo autor em 13/10/2026 (fidelidade por dificuldade e quebra de regras com consequências, §1.1) • v0.2: capacidade de pauta, ministérios técnicos ou partidários, emendas como pedágio, ciclo do mandato • v0.3 (Fase 04): regras aplicadas pelo motor 0.4.0 (§6.5, §7, §8) • v0.4 (Fase 05): governadores e adesão a convênios no motor (§2.1) • v0.5 (27/10/2026, Fase C6d do [PLANO_CAMPANHA.md](PLANO_CAMPANHA.md)): vagas e indicações ao STF (§8.1), motor 0.10.0
 
 > **Natureza deste documento.** Resume regras da Constituição Federal (CF) e de leis federais para orientar a simulação. **Não é orientação jurídica.** Cada regra tem a fonte indicada. Itens marcados com ⚠ devem ser revalidados na legislação vigente antes da Fase 04, porque podem ter mudado ou depender de regulamentação recente.
 >
@@ -245,7 +245,19 @@ Parâmetros em `src/engine/economy/calibration.ts` (faixas testadas em [CALIBRAT
 - **TCU**: emite alertas sobre execução e contas. Parecer pela rejeição das contas aumenta o risco de impeachment e afeta a credibilidade. O julgamento das contas é feito pelo Congresso.
 - **No motor (Fase 04):** o risco `judicializacao` da política, mais `risco_juridico_flag` por regra quebrada (gasto acima do limite, renúncia ou despesa sem compensação na LRF; também para políticas sem esse risco previsto), decide no início da execução se haverá ação no STF. Havendo, uma liminar suspende a execução de 1 a `liminar_lag_max` meses depois, por `suspensao_min_meses`–`suspensao_max_meses`; no julgamento a medida volta a valer ou é declarada inconstitucional (`prob_inconstitucional`, maior com regra quebrada). Os efeitos da janela suspensa são retirados da fila (ECONOMIC_MODEL.md §5.11). A janela e a derrubada valem também para os acréscimos do relator, que fazem parte da mesma lei. O TCU é modelado na Fase 07 (§9); indicações ao STF ainda não são modelados.
 - **Indicações**: vagas no STF e na diretoria do BC surgem conforme calendário do cenário (no STF, pela aposentadoria compulsória aos 75 anos — EC 88/2015 e LC 152/2015 —, ou por evento); exigem aprovação do Senado (maioria absoluta para ministro do STF, CF art. 101; maioria simples em votação secreta após arguição para presidente e diretores do BC, CF art. 52, III, d ✔).
+- **STF no motor:** ver §8.1 (Fase C6d).
 - **Diretoria do BC (LC 179/2021):** mandatos fixos de 4 anos, não coincidentes com o do presidente da República. O presidente do BC começa no 3º ano do mandato presidencial; os 8 diretores entram 2 por ano. No motor, a fração indicada pelo governo é 2/9, 4/9, 7/9 e 9/9 do 1º ao 4º ano, e as indicações são consideradas aprovadas pelo Senado. Ela determina quanto o BC cede à pressão pública (ECONOMIC_MODEL.md §5.4.1).
+
+### 8.1 STF: vaga, indicação e aprovação (Fase C6d do PLANO_CAMPANHA, motor 0.10.0)
+Três passos **separados**, e a decisão judicial (ADI e liminar, acima) continua como estava: quem o governo indicou não muda a chance nem a duração de uma liminar nesta fase.
+
+| Passo | Como o motor aplica |
+| --- | --- |
+| Vaga | Abre no mês do **calendário do cenário** (`institutions.supremeCourt.vacancies`, `FICTICIO`): no padrão, uma por aposentadoria compulsória no mês 14 e uma por saída antecipada no mês 33. O estado **não guarda idade** de ministro (a regra dos 75 anos, EC 88/2015 e LC 152/2015, aparece só como motivo da vaga); vaga por evento fica para depois. O estado ganha `court` só quando a primeira vaga abre. |
+| Indicação | Ação de agenda `indicar_ministro_stf` (custo 1, params `vacancyId` e `profile`): **jurista de carreira** ou **aliado do governo**. Só numa vaga aberta; a vaga fica em sabatina. |
+| Aprovação | Sabatina e votação no plenário do Senado no mês seguinte, por **maioria absoluta** (41 de 81, CF art. 101 parágrafo único). O apoio de cada bloco é o das votações (relação com o governo, pastas, popularidade e o bônus do Casual), mais o termo do perfil: o jurista tem apoio próprio (`stf_apoio_jurista`); o aliado depende da afinidade do bloco com o perfil ideológico do governo (`w_ideo`), mais `stf_apoio_aliado`. Um sorteio de apoio por bloco, como nas demais votações. |
+| Resultado | Aprovada: vaga preenchida e `stf_capital_aprovada`. Rejeitada: `stf_capital_rejeitada` e a vaga volta a ficar aberta para nova indicação. |
+| Interface | Cartão "Supremo Tribunal Federal" no Congresso: as vagas, a previsão de votos de cada perfil antes de indicar e a última votação. |
 
 ---
 

@@ -12,8 +12,14 @@ import {
   AMENDMENTS_ACTION_ID,
   APPOINT_ACTION_ID,
   blocRelation,
+  appointedJustices,
   CONCEDE_ACTION_ID,
+  courtVacancies,
   currentHouse,
+  expectedNominationYes,
+  NOMINATE_JUSTICE_ACTION_ID,
+  NOMINEE_LABEL,
+  type CourtNomineeProfile,
   housePresident,
   legislativeInstrument,
   ministriesOf,
@@ -115,6 +121,7 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
       ))}
 
       <MinistriesCard state={state} content={content} agenda={agenda} />
+      <CourtCard state={state} content={content} agenda={agenda} />
     </>
   );
 }
@@ -343,6 +350,55 @@ function MinistriesCard({ state, content, agenda }: { state: GameState; content:
                         ? 'Nomear técnico'
                         : `Entregar ao bloco ${content.scenario.blocs.find((b) => b.id === o)?.name ?? o}`
                     }
+                    agenda={agenda}
+                  />
+                ))
+              : null}
+          </View>
+        );
+      })}
+    </Card>
+  );
+}
+
+const NOMINEE_PROFILES: readonly CourtNomineeProfile[] = ['jurista', 'aliado'];
+
+/**
+ * STF (PLANO_CAMPANHA.md Fase C6d): vagas do mandato, indicação com a previsão de votos no Senado (maioria absoluta)
+ * e o resultado da última votação. Só aparece depois da primeira vaga.
+ */
+function CourtCard({ state, content, agenda }: { state: GameState; content: GameContent; agenda: AgendaHelpers }) {
+  const vacancies = courtVacancies(state);
+  if (vacancies.length === 0) return null;
+  const appointed = appointedJustices(state);
+
+  return (
+    <Card
+      title="Supremo Tribunal Federal"
+      subtitle={`Vagas abertas no mandato: o presidente indica, o Senado sabatina e vota no mês seguinte e precisa de 41 dos 81 votos. Indicados por este governo: ${appointed}. As indicações não mudam as liminares contra as medidas do governo.`}>
+      {vacancies.map((v, i) => {
+        const vote = v.lastVote;
+        const voteText = vote
+          ? ` · última votação (${shortMonthLabel(vote.monthIndex)}): ${vote.yes} votos (${vote.required} necessários), ${vote.approved ? 'aprovada' : 'rejeitada'}`
+          : '';
+        const status =
+          v.status === 'preenchida'
+            ? `Preenchida por ${NOMINEE_LABEL[v.nominee ?? 'jurista']}`
+            : v.status === 'em_sabatina'
+              ? `Indicação de ${NOMINEE_LABEL[v.nominee ?? 'jurista']} em sabatina, votação em ${shortMonthLabel(v.hearingMonth ?? state.monthIndex)}`
+              : 'Aberta, à espera da indicação';
+        return (
+          <View key={v.id} style={styles.row}>
+            <Text variant="label">{`Vaga ${i + 1} · aberta em ${shortMonthLabel(v.openedMonth)}`}</Text>
+            <Text variant="body" color="textSecondary">
+              {`${status}${voteText}`}
+            </Text>
+            {v.status === 'aberta'
+              ? NOMINEE_PROFILES.map((profile) => (
+                  <ActionButton
+                    key={profile}
+                    decision={actionDecision(NOMINATE_JUSTICE_ACTION_ID, { vacancyId: v.id, profile })}
+                    label={`Indicar ${NOMINEE_LABEL[profile]} (previsão: ${Math.round(expectedNominationYes(state, profile, content))} votos, 41 necessários)`}
                     agenda={agenda}
                   />
                 ))

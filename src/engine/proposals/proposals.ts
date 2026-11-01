@@ -9,6 +9,7 @@ import {
   type SanctionChoice,
 } from '../actions';
 import { isPartisan, ministryOccupant, policyMinistry } from '../congress/cabinet';
+import { advanceCourt } from '../congress/court';
 import {
   blocSupport,
   expectedYes,
@@ -163,16 +164,15 @@ export const proposalsStep: MonthStep = (state, ctx) => {
     id: bloc.id,
     governmentRelation: run.relations.get(bloc.id) ?? blocRelation(state, bloc),
   }));
-  return {
-    state: {
-      ...state,
-      resources: { ...state.resources, politicalCapital: run.capital },
-      congress: { ...state.congress, blocs },
-      proposals: run.proposals,
-      impulses: run.impulses,
-    },
-    contributions: [],
+  const next: GameState = {
+    ...state,
+    resources: { ...state.resources, politicalCapital: run.capital },
+    congress: { ...state.congress, blocs },
+    proposals: run.proposals,
+    impulses: run.impulses,
   };
+  // STF (PLANO_CAMPANHA.md Fase C6d): vagas, sabatinas e indicações, depois das votações do mês.
+  return { state: advanceCourt(next, ctx), contributions: [] };
 };
 
 /**

@@ -989,6 +989,36 @@ export const PARAMS = {
     basis: JOGO,
   },
 
+  // ── STF: indicação e sabatina (PLANO_CAMPANHA.md Fase C6d; POLITICAL_RULES.md §8.1) ───────────────
+  stf_apoio_jurista: {
+    value: 0.35,
+    min: 0.1,
+    max: 0.6,
+    note: 'apoio próprio de um jurista de carreira na votação do Senado (somado à lealdade e à popularidade)',
+    basis: JOGO,
+  },
+  stf_apoio_aliado: {
+    value: 0,
+    min: -0.3,
+    max: 0.3,
+    note: 'apoio próprio de um aliado do governo, além da afinidade ideológica do bloco com o governo (× w_ideo)',
+    basis: JOGO,
+  },
+  stf_capital_aprovada: {
+    value: 2,
+    min: 0,
+    max: 5,
+    note: 'capital político quando o Senado aprova a indicação',
+    basis: JOGO,
+  },
+  stf_capital_rejeitada: {
+    value: -6,
+    min: -12,
+    max: 0,
+    note: 'capital político quando o Senado rejeita a indicação',
+    basis: 'POLITICAL_RULES.md §8.1: rejeição é derrota política',
+  },
+
   // ── Ministérios (POLITICAL_RULES.md §6.3.1) ─────────────────────────────────────────────────────
   apoio_ministerio: {
     value: 0.25,

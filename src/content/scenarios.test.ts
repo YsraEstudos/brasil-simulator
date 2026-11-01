@@ -269,13 +269,15 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
     expect(v070.regions?.meta.lean).toBeUndefined();
   });
 
-  it('difere do v0.7.0 apenas em id, version, na inclinação (lean) das UFs e nas políticas de prevenção do PR 13', () => {
+  it('difere do v0.7.0 apenas em id, version, na inclinação (lean) das UFs, nas políticas de prevenção do PR 13 e no calendário do STF da Fase C6d', () => {
     const semLean = (scenario: Scenario): Record<string, unknown> => {
       const resto: Record<string, unknown> = { ...scenario };
       delete resto.id;
       delete resto.version;
+      const institutions = scenario.institutions && { ...scenario.institutions, supremeCourt: undefined };
       return {
         ...resto,
+        institutions,
         policies: scenario.policies.filter((id) => !PREVENTION_POLICY_IDS.includes(id)),
         regions: {
           meta: { ...scenario.regions?.meta, lean: undefined },

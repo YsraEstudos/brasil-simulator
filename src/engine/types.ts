@@ -9,10 +9,10 @@ import type { SocietyState } from './society/types';
 import type { PublicPolicyState } from './publicPolicies/types';
 
 /** Versão da estrutura do GameState. Mudou a estrutura → incrementar e escrever migração + teste (AI_INSTRUCTIONS.md §2.10). */
-export const STATE_SCHEMA_VERSION = 12;
+export const STATE_SCHEMA_VERSION = 13;
 
 /** Versão do motor gravada nos saves (resultados podem mudar entre versões do motor). */
-export const ENGINE_VERSION = '0.9.0';
+export const ENGINE_VERSION = '0.10.0';
 
 export type Difficulty = 'casual' | 'estrategica' | 'realismo';
 
@@ -700,6 +700,37 @@ export interface GameState {
   climate: ClimateState;
   /** Eleições e intenção de voto (Fase 08); cenários sem eleições e saves antigos ficam sem o campo. */
   politics?: PoliticsState;
+  /**
+   * Vagas do STF abertas no mandato (PLANO_CAMPANHA.md Fase C6d). Ausente até a primeira vaga: antes dela, o estado é
+   * o mesmo com o sistema ligado ou desligado.
+   */
+  court?: CourtState;
+}
+
+/** Perfil de quem o governo indica ao STF (Fase C6d). */
+export type CourtNomineeProfile = 'jurista' | 'aliado';
+
+/** Situação de uma vaga do STF: aberta (sem indicação), em sabatina (indicação feita, voto marcado) ou preenchida. */
+export type CourtVacancyStatus = 'aberta' | 'em_sabatina' | 'preenchida';
+
+export interface CourtVacancy {
+  /** Id da vaga no calendário do cenário. */
+  id: string;
+  /** Mês em que a vaga abriu. */
+  openedMonth: number;
+  status: CourtVacancyStatus;
+  /** Perfil da indicação atual (em sabatina) ou da aprovada (preenchida). */
+  nominee?: CourtNomineeProfile;
+  /** Mês da sabatina e da votação no plenário do Senado. */
+  hearingMonth?: number;
+  /** Indicações já rejeitadas pelo Senado nesta vaga. */
+  rejections: number;
+  /** Última votação no Senado: votos "sim" e o necessário (maioria absoluta). */
+  lastVote?: { monthIndex: number; yes: number; required: number; approved: boolean };
+}
+
+export interface CourtState {
+  vacancies: CourtVacancy[];
 }
 
 /**

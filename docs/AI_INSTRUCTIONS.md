@@ -109,6 +109,7 @@ recusados.
 | Acréscimos do relator ("jabutis") | `rider` |
 | Sanção / veto | `sanction` / `veto` |
 | Ministério, gabinete | `ministry`, `cabinet` |
+| STF: vaga, indicação (jurista / aliado), sabatina | `CourtVacancy` em `GameState.court` (`congress/court.ts`, ação `indicar_ministro_stf`) / `CourtNomineeProfile`: `jurista`, `aliado` / `hearingMonth` |
 | Pauta | `pauta` (sem tradução: termo do regimento) |
 | Unidade da Federação (UF) | `uf` (id = sigla, ex.: `BA`) |
 | Participação no PIB / de tendência | `share` / `structuralShare` |

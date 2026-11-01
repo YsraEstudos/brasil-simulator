@@ -298,6 +298,12 @@
       "camara": "centro",
       "senado": "centro"
     },
+    "supremeCourt": {
+      "vacancies": [
+        { "id": "stf_vaga_1", "monthIndex": 14, "reason": "aposentadoria_compulsoria" },
+        { "id": "stf_vaga_2", "monthIndex": 33, "reason": "saida_antecipada" }
+      ]
+    },
     "ministries": [
       {
         "id": "fazenda",
