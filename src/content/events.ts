@@ -7,6 +7,7 @@ import dadosEmpregoSurpreendem from '@/data/events/dados_emprego_surpreendem.jso
 import dividasEstaduais from '@/data/events/dividas_estaduais.json';
 import enchentesMetropole from '@/data/events/enchentes_metropole.json';
 import escandaloMinisterio from '@/data/events/escandalo_ministerio.json';
+import escandaloDiretoria from '@/data/events/escandalo_diretoria.json';
 import fndrGovernadores from '@/data/events/fndr_governadores.json';
 import grevesServidores from '@/data/events/greve_servidores.json';
 import orcamentoTransicao from '@/data/events/orcamento_transicao.json';
@@ -119,6 +120,8 @@ const RAW_EVENTS: readonly unknown[] = [
   fase07PolViceConspira,
   secaSafraEnergiaV2,
   enchentesMetropoleV2,
+  // Fase C6a (PLANO_CAMPANHA.md): no fim da lista, para não mudar a ordem do sorteio dos demais.
+  escandaloDiretoria,
 ];
 
 function load(raw: unknown, index: number): GameEvent {

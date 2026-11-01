@@ -65,8 +65,8 @@ describe('eventos (GAME_DESIGN.md §11.3)', () => {
     }
   });
 
-  it('há os 16 eventos anteriores, os 37 da Fase 07 e as 2 versões geográficas do PR 9, com ids únicos', () => {
-    expect(EVENTS).toHaveLength(55);
+  it('há os 16 eventos anteriores, os 37 da Fase 07, as 2 versões geográficas do PR 9 e o da Fase C6a, com ids únicos', () => {
+    expect(EVENTS).toHaveLength(56);
     expect(EVENTS.filter((e) => e.id.startsWith('fase07_'))).toHaveLength(37);
     const ids = EVENTS.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);

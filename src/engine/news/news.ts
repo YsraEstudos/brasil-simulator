@@ -94,6 +94,8 @@ const CONDITION_TEXT: Record<ConditionVariable, ConditionText> = {
   monthIndex: { label: 'Mês do mandato', kind: 'num', decimals: 0 },
   partisanMinistries: { label: 'Ministérios de indicação partidária', kind: 'num', decimals: 0 },
   cabinetScandalRisk: { label: 'Risco de escândalo no ministério', kind: 'pct', decimals: 1 },
+  partisanDirectorates: { label: 'Diretorias de estatais por indicação partidária', kind: 'num', decimals: 0 },
+  directorateScandalRisk: { label: 'Risco de escândalo nas diretorias', kind: 'pct', decimals: 1 },
   governorRelation: { label: 'Relação com os governadores', kind: 'num', decimals: 0 },
   impeachmentPressure: { label: 'Pressão de impeachment', kind: 'pct', decimals: 0 },
   characterStanding: { label: 'Prestígio', kind: 'num', decimals: 0 },

@@ -6,6 +6,7 @@ import { checkPublicPolicies } from './publicPolicies/publicPolicies';
 import {
   MANDATORY_GROUPS,
   REVENUE_GROUPS,
+  TECHNICAL_OCCUPANT,
   type GameContent,
   type GameState,
   type IndicatorKey,
@@ -178,5 +179,21 @@ export function checkInvariants(
 
   if (next.society !== prev.society) errors.push(...checkSociety(next.society, next));
   errors.push(...checkPublicPolicies(next));
+
+  // Diretorias de estatais (Fase C6a): cada troca grava um cargo do cenário, um ocupante possível e um mês já vivido.
+  if (content && next.congress.directorates) {
+    const known = new Set((content.scenario.institutions?.directorates ?? []).map((d) => d.id));
+    const blocs = new Set(content.scenario.blocs.map((b) => b.id));
+    const seen = new Set<string>();
+    for (const d of next.congress.directorates) {
+      if (!known.has(d.id)) errors.push(`diretoria fora do cenário: ${d.id}`);
+      if (seen.has(d.id)) errors.push(`diretoria repetida no estado: ${d.id}`);
+      seen.add(d.id);
+      if (d.occupant !== TECHNICAL_OCCUPANT && !blocs.has(d.occupant)) {
+        errors.push(`${d.id}: ocupante inválido ${d.occupant}`);
+      }
+      if (!(d.since >= 0 && d.since <= next.monthIndex)) errors.push(`${d.id}: nomeação no mês ${d.since}`);
+    }
+  }
   return errors;
 }

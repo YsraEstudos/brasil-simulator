@@ -1,0 +1,48 @@
+{
+  "id": "escandalo_diretoria",
+  "title": "Escândalo em diretoria de estatal",
+  "description": "Denúncias de irregularidades atingem a diretoria de uma estatal ocupada por indicação de um bloco parlamentar. O relatório do mês diz qual diretoria e qual bloco. Quanto mais tempo o indicado fica no cargo, e quando o mesmo bloco tem o ministério da área, maior o risco. Ficção: nenhuma estatal real.",
+  "trigger": {
+    "monthsOfYear": [],
+    "conditions": [{ "variable": "partisanDirectorates", "op": "gt", "value": 0 }],
+    "probability": 1,
+    "probabilityFactor": "directorateScandalRisk",
+    "cooldownMonths": 12,
+    "maxOccurrences": 4,
+    "subject": "diretoria"
+  },
+  "onlyScenarios": ["brasil_2027_01_v080"],
+  "onFire": [{ "target": "aprovacao", "delta": -0.01, "lagMonths": 0, "durationMonths": 1 }],
+  "choices": [
+    {
+      "id": "afastar_diretor",
+      "label": "Afastar a diretoria",
+      "description": "Devolve o cargo atingido ao quadro técnico. Recupera parte da aprovação, mas o bloco perde a diretoria, a relação com ele piora e a troca gasta capital político.",
+      "agendaCost": 1,
+      "effects": [{ "target": "aprovacao", "delta": 0.005, "lagMonths": 0, "durationMonths": 1 }],
+      "dismissDirector": true
+    },
+    {
+      "id": "defender",
+      "label": "Manter a indicação",
+      "description": "Preserva a aliança com o bloco, mas a aprovação cai enquanto a suspeita durar.",
+      "agendaCost": 0,
+      "effects": [
+        { "target": "aprovacao", "delta": -0.005, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": 2, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    },
+    {
+      "id": "abrir_investigacao",
+      "label": "Pedir apuração interna",
+      "description": "Mostra transparência e ganha um pouco de aprovação, mas o bloco vê a apuração como ameaça e reage mal. A diretoria continua com o bloco.",
+      "agendaCost": 1,
+      "effects": [
+        { "target": "aprovacao", "delta": 0.003, "lagMonths": 0, "durationMonths": 1 },
+        { "target": "relacao_congresso", "delta": -3, "lagMonths": 0, "durationMonths": 1 }
+      ]
+    }
+  ],
+  "defaultChoice": "defender",
+  "dataStatus": "FICTICIO"
+}

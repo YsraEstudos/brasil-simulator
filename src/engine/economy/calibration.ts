@@ -1060,6 +1060,43 @@ export const PARAMS = {
     note: 'saturação da chance mensal por pasta',
     basis: SATURACAO,
   },
+
+  // ── Diretorias de estatais (PLANO_CAMPANHA.md Fase C6a; POLITICAL_RULES.md §6.3.2) ──────────────
+  apoio_diretoria: {
+    value: 0.08,
+    min: 0.02,
+    max: 0.15,
+    note: 'apoio do bloco nas votações por diretoria ocupada, × peso; soma com o dos ministérios sob o mesmo teto',
+    basis: JOGO,
+  },
+  relacao_nomeacao_diretoria: {
+    value: 6,
+    min: 2,
+    max: 12,
+    note: 'relação do bloco ao receber uma diretoria, × peso',
+    basis: JOGO,
+  },
+  relacao_demissao_diretoria: {
+    value: -10,
+    min: -20,
+    max: -3,
+    note: 'relação do bloco ao perder uma diretoria, × peso',
+    basis: JOGO,
+  },
+  capital_demissao_diretoria: {
+    value: -2,
+    min: -5,
+    max: 0,
+    note: 'capital político por tirar uma diretoria de um bloco',
+    basis: JOGO,
+  },
+  fator_porteira_fechada: {
+    value: 1.5,
+    min: 1,
+    max: 2.5,
+    note: 'risco de escândalo da diretoria × fator quando o mesmo bloco ocupa o ministério ao qual ela se vincula',
+    basis: JOGO,
+  },
   relacao_vitoria: {
     value: 3,
     min: 0,

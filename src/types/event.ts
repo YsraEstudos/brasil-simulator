@@ -67,6 +67,10 @@ export const conditionVariableSchema = z.enum([
   'partisanMinistries',
   /** Probabilidade mensal (0–1) de escândalo em algum ministério de bloco; cresce com o tempo no cargo. */
   'cabinetScandalRisk',
+  /** Diretorias de estatais ocupadas por indicação de bloco (Fase C6a). */
+  'partisanDirectorates',
+  /** Probabilidade mensal (0–1) de escândalo em alguma diretoria de bloco (Fase C6a). */
+  'directorateScandalRisk',
   /** Média das relações dos governadores com o governo, ponderada pela população (−100…100). */
   'governorRelation',
   /** Pressão de impeachment (0–1): função de aprovação, base, escândalos e crise (POLITICAL_RULES.md §10). */
@@ -185,6 +189,11 @@ export const eventChoiceSchema = z
      * (POLITICAL_RULES.md §6.3.1). Sem ministro de bloco, não faz nada.
      */
     dismissMinister: z.boolean().optional(),
+    /**
+     * Devolve ao quadro técnico a diretoria do escândalo (`PendingEvent.subjectId`), com o custo de substituição
+     * (Fase C6a). Exige `trigger.subject: 'diretoria'`. Se a diretoria já mudou de mãos, não faz nada.
+     */
+    dismissDirector: z.boolean().optional(),
     /** Memória persistente: marcas gravadas no estado (`EventsState.flags`) para eventos futuros lerem. */
     setFlags: z.array(contentIdSchema).optional(),
     clearFlags: z.array(contentIdSchema).optional(),
@@ -231,6 +240,11 @@ export const gameEventSchema = z
          * atingidas viram o local do evento, congelado no disparo (`PendingEvent.location`).
          */
         climate: climateTriggerSchema.optional(),
+        /**
+         * Alvo do evento, escolhido e congelado no disparo (`PendingEvent.subjectId`). `diretoria`: a diretoria de
+         * bloco com maior risco de escândalo (Fase C6a); sem nenhuma, o evento não dispara.
+         */
+        subject: z.enum(['diretoria']).optional(),
       })
       .strict(),
     /** Marcas gravadas quando o evento chega à caixa de entrada. */
@@ -283,6 +297,9 @@ export const gameEventSchema = z
         path: ['trigger', 'probabilityFactor'],
         message: 'characterStanding exige characterId',
       });
+    }
+    if (e.choices.some((c) => c.dismissDirector) && e.trigger.subject !== 'diretoria') {
+      ctx.addIssue({ code: 'custom', path: ['choices'], message: "dismissDirector exige trigger.subject 'diretoria'" });
     }
     const ids = e.choices.map((c) => c.id);
     const dup = ids.find((id, i) => ids.indexOf(id) !== i);
