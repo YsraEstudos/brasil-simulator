@@ -1,10 +1,10 @@
 # Plano — Carreira de 4 a 8 anos (Camadas 1 a 5)
 
-Versão 0.5 do documento • 27/10/2026 • 🟨 Fase C0 (auditoria) e Fase C1 (entrega M1.1) feitas a pedido do autor; as decisões continuam com o autor
+Versão 0.5 do documento • 27/10/2026 • 🟨 Fase C0 (auditoria) em andamento; Fase C1 (entrega M1.1) feita a pedido do autor; as decisões continuam com o autor
 v0.2: incorpora comentários de revisão de 27/10/2026 (persistência, percurso inicial, modelo eleitoral, posse, divisão da Fase C6, saves).
 v0.3: incorpora a segunda revisão de 27/10/2026, na ordem de prioridade dela — M1 como sequência de entregas (§3.1), ações entre os turnos eleitorais (D-C15) e calendário fechado (§2.4), contabilidade dos eleitores (Fase C2), vitória do adversário no 1º turno (Fase C5), visibilidade e persistência das pesquisas (Fase C2), retenção, linha de base da posse e relógio da fila (§2.3), contratos de ordem e de sorteio (§4.1), Fase C6 separável com contratos de integração; e ajustes menores (nomenclatura, notícias, estimativas, D-C10).
 
-v0.5: Fase C0 feita, com as tarefas C0.1 a C0.5 e o protocolo e a estimativa no papel da C0.6. O resultado e as decisões que faltam estão em §5, Fase C0, "Resultado"; as fontes do §8 estão no [DATA_SOURCES.md](DATA_SOURCES.md) §6.
+v0.5: auditoria da Fase C0 registrada, com C0.1 a C0.3 e C0.5 concluídas, C0.4 parcial e o protocolo e a estimativa no papel da C0.6. A fase segue aberta; faltam a sessão com pessoas e as decisões indicadas em §5, Fase C0, "Resultado". As fontes do §8 estão no [DATA_SOURCES.md](DATA_SOURCES.md) §6.
 
 v0.4: o autor pediu a implementação da Fase C1. Registro da tarefa C1.0, das escolhas tomadas para implementá-la (D-C1 forma, D-C15, D-C9, D-C12, relógio da fila) e do que ficou de fora (§5, Fase C1, "Implementação").
 
