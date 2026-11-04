@@ -13,6 +13,11 @@ export interface ChoiceOptionProps {
   selected: boolean;
   /** Opção aplicada se o jogador não responder. */
   isDefault?: boolean;
+  /**
+   * O grupo ainda não tem resposta (Fase Q12, B46): a opção padrão ganha moldura tracejada e o aviso "vale se você
+   * não responder", porque é ela que o motor aplica ao encerrar o mês.
+   */
+  unanswered?: boolean;
   /** Cabe nas ações de agenda (a já marcada sempre pode ser desmarcada). */
   enabled: boolean;
   onPress: () => void;
@@ -29,24 +34,33 @@ export function ChoiceOption({
   agendaCost,
   selected,
   isDefault,
+  unanswered = false,
   enabled,
   onPress,
 }: ChoiceOptionProps) {
   const { colors } = useTheme();
+  const pendingDefault = Boolean(isDefault) && unanswered && !selected;
   return (
     <Pressable
       onPress={() => {
         if (enabled) onPress();
       }}
       accessibilityRole="radio"
-      accessibilityLabel={`${label}, custo ${costText(agendaCost)}${isDefault ? ', padrão se não responder' : ''}`}
+      accessibilityLabel={`${label}, custo ${costText(agendaCost)}${isDefault ? (pendingDefault ? ', vale esta se você não responder' : ', padrão se não responder') : ''}`}
       accessibilityState={{ checked: selected, disabled: !enabled }}
       style={({ pressed }) => [
         styles.option,
         {
-          borderColor: selected ? colors.accent : colors.border + '80',
-          backgroundColor: selected ? colors.accent + '1f' : pressed && enabled ? colors.surfaceRaised : colors.surface,
+          borderColor: selected ? colors.accent : pendingDefault ? colors.warning : colors.border + '80',
+          backgroundColor: selected
+            ? colors.accent + '1f'
+            : pressed && enabled
+              ? colors.surfaceRaised
+              : pendingDefault
+                ? colors.warningSoft
+                : colors.surface,
         },
+        pendingDefault && styles.pendingDefault,
         !enabled && styles.disabled,
       ]}>
       <View style={[styles.radio, { borderColor: selected ? colors.accent : colors.textMuted }]}>
@@ -59,8 +73,12 @@ export function ChoiceOption({
           </Text>
           <View style={styles.chips}>
             {isDefault && (
-              <View style={[styles.chip, { borderColor: colors.textMuted }]}>
-                <Text variant="caption" color="textSecondary" style={styles.chipText}>
+              <View
+                style={[
+                  styles.chip,
+                  pendingDefault ? { borderColor: colors.warning } : { borderColor: colors.textMuted },
+                ]}>
+                <Text variant="caption" color={pendingDefault ? 'warning' : 'textSecondary'} style={styles.chipText}>
                   padrão
                 </Text>
               </View>
@@ -81,6 +99,11 @@ export function ChoiceOption({
         <Text variant="caption" color="textSecondary">
           {description}
         </Text>
+        {pendingDefault && (
+          <Text variant="caption" color="warning" style={styles.chipText}>
+            Vale esta se você não responder até o fim do mês.
+          </Text>
+        )}
       </View>
     </Pressable>
   );
@@ -114,4 +137,5 @@ const styles = StyleSheet.create({
   chip: { borderWidth: 1, borderRadius: Radius.pill, paddingHorizontal: 7, paddingVertical: 1 },
   chipText: { fontWeight: '700', letterSpacing: 0.2 },
   disabled: { opacity: 0.45 },
+  pendingDefault: { borderStyle: 'dashed', borderWidth: 1.5 },
 });
