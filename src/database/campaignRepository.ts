@@ -495,6 +495,19 @@ export async function loadStateAt(db: SqlDatabase, campaignId: string, turnIndex
   return row ? upgradeState(row.state_schema_version, row.state_json) : null;
 }
 
+/**
+ * Só para o painel de desenvolvedor: regrava o estado do turno atual (sem relatório nem séries; o turno não avançou).
+ * Falha se a campanha não está nesse turno, como `recordMonth`.
+ */
+export async function overwriteCurrentState(db: SqlDatabase, campaignId: string, state: GameState): Promise<void> {
+  const turn = turnIndexOf(state);
+  const updated = await db.run(
+    'UPDATE snapshots SET state_schema_version = ?, state_json = ? WHERE campaign_id = ? AND turn_index = ?',
+    [state.schemaVersion, JSON.stringify(state), campaignId, turn],
+  );
+  if (updated.changes !== 1) throw new Error(`campanha ${campaignId} sem estado salvo no turno ${turn}`);
+}
+
 /** Marca a campanha como encerrada (fim do protótipo, do mandato, impeachment…). */
 export async function finishCampaign(db: SqlDatabase, campaignId: string): Promise<void> {
   await db.run(

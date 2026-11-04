@@ -1,5 +1,8 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 
+import { View } from 'react-native';
+
+import { DevPanel } from '@/components/dev/DevPanel';
 import { Hud } from '@/components/painel/hudTheme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -29,15 +32,19 @@ export default function JogoLayout() {
 
   return (
     <ThemeProvider value={navTheme}>
-      {/* Fundo escuro da mesa nas transições: sem piscar branco entre o Painel e as subtelas. */}
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Hud.board } }}>
-        <Stack.Screen name="painel" />
-        <Stack.Screen name="gabinete" options={{ animation: 'fade_from_bottom' }} />
-        <Stack.Screen name="congresso" options={{ animation: 'fade_from_bottom' }} />
-        <Stack.Screen name="economia" options={{ animation: 'fade_from_bottom' }} />
-        <Stack.Screen name="noticias" options={{ animation: 'fade' }} />
-        <Stack.Screen name="legado" options={{ animation: 'fade' }} />
-      </Stack>
+      <View style={{ flex: 1 }}>
+        {/* Fundo escuro da mesa nas transições: sem piscar branco entre o Painel e as subtelas. */}
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Hud.board } }}>
+          <Stack.Screen name="painel" />
+          <Stack.Screen name="gabinete" options={{ animation: 'fade_from_bottom' }} />
+          <Stack.Screen name="congresso" options={{ animation: 'fade_from_bottom' }} />
+          <Stack.Screen name="economia" options={{ animation: 'fade_from_bottom' }} />
+          <Stack.Screen name="noticias" options={{ animation: 'fade' }} />
+          <Stack.Screen name="legado" options={{ animation: 'fade' }} />
+        </Stack>
+        {/* Painel secreto de testes: só em desenvolvimento, por cima de todas as telas do jogo. */}
+        {__DEV__ ? <DevPanel /> : null}
+      </View>
     </ThemeProvider>
   );
 }

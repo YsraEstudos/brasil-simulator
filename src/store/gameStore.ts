@@ -13,6 +13,7 @@ import {
   loadRegionalHistory,
   loadReport,
   loadStateAt,
+  overwriteCurrentState,
   recordMonth,
   type CampaignSummary,
   type IndicatorPoint,
@@ -130,6 +131,16 @@ export interface GameStoreState {
   profileHistory(): Promise<ProfileHistory>;
   /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
   endMonth(input?: MonthInput): Promise<boolean>;
+  /**
+   * Só painel de desenvolvedor (`__DEV__`): aplica uma transformação ao estado do turno atual e a grava, sem avançar.
+   * `false` se não há partida em andamento, outra operação está rodando ou a gravação falhou.
+   */
+  devApply(transform: (state: GameState) => GameState): Promise<boolean>;
+  /**
+   * Só painel de desenvolvedor: encerra meses seguidos, sem decisões (eventos com a escolha padrão), até o mês do
+   * mandato `targetMonth` ou o fim da campanha. Cada mês é gravado como um mês jogado. `onProgress` recebe o mês atual.
+   */
+  devSkipTo(targetMonth: number, onProgress?: (monthIndex: number) => void): Promise<boolean>;
   /** Marca/desmarca no rascunho; ignorado enquanto o mês é gravado (`busy`) ou com a campanha encerrada. */
   toggleDecision(decision: Decision): void;
   toggleEventChoice(eventId: string, choiceId: string): void;
@@ -441,6 +452,27 @@ export function createGameStore(deps: GameStoreDeps) {
           });
           await refreshList(d);
         }),
+
+      devApply: (transform) =>
+        run(async (d) => {
+          const active = get().active;
+          if (!active || active.finished) throw new Error('Nenhuma partida em andamento.');
+          const state = transform(active.state);
+          await overwriteCurrentState(d, active.id, state);
+          set({ active: { ...active, state } });
+        }),
+
+      async devSkipTo(targetMonth, onProgress) {
+        // Teto de segurança: a carreira antes da posse tem turnos com o mês do mandato parado em 0.
+        const maxTurns = 400;
+        for (let i = 0; i < maxTurns; i++) {
+          const active = get().active;
+          if (!active || active.finished || active.state.monthIndex >= targetMonth) return active !== null;
+          if (!(await get().endMonth({ decisions: [] }))) return false;
+          onProgress?.(get().active?.state.monthIndex ?? 0);
+        }
+        return true;
+      },
 
       // O rascunho fica parado durante o fechamento do mês: o motor já leu a agenda e a gravação zera o rascunho no
       // fim, então uma escolha feita nesse meio se perderia. Campanha encerrada não tem próximo mês para decidir.
