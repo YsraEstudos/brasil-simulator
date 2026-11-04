@@ -110,6 +110,8 @@ export interface GameStoreState {
   /** Nuvens do mapa (sim/não; Configurações; guardada em `settings`). Só visual; o perfil de qualidade pode não as permitir. */
   mapClouds: boolean;
   reduceMotion: boolean;
+  /** O jogador já fechou a folha do aviso de ficção (GAME_DESIGN.md §13; chave `aviso_ficcao_visto`). */
+  fictionNoticeSeen: boolean;
   /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
   draft: AgendaDraft;
   /** Últimas dificuldade e cenário usados em NOVO JOGO (lidos uma vez no início, gravados após criar). */
@@ -148,6 +150,8 @@ export interface GameStoreState {
   /** Liga ou desliga as nuvens do mapa; vale na hora e é gravada. */
   setMapClouds(on: boolean): Promise<boolean>;
   setReduceMotion(on: boolean): Promise<boolean>;
+  /** Fecha a folha do aviso de ficção e grava; se gravar falhar, fecha só em memória (`false`). */
+  markFictionNoticeSeen(): Promise<boolean>;
 }
 
 export interface GameStoreDeps {
@@ -157,6 +161,8 @@ export interface GameStoreDeps {
 }
 
 const TEXT_SCALE_KEY = 'textScale';
+/** Folha do aviso de ficção já fechada (GAME_DESIGN.md §13). */
+const FICTION_NOTICE_KEY = 'aviso_ficcao_visto';
 
 /**
  * Estado da interface (AI_INSTRUCTIONS.md §3): única ponte entre telas, motor e banco. Toda mudança de
@@ -199,6 +205,7 @@ export function createGameStore(deps: GameStoreDeps) {
       active: null,
       textScale: 1,
       reduceMotion: false,
+      fictionNoticeSeen: false,
       mapQuality: DEFAULT_MAP_QUALITY,
       autoProfile: DEFAULT_PROFILE_3D,
       dayTime: DEFAULT_DAY_TIME,
@@ -253,9 +260,16 @@ export function createGameStore(deps: GameStoreDeps) {
           } catch {
             /* Uma preferência ilegível não impede abrir a campanha. */
           }
+          let fictionNoticeSeen = false;
+          try {
+            fictionNoticeSeen = (await getSetting<unknown>(db, FICTION_NOTICE_KEY, false)) === true;
+          } catch {
+            /* Ilegível: a folha do aviso aparece de novo, o que não atrapalha a partida. */
+          }
           set({
             textScale,
             reduceMotion,
+            fictionNoticeSeen,
             mapQuality,
             autoProfile,
             dayTime,
@@ -497,6 +511,18 @@ export function createGameStore(deps: GameStoreDeps) {
           await setSetting(db, 'reduceMotion', on);
           set({ reduceMotion: on });
         }),
+
+      async markFictionNoticeSeen() {
+        set({ fictionNoticeSeen: true });
+        // Quieta: falha de gravação não mostra erro; a folha volta só na próxima abertura do app.
+        try {
+          if (!db) return false;
+          await setSetting(db, FICTION_NOTICE_KEY, true);
+          return true;
+        } catch {
+          return false;
+        }
+      },
 
       async setAutoProfile(profile) {
         if (get().autoProfile === profile) return;

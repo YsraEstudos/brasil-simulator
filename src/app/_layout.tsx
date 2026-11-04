@@ -36,6 +36,7 @@ export default function RootLayout() {
           <Stack.Screen name="carregar-jogo" options={{ animation: 'fade_from_bottom' }} />
           {/* Ajustes do jogador, abertos pelo menu principal. */}
           <Stack.Screen name="configuracoes" options={{ animation: 'fade_from_bottom' }} />
+          <Stack.Screen name="sobre" options={{ animation: 'fade_from_bottom' }} />
           {/* Vitrine do sistema de design (/design): ferramenta de desenvolvimento, fora do fluxo do jogo. */}
           <Stack.Screen name="design" />
         </Stack>
