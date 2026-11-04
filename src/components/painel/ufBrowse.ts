@@ -44,6 +44,18 @@ export function ufNeighbors(rows: readonly BrowseRow[], id: string): UfNeighbors
   return { previous: at(i - 1), next: at(i + 1) };
 }
 
+/** Tamanho dos blocos "5 melhores" e "5 piores" da lista de UFs. */
+export const RANKING_GROUP_SIZE = 5;
+
+/**
+ * Os blocos de melhores e piores, já na ordem do ranking. Com até 10 UFs (um filtro de região ou de governador) os
+ * dois blocos repetiriam as mesmas UFs, e a lista completa logo abaixo já mostra todas: então não há blocos.
+ */
+export function rankingGroups<T>(ranked: readonly T[], size = RANKING_GROUP_SIZE): [T[], T[]] | null {
+  if (ranked.length <= 2 * size) return null;
+  return [ranked.slice(0, size), ranked.slice(-size).reverse()];
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Aliadas × oposição pelo governador (D48)
 // ---------------------------------------------------------------------------------------------------------------

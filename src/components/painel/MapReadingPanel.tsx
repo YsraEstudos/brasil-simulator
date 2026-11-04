@@ -32,6 +32,7 @@ import {
   alphabeticalUfs,
   campCounts,
   filterByCamp,
+  rankingGroups,
   GOVERNOR_CAMP_LABEL,
   GOVERNOR_CAMPS,
   UF_LIST_ORDER_LABEL,
@@ -170,7 +171,7 @@ export function ReadingList({
       <Text style={s.note}>Aliadas: governador próximo ou aliado. Oposição: distante ou hostil.</Text>
       <Search query={query} onChange={setQuery} />
       {!query.trim() &&
-        [filtered.slice(0, 5), filtered.slice(-5).reverse()].map((group, i) => (
+        rankingGroups(filtered)?.map((group, i) => (
           <View key={titles[i]}>
             <Text style={s.heading}>{titles[i]}</Text>
             {group.map(rowView)}
