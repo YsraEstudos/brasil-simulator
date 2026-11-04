@@ -10,8 +10,10 @@ export type IndicatorProps = {
   label: string;
   /** Valor atual em fração (0,045 = 4,5%). */
   value: number;
-  /** Valor do mês anterior, para mostrar a variação. */
+  /** Valor do mês anterior (ou da base escolhida), para mostrar a variação. */
   previous?: number;
+  /** Base da variação escrita depois dela, ex.: "desde a posse"; sem ela, a variação é do mês. */
+  deltaSuffix?: string;
   /** Subir é bom (aprovação, PIB) ou ruim (inflação, desemprego)? */
   goodWhen: 'up' | 'down';
   /** Texto curto de contexto, ex.: "meta 3,0% ± 1,5 p.p." */
@@ -34,6 +36,7 @@ export function Indicator({
   label,
   value,
   previous,
+  deltaSuffix,
   goodWhen,
   context,
   decimals = 1,
@@ -44,7 +47,8 @@ export function Indicator({
   const delta = previous === undefined ? undefined : value - previous;
   const tone = delta === undefined ? undefined : deltaSentiment(delta, goodWhen);
   const valueText = formatPercent(value, decimals);
-  const deltaText = delta === undefined ? undefined : formatPointsDelta(delta, decimals);
+  const deltaText =
+    delta === undefined ? undefined : `${formatPointsDelta(delta, decimals)}${deltaSuffix ? ` ${deltaSuffix}` : ''}`;
   const a11y = [label, valueText, tone && deltaText && `${WORD[tone.trend]} ${deltaText}`, context, alert]
     .filter(Boolean)
     .join(', ');
