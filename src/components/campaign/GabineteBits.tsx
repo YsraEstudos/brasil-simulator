@@ -37,6 +37,11 @@ export const ICONS = {
   info: icon('info.circle', 'info'),
   bank: icon('banknote.fill', 'account_balance_wallet'),
   remove: icon('xmark', 'close'),
+  search: icon('magnifyingglass', 'search'),
+  filter: icon('line.3.horizontal.decrease.circle', 'tune'),
+  sort: icon('arrow.up.arrow.down', 'swap_vert'),
+  checkboxOn: icon('checkmark.square.fill', 'check_box'),
+  checkboxOff: icon('square', 'check_box_outline_blank'),
 } as const;
 
 export function Icon({ name, size = 18, color = 'accent' }: { name: IconName; size?: number; color?: ThemeColor }) {
@@ -196,16 +201,21 @@ export function SectionTab({
   );
 }
 
-/** Filtro em forma de pílula, com ícone. */
+/** Filtro em forma de pílula, com ícone e, se houver, um número ao lado do rótulo ("Saúde · 3"). */
 export function FilterChip({
   label,
   icon: name,
   active,
+  count,
+  accessibilityLabel,
   onPress,
 }: {
   label: string;
   icon?: IconName;
   active: boolean;
+  /** Número mostrado depois do rótulo; zero ou ausente não aparece. */
+  count?: number;
+  accessibilityLabel?: string;
   onPress: () => void;
 }) {
   const { colors } = useTheme();
@@ -214,6 +224,7 @@ export function FilterChip({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
+      accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [
         styles.chip,
         {
@@ -226,6 +237,11 @@ export function FilterChip({
       <Text variant="caption" color={active ? 'onAccent' : 'textSecondary'} style={styles.chipLabel}>
         {label}
       </Text>
+      {count ? (
+        <Text variant="caption" color={active ? 'onAccent' : 'accent'} tabular style={styles.chipCount}>
+          {`· ${count}`}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -288,5 +304,6 @@ const styles = StyleSheet.create({
     minHeight: 36,
   },
   chipLabel: { fontWeight: '600' },
+  chipCount: { fontWeight: '700' },
   pressed: { opacity: 0.75 },
 });

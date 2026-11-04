@@ -1,17 +1,39 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { ministryIcon } from '@/components/painel/HudBits';
-import { Text } from '@/components/ui';
-import { Radius, Spacing } from '@/constants/theme';
-import { reissueBarredPolicies, type GameContent, type GameState, type Proposal } from '@/engine';
+import { Spacing } from '@/constants/theme';
+import {
+  PROPOSAL_IN_PROGRESS,
+  reissueBarredPolicies,
+  type GameContent,
+  type GameState,
+  type Proposal,
+  type ProposalStatus,
+} from '@/engine';
 import { legislativeInstrument } from '@/engine/congress/congress';
-import { useTheme } from '@/hooks/use-theme';
+import { decisionCost } from '@/store';
 import type { Policy } from '@/types/policy';
 
-import { DispatchCard } from './DispatchCard';
-import { Badge, CostPips, FilterChip, Icon, ICONS, IconTile, SectionHeader } from './GabineteBits';
-import { INSTRUMENT_LABEL, PROPOSAL_IN_PROGRESS, PROPOSAL_STATUS_LABEL, areaLabel } from './labels';
+import { useCatalogQuery } from './catalogQueryStore';
+import { ICONS, SectionHeader } from './GabineteBits';
+import { areaLabel } from './labels';
+import { PolicyCatalogCard } from './PolicyCatalogCard';
+import {
+  AreaFilterRow,
+  CatalogEmpty,
+  CatalogFilterPanel,
+  CatalogResultsBar,
+  CatalogToolbar,
+} from './PolicyCatalogControls';
+import {
+  areaFilters,
+  buildCatalog,
+  isFiltering,
+  panelFilterCount,
+  queryCatalog,
+  resultsLabel,
+  type SaturationLimits,
+} from './policyCatalogModel';
 
 export interface DecisionPanelProps {
   state: GameState;
@@ -21,6 +43,8 @@ export interface DecisionPanelProps {
   /** Política com a mesa de despacho aberta. */
   expandedId: string | null;
   actionsMax: number;
+  /** Ações de agenda ainda livres neste mês. */
+  actionsLeft: number;
   onExpand: (id: string | null) => void;
   onToggle: (id: string) => void;
   /** Se incluir a política respeita as ações restantes. */
@@ -31,28 +55,52 @@ export interface DecisionPanelProps {
   onToggleBypass: (id: string) => void;
 }
 
-/** Agenda presidencial: políticas do cenário, com a mesa de despacho de cada uma (GAME_DESIGN.md §4.2, §4.3). */
+/**
+ * Catálogo de decisões do Gabinete (GAME_DESIGN.md §4.2, §4.3; PLANO_QUICK_WINS.md, Fase Q6): busca, filtros por
+ * área, tipo e custo, ordem e "o que posso pagar agora", com a mesa de despacho de cada decisão. A escolha de busca
+ * e filtros fica no `catalogQueryStore` e sobrevive à troca de aba.
+ */
 export function DecisionPanel({
   state,
   content,
   selected,
   expandedId,
   actionsMax,
+  actionsLeft,
   onExpand,
   onToggle,
   canInclude,
   isVedada,
   onToggleBypass,
 }: DecisionPanelProps) {
-  const { colors } = useTheme();
-  const policies = content.scenario.policies.flatMap((id) => {
-    const policy = content.policies[id];
-    return policy && policy.delivery !== 'rotina' ? [policy] : [];
-  });
-  const barred = reissueBarredPolicies(state, content);
-  const areas = [...new Set(policies.map((policy) => policy.area))];
-  const [area, setArea] = useState<string | null>(null);
-  const visiblePolicies = area === null ? policies : policies.filter((policy) => policy.area === area);
+  const { query, update, clear } = useCatalogQuery();
+  const [panelOpen, setPanelOpen] = useState(false);
+
+  const entries = useMemo(() => {
+    const policies = content.scenario.policies.flatMap((id) => {
+      const policy = content.policies[id];
+      return policy && policy.delivery !== 'rotina' ? [policy] : [];
+    });
+    const latest = latestStatuses(state.proposals);
+    return buildCatalog({
+      policies,
+      latestStatus: (id) => latest.get(id),
+      inProgressStatuses: PROPOSAL_IN_PROGRESS,
+      barred: reissueBarredPolicies(state, content),
+      selected,
+      actionsLeft,
+      costOf: (policy) => decisionCost({ policyId: policy.id, agendaCost: 0 }, content),
+      instrumentOf: legislativeInstrument,
+      areaName: areaLabel,
+      limits: saturationLimits(state, content),
+    });
+  }, [state, content, selected, actionsLeft]);
+
+  const areas = useMemo(() => areaFilters(entries), [entries]);
+  // Uma área escolhida em outra campanha pode não existir nesta: nesse caso, vale "Todas".
+  const area = areas.some((item) => item.id === query.area) ? query.area : null;
+  const effectiveQuery = useMemo(() => ({ ...query, area }), [query, area]);
+  const visible = useMemo(() => queryCatalog(entries, effectiveQuery), [entries, effectiveQuery]);
 
   return (
     <View style={styles.root}>
@@ -61,153 +109,64 @@ export function DecisionPanel({
         title="Decisões de governo"
         description="Leis, medidas provisórias e decretos. Toque numa decisão para ouvir os ministros e incluí-la na agenda."
       />
-      <View style={styles.legend}>
-        <Badge icon={ICONS.executive} label="Ato do Executivo: vale ao encerrar o mês" tone="positive" />
-        <Badge icon={ICONS.congress} label="Passa pelo Congresso: precisa de votos" tone="info" />
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filters}
-        accessibilityLabel="Filtrar catálogo de políticas por área">
-        <FilterChip label="Todas" icon={ICONS.decisions} active={area === null} onPress={() => setArea(null)} />
-        {areas.map((id) => (
-          <FilterChip
-            key={id}
-            label={areaLabel(id)}
-            icon={ministryIcon([id])}
-            active={area === id}
-            onPress={() => setArea(id)}
-          />
-        ))}
-      </ScrollView>
-      {visiblePolicies.length === 0 && (
-        <Text variant="body" color="textSecondary">
-          Nenhuma política legislativa ou executiva disponível nesta área.
-        </Text>
-      )}
-      {visiblePolicies.map((policy) => {
-        const current = latestProposal(state.proposals, policy.id);
-        const inProgress = current !== undefined && PROPOSAL_IN_PROGRESS.has(current.status);
-        const locked = inProgress || barred.has(policy.id);
-        const isSelected = selected.includes(policy.id);
-        const instrument = legislativeInstrument(policy);
-        const expanded = !locked && expandedId === policy.id;
-        const badges = (
-          <View style={styles.badges}>
-            {instrument ? (
-              <Badge icon={ICONS.congress} label={INSTRUMENT_LABEL[instrument]} tone="info" />
-            ) : (
-              <Badge icon={ICONS.executive} label="Ato do Executivo" tone="positive" />
-            )}
-            <CostPips cost={policy.agendaCost} max={Math.min(actionsMax, 3)} />
-            {current && (
-              <Badge
-                icon={inProgress ? ICONS.inProgress : undefined}
-                label={PROPOSAL_STATUS_LABEL[current.status]}
-                tone={inProgress ? 'warning' : 'textMuted'}
-              />
-            )}
-          </View>
-        );
-        const body = (
-          <>
-            <View style={styles.cardTop}>
-              <IconTile name={ministryIcon([policy.area])} color={locked ? 'textMuted' : 'accent'} />
-              <View style={styles.cardTitle}>
-                <Text variant="caption" color="textMuted">
-                  {areaLabel(policy.area).toUpperCase()}
-                </Text>
-                <Text variant="label" color={locked ? 'textSecondary' : 'text'}>
-                  {policy.name}
-                </Text>
-              </View>
-              {locked ? (
-                <Icon name={ICONS.locked} size={18} color="textMuted" />
-              ) : isSelected ? (
-                <Icon name={ICONS.check} size={22} />
-              ) : (
-                <Icon name={expanded ? ICONS.collapse : ICONS.expand} size={20} color="textSecondary" />
-              )}
-            </View>
-            <Text variant="caption" color="textSecondary" numberOfLines={expanded ? undefined : 2}>
-              {policy.summary}
-            </Text>
-            {badges}
-            {locked && (
-              <Text variant="caption" color="textMuted">
-                {inProgress
-                  ? 'Já está em andamento; não pode ser enviada de novo agora.'
-                  : 'Medida provisória rejeitada ou caducada: só pode ser reeditada no ano que vem (CF art. 62 §10).'}
-              </Text>
-            )}
-          </>
-        );
-        const frame = [
-          styles.card,
-          {
-            backgroundColor: colors.surface,
-            borderColor: isSelected ? colors.accent : colors.border,
-            borderWidth: isSelected ? 1.5 : StyleSheet.hairlineWidth,
-          },
-          locked && styles.locked,
-        ];
 
-        if (locked) {
-          return (
-            <View key={policy.id} style={frame}>
-              {body}
-            </View>
-          );
-        }
-        // A mesa de despacho fica fora do botão do cartão: botões não podem conter botões.
-        return (
-          <View key={policy.id} style={frame}>
-            <Pressable
-              onPress={() => onExpand(expanded ? null : policy.id)}
-              accessibilityRole="button"
-              accessibilityState={{ expanded }}
-              accessibilityLabel={`${policy.name}. ${isSelected ? 'Na agenda. ' : ''}${expanded ? 'Fechar mesa de despacho' : 'Abrir mesa de despacho'}`}
-              style={({ pressed }) => [styles.cardBody, pressed && styles.pressed]}>
-              {body}
-            </Pressable>
-            {expanded && (
-              <DispatchCard
-                policy={policy}
-                state={state}
-                content={content}
-                included={isSelected}
-                canInclude={canInclude(policy)}
-                vedacao={isVedada(policy)}
-                onToggle={() => onToggle(policy.id)}
-                onToggleBypass={() => onToggleBypass(policy.id)}
-              />
-            )}
-          </View>
-        );
-      })}
+      <CatalogToolbar
+        search={query.search}
+        filterCount={panelFilterCount(effectiveQuery)}
+        panelOpen={panelOpen}
+        onSearch={(search) => update({ search })}
+        onTogglePanel={() => setPanelOpen((open) => !open)}
+      />
+      {panelOpen && <CatalogFilterPanel query={effectiveQuery} actionsLeft={actionsLeft} onChange={update} />}
+      <AreaFilterRow areas={areas} selected={area} onSelect={(next) => update({ area: next })} />
+      <CatalogResultsBar
+        label={resultsLabel(visible.length, entries.length)}
+        filtering={isFiltering(effectiveQuery)}
+        onClear={clear}
+      />
+
+      {visible.length === 0 ? (
+        <CatalogEmpty onClear={clear} />
+      ) : (
+        visible.map((entry) => (
+          <PolicyCatalogCard
+            key={entry.policy.id}
+            entry={entry}
+            state={state}
+            content={content}
+            expanded={expandedId === entry.policy.id}
+            actionsMax={actionsMax}
+            canInclude={canInclude(entry.policy)}
+            vedada={isVedada(entry.policy)}
+            onExpand={onExpand}
+            onToggle={() => onToggle(entry.policy.id)}
+            onToggleBypass={() => onToggleBypass(entry.policy.id)}
+          />
+        ))
+      )}
     </View>
   );
 }
 
-/** Proposta mais recente da política (a última criada). */
-function latestProposal(proposals: readonly Proposal[], policyId: string): Proposal | undefined {
-  for (let i = proposals.length - 1; i >= 0; i--) {
-    const p = proposals[i];
-    if (p && p.policyId === policyId) return p;
-  }
-  return undefined;
+/** Situação da proposta mais recente de cada política (a última criada vence). */
+function latestStatuses(proposals: readonly Proposal[]): Map<string, ProposalStatus> {
+  const latest = new Map<string, ProposalStatus>();
+  for (const proposal of proposals) latest.set(proposal.policyId, proposal.status);
+  return latest;
+}
+
+/** Aprovação e credibilidade agora, com os limites que o motor aplica a cada uma. */
+function saturationLimits(state: GameState, content: GameContent): SaturationLimits {
+  return {
+    approval: {
+      value: state.indicators.approval,
+      min: content.calibration.aprovacao_min,
+      max: content.calibration.aprovacao_max,
+    },
+    credibility: { value: state.economy.credibility, min: 0, max: 1 },
+  };
 }
 
 const styles = StyleSheet.create({
   root: { gap: Spacing.two },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
-  filters: { gap: Spacing.one, paddingVertical: Spacing.one },
-  card: { borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.two },
-  cardBody: { gap: Spacing.two },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  cardTitle: { flex: 1 },
-  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
-  locked: { opacity: 0.7 },
-  pressed: { opacity: 0.75 },
 });
