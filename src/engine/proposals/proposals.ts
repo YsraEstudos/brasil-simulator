@@ -75,9 +75,9 @@ const VETO_SESSAO_MESES = 1;
 /** Urgência constitucional: 45 dias em cada Casa (CF art. 64 §2º), arredondados para 2 meses. */
 const URGENCIA_MESES = 2;
 /** MP: 60 + 60 dias de vigência (CF art. 62 §§3º, 7º), 4 meses no motor. */
-const MP_VIGENCIA_MESES = 4;
+export const MP_VIGENCIA_MESES = 4;
 /** MP tranca a pauta da Casa depois de 45 dias (CF art. 62 §6º): a partir do 2º mês após a edição. */
-const MP_TRANCA_MESES = 2;
+export const MP_TRANCA_MESES = 2;
 /** Escala do capital político (GAME_DESIGN.md §5). */
 const CAPITAL_MIN = 0;
 const CAPITAL_MAX = 100;
