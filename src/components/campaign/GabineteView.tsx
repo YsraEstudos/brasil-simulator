@@ -115,6 +115,7 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
             selected={selected}
             expandedId={expandedPolicy}
             actionsMax={actionsMax}
+            actionsLeft={Math.max(0, actionsMax - actionsUsed)}
             onExpand={setExpandedPolicy}
             onToggle={toggleSimple}
             canInclude={canInclude}
