@@ -13,10 +13,14 @@ import {
   type MonthStep,
 } from '../engine';
 import {
+  addPlayTime,
+  cardSummaryOf,
   CampaignNotFoundError,
   createCampaign,
   deleteCampaign,
   listCampaigns,
+  parseCardSummary,
+  touchCampaign,
   loadElectionResults,
   loadIndicatorHistory,
   loadLatestState,
@@ -102,7 +106,7 @@ describe('migrações', () => {
     const db = openNodeDatabase();
     await migrate(db, MIGRATIONS.slice(0, 2));
     await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
-    expect(await migrate(db)).toEqual([3, 4, 5, 6, 7]);
+    expect(await migrate(db)).toEqual([3, 4, 5, 6, 7, 8]);
     expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
     expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Antiga']);
   });
@@ -301,7 +305,7 @@ describe('campanhas', () => {
       'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
       ['c1', 0, state.schemaVersion, JSON.stringify(state)],
     );
-    expect(await migrate(old)).toEqual([4, 5, 6, 7]);
+    expect(await migrate(old)).toEqual([4, 5, 6, 7, 8]);
     const [point] = await loadIndicatorHistory(old, 'c1');
     expect(point?.indicators).toEqual(state.indicators);
     expect(point?.selic).toBe(state.economy.selic);
@@ -494,7 +498,7 @@ describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
     await put(1, s1);
     await put(2, semRegioes); // snapshot de formato sem o bloco regional
 
-    expect(await migrate(old)).toEqual([5, 6, 7]);
+    expect(await migrate(old)).toEqual([5, 6, 7, 8]);
     const history = await loadRegionalHistory(old, 'c1');
     expect(history.map((p) => p.monthIndex)).toEqual([1]);
     for (const uf of s1.regions.ufs) {
@@ -665,5 +669,79 @@ describe('resultado eleitoral por UF (PLANO_GLOBO.md §5.3, PR 12)', () => {
     ]);
     await deleteCampaign(db, 'c1');
     expect(await db.first<{ n: number }>('SELECT COUNT(*) AS n FROM election_results')).toEqual({ n: 0 });
+  });
+});
+
+describe('resumo do save e tempo de jogo (PLANO_MENU_SAVES_CONFIG.md, Fase M2)', () => {
+  const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  let db: SqlDatabase;
+  beforeEach(async () => {
+    db = openNodeDatabase();
+    await migrate(db);
+  });
+
+  it('a migração 8 cria as colunas de tempo, última jogada e resumo', async () => {
+    const cols = (await db.all<{ name: string }>('PRAGMA table_info(campaigns)')).map((c) => c.name);
+    expect(cols).toEqual(expect.arrayContaining(['play_time_ms', 'last_played_at', 'summary_json']));
+  });
+
+  it('createCampaign grava o resumo do estado inicial, a última jogada agora e tempo zero', async () => {
+    const state = newState(4);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    const [summary] = await listCampaigns(db);
+    expect(summary.cardSummary).toEqual(cardSummaryOf(state));
+    expect(summary.lastPlayedAt).toMatch(ISO);
+    expect(summary.playTimeMs).toBe(0);
+  });
+
+  it('recordMonth atualiza o resumo e last_played_at, sem mexer no tempo de jogo', async () => {
+    const state = newState(4);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state });
+    await db.run("UPDATE campaigns SET last_played_at = '2000-01-01T00:00:00.000Z'");
+    await addPlayTime(db, 'c1', 1000);
+    const r = advanceMonth(state, { decisions: [] }, content, []);
+    await recordMonth(db, 'c1', r);
+    const [summary] = await listCampaigns(db);
+    expect(summary.cardSummary).toEqual(cardSummaryOf(r.state));
+    expect(summary.cardSummary?.monthIndex).toBe(1);
+    expect(summary.lastPlayedAt).toMatch(ISO);
+    expect(summary.lastPlayedAt).not.toBe('2000-01-01T00:00:00.000Z');
+    expect(summary.playTimeMs).toBe(1000);
+  });
+
+  it('touchCampaign grava a última jogada e não mexe em updated_at (a lista não reordena)', async () => {
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state: newState(4) });
+    await db.run(
+      "UPDATE campaigns SET updated_at = '2001-02-03T00:00:00.000Z', last_played_at = '2000-01-01T00:00:00.000Z'",
+    );
+    await touchCampaign(db, 'c1');
+    const row = await db.first<{ updated_at: string; last_played_at: string }>(
+      'SELECT updated_at, last_played_at FROM campaigns',
+    );
+    expect(row?.updated_at).toBe('2001-02-03T00:00:00.000Z');
+    expect(row?.last_played_at).toMatch(ISO);
+    expect(row?.last_played_at).not.toBe('2000-01-01T00:00:00.000Z');
+  });
+
+  it('addPlayTime soma tempo arredondado e ignora valores inválidos, sem mexer em updated_at', async () => {
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state: newState(4) });
+    const before = await db.first<{ updated_at: string }>('SELECT updated_at FROM campaigns');
+    expect(await addPlayTime(db, 'c1', 1500.4)).toBe(1500);
+    expect(await addPlayTime(db, 'c1', 999.6)).toBe(1000);
+    for (const bad of [0, -5, 0.2, NaN, Infinity, -Infinity]) {
+      expect(await addPlayTime(db, 'c1', bad)).toBe(0);
+    }
+    const [summary] = await listCampaigns(db);
+    expect(summary.playTimeMs).toBe(2500);
+    expect(summary.updatedAt).toBe(before?.updated_at);
+  });
+
+  it('parseCardSummary: JSON inválido, nulo ou incompleto vira null; o válido volta igual', () => {
+    expect(parseCardSummary(null)).toBeNull();
+    expect(parseCardSummary('{não é json')).toBeNull();
+    expect(parseCardSummary('null')).toBeNull();
+    expect(parseCardSummary('{"approval":0.5}')).toBeNull();
+    const ok = { approval: 0.42, gdpGrowth12m: 0.01, monthIndex: 3 };
+    expect(parseCardSummary(JSON.stringify(ok))).toEqual(ok);
   });
 });

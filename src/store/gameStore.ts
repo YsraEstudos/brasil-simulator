@@ -2,6 +2,7 @@ import { createStore } from 'zustand/vanilla';
 
 import { TEXT_SCALES, type TextScale } from '@/constants/textScale';
 import {
+  addPlayTime,
   createCampaign,
   deleteCampaign,
   finishCampaign,
@@ -14,6 +15,7 @@ import {
   loadReport,
   loadStateAt,
   recordMonth,
+  touchCampaign,
   type CampaignSummary,
   type IndicatorPoint,
   type ProfileHistory,
@@ -128,6 +130,11 @@ export interface GameStoreState {
   electionResults(): Promise<ElectionResult[]>;
   /** Rastro do perfil do governo e decisões que o moveram nos últimos meses (folha Perfil); vazio sem partida ou leitura falha. */
   profileHistory(): Promise<ProfileHistory>;
+  /**
+   * Soma `ms` de tempo de jogo à partida (`campaignId`, por padrão a ativa) e atualiza a lista em memória. Não usa
+   * `busy`: gravar o tempo não disputa com o encerramento do mês (é um UPDATE simples). Silenciosa em erro.
+   */
+  recordPlayTime(ms: number, campaignId?: string): Promise<void>;
   /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
   endMonth(input?: MonthInput): Promise<boolean>;
   /** Marca/desmarca no rascunho; ignorado enquanto o mês é gravado (`busy`) ou com a campanha encerrada. */
@@ -321,6 +328,12 @@ export function createGameStore(deps: GameStoreDeps) {
 
           // Commit confirmado: a campanha existe, e nada daqui em diante pode transformá-la em fracasso.
           set({ active: created, draft: EMPTY_DRAFT, setupPrefs: { difficulty, scenarioId } });
+          // Partida recém-criada conta como jogada agora; falha aqui não desfaz a criação.
+          try {
+            await touchCampaign(d, created.id);
+          } catch {
+            // createCampaign já gravou a última jogada: nada a fazer.
+          }
           try {
             await refreshList(d);
           } catch {
@@ -371,6 +384,13 @@ export function createGameStore(deps: GameStoreDeps) {
             },
             draft: EMPTY_DRAFT,
           });
+          // Abrir a partida conta como jogada (`last_played_at`) e atualiza o cartão; falha aqui não impede abrir.
+          try {
+            await touchCampaign(d, id);
+            await refreshList(d);
+          } catch {
+            // A lista do cartão fica com a data antiga até a próxima operação.
+          }
         });
       },
 
@@ -441,6 +461,22 @@ export function createGameStore(deps: GameStoreDeps) {
           });
           await refreshList(d);
         }),
+
+      async recordPlayTime(ms, campaignId) {
+        const id = campaignId ?? get().active?.id;
+        // Sem campanha ou com o banco ainda não aberto, não há onde gravar.
+        if (!id || !db) return;
+        try {
+          const added = await addPlayTime(db, id, ms);
+          if (added > 0) {
+            set((s) => ({
+              campaigns: s.campaigns.map((c) => (c.id === id ? { ...c, playTimeMs: c.playTimeMs + added } : c)),
+            }));
+          }
+        } catch {
+          // Tempo de jogo é secundário: uma falha de gravação não aparece para o jogador.
+        }
+      },
 
       // O rascunho fica parado durante o fechamento do mês: o motor já leu a agenda e a gravação zera o rascunho no
       // fim, então uma escolha feita nesse meio se perderia. Campanha encerrada não tem próximo mês para decidir.
