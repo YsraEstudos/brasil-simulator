@@ -41,7 +41,7 @@ import { useMapMarkers } from '@/components/map/useMapMarkers';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
 import type { Profile3d } from '@/globe/qualityProfiles';
-import { draftCost, gameStore, planMapQuality, useGame, type RegionalPoint } from '@/store';
+import { draftCost, gameStore, hasPendingChoices, planMapQuality, useGame, type RegionalPoint } from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
 import { GdpChart } from './GdpChart';
@@ -758,10 +758,18 @@ export function PainelScreen() {
           <>
             <MenuRow
               icon={HOME_ICON}
-              label="Voltar ao menu principal"
+              label={active && !active.finished ? 'Salvar e sair para o menu' : 'Voltar ao menu principal'}
               disabled={busy}
               onPress={() => void leaveToMenu()}
             />
+            {/* B52: o mês gravado fica salvo; o rascunho só existe na memória do app (não vai para o banco). */}
+            {active && !active.finished && (
+              <Text style={{ color: Hud.textMuted, fontSize: 10.5, paddingTop: 2 }}>
+                {hasPendingChoices(draft)
+                  ? 'O mês já está salvo. As decisões ainda não confirmadas valem só até você fechar o app.'
+                  : 'O mês já está salvo.'}
+              </Text>
+            )}
             {active && (
               <MenuRow icon={SAVE_AS_ICON} label="Salvar como…" disabled={busy} onPress={() => void saveAsCopy()} />
             )}

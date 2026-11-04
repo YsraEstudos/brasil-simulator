@@ -38,6 +38,8 @@ export interface Preferences {
   skipNewspaperIntro: boolean;
   /** Abre o app direto na última campanha ativa, sem passar pelo menu. */
   openLastCampaign: boolean;
+  /** Esconde a semente nos cartões de Carregar Jogo (para print ou vídeo sem entregar a semente). */
+  hideSeed: boolean;
 }
 
 export type PreferenceKey = keyof Preferences;
@@ -70,6 +72,7 @@ export const PREFERENCE_DEFS: { [K in PreferenceKey]: PreferenceDef<Preferences[
   globeZoomSpeed: { key: 'globo_zoom', default: 1, resolve: oneOf(GLOBE_SPEED_STEPS, 1) },
   skipNewspaperIntro: { key: 'pular_abertura_jornal', default: false, resolve: bool(false) },
   openLastCampaign: { key: 'abrir_na_campanha', default: false, resolve: bool(false) },
+  hideSeed: { key: 'ocultar_semente', default: false, resolve: bool(false) },
 };
 
 export const PREFERENCE_KEYS = Object.keys(PREFERENCE_DEFS) as PreferenceKey[];

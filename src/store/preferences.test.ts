@@ -41,6 +41,7 @@ describe('loadPreferences', () => {
         globo_zoom: 0.5,
         pular_abertura_jornal: true,
         abrir_na_campanha: true,
+        ocultar_semente: true,
       }),
     );
     expect(prefs).toEqual<Preferences>({
@@ -53,6 +54,7 @@ describe('loadPreferences', () => {
       globeZoomSpeed: 0.5,
       skipNewspaperIntro: true,
       openLastCampaign: true,
+      hideSeed: true,
     });
   });
 

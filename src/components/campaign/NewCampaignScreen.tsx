@@ -25,6 +25,7 @@ import {
   gameStore,
   hasPendingChoices,
   parseSeedInput,
+  PROFILE_PRESET_IDS,
   scenarioOptions,
   useGame,
   type CampaignSetupForm,
@@ -32,6 +33,7 @@ import {
 } from '@/store';
 
 import { randomCampaignName, yearOfPeriod } from './campaignNames';
+import { pickRandomSetup } from './randomSetup';
 import {
   createActionLabel,
   difficultyView,
@@ -209,6 +211,32 @@ function NewCampaignForm({
     update({ name });
   };
 
+  // Sorteia a partida inteira (D45): nome, dificuldade, cenário, perfil e semente. Só preenche o formulário; quem
+  // confirma é o jogador. O ponto de partida volta à posse, que todo cenário oferece.
+  const rollWhole = () => {
+    const pick = pickRandomSetup(() => Math.random(), {
+      difficulties: DIFFICULTIES,
+      scenarioIds: SCENARIOS.filter((o) => o.kind === 'atual').map((o) => o.id),
+      profileIds: PROFILE_PRESET_IDS,
+    });
+    const scenario = SCENARIOS.find((o) => o.id === pick.scenarioId)?.scenario;
+    const name = randomCampaignName(
+      () => Math.random(),
+      campaigns.map((c) => c.name),
+      yearOfPeriod(scenario?.startPeriod),
+    );
+    setNameTouched(true);
+    setSeedPasteError(null);
+    update({
+      name,
+      difficulty: pick.difficulty,
+      scenarioId: pick.scenarioId,
+      profileId: pick.profileId,
+      seedText: pick.seedText,
+      startPoint: 'posse',
+    });
+  };
+
   // Lê a área de transferência e só preenche a semente se for um número válido pelo mesmo validador do campo.
   const pasteSeed = async () => {
     let text: string;
@@ -297,6 +325,19 @@ function NewCampaignForm({
           />
 
           <Animated.View entering={enterAt(0)} layout={LAYOUT}>
+            <PressScale
+              onPress={rollWhole}
+              disabled={locked}
+              accessibilityLabel="Sortear partida completa"
+              accessibilityHint="Preenche nome, dificuldade, cenário, perfil e semente com valores sorteados. Você confere antes de tomar posse"
+              style={[styles.textButton, { borderColor: colors.accent }]}>
+              <Text variant="label" color="accent" align="center">
+                Sortear partida completa
+              </Text>
+            </PressScale>
+          </Animated.View>
+
+          <Animated.View entering={enterAt(1)} layout={LAYOUT}>
             <Card title="Identidade da campanha" subtitle="Como esta partida aparecerá na lista de saves">
               <Text variant="label" color="textSecondary" nativeID="campaign-name-label">
                 Nome da campanha
