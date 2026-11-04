@@ -71,6 +71,13 @@ import {
 } from './campaignSetup';
 import { DEFAULT_MAP_CLOUDS, MAP_CLOUDS_KEY, resolveMapClouds } from './mapClouds';
 import {
+  DEFAULT_PREFERENCES,
+  loadPreferences,
+  PREFERENCE_DEFS,
+  type PreferenceKey,
+  type Preferences,
+} from './preferences';
+import {
   DEFAULT_SAVED_LIST_PREFS,
   resolveSavedListPrefs,
   SAVED_LIST_PREFS_KEY,
@@ -136,6 +143,8 @@ export interface GameStoreState {
   /** Nuvens do mapa (sim/não; Configurações; guardada em `settings`). Só visual; o perfil de qualidade pode não as permitir. */
   mapClouds: boolean;
   reduceMotion: boolean;
+  /** Preferências do registro (`preferences.ts`): tema, acessibilidade, unidade fiscal, globo, animações, abertura. */
+  prefs: Preferences;
   /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
   draft: AgendaDraft;
   /** Últimas dificuldade e cenário usados em NOVO JOGO (lidos uma vez no início, gravados após criar). */
@@ -208,6 +217,8 @@ export interface GameStoreState {
   /** Liga ou desliga as nuvens do mapa; vale na hora e é gravada. */
   setMapClouds(on: boolean): Promise<boolean>;
   setReduceMotion(on: boolean): Promise<boolean>;
+  /** Muda uma preferência do registro: vale na hora e é gravada (falha de gravação vira `error`, a escolha fica). */
+  setPreference<K extends PreferenceKey>(key: K, value: Preferences[K]): Promise<boolean>;
 }
 
 export interface GameStoreDeps {
@@ -262,6 +273,7 @@ export function createGameStore(deps: GameStoreDeps) {
       active: null,
       textScale: 1,
       reduceMotion: false,
+      prefs: DEFAULT_PREFERENCES,
       savedListPrefs: DEFAULT_SAVED_LIST_PREFS,
       mapQuality: DEFAULT_MAP_QUALITY,
       autoProfile: DEFAULT_PROFILE_3D,
@@ -317,6 +329,12 @@ export function createGameStore(deps: GameStoreDeps) {
           } catch {
             // segue com a ordem padrão
           }
+          let prefs = DEFAULT_PREFERENCES;
+          try {
+            prefs = await loadPreferences((key) => getSetting<unknown>(db as SqlDatabase, key, null));
+          } catch {
+            // segue com os padrões
+          }
           let reduceMotion = false;
           try {
             reduceMotion = (await getSetting<unknown>(db, 'reduceMotion', false)) === true;
@@ -326,6 +344,7 @@ export function createGameStore(deps: GameStoreDeps) {
           set({
             textScale,
             reduceMotion,
+            prefs,
             savedListPrefs,
             mapQuality,
             autoProfile,
@@ -725,6 +744,18 @@ export function createGameStore(deps: GameStoreDeps) {
           set({ mapClouds: on });
           await setSetting(d, MAP_CLOUDS_KEY, on);
         }),
+
+      async setPreference(key, value) {
+        set({ prefs: { ...get().prefs, [key]: value } });
+        if (!db) return false;
+        try {
+          await setSetting(db, PREFERENCE_DEFS[key].key, value);
+          return true;
+        } catch (e) {
+          set({ error: e instanceof Error ? e.message : String(e) });
+          return false;
+        }
+      },
 
       setReduceMotion: (on) =>
         run(async (db) => {

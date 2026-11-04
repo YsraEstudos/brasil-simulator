@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ministryIcon } from '@/components/painel/HudBits';
 
-import { Button, Card, formatMoneyMillions, formatPercent, Text } from '@/components/ui';
+import { Button, Card, formatPercent, Text } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
 import {
   AGENDA_ACTIONS,
@@ -23,6 +23,7 @@ import { Badge, Icon, ICONS, IconTile, ProgressBar, SectionHeader } from './Gabi
 import { GovernmentBrands } from './GovernmentBrands';
 import { PROPOSAL_STATUS_LABEL } from './labels';
 import { currentDirective } from './publicPolicyView';
+import { useFiscal } from './useFiscal';
 
 const DIRECTIVE_ACTION = AGENDA_ACTIONS[DIRECTIVE_ACTION_ID];
 
@@ -70,6 +71,7 @@ export function DirectivesPanel({ state, content, actionsMax }: PublicPoliciesPa
   const draft = useGame((s) => s.draft);
   const [openMinistryId, setOpenMinistryId] = useState<string | null>(null);
   const directives = state.publicPolicies.directives;
+  const fiscal = useFiscal(state, content);
   const currentYear = toCalendar(state.monthIndex).year;
   const routineMinistries = ministriesOf(content)
     .map((ministry) => ({ ministry, policies: routinePolicies(content, ministry.areas) }))
@@ -112,7 +114,7 @@ export function DirectivesPanel({ state, content, actionsMax }: PublicPoliciesPa
                   <Text variant="label">{ministry.name}</Text>
                   {current ? (
                     <Text variant="caption" color="positive">
-                      {`Vigente: ${currentPolicy?.name ?? current.policyId} · ${formatMoneyMillions(current.annualMillions)}/ano`}
+                      {`Vigente: ${currentPolicy?.name ?? current.policyId} · ${fiscal.money(current.annualMillions)}/ano`}
                     </Text>
                   ) : (
                     <Text variant="caption" color="textMuted">
@@ -205,6 +207,7 @@ function DirectiveRow({
     typeof pending?.params?.annualMillions === 'number'
       ? pending.params.annualMillions
       : (current?.annualMillions ?? policy.cost.annualMillions);
+  const fiscal = useFiscal(state, content);
   const [budgetText, setBudgetText] = useState(formatInputMillions(initial));
   const [touched, setTouched] = useState(false);
   const budget = parseMillions(budgetText);
@@ -241,7 +244,7 @@ function DirectiveRow({
         {policy.summary}
       </Text>
       <View style={styles.badges}>
-        <Badge icon={ICONS.fazenda} label={`Catálogo: ${formatMoneyMillions(policy.cost.annualMillions)}/ano`} />
+        <Badge icon={ICONS.fazenda} label={`Catálogo: ${fiscal.money(policy.cost.annualMillions)}/ano`} />
         <Badge icon={ICONS.inProgress} label={lagText(policy)} />
       </View>
       <Text variant="caption" color="textMuted">
@@ -295,15 +298,16 @@ function ProjectWallet({
   projects: readonly PublicProject[];
   capitalStockMillions: number;
 }) {
+  const fiscal = useFiscal(state, content);
   return (
     <Card
       title="Carteira de projetos"
       subtitle="Projeto aprovado não é obra entregue: o efeito só aparece quando a obra entra em operação.">
       <View style={styles.badges}>
-        <Badge icon={ICONS.ministries} label={`Capital em operação: ${formatMoneyMillions(capitalStockMillions)}`} />
+        <Badge icon={ICONS.ministries} label={`Capital em operação: ${fiscal.money(capitalStockMillions)}`} />
         <Badge
           icon={ICONS.projects}
-          label={`Manutenção: ${formatMoneyMillions(projects.reduce((sum, project) => sum + project.maintenanceMillions, 0))}/ano`}
+          label={`Manutenção: ${fiscal.money(projects.reduce((sum, project) => sum + project.maintenanceMillions, 0))}/ano`}
         />
       </View>
       {projects.length === 0 ? (
@@ -346,7 +350,7 @@ function ProjectWallet({
               </View>
               <Text
                 variant="caption"
-                color="textSecondary">{`Gasto ${formatMoneyMillions(project.spentMillions)} de ${formatMoneyMillions(project.budgetMillions)} · manutenção anual ${formatMoneyMillions(project.maintenanceMillions)}`}</Text>
+                color="textSecondary">{`Gasto ${fiscal.money(project.spentMillions)} de ${fiscal.money(project.budgetMillions)} · manutenção anual ${fiscal.money(project.maintenanceMillions)}`}</Text>
             </View>
           );
         })

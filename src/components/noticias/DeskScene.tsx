@@ -23,6 +23,8 @@ interface DeskSceneProps {
   goal: DeskGoal;
   /** Edições antigas empilhadas ao lado (1 folha por edição, até 6). */
   editions: number;
+  /** Sem a entrada da câmera (`prefs.skipNewspaperIntro`): a câmera já começa na pose da mesa. */
+  skipIntro?: boolean;
   onArrive: (goal: DeskGoal) => void;
 }
 
@@ -44,7 +46,7 @@ function useTextures() {
   return textures;
 }
 
-export function DeskScene({ poses, goal, editions, onArrive }: DeskSceneProps) {
+export function DeskScene({ poses, goal, editions, onArrive, skipIntro = false }: DeskSceneProps) {
   const tex = useTextures();
   return (
     <>
@@ -56,7 +58,7 @@ export function DeskScene({ poses, goal, editions, onArrive }: DeskSceneProps) {
       <directionalLight position={[-6, 12, 4]} intensity={1.7} color="#ffe6c4" />
       <directionalLight position={[8, 6, 10]} intensity={0.35} color="#9fb6ff" />
 
-      <CameraRig poses={poses} goal={goal} onArrive={onArrive} />
+      <CameraRig poses={poses} goal={goal} onArrive={onArrive} skipIntro={skipIntro} />
 
       {/* Chão do escritório, bem abaixo: só aparece nas bordas em paisagem. */}
       <mesh position={[0, -7, 0]} rotation-x={-Math.PI / 2}>
@@ -80,12 +82,12 @@ export function DeskScene({ poses, goal, editions, onArrive }: DeskSceneProps) {
 }
 
 /** Leva a câmera de uma pose a outra; pede quadros só enquanto viaja. */
-function CameraRig({ poses, goal, onArrive }: Omit<DeskSceneProps, 'editions'>) {
+function CameraRig({ poses, goal, onArrive, skipIntro }: Omit<DeskSceneProps, 'editions'>) {
   const camera = useThree((s) => s.camera);
   const invalidate = useThree((s) => s.invalidate);
-  // Entrada: a câmera desce de mais alto até a mesa.
-  const [intro] = useState(() => introPose(poses.desk));
-  const travel = useRef({ from: intro, to: poses.desk, t: 0, goal, intro: true });
+  // Entrada: a câmera desce de mais alto até a mesa; pulada, já começa na pose da mesa (t = 1, sem viagem).
+  const [intro] = useState(() => (skipIntro ? poses.desk : introPose(poses.desk)));
+  const travel = useRef({ from: intro, to: poses.desk, t: skipIntro ? 1 : 0, goal, intro: true });
   const current = useRef<CameraPose>(intro);
   const lookAt = useMemo(() => new Vector3(), []);
 

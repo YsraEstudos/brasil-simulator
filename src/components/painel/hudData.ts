@@ -3,6 +3,8 @@ import { careerTurnLabel, monthLabel, shortMonthLabel, shortTurnLabel } from '@/
 import { mapFills, mapRows, type MapIndicator } from './regionalMetrics';
 import {
   deltaSentiment,
+  type FiscalDisplayUnit,
+  formatFiscalShare,
   formatMoneyMillions,
   formatNumber,
   formatPercent,
@@ -380,8 +382,20 @@ function buildRegions(content: GameContent, shares: readonly number[] | null): H
   }));
 }
 
-/** Primário cumprido no limite inferior da banda, como no motor (LC 200/2023; `fiscal.ts`). */
-function buildGoal(indicators: Indicators, c: GameContent['calibration']): HudGoal {
+/**
+ * Primário cumprido no limite inferior da banda, como no motor (LC 200/2023; `fiscal.ts`). O valor segue
+ * `fiscalUnit`: "% do PIB" (padrão, texto de sempre) ou R$, convertido com o PIB nominal do momento (`gdpMillions`).
+ */
+function buildGoal(
+  indicators: Indicators,
+  c: GameContent['calibration'],
+  gdpMillions: number,
+  fiscalUnit: FiscalDisplayUnit = 'pib',
+): HudGoal {
+  const primary =
+    fiscalUnit === 'reais'
+      ? formatFiscalShare(indicators.primaryBalance12m, gdpMillions, 'reais', { decimals: 2 })
+      : formatPercent(indicators.primaryBalance12m, 2);
   return {
     summary: 'Inflação na meta e contas públicas em ordem',
     checks: [
@@ -392,7 +406,7 @@ function buildGoal(indicators: Indicators, c: GameContent['calibration']): HudGo
       },
       {
         label: 'Resultado primário',
-        value: formatPercent(indicators.primaryBalance12m, 2),
+        value: primary,
         met: indicators.primaryBalance12m >= c.meta_primario - c.banda_meta_primario,
       },
     ],
@@ -407,7 +421,8 @@ function buildSeries(history: readonly IndicatorPoint[] | null): HudSeriesPoint[
 /**
  * Tela do Painel com a partida em andamento (GAME_DESIGN.md §4.2–§4.5). `mapIndicator` escolhe a camada do
  * mapa de calor do globo; `null` (padrão) deixa só a imagem de satélite. `election` é a última fotografia da eleição
- * geral (banco), usada só pela camada Resultado.
+ * geral (banco), usada só pela camada Resultado. `colorBlind` (preferência) troca a escala divergente do mapa e
+ * `fiscalUnit` (preferência) é a unidade do resultado primário na meta.
  */
 export function hudFromCampaign(
   campaign: ActiveCampaign,
@@ -415,6 +430,8 @@ export function hudFromCampaign(
   history: readonly IndicatorPoint[] | null,
   mapIndicator: MapIndicator | null = null,
   election: ElectionResult | null = null,
+  colorBlind = false,
+  fiscalUnit: FiscalDisplayUnit = 'pib',
 ): HudData {
   const state = campaign.state;
   const ufs = regionsOf(content);
@@ -424,6 +441,7 @@ export function hudFromCampaign(
   // Antes da posse (PLANO_CAMPANHA.md Fase C1) o rótulo e a contagem são os da campanha, não os do mandato.
   const career = currentCareerTurn(state, content);
   const preTurns = state.career ? careerSchedule(content, state.career.startPoint).length : 0;
+  const nominalGdp = currentNominalGdpMillions(state, content);
   return {
     demo: false,
     monthLabel: career ? careerTurnLabel(career) : monthLabel(shownMonth),
@@ -435,7 +453,7 @@ export function hudFromCampaign(
       indicators: state.indicators,
       previous: campaign.previous,
       politicalCapital: state.resources.politicalCapital,
-      nominalGdp: currentNominalGdpMillions(state, content),
+      nominalGdp,
       populationThousands: ufs.reduce((n, uf) => n + uf.population, 0),
       ufCount: ufs.length,
       monthIndex: shownMonth,
@@ -445,17 +463,21 @@ export function hudFromCampaign(
     congress: buildCongress(content, state),
     sectors: buildSectors(state.society),
     regions: buildRegions(content, ufStates.length > 0 ? ufStates.map((uf) => uf.share) : null),
-    goal: buildGoal(state.indicators, content.calibration),
+    goal: buildGoal(state.indicators, content.calibration, nominalGdp, fiscalUnit),
     series: buildSeries(history),
-    fills: mapIndicator && content.scenario.regions ? mapFills(mapRows(mapIndicator, state, content, election)) : null,
+    fills:
+      mapIndicator && content.scenario.regions
+        ? mapFills(mapRows(mapIndicator, state, content, election, colorBlind))
+        : null,
   };
 }
 
 /** Tela do Painel sem partida em andamento: dados do cenário + valores de demonstração com o selo visível. */
-export function hudFromScenario(content: GameContent): HudData {
+export function hudFromScenario(content: GameContent, fiscalUnit: FiscalDisplayUnit = 'pib'): HudData {
   const indicators = indicatorsFromScenario(content.scenario);
   const ufs = regionsOf(content);
   const turnTotal = campaignMonths(content.scenario.id);
+  const nominalGdp = content.scenario.economy?.nominalGdpMillions.value ?? 11_400_000;
   return {
     demo: true,
     monthLabel: monthLabel(0),
@@ -466,7 +488,7 @@ export function hudFromScenario(content: GameContent): HudData {
     stats: buildStats({
       indicators,
       politicalCapital: 62,
-      nominalGdp: content.scenario.economy?.nominalGdpMillions.value ?? 11_400_000,
+      nominalGdp,
       populationThousands: ufs.reduce((n, uf) => n + uf.population, 0),
       ufCount: ufs.length,
       monthIndex: 0,
@@ -476,7 +498,7 @@ export function hudFromScenario(content: GameContent): HudData {
     congress: buildCongress(content, null),
     sectors: buildSectors(null),
     regions: buildRegions(content, null),
-    goal: buildGoal(indicators, content.calibration),
+    goal: buildGoal(indicators, content.calibration, nominalGdp, fiscalUnit),
     series: DEMO_SERIES,
     fills: null,
   };

@@ -23,3 +23,4 @@ export * from './campaignSetup';
 export * from './mapQuality';
 export * from './mapDayTime';
 export * from './mapClouds';
+export * from './preferences';

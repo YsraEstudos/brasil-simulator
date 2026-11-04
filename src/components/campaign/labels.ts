@@ -11,6 +11,7 @@ import {
   type PreInaugurationStage,
   type ProposalStatus,
 } from '@/engine';
+import type { FiscalDisplayUnit } from '@/components/ui/format';
 import type { Instrument } from '@/types/policy';
 
 const MONTHS = [
@@ -95,6 +96,17 @@ export const INDICATOR_META: Record<
   gdpGrowth12m: { label: 'PIB (12 meses)', goodWhen: 'up', decimals: 1 },
   primaryBalance12m: { label: 'Resultado primário (% do PIB)', goodWhen: 'up', decimals: 2 },
 };
+
+/**
+ * Rótulo de um indicador conforme a unidade fiscal: o resultado primário diz "% do PIB" só quando é mostrado
+ * nessa unidade; em R$ o valor já traz a escala (bi, tri).
+ */
+export function indicatorLabel(key: IndicatorKey, unit: FiscalDisplayUnit): string {
+  if (key === 'primaryBalance12m') {
+    return unit === 'pib' ? INDICATOR_META.primaryBalance12m.label : 'Resultado primário (12 meses)';
+  }
+  return INDICATOR_META[key].label;
+}
 
 /** Ordem em que os indicadores aparecem na tela. */
 export const INDICATOR_ORDER: readonly IndicatorKey[] = [

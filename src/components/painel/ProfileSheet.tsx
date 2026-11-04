@@ -6,11 +6,11 @@ import { Text } from '@/components/ui';
 import { Radius } from '@/constants/theme';
 import type { ProfileHistory } from '@/database/campaignRepository';
 import type { GameContent, GameState } from '@/engine';
-import { gameStore } from '@/store';
+import { gameStore, useGame } from '@/store';
 
 import { EmptyNote, LinkRow, SheetHeading } from './HudBits';
 import { Hud } from './hudTheme';
-import { AXIS_LABELS, buildProfileView, PLANE_SIZE, type ProfileView } from './profileView';
+import { alignmentLegendColors, AXIS_LABELS, buildProfileView, PLANE_SIZE, type ProfileView } from './profileView';
 
 /**
  * Folha "Perfil do governo" (PLANO_GLOBO.md §5.2): o plano de dois eixos (economia Estado ↔ Mercado, na horizontal;
@@ -53,7 +53,12 @@ export function ProfileSheet({
     };
   }, [monthIndex]);
 
-  const view = useMemo(() => buildProfileView(state, content, history), [state, content, history]);
+  // Modo para daltônicos (preferência): o plano e a legenda usam a mesma escala da camada Alinhamento.
+  const colorBlind = useGame((s) => s.prefs.colorBlind);
+  const view = useMemo(
+    () => buildProfileView(state, content, history, colorBlind),
+    [state, content, history, colorBlind],
+  );
 
   return (
     <>
@@ -61,7 +66,7 @@ export function ProfileSheet({
       {view.plane ? (
         <>
           <Plane plane={view.plane} />
-          <Legend />
+          <Legend colorBlind={colorBlind} />
           <Text style={styles.note}>{view.trailCaption}</Text>
           <Text tabular style={styles.national}>
             {view.nationalLine}
@@ -137,13 +142,20 @@ function Plane({ plane }: { plane: NonNullable<ProfileView['plane']> }) {
   );
 }
 
-function Legend() {
+function Legend({ colorBlind }: { colorBlind: boolean }) {
+  const colors = alignmentLegendColors(colorBlind);
   return (
     <View style={styles.legend}>
       <LegendItem swatch={<View style={[styles.dot, { backgroundColor: Hud.titleBright }]} />} text="Governo" />
       <LegendItem swatch={<View style={[styles.dot, styles.ring]} />} text="Eleitor mediano" />
-      <LegendItem swatch={<View style={[styles.dotSmall, { backgroundColor: '#3987e5' }]} />} text="Estado alinhado" />
-      <LegendItem swatch={<View style={[styles.dotSmall, { backgroundColor: '#e34948' }]} />} text="Estado distante" />
+      <LegendItem
+        swatch={<View style={[styles.dotSmall, { backgroundColor: colors.aligned }]} />}
+        text="Estado alinhado"
+      />
+      <LegendItem
+        swatch={<View style={[styles.dotSmall, { backgroundColor: colors.distant }]} />}
+        text="Estado distante"
+      />
       <LegendItem swatch={<View style={[styles.dotSmall, { backgroundColor: Hud.title }]} />} text="Rastro" />
     </View>
   );

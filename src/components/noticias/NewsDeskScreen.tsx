@@ -38,6 +38,7 @@ import { deskLayout, DESK_FOV } from './deskCamera';
 import { foldedPaperRect, newspaperRect, openPaperRect, rectStyle, socialScreenRect } from './deskOverlay';
 import { DeskScene, type DeskGoal } from './DeskScene';
 import { FoldingNewspaper } from './FoldingNewspaper';
+import { newsIntro } from './newsIntro';
 import { FRONT_PAGE_IDS } from './newsPhotos';
 import { Newspaper, type NewspaperView } from './Newspaper';
 import { buildEditions, buildPages, focusedView } from './newspaperView';
@@ -87,6 +88,9 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
   const insets = useSafeAreaInsets();
   const content = useMemo(() => loadContent(state.scenarioId), [state.scenarioId]);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  // Abertura pulada (Configurações → "Pular a abertura do jornal 3D"): a mesa começa no estado final, sem animação.
+  const skipIntro = useGame((s) => s.prefs.skipNewspaperIntro);
+  const [intro] = useState(() => newsIntro(skipIntro));
   const [mode, setMode] = useState<Mode>('mesa');
   // Notícia aberta pelo marcador do mapa (rota `/noticias?noticia=<id>`): o jornal abre nela.
   const params = useLocalSearchParams<{ noticia?: string | string[] }>();
@@ -154,13 +158,14 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
   }, [mode]);
 
   // Animações da interface (thread de UI): jornal entra/sai, redes "ligam", anel pulsando no notebook.
-  const paper = useSharedValue(0);
+  const paper = useSharedValue<number>(intro.settle);
   const social = useSharedValue(0);
   const pulse = useSharedValue(0);
 
   useEffect(() => {
+    if (intro.settle === 1) return; // abertura pulada: o jornal já está assentado
     paper.set(withDelay(650, withSpring(1, { damping: 16, stiffness: 90, mass: 0.9 })));
-  }, [paper]);
+  }, [paper, intro]);
 
   // O anel do notebook pulsa algumas vezes ao chegar na mesa e para (sem animação eterna gastando bateria).
   useEffect(() => {
@@ -175,8 +180,8 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
   }, [mode, pulse]);
 
   // O jornal dobrado na mesa abre diante do jogador: sobe, centraliza e desdobra pela vinca.
-  const [paperPhase, setPaperPhase] = useState<PaperPhase>('fechado');
-  const unfold = useSharedValue(0);
+  const [paperPhase, setPaperPhase] = useState<PaperPhase>(intro.paper);
+  const unfold = useSharedValue<number>(intro.unfold);
   const paperTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(paperTimer.current), []);
 
@@ -313,7 +318,13 @@ function NewsDesk({ campaign, error }: { campaign: ActiveCampaign; error: string
         // No nativo o Canvas do R3F captura os toques; a cena não usa eventos de ponteiro, então fica fora do hit-test.
         <View style={StyleSheet.absoluteFill} pointerEvents={Platform.OS === 'web' ? 'auto' : 'none'}>
           <Canvas frameloop="demand" flat camera={{ fov: DESK_FOV, near: 0.1, far: 120 }}>
-            <DeskScene poses={poses} goal={goal} editions={editions.length} onArrive={onArrive} />
+            <DeskScene
+              poses={poses}
+              goal={goal}
+              editions={editions.length}
+              onArrive={onArrive}
+              skipIntro={intro.camera === 'mesa'}
+            />
           </Canvas>
         </View>
       )}

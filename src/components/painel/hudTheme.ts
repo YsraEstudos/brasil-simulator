@@ -1,4 +1,5 @@
-import { Colors } from '@/constants/theme';
+import { Colors, paletteFor } from '@/constants/theme';
+import type { Sentiment } from '@/components/ui/format';
 
 import type { HudTone } from './hudData';
 
@@ -6,6 +7,10 @@ import type { HudTone } from './hudData';
  * Estilo da mesa do Painel (GAME_DESIGN.md §4.2): o HUD é escuro com moldura dourada nos dois esquemas de cor,
  * como o globo — a mesa é a "arte" do jogo. Cores semânticas vêm de `Colors.dark` (o painel é sempre escuro);
  * nada aqui depende do tema claro/escuro do sistema.
+ *
+ * O modo para daltônicos (`colorBlind`) é um parâmetro das funções de cor abaixo: quem lê a preferência é o componente.
+ * Por isso `Hud.positive` e `Hud.negative` seguem verde e vermelho; use `toneColor` ou `hudSentimentColor` quando o
+ * sentido for bom/ruim.
  */
 
 const dark = Colors.dark;
@@ -48,16 +53,42 @@ export const Hud = {
   spectrumRight: dark.spectrumRight,
 } as const;
 
-/** Cor de um estado do HUD (barras, setas e selos). */
-export function toneColor(tone: HudTone): string {
+/** Cor de um estado do HUD (barras, setas e selos). Com `colorBlind`, bom é azul e ruim é laranja. */
+export function toneColor(tone: HudTone, colorBlind = false): string {
+  const semantic = paletteFor('dark', colorBlind);
   switch (tone) {
     case 'positive':
-      return Hud.positive;
+      return semantic.positive;
     case 'warning':
       return Hud.warning;
     case 'negative':
-      return Hud.negative;
+      return semantic.negative;
     case 'neutral':
       return Hud.neutral;
   }
+}
+
+/** Cor de uma variação do HUD pelo sentido (bom, ruim ou neutro). Com `colorBlind`, bom é azul e ruim é laranja. */
+export function hudSentimentColor(sentiment: Sentiment, colorBlind = false): string {
+  const semantic = paletteFor('dark', colorBlind);
+  switch (sentiment) {
+    case 'positive':
+      return semantic.positive;
+    case 'negative':
+      return semantic.negative;
+    case 'neutral':
+      return Hud.textDim;
+  }
+}
+
+/**
+ * Seta da variação para o modo para daltônicos: ▲ quando o número sobe, ▼ quando cai, vazio se não há variação
+ * (o texto "±0,0 p.p." já diz isso). Lê o sinal do próprio texto já formatado (`+`, `−` ou `-`).
+ */
+export function deltaArrow(delta: string | undefined): '▲' | '▼' | '' {
+  if (!delta) return '';
+  const first = delta.trimStart().charAt(0);
+  if (first === '+') return '▲';
+  if (first === '−' || first === '-') return '▼';
+  return '';
 }

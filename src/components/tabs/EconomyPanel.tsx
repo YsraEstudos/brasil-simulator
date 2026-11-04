@@ -1,13 +1,29 @@
 import { monthLabel } from '@/components/campaign/labels';
-import { Card, formatNumber, formatPercent, Text } from '@/components/ui';
+import { Card, formatFiscalShare, formatNumber, formatPercent, type FiscalDisplayUnit, Text } from '@/components/ui';
 import { loadContent } from '@/content';
-import { MANDATORY_GROUPS, REVENUE_GROUPS, type MandatoryGroup, type RevenueGroup } from '@/engine';
-import type { ActiveCampaign } from '@/store';
+import {
+  currentNominalGdpMillions,
+  MANDATORY_GROUPS,
+  REVENUE_GROUPS,
+  type MandatoryGroup,
+  type RevenueGroup,
+} from '@/engine';
+import { useGame, type ActiveCampaign } from '@/store';
 
 import { signedPercent, StatRow } from './StatRow';
 import { SocietyPanel } from './SocietyPanel';
 
-const PER_GDP = '% do PIB, anualizado';
+/** Contexto dos fluxos anualizados, conforme a unidade de exibição (`prefs.fiscalUnit`). */
+const FLOW_CONTEXT: Record<FiscalDisplayUnit, string> = {
+  pib: '% do PIB, anualizado',
+  reais: 'R$, anualizado',
+};
+
+/** Subtítulo dos cartões fiscais, conforme a unidade. */
+const FLOW_SUBTITLE: Record<FiscalDisplayUnit, string> = {
+  pib: 'Fluxos em % do PIB, anualizados, salvo indicação',
+  reais: 'Fluxos em R$, anualizados, salvo indicação',
+};
 
 const REVENUE_LABEL: Record<RevenueGroup, string> = {
   renda: 'Renda (IR e CSLL)',
@@ -27,11 +43,19 @@ const MANDATORY_LABEL: Record<MandatoryGroup, string> = {
 /** Painel da aba Economia (GAME_DESIGN.md §8). Variações só existem para indicadores do protótipo. */
 export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
   const { state, previous, lastReport } = campaign;
-  const { calibration } = loadContent(state.scenarioId);
+  const content = loadContent(state.scenarioId);
+  const { calibration } = content;
+  const unit = useGame((s) => s.prefs.fiscalUnit);
+  const gdp = currentNominalGdpMillions(state, content);
   const e = state.economy;
   const f = e.fiscal;
   const ind = state.indicators;
   const change = (key: keyof typeof ind) => (previous ? ind[key] - previous[key] : undefined);
+  // Valores fiscais em fração do PIB no motor; `formatFiscalShare` mostra em R$ (com o PIB do mês) ou em % do PIB.
+  const flow = (fraction: number, decimals = 1) => formatFiscalShare(fraction, gdp, unit, { decimals });
+  const signedFlow = (fraction: number, decimals = 1) =>
+    formatFiscalShare(fraction, gdp, unit, { decimals, signed: true });
+  const flowContext = FLOW_CONTEXT[unit];
 
   const copomText = (() => {
     if (!lastReport) return 'Nenhum mês encerrado ainda.';
@@ -98,57 +122,59 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
         <StatRow label="Juro externo" value={formatPercent(e.externalRate, 2)} context="Referência internacional" />
       </Card>
 
-      <Card title="Contas públicas" subtitle="Fluxos em % do PIB, anualizados, salvo indicação">
-        <StatRow label="Receita primária" value={formatPercent(e.revenue, 1)} context={PER_GDP} />
-        <StatRow label="Despesa primária" value={formatPercent(e.primarySpending, 1)} context={PER_GDP} />
-        <StatRow label="Resultado primário do mês" value={signedPercent(e.monthlyPrimary, 1)} context={PER_GDP} />
+      <Card title="Contas públicas" subtitle={FLOW_SUBTITLE[unit]}>
+        <StatRow label="Receita primária" value={flow(e.revenue)} context={flowContext} />
+        <StatRow label="Despesa primária" value={flow(e.primarySpending)} context={flowContext} />
+        <StatRow label="Resultado primário do mês" value={signedFlow(e.monthlyPrimary)} context={flowContext} />
         <StatRow
           label="Resultado primário em 12 meses"
-          value={signedPercent(ind.primaryBalance12m, 1)}
+          value={signedFlow(ind.primaryBalance12m)}
           delta={change('primaryBalance12m')}
           goodWhen="up"
-          context="% do PIB, acumulado em 12 meses"
+          context={unit === 'pib' ? '% do PIB, acumulado em 12 meses' : 'R$, acumulado em 12 meses'}
         />
-        <StatRow label="Juros nominais" value={formatPercent(e.interest, 1)} context={PER_GDP} />
-        <StatRow label="Dívida bruta" value={formatPercent(e.grossDebt, 1)} context="% do PIB" />
+        <StatRow label="Juros nominais" value={flow(e.interest)} context={flowContext} />
+        <StatRow
+          label="Dívida bruta"
+          value={flow(e.grossDebt)}
+          context={unit === 'pib' ? '% do PIB' : 'Saldo acumulado'}
+        />
         <StatRow label="Credibilidade" value={formatNumber(e.credibility * 100, 0)} context="Índice de 0 a 100" />
       </Card>
 
-      <Card title="Limite de despesas" subtitle="Regime Fiscal Sustentável (LC 200/2023), em % do PIB">
+      <Card
+        title="Limite de despesas"
+        subtitle={
+          unit === 'pib'
+            ? 'Regime Fiscal Sustentável (LC 200/2023), em % do PIB'
+            : 'Regime Fiscal Sustentável (LC 200/2023), em R$ anualizados'
+        }>
         <StatRow
           label="Limite"
-          value={formatPercent(f.spendingLimit, 1)}
+          value={flow(f.spendingLimit)}
           context={`Cresce ${formatPercent(f.limitRealGrowth, 1)} acima da inflação neste ano`}
         />
         {MANDATORY_GROUPS.map((g) => (
-          <StatRow key={g} label={MANDATORY_LABEL[g]} value={formatPercent(f.mandatory[g], 1)} context={PER_GDP} />
+          <StatRow key={g} label={MANDATORY_LABEL[g]} value={flow(f.mandatory[g])} context={flowContext} />
         ))}
-        <StatRow label="Saúde, educação e emendas" value={formatPercent(f.linked, 1)} context="Vinculadas à receita" />
+        <StatRow label="Saúde, educação e emendas" value={flow(f.linked)} context="Vinculadas à receita" />
         {f.policyMandatory !== 0 && (
-          <StatRow label="Obrigatórias de políticas" value={signedPercent(f.policyMandatory, 2)} context={PER_GDP} />
+          <StatRow label="Obrigatórias de políticas" value={signedFlow(f.policyMandatory, 2)} context={flowContext} />
         )}
         <StatRow
           label="Discricionárias livres"
-          value={formatPercent(f.discretionary, 2)}
+          value={flow(f.discretionary, 2)}
           context={
             f.discretionary < calibration.piso_custeio
-              ? `Abaixo do piso de funcionamento (${formatPercent(calibration.piso_custeio, 1)}): serviços parando`
-              : `Piso de funcionamento: ${formatPercent(calibration.piso_custeio, 1)}`
+              ? `Abaixo do piso de funcionamento (${flow(calibration.piso_custeio)}): serviços parando`
+              : `Piso de funcionamento: ${flow(calibration.piso_custeio)}`
           }
         />
         {f.limitExcess > 0 && (
-          <StatRow
-            label="Estouro do limite"
-            value={formatPercent(f.limitExcess, 2)}
-            context="Registrado como exceção"
-          />
+          <StatRow label="Estouro do limite" value={flow(f.limitExcess, 2)} context="Registrado como exceção" />
         )}
         {f.extraordinary > 0 && (
-          <StatRow
-            label="Créditos extraordinários"
-            value={formatPercent(f.extraordinary, 2)}
-            context="Fora do limite"
-          />
+          <StatRow label="Créditos extraordinários" value={flow(f.extraordinary, 2)} context="Fora do limite" />
         )}
         <StatRow
           label="Salário mínimo real"
@@ -157,14 +183,20 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
         />
       </Card>
 
-      <Card title="Receitas por grupo" subtitle="Líquidas de repasses a estados e municípios, % do PIB">
+      <Card
+        title="Receitas por grupo"
+        subtitle={
+          unit === 'pib'
+            ? 'Líquidas de repasses a estados e municípios, % do PIB'
+            : 'Líquidas de repasses a estados e municípios, em R$ anualizados'
+        }>
         {REVENUE_GROUPS.map((g) => (
-          <StatRow key={g} label={REVENUE_LABEL[g]} value={formatPercent(f.revenueByGroup[g], 1)} context={PER_GDP} />
+          <StatRow key={g} label={REVENUE_LABEL[g]} value={flow(f.revenueByGroup[g])} context={flowContext} />
         ))}
         {f.revenueLoss > 0 && (
           <StatRow
             label="Perda de arrecadação"
-            value={formatPercent(f.revenueLoss, 2)}
+            value={flow(f.revenueLoss, 2)}
             context="Sonegação e elisão por carga alta"
           />
         )}

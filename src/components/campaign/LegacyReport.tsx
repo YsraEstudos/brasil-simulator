@@ -2,10 +2,12 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Alert, Button, Card, formatMoneyMillions, formatNumber, formatPercent, Text } from '@/components/ui';
+import { Alert, Button, Card, formatFiscalShare, formatNumber, formatPercent, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import {
   campaignOutcome,
+  currentNominalGdpMillions,
+  nominalGdpMillions,
   regionalDispersion,
   regionsOf,
   regionsView,
@@ -18,7 +20,8 @@ import type { PublicPolicyState } from '@/engine/publicPolicies/types';
 import type { SocietyState } from '@/engine/society/types';
 import { gameStore, useGame } from '@/store';
 
-import { INDICATOR_META, INDICATOR_ORDER, PROPOSAL_STATUS_LABEL, monthLabel } from './labels';
+import { indicatorLabel, INDICATOR_META, INDICATOR_ORDER, PROPOSAL_STATUS_LABEL, monthLabel } from './labels';
+import { useFiscal } from './useFiscal';
 
 /**
  * Relatório de legado (GAME_DESIGN.md §7.1): país recebido vs. entregue.
@@ -55,6 +58,9 @@ export interface LegacyReportProps {
 
 /** Relatório de legado ao fim da campanha (GAME_DESIGN.md §7.1). */
 export function LegacyReport({ state, content, campaignId }: LegacyReportProps) {
+  const fiscal = useFiscal(state, content);
+  const initialGdp = nominalGdpMillions(content);
+  const currentGdp = currentNominalGdpMillions(state, content);
   const initial = content.scenario.indicators;
   const initialValues = {
     approval: initial.approval.value,
@@ -124,14 +130,19 @@ export function LegacyReport({ state, content, campaignId }: LegacyReportProps) 
       <Card title="País recebido e país entregue" subtitle="Valor inicial (jan/2027) e final do mandato.">
         {INDICATOR_ORDER.map((key) => {
           const meta = INDICATOR_META[key];
-          const fmt = (v: number) => formatPercent(v, meta.decimals);
+          // Só o resultado primário é fração do PIB: vira R$ com o PIB de cada ponta, ou % do PIB.
+          const fmt = (v: number, gdpMillions: number) =>
+            key === 'primaryBalance12m'
+              ? formatFiscalShare(v, gdpMillions, fiscal.unit, { decimals: meta.decimals })
+              : formatPercent(v, meta.decimals);
           return (
             <View key={key} style={styles.row}>
               <Text variant="body" style={styles.label}>
-                {meta.label}
+                {indicatorLabel(key, fiscal.unit)}
               </Text>
               <Text variant="body" tabular color="textSecondary">
-                {fmt(initialValues[key])} → <Text variant="label">{fmt(state.indicators[key])}</Text>
+                {fmt(initialValues[key], initialGdp)} →{' '}
+                <Text variant="label">{fmt(state.indicators[key], currentGdp)}</Text>
               </Text>
             </View>
           );
@@ -171,7 +182,7 @@ export function LegacyReport({ state, content, campaignId }: LegacyReportProps) 
                 <Text variant="body" color="textSecondary">{`${proposalName} · ${status}${projectText}`}</Text>
                 {project && (
                   <Text variant="caption" color="textSecondary">
-                    {`Executado ${formatMoneyMillions(project.spentMillions)} de ${formatMoneyMillions(project.budgetMillions)} · manutenção anual ${formatMoneyMillions(project.maintenanceMillions)}`}
+                    {`Executado ${fiscal.money(project.spentMillions)} de ${fiscal.money(project.budgetMillions)} · manutenção anual ${fiscal.money(project.maintenanceMillions)}`}
                   </Text>
                 )}
               </View>

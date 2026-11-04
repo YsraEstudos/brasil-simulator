@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatNumber } from '@/components/ui/format';
+import { formatFiscalShare, formatNumber, formatPercent } from '@/components/ui/format';
 import { campaignMonths, DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
-import { createInitialState, regionsOf } from '@/engine';
+import { createInitialState, currentNominalGdpMillions, regionsOf } from '@/engine';
 import type { ActiveCampaign } from '@/store/gameStore';
 
 import { hudFromCampaign, hudFromScenario } from './hudData';
+import { DIVERGING, DIVERGING_COLORBLIND } from './regionalMetrics';
 
 const content = loadContent(DEFAULT_SCENARIO_ID);
 const months = campaignMonths(DEFAULT_SCENARIO_ID);
@@ -147,5 +148,62 @@ describe('Painel com a partida', () => {
     const data = hudFromCampaign({ ...active, state: inflation }, content, null);
     expect(data.goal.checks.find((c) => c.label === 'Inflação em 12 meses')?.met).toBe(false);
     expect(data.goal.checks.find((c) => c.label === 'Resultado primário')?.met).toBe(false);
+  });
+});
+
+describe('preferências de leitura: daltônicos e unidade fiscal', () => {
+  const primary = (data: ReturnType<typeof hudFromCampaign>) => {
+    const check = data.goal.checks.find((c) => c.label === 'Resultado primário');
+    if (!check) throw new Error('sem check de resultado primário');
+    return check;
+  };
+
+  it('sem as preferências (ou com os padrões) a partida fica igual ao que era', () => {
+    const active = campaign();
+    const implicit = hudFromCampaign(active, content, null, 'aprovacao');
+    const explicit = hudFromCampaign(active, content, null, 'aprovacao', null, false, 'pib');
+    expect(explicit.fills).toEqual(implicit.fills);
+    expect(explicit.goal).toEqual(implicit.goal);
+    expect(primary(implicit).value).toBe(formatPercent(active.state.indicators.primaryBalance12m, 2));
+  });
+
+  it('modo para daltônicos troca a escala do mapa, faixa por faixa, e não muda os valores', () => {
+    const active = campaign();
+    const normal = hudFromCampaign(active, content, null, 'aprovacao', null, false);
+    const cb = hudFromCampaign(active, content, null, 'aprovacao', null, true);
+    const ufs = Object.keys(normal.fills ?? {});
+    expect(ufs).toHaveLength(27);
+    for (const uf of ufs) {
+      const faixa = DIVERGING.indexOf(normal.fills?.[uf] as (typeof DIVERGING)[number]);
+      const cbColor = cb.fills?.[uf] ?? '';
+      expect(DIVERGING_COLORBLIND).toContain(cbColor);
+      expect(DIVERGING_COLORBLIND.indexOf(cbColor as (typeof DIVERGING_COLORBLIND)[number])).toBe(faixa);
+    }
+  });
+
+  it('resultado primário em R$ com a unidade "reais", convertido pelo PIB nominal do momento', () => {
+    const active = campaign();
+    const pib = hudFromCampaign(active, content, null);
+    const reais = hudFromCampaign(active, content, null, null, null, false, 'reais');
+    const gdp = currentNominalGdpMillions(active.state, content);
+    const expected = formatFiscalShare(active.state.indicators.primaryBalance12m, gdp, 'reais', { decimals: 2 });
+    expect(primary(reais).value).toBe(expected);
+    expect(primary(reais).value).toMatch(/R\$ /);
+    expect(primary(reais).met).toBe(primary(pib).met);
+  });
+
+  it('a unidade fiscal não mexe no check de inflação', () => {
+    const active = campaign();
+    const pib = hudFromCampaign(active, content, null);
+    const reais = hudFromCampaign(active, content, null, null, null, false, 'reais');
+    expect(reais.goal.checks.find((c) => c.label === 'Inflação em 12 meses')).toEqual(
+      pib.goal.checks.find((c) => c.label === 'Inflação em 12 meses'),
+    );
+  });
+
+  it('o Painel sem partida também respeita a unidade fiscal', () => {
+    expect(hudFromScenario(content).goal).toEqual(hudFromScenario(content, 'pib').goal);
+    const reais = hudFromScenario(content, 'reais');
+    expect(reais.goal.checks.find((c) => c.label === 'Resultado primário')?.value).toMatch(/R\$ /);
   });
 });

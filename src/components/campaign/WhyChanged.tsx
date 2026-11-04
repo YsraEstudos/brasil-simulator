@@ -4,8 +4,9 @@ import { Card, deltaSentiment, Text } from '@/components/ui';
 import { Spacing, type ThemeColor } from '@/constants/theme';
 import { explainIndicator, pp, type CauseContribution, type IndicatorKey, type MonthReport } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
+import { useGame } from '@/store';
 
-import { INDICATOR_META, VOTING_INTENTION_META } from './labels';
+import { indicatorLabel, INDICATOR_META, VOTING_INTENTION_META } from './labels';
 
 /** Quantas causas aparecem antes do agrupamento "outros". */
 const TOP_CAUSES = 6;
@@ -22,8 +23,9 @@ export function WhyChanged({
   report: MonthReport | undefined;
 }) {
   const { colors } = useTheme();
+  const unit = useGame((s) => s.prefs.fiscalUnit);
   const meta = indicator === 'votingIntention' ? VOTING_INTENTION_META : INDICATOR_META[indicator];
-  const title = `Por que mudou? — ${meta.label}`;
+  const title = `Por que mudou? — ${indicator === 'votingIntention' ? meta.label : indicatorLabel(indicator, unit)}`;
 
   if (!report) {
     return (

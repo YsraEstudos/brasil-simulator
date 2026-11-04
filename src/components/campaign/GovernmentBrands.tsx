@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
-import { Button, Card, formatMoneyMillions, formatPercent, Text } from '@/components/ui';
+import { Button, Card, formatPercent, Text } from '@/components/ui';
 import { Radius, Spacing, type ThemeColors } from '@/constants/theme';
 import {
   AGENDA_ACTIONS,
@@ -20,6 +20,7 @@ import { fits, gameStore, hasDecision, type AgendaDraft, useGame } from '@/store
 
 import { Icon, ICONS } from './GabineteBits';
 import { PROPOSAL_STATUS_LABEL } from './labels';
+import { useFiscal } from './useFiscal';
 
 const BRAND_LIMIT = 3;
 
@@ -181,6 +182,7 @@ function BrandRow({
   colors: ThemeColors;
   onToggle: (decision: Decision) => void;
 }) {
+  const fiscal = useFiscal(state, content);
   const [name, setName] = useState(pendingName);
   const [touched, setTouched] = useState(false);
   const validation = existingName
@@ -208,7 +210,7 @@ function BrandRow({
       </Text>
       {project && (
         <Text variant="caption" color="textSecondary">
-          {`Carteira: ${formatMoneyMillions(project.spentMillions)} de ${formatMoneyMillions(project.budgetMillions)} · manutenção anual ${formatMoneyMillions(project.maintenanceMillions)}`}
+          {`Carteira: ${fiscal.money(project.spentMillions)} de ${fiscal.money(project.budgetMillions)} · manutenção anual ${fiscal.money(project.maintenanceMillions)}`}
         </Text>
       )}
       {existingName ? (

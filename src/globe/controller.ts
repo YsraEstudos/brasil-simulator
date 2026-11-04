@@ -24,6 +24,15 @@ export class GlobeController {
   private pinchStart = this.state.altitude;
   viewportHeight = 800;
   fovDeg: number = CAMERA.fovDeg;
+  /** Multiplicadores das preferências (1 = atual): ganho do arraste e da inércia, e da pinça e da roda do mouse. */
+  private rotationGain = 1;
+  private zoomGain = 1;
+
+  /** Aplica `prefs.globeRotationSpeed` e `prefs.globeZoomSpeed`; valores inválidos voltam a 1. */
+  setSpeed(rotation: number, zoom: number) {
+    this.rotationGain = Number.isFinite(rotation) && rotation > 0 ? rotation : 1;
+    this.zoomGain = Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
+  }
 
   /** Definidos pela cena quando o Canvas é criado. */
   invalidate: () => void = () => {};
@@ -33,7 +42,7 @@ export class GlobeController {
 
   panBy(dx: number, dy: number) {
     this.flight = null;
-    const k = degreesPerPixel(this.state.altitude, this.viewportHeight, this.fovDeg);
+    const k = degreesPerPixel(this.state.altitude, this.viewportHeight, this.fovDeg) * this.rotationGain;
     const cosLat = Math.max(0.2, Math.cos((this.state.lat * Math.PI) / 180));
     this.state = clampCamera({
       ...this.state,
@@ -46,7 +55,7 @@ export class GlobeController {
   /** Inércia ao soltar o dedo (velocidade em px/s). */
   release(vx: number, vy: number) {
     if (this.reduceMotion) return;
-    const k = degreesPerPixel(this.state.altitude, this.viewportHeight, this.fovDeg);
+    const k = degreesPerPixel(this.state.altitude, this.viewportHeight, this.fovDeg) * this.rotationGain;
     const cosLat = Math.max(0.2, Math.cos((this.state.lat * Math.PI) / 180));
     this.velocity = { lon: (-vx * k) / cosLat, lat: vy * k };
     this.invalidate();
@@ -61,14 +70,18 @@ export class GlobeController {
     this.pinchStart = this.state.altitude;
   }
 
+  /** Pinça: o zoom segue a escala elevada ao ganho de zoom (com 1, o de antes). */
   pinch(scale: number) {
-    this.state = clampCamera({ ...this.state, altitude: this.pinchStart / Math.max(scale, 0.01) });
+    const ratio = Math.pow(Math.max(scale, 0.01), this.zoomGain);
+    this.state = clampCamera({ ...this.state, altitude: this.pinchStart / ratio });
     this.invalidate();
   }
 
+  /** Roda do mouse (fator > 1 afasta): o fator também passa pelo ganho de zoom. */
   zoomBy(factor: number) {
     this.flight = null;
-    this.state = clampCamera({ ...this.state, altitude: this.state.altitude * factor });
+    const scaled = Math.pow(factor, this.zoomGain);
+    this.state = clampCamera({ ...this.state, altitude: this.state.altitude * scaled });
     this.invalidate();
   }
 

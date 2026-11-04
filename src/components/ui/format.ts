@@ -45,6 +45,82 @@ export function formatMoneyMillions(millions: number): string {
   return `R$ ${formatNumber(millions, 0)} mi`;
 }
 
+/**
+ * Unidade de exibição dos valores fiscais (preferência `fiscalUnit`, em `store/preferences.ts`). Só muda o texto:
+ * o motor segue em R$ milhões e frações do PIB (ECONOMIC_MODEL.md §2).
+ */
+export type FiscalDisplayUnit = 'reais' | 'pib';
+
+export interface FiscalFormatOptions {
+  /** Casas decimais do modo "% do PIB" (padrão 1). No modo R$ a escala é automática: mi, bi ou tri. */
+  decimals?: number;
+  /** Sinal `+` em valores positivos. Negativos têm `−` sempre; zero não tem sinal. */
+  signed?: boolean;
+}
+
+const DEFAULT_SHARE_DECIMALS = 1;
+
+/** PIB utilizável para converter R$ em fração: finito e maior que zero. */
+function hasGdp(gdpMillions: number | null | undefined): gdpMillions is number {
+  return typeof gdpMillions === 'number' && Number.isFinite(gdpMillions) && gdpMillions > 0;
+}
+
+/** Acrescenta o sinal a um texto já formatado com magnitude positiva; zero nunca tem sinal. */
+function withSign(negative: boolean, isZero: boolean, body: string, signed: boolean): string {
+  if (isZero) return body;
+  if (negative) return `${MINUS}${body}`;
+  return signed ? `+${body}` : body;
+}
+
+/** Fração do PIB → "1,2% do PIB". A fração já está na escala certa, então não precisa do PIB. */
+function formatShareOfGdp(share: number, opts: FiscalFormatOptions): string {
+  if (!Number.isFinite(share)) return '—';
+  const decimals = opts.decimals ?? DEFAULT_SHARE_DECIMALS;
+  const body = `${formatNumber(Math.abs(share) * 100, decimals)}% do PIB`;
+  const zero = `${formatNumber(0, decimals)}% do PIB`;
+  return withSign(share < 0, body === zero, body, opts.signed ?? false);
+}
+
+/**
+ * Valor fiscal em R$ milhões (unidade do motor) → texto na unidade escolhida.
+ * - `reais`: "R$ 123,4 bi" (escala de `formatMoneyMillions`); negativo: "−R$ 1,5 bi".
+ * - `pib`: "1,2% do PIB", com `valor / PIB nominal anual`.
+ * Com `pib` mas PIB zero, negativo, NaN ou ausente, cai para R$ (não há como converter). Para frações do PIB que
+ * o motor já guarda (ex.: `primaryBalance12m`), use `formatFiscalShare`.
+ */
+export function formatFiscal(
+  valueMillions: number,
+  annualNominalGdpMillions: number | null | undefined,
+  unit: FiscalDisplayUnit,
+  opts: FiscalFormatOptions = {},
+): string {
+  if (!Number.isFinite(valueMillions)) return '—';
+  if (unit === 'pib' && hasGdp(annualNominalGdpMillions)) {
+    return formatShareOfGdp(valueMillions / annualNominalGdpMillions, opts);
+  }
+  const body = formatMoneyMillions(Math.abs(valueMillions));
+  return withSign(valueMillions < 0, body === formatMoneyMillions(0), body, opts.signed ?? false);
+}
+
+/**
+ * Fração do PIB (anualizada, ou saldo) que o motor já guarda, como receita primária ou dívida bruta → texto.
+ * - `pib`: "1,2% do PIB".
+ * - `reais`: converte com o PIB nominal anual ("R$ 156,0 bi"). Sem PIB utilizável não há R$ para mostrar, então
+ *   mostra a fração como "% do PIB", o único texto honesto nesse caso.
+ */
+export function formatFiscalShare(
+  fraction: number,
+  annualNominalGdpMillions: number | null | undefined,
+  unit: FiscalDisplayUnit,
+  opts: FiscalFormatOptions = {},
+): string {
+  if (!Number.isFinite(fraction)) return '—';
+  if (unit === 'reais' && hasGdp(annualNominalGdpMillions)) {
+    return formatFiscal(fraction * annualNominalGdpMillions, annualNominalGdpMillions, 'reais', opts);
+  }
+  return formatShareOfGdp(fraction, opts);
+}
+
 export type Trend = 'up' | 'down' | 'flat';
 export type Sentiment = 'positive' | 'negative' | 'neutral';
 

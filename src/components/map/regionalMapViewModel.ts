@@ -66,6 +66,8 @@ export interface RegionalMapViewModelInput {
   climate?: ClimateOverlay;
   /** Última fotografia da eleição geral: dá a data ao selo da camada Resultado. */
   election?: ElectionResult | null;
+  /** Modo para daltônicos: a legenda usa as mesmas cores azul ↔ laranja que o `fills` recebeu. */
+  colorBlind?: boolean;
 }
 
 const NO_FILLS: Readonly<Record<string, string>> = Object.freeze({});
@@ -73,14 +75,19 @@ const NONE: readonly never[] = Object.freeze([]);
 
 /**
  * Legenda do indicador: título e as cinco faixas (cor + rótulo), as mesmas do cartão de camadas. As camadas do mapa
- * eleitoral levam o selo ("estimativa", "resultado · out/2030").
+ * eleitoral levam o selo ("estimativa", "resultado · out/2030"). `colorBlind` deve ser o mesmo usado em `mapRows`,
+ * senão a legenda não bate com o mapa.
  */
-export function indicatorLegend(id: MapIndicator, election: ElectionResult | null = null): MapLegend {
+export function indicatorLegend(
+  id: MapIndicator,
+  election: ElectionResult | null = null,
+  colorBlind = false,
+): MapLegend {
   const spec = indicatorSpec(id);
   const badge = badgeText(id, election);
   return {
     title: spec.legend,
-    entries: numericLegendLabels(spec).map((label, i) => ({ color: binColor(spec, i), label })),
+    entries: numericLegendLabels(spec).map((label, i) => ({ color: binColor(spec, i, colorBlind), label })),
     ...(badge ? { badge } : {}),
   };
 }
@@ -97,8 +104,9 @@ export function buildRegionalMapViewModel(input: RegionalMapViewModelInput = {})
     markers,
     climate,
     election = null,
+    colorBlind = false,
   } = input;
-  const derived = mode === 'indicator' && indicator && fills ? indicatorLegend(indicator, election) : null;
+  const derived = mode === 'indicator' && indicator && fills ? indicatorLegend(indicator, election, colorBlind) : null;
   return {
     mode,
     fills: fills ?? NO_FILLS,

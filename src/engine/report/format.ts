@@ -35,6 +35,14 @@ export function pp(x: number, decimals = 1): string {
   return `${sign}${fixedPt(n, decimals)} p.p.`;
 }
 
+/** Unidade dos valores fiscais nos textos do motor (espelha `FiscalDisplayUnit` em `components/ui/format.ts`). */
+export type FiscalTextUnit = 'reais' | 'pib';
+
+/** Fração do PIB anualizada → "0,15% do PIB", ou em R$ "R$ 15 bi" (com o PIB nominal anual em R$ milhões). */
+export function fiscalAmount(fraction: number, gdpMillions: number, unit: FiscalTextUnit): string {
+  return unit === 'reais' ? billions(fraction * gdpMillions) : `${pct(fraction, 2)} do PIB`;
+}
+
 /** R$ milhões → "R$ 15 bi" ou "R$ 1,5 bi": `billions(15000)`, `billions(1500)`. */
 export function billions(millions: number): string {
   const bi = millions / MILLIONS_PER_BILLION;

@@ -67,6 +67,7 @@ import {
   DEMO_BADGE_BAND,
   DOCK_HEIGHT_COMPACT,
   DOCK_HEIGHT_PORTRAIT,
+  mesaSides,
   painelLabelReserve,
   TOP_INSET,
 } from './hudReserved';
@@ -181,6 +182,11 @@ export function PainelScreen() {
   const draft = useGame((s) => s.draft);
   const busy = useGame((s) => s.busy);
   const error = useGame((s) => s.error);
+  // Modo canhoto (Configurações): os trilhos e o Encerrar o mês trocam de lado (`mesaSides` em `hudReserved`).
+  const leftHanded = useGame((s) => s.prefs.leftHanded);
+  const sides = mesaSides(leftHanded);
+  // O Encerrar o mês (e a doca de selo, do outro lado dele) fica no canto esquerdo só no canhoto.
+  const endLeft = sides.endMonth === 'left';
   const insets = useSafeAreaInsets();
   const [series, setSeries] = useState<{ id: string; points: readonly IndicatorPoint[] } | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -289,11 +295,18 @@ export function PainelScreen() {
     active && mapLayer && layers.some((l) => l.id === mapLayer) && (mapLayer !== 'resultado' || election)
       ? mapLayer
       : null;
+  // Preferências de leitura: o modo para daltônicos troca as cores do mapa, do HUD e da legenda; a unidade fiscal
+  // troca só o texto dos valores em % do PIB ou R$ (o motor não muda).
+  const colorBlind = useGame((s) => s.prefs.colorBlind);
+  const fiscalUnit = useGame((s) => s.prefs.fiscalUnit);
   // Sem o rascunho: marcar uma decisão não recalcula o HUD nem recolore o mapa. O que depende do rascunho (ações
   // livres, selo dos alertas) é contado à parte, logo abaixo.
   const hud = useMemo(
-    () => (active ? hudFromCampaign(active, content, history, layer, election) : hudFromScenario(content)),
-    [active, content, history, layer, election],
+    () =>
+      active
+        ? hudFromCampaign(active, content, history, layer, election, colorBlind, fiscalUnit)
+        : hudFromScenario(content, fiscalUnit),
+    [active, content, history, layer, election, colorBlind, fiscalUnit],
   );
   // Clima do mês: a textura do globo é refeita só quando o clima ou o mês mudam; o 2D lê as marcas (hachura, nuvem).
   const mapClouds = useGame((s) => s.mapClouds);
@@ -321,16 +334,17 @@ export function PainelScreen() {
         climate: climateOverlay,
         markers,
         election,
+        colorBlind,
       }),
-    [layer, hud.fills, selectedUf, climateOverlay, markers, election],
+    [layer, hud.fills, selectedUf, climateOverlay, markers, election, colorBlind],
   );
   const actionsLeft = hud.actionsMax - (active ? draftCost(draft, content) : 0);
 
   // Cartão e lista do estado: o indicador é o da camada ativa (ou a aprovação, como na antiga aba Brasil).
   const listIndicator: MapIndicator = layer ?? 'aprovacao';
   const ufRows = useMemo(
-    () => (active ? mapRows(listIndicator, active.state, content, election) : []),
-    [active, content, listIndicator, election],
+    () => (active ? mapRows(listIndicator, active.state, content, election, colorBlind) : []),
+    [active, content, listIndicator, election, colorBlind],
   );
   const selectedRow = selectedUf ? (ufRows.find((r) => r.uf.id === selectedUf) ?? null) : null;
   const mapModel = useMemo(
@@ -415,9 +429,10 @@ export function PainelScreen() {
       demo: hud.demo,
       leftRailCount: leftRail(showElections).length,
       rightRailCount: RIGHT_RAIL.length,
+      leftHanded,
     });
     return { ...reserve, insets: { ...reserve.insets, top: Math.max(reserve.insets.top, topBarBottom) } };
-  }, [size.width, size.height, insets, compact, hud.demo, showElections, topBarBottom]);
+  }, [size.width, size.height, insets, compact, hud.demo, showElections, topBarBottom, leftHanded]);
 
   /** Fecha o detalhe e limpa a seleção do mapa (o ✕, o toque fora e o voltar do Android passam por aqui). */
   const closeSheet = () => {
@@ -891,8 +906,18 @@ export function PainelScreen() {
                 paddingRight: 8 + insets.right,
               },
             ]}>
-            {rail(leftRail(showElections))}
-            {rail(RIGHT_RAIL)}
+            {/* Trilho "o mês" e "o país": no canhoto trocam de lado (a ordem na linha é a do `space-between`). */}
+            {sides.monthRail === 'left' ? (
+              <>
+                {rail(leftRail(showElections))}
+                {rail(RIGHT_RAIL)}
+              </>
+            ) : (
+              <>
+                {rail(RIGHT_RAIL)}
+                {rail(leftRail(showElections))}
+              </>
+            )}
           </View>
 
           {/* Doca: as subtelas do jogo e o Encerrar o mês. Retrato: o Encerrar numa linha própria, à direita, acima dos
@@ -902,9 +927,11 @@ export function PainelScreen() {
             pointerEvents="box-none"
             style={[
               styles.bottom,
-              compact ? styles.bottomCompact : styles.bottomPortrait,
-              // Paisagem estreita: centrada, a doca encostaria no Encerrar o mês do canto direito.
-              compact && size.width < COMPACT_DOCK_CENTER_MIN_WIDTH && styles.bottomCompactStart,
+              compact ? styles.bottomCompact : endLeft ? styles.bottomPortraitCanhoto : styles.bottomPortrait,
+              // Paisagem estreita: centrada, a doca encostaria no Encerrar o mês do canto (direito; no canhoto, esquerdo).
+              compact &&
+                size.width < COMPACT_DOCK_CENTER_MIN_WIDTH &&
+                (endLeft ? styles.bottomCompactEnd : styles.bottomCompactStart),
               {
                 paddingBottom: (compact ? 6 : 8) + insets.bottom,
                 paddingLeft: 8 + insets.left,
@@ -917,7 +944,7 @@ export function PainelScreen() {
               </View>
             )}
             {!compact && (
-              <View pointerEvents="box-none" style={styles.endRow}>
+              <View pointerEvents="box-none" style={[styles.endRow, endLeft && styles.endRowCanhoto]}>
                 {endButton}
               </View>
             )}
@@ -937,14 +964,22 @@ export function PainelScreen() {
           {compact && (
             <View
               pointerEvents="box-none"
-              style={{ position: 'absolute', right: 8 + insets.right, bottom: 6 + insets.bottom }}>
+              style={{
+                position: 'absolute',
+                bottom: 6 + insets.bottom,
+                ...(endLeft ? { left: 8 + insets.left } : { right: 8 + insets.right }),
+              }}>
               {endButton}
             </View>
           )}
           {compact && hud.demo && (
             <View
               pointerEvents="none"
-              style={{ position: 'absolute', left: 10 + insets.left, bottom: DOCK_HEIGHT_COMPACT + insets.bottom }}>
+              style={{
+                position: 'absolute',
+                bottom: DOCK_HEIGHT_COMPACT + insets.bottom,
+                ...(endLeft ? { right: 10 + insets.right } : { left: 10 + insets.left }),
+              }}>
               <DemoBadge />
             </View>
           )}
@@ -1045,9 +1080,12 @@ const styles = StyleSheet.create({
   rails: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   bottomPortrait: { alignItems: 'flex-start', gap: 6 },
+  bottomPortraitCanhoto: { alignItems: 'flex-end', gap: 6 },
   bottomCompact: { alignItems: 'center' },
   bottomCompactStart: { alignItems: 'flex-start' },
+  bottomCompactEnd: { alignItems: 'flex-end' },
   endRow: { alignSelf: 'stretch', alignItems: 'flex-end' },
+  endRowCanhoto: { alignItems: 'flex-start' },
   dock: { alignSelf: 'stretch', flexDirection: 'row', gap: 6 },
   dockCompact: { flexDirection: 'row', gap: 6 },
   error: { position: 'absolute' },

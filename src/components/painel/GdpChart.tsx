@@ -3,9 +3,10 @@ import { View, type LayoutChangeEvent } from 'react-native';
 
 import { shortMonthLabel } from '@/components/campaign/labels';
 import { Text } from '@/components/ui';
+import { useGame } from '@/store';
 
 import type { HudSeriesPoint } from './hudData';
-import { Hud } from './hudTheme';
+import { Hud, hudSentimentColor } from './hudTheme';
 
 /** Altura do gráfico (a série do PIB é uma leitura rápida, não um painel de análise). */
 const CHART_HEIGHT = 74;
@@ -24,6 +25,8 @@ export interface GdpChartProps {
  */
 export function GdpChart({ series, height = CHART_HEIGHT }: GdpChartProps) {
   const [width, setWidth] = useState(0);
+  // Modo para daltônicos (preferência): alta em azul e queda em laranja, como no resto do HUD.
+  const colorBlind = useGame((s) => s.prefs.colorBlind);
 
   if (series.length < 2) {
     return (
@@ -42,7 +45,7 @@ export function GdpChart({ series, height = CHART_HEIGHT }: GdpChartProps) {
   const min = rawMin - pad;
   const max = rawMax + pad;
   const trendUp = series[series.length - 1].value >= series[0].value;
-  const lineColor = trendUp ? Hud.positive : Hud.negative;
+  const lineColor = hudSentimentColor(trendUp ? 'positive' : 'negative', colorBlind);
 
   const innerHeight = height - 4;
   const x = (i: number) => ((width - 8) * i) / (series.length - 1) + 4;

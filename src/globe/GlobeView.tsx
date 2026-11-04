@@ -5,6 +5,8 @@ import { Platform, StyleSheet, Text, View, type ViewInstance } from 'react-nativ
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useGame } from '@/store';
+
 import { AutoQualityMachine } from './autoQuality';
 import type { ClimateMapData } from './climateTexture';
 import { CAMERA, GLOBE_STATS_ENABLED } from './config';
@@ -129,6 +131,12 @@ export function GlobeView({
 }: GlobeViewProps) {
   const controller = useMemo(() => new GlobeController(), []);
   useEffect(() => controller.setReduceMotion(reduceMotion), [controller, reduceMotion]);
+  // Preferências do globo (Configurações): taxa de quadros e multiplicadores de rotação e zoom. Lidas aqui porque a
+  // mesa monta o globo pelo `MapSurface`, que não as repassa.
+  const globeFps = useGame((s) => s.prefs.globeFps);
+  const rotationSpeed = useGame((s) => s.prefs.globeRotationSpeed);
+  const zoomSpeed = useGame((s) => s.prefs.globeZoomSpeed);
+  useEffect(() => controller.setSpeed(rotationSpeed, zoomSpeed), [controller, rotationSpeed, zoomSpeed]);
   const insets = useSafeAreaInsets();
   const sceneInsets = useMemo<LabelInsets>(
     () => labelInsets ?? { top: insets.top, right: insets.right, bottom: insets.bottom, left: insets.left },
@@ -167,6 +175,9 @@ export function GlobeView({
   });
   const machine = useRef<AutoQualityMachine | null>(null);
   const autoOn = quality.auto;
+  // Com o teto de 30 qps, os quadros ficam longos de propósito: medir faria o ajuste automático rebaixar o perfil sem
+  // motivo. Nesse caso o automático fica parado no perfil atual (PLANO_MENU_SAVES_CONFIG.md M7.1).
+  const measureFrames = autoOn && globeFps === 60;
   useEffect(() => {
     machine.current = autoOn ? new AutoQualityMachine(latest.current.profile) : null;
     return () => {
@@ -282,11 +293,12 @@ export function GlobeView({
                   labelInsets={sceneInsets}
                   labelScale={labelScale}
                   budget={budget}
-                  onFrame={autoOn ? onFrame : undefined}
+                  onFrame={measureFrames ? onFrame : undefined}
                   sky={sky}
                   climate={climate}
                   clouds={clouds}
                   drawing={!paused}
+                  fps={globeFps}
                   markers={markers}
                   pulseKey={reduceMotion ? '' : pulseKey}
                   onPulseDone={onPulseDone}
@@ -312,11 +324,12 @@ export function GlobeView({
                   labelInsets={sceneInsets}
                   labelScale={labelScale}
                   budget={budget}
-                  onFrame={autoOn ? onFrame : undefined}
+                  onFrame={measureFrames ? onFrame : undefined}
                   sky={sky}
                   climate={climate}
                   clouds={clouds}
                   drawing={!paused}
+                  fps={globeFps}
                   markers={markers}
                   pulseKey={reduceMotion ? '' : pulseKey}
                   onPulseDone={onPulseDone}

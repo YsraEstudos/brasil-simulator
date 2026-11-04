@@ -25,7 +25,7 @@ import { fiscalRoom } from '../economy/fiscal';
 import { currentNominalGdpMillions } from '../state';
 import type { GameContent, GameState, ImpulseTarget, Proposal } from '../types';
 
-import { pct, pp } from './format';
+import { fiscalAmount, type FiscalTextUnit, pct, pp } from './format';
 
 /**
  * Limiares e margens dos pareceres da mesa de despacho (GAME_DESIGN.md §4.4, §6). Ficam aqui, e não na
@@ -136,6 +136,7 @@ function fazendaOpinion(
   state: Readonly<GameState>,
   content: GameContent,
   parts: FiscalParts,
+  amountOf: (fraction: number) => string,
   policy?: Policy,
 ): Opinion {
   const { fiscal, spending, expansion } = parts;
@@ -143,7 +144,7 @@ function fazendaOpinion(
   let tone: Opinion['tone'] = 'neutro';
 
   if (fiscal > 0) {
-    sentences.push(`Custo de ${pct(fiscal, 2)} do PIB ao ano; piora o resultado primário.`);
+    sentences.push(`Custo de ${amountOf(fiscal)} ao ano; piora o resultado primário.`);
     const { room, aboveFloor } = fiscalRoom(state.economy.fiscal, content.calibration);
     if (spending > room) {
       sentences.push('Estoura o limite de despesas: exige corte compensatório.');
@@ -153,7 +154,7 @@ function fazendaOpinion(
       tone = 'desfavoravel';
     }
   } else if (fiscal < 0) {
-    sentences.push(`Economia de ${pct(-fiscal, 2)} do PIB ao ano; ajuda a meta fiscal.`);
+    sentences.push(`Economia de ${amountOf(-fiscal)} ao ano; ajuda a meta fiscal.`);
     tone = 'favoravel';
   } else {
     sentences.push('Sem efeito fiscal relevante.');
@@ -319,8 +320,14 @@ export function proposalForecast(state: GameState, proposal: Proposal, content: 
 /**
  * Pareceres da mesa de despacho (GAME_DESIGN.md §4.4) antes de uma decisão. Função pura: não altera `state`
  * nem avança `state.rng`. Previsões vêm do próprio motor (`predictVotes`), com faixa e viés por dificuldade.
+ * `unit` só muda o texto do custo fiscal da Fazenda: "R$ 15 bi" ou "0,15% do PIB" (padrão: % do PIB).
  */
-export function adviseDecision(state: GameState, policyId: string, content: GameContent): DispatchAdvice {
+export function adviseDecision(
+  state: GameState,
+  policyId: string,
+  content: GameContent,
+  unit: FiscalTextUnit = 'pib',
+): DispatchAdvice {
   const policy = content.policies[policyId];
   if (!policy) throw new RangeError(`política desconhecida: ${policyId}`);
 
@@ -328,7 +335,8 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
   const adhesion = adhesionWarning(state, policy, content);
   // Mesmas escalas que a execução aplicará (proposals.ts): adesão dos estados e perda da pasta de bloco.
   const factors = executionFactors(state, policy, content, adhesion?.share ?? 1);
-  const parts = fiscalParts(policy, currentNominalGdpMillions(state, content), factors.reach);
+  const gdpMillions = currentNominalGdpMillions(state, content);
+  const parts = fiscalParts(policy, gdpMillions, factors.reach);
   const approvalImpact = policy.impacts
     .filter((i) => i.channel === APPROVAL_CHANNEL)
     .reduce((n, i) => n + i.magnitude * (i.magnitude > 0 ? factors.resultFactor : 1), 0);
@@ -346,7 +354,7 @@ export function adviseDecision(state: GameState, policyId: string, content: Game
   if (adhesion) articulacao = { text: `${articulacao.text} ${adhesion.text}`, tone: articulacao.tone };
 
   return {
-    fazenda: fazendaOpinion(state, content, parts, policy),
+    fazenda: fazendaOpinion(state, content, parts, (fraction) => fiscalAmount(fraction, gdpMillions, unit), policy),
     articulacao,
     comunicacao: comunicacaoOpinion(state, policy, content, approvalImpact, factors.partisan),
     forecast: { annualFiscalImpact: parts.fiscal, votes, approvalImpact, adhesion: adhesion?.share ?? null },
