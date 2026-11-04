@@ -33,6 +33,8 @@ import {
 import type { IndicatorPoint } from '@/database/campaignRepository';
 import type { ActiveCampaign } from '@/store/gameStore';
 
+import { bandTone, indicatorBand, INFLATION_BAND, INFLATION_TARGET, outOfBandAlert } from './indicatorGuide';
+
 /**
  * Dados do Painel (HUD estilo mesa de jogo): funções puras que transformam a partida em tudo o que a tela
  * mostra — barras do topo, ministérios, Congresso, indicadores setoriais, regiões, meta e a série do
@@ -57,6 +59,10 @@ export interface HudStat {
   tone: HudTone;
   /** Texto de contexto (ex.: "meta 3,0%"). */
   context?: string;
+  /** Seta da mudança em relação ao mês anterior; ausente sem mês anterior ou sem mudança. */
+  trend?: 'up' | 'down';
+  /** Aviso quando o número está fora da faixa (banda ruim), ex.: "Inflação acima do teto da meta (4,5%)". */
+  alert?: string;
 }
 
 export interface HudMinistry {
@@ -142,9 +148,6 @@ export interface HudData {
   fills: Readonly<Record<string, string>> | null;
 }
 
-/** Meta de inflação (GAME_DESIGN.md §8.1) e banda de tolerância de 1,5 p.p. */
-const INFLATION_TARGET = 0.03;
-const INFLATION_BAND = 0.015;
 /** Cores das grandes regiões na Visão Regional (identidade fixa, legível no fundo escuro). */
 const REGION_COLORS: Readonly<Record<string, string>> = {
   norte: '#5fd38d',
@@ -247,6 +250,12 @@ function buildStats(input: StatInput): HudStat[] {
   const inflation = delta('inflation12m', GOOD_WHEN.inflation, 1);
   const unemployment = delta('unemployment', GOOD_WHEN.unemployment, 1);
   const gdp = delta('gdpGrowth12m', GOOD_WHEN.gdp, 1);
+  /** Seta: sentido da mudança em relação ao mês anterior (sem mês anterior ou sem mudança, não há seta). */
+  const trendOf = (key: keyof Indicators): 'up' | 'down' | undefined => {
+    if (!p) return undefined;
+    const d = i[key] - p[key];
+    return d === 0 ? undefined : d > 0 ? 'up' : 'down';
+  };
 
   return [
     {
@@ -264,15 +273,18 @@ function buildStats(input: StatInput): HudStat[] {
       context: 'de 100',
       sentiment: 'neutral',
       progress: clamp01(input.politicalCapital / 100),
-      tone: input.politicalCapital >= 60 ? 'positive' : input.politicalCapital >= 35 ? 'warning' : 'negative',
+      tone: bandTone(indicatorBand('politicalCapital', input.politicalCapital)),
+      alert: outOfBandAlert('politicalCapital', input.politicalCapital),
     },
     {
       id: 'aprovacao',
       label: 'Aprovação popular',
       value: formatPercent(i.approval, 0),
       ...approval,
+      trend: trendOf('approval'),
       progress: clamp01(i.approval),
-      tone: i.approval >= 0.5 ? 'positive' : i.approval >= 0.35 ? 'warning' : 'negative',
+      tone: bandTone(indicatorBand('approval', i.approval)),
+      alert: outOfBandAlert('approval', i.approval),
     },
     {
       id: 'pib',
@@ -280,8 +292,10 @@ function buildStats(input: StatInput): HudStat[] {
       value: formatMoneyMillions(input.nominalGdp),
       delta: signedPercent(i.gdpGrowth12m),
       sentiment: gdp.sentiment === 'neutral' ? 'neutral' : gdp.sentiment,
+      trend: trendOf('gdpGrowth12m'),
       progress: clamp01(i.gdpGrowth12m / 0.06),
-      tone: i.gdpGrowth12m >= 0.015 ? 'positive' : i.gdpGrowth12m > 0 ? 'warning' : 'negative',
+      tone: bandTone(indicatorBand('gdpGrowth12m', i.gdpGrowth12m)),
+      alert: outOfBandAlert('gdpGrowth12m', i.gdpGrowth12m),
       context: 'em 12 meses',
     },
     {
@@ -297,12 +311,9 @@ function buildStats(input: StatInput): HudStat[] {
       label: 'Inflação',
       value: formatPercent(i.inflation12m, 1),
       ...inflation,
-      tone:
-        i.inflation12m <= INFLATION_TARGET
-          ? 'positive'
-          : i.inflation12m <= INFLATION_TARGET + INFLATION_BAND
-            ? 'warning'
-            : 'negative',
+      trend: trendOf('inflation12m'),
+      tone: bandTone(indicatorBand('inflation12m', i.inflation12m)),
+      alert: outOfBandAlert('inflation12m', i.inflation12m),
       context: 'meta 3,0%',
     },
     {
@@ -310,7 +321,9 @@ function buildStats(input: StatInput): HudStat[] {
       label: 'Desemprego',
       value: formatPercent(i.unemployment, 1),
       ...unemployment,
-      tone: i.unemployment <= 0.06 ? 'positive' : i.unemployment <= 0.09 ? 'warning' : 'negative',
+      trend: trendOf('unemployment'),
+      tone: bandTone(indicatorBand('unemployment', i.unemployment)),
+      alert: outOfBandAlert('unemployment', i.unemployment),
     },
   ];
 }

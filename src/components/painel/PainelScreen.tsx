@@ -72,6 +72,9 @@ import {
   TOP_INSET,
 } from './hudReserved';
 import { Hud } from './hudTheme';
+import { agendaPips, agendaPipsLabel } from './agendaPips';
+import { GUIDED_BY_INDICATOR, outOfBandAlert } from './indicatorGuide';
+import { IndicatorGuideCard } from './IndicatorGuideCard';
 import { InfoSheet } from './InfoSheet';
 import {
   congressBadge,
@@ -199,6 +202,8 @@ export function PainelScreen() {
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
   const [mapRegion, setMapRegion] = useState<string | null>(null);
   const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
+  // Indicador cuja explicação (botão "?") está aberta na gaveta de Indicadores (A18).
+  const [guideIndicator, setGuideIndicator] = useState<IndicatorKey | null>(null);
   // Evento aberto por um marcador do mapa: a folha Alertas o põe no topo e o destaca. Limpo ao fechar a folha.
   const [focusInstance, setFocusInstance] = useState<string | null>(null);
   // Último item que o toque num marcador abriu, por UF: tocar de novo percorre o grupo (`nextMarkerItem`).
@@ -553,16 +558,18 @@ export function PainelScreen() {
     return () => sub.remove();
   }, [sheet]);
 
-  const statCell = (id: HudStatId, props?: { value?: string; line?: string }) => {
+  const statCell = (id: HudStatId, props?: { value?: string; line?: string; a11yLabel?: string }) => {
     const stat = hud.stats.find((s) => s.id === id);
     return stat ? <StatCell key={id} stat={stat} compact={compact} {...props} /> : null;
   };
 
   const topCells = (
     <>
+      {/* B56: as ações de agenda como bolinhas (cheias = usadas), ao lado do turno. */}
       {statCell('mes', {
         value: hud.shortLabel,
-        line: `${hud.turn}/${hud.turnTotal} · ${actionsLeft === 1 ? '1 ação' : `${actionsLeft} ações`}`,
+        line: `${hud.turn}/${hud.turnTotal} · ${agendaPips(hud.actionsMax, hud.actionsMax - actionsLeft)}`,
+        a11yLabel: `Mês ${hud.shortLabel}, turno ${hud.turn} de ${hud.turnTotal}. ${agendaPipsLabel(hud.actionsMax, hud.actionsMax - actionsLeft)}`,
       })}
       {statCell('aprovacao')}
       {statCell('pib')}
@@ -667,11 +674,13 @@ export function PainelScreen() {
       case 'indicadores': {
         // Sem partida mostra os valores do cenário, sem variação nem "Por que mudou?" (ainda não há mês encerrado).
         const indicators = active?.state.indicators ?? indicatorsFromScenario(content.scenario);
+        const guideGuided = guideIndicator ? GUIDED_BY_INDICATOR[guideIndicator] : undefined;
         return (
           <>
             <View style={styles.indicatorGrid}>
               {INDICATOR_ORDER.map((key) => {
                 const meta = INDICATOR_META[key];
+                const guided = GUIDED_BY_INDICATOR[key];
                 return (
                   <Indicator
                     key={key}
@@ -681,11 +690,16 @@ export function PainelScreen() {
                     goodWhen={meta.goodWhen}
                     decimals={meta.decimals}
                     context={meta.context}
+                    alert={guided ? outOfBandAlert(guided, indicators[key]) : undefined}
+                    onHelp={guided ? () => setGuideIndicator((cur) => (cur === key ? null : key)) : undefined}
                     onPress={() => setOpenIndicator((cur) => (cur === key ? null : key))}
                   />
                 );
               })}
             </View>
+            {guideIndicator && guideGuided && (
+              <IndicatorGuideCard indicator={guideGuided} value={indicators[guideIndicator]} />
+            )}
             {openIndicator && <WhyChanged indicator={openIndicator} report={active?.lastReport} />}
             <SheetHeading text="Setores da economia" />
             <View style={{ flexDirection: 'row', gap: 6 }}>
