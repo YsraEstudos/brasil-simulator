@@ -17,6 +17,7 @@ import {
 import { RIGHT_RAIL, leftRail } from './mesaNav';
 import {
   DEMO_BADGE_BAND,
+  LEGEND_BAND,
   DOCK_HEIGHT_COMPACT,
   DOCK_HEIGHT_PORTRAIT,
   RAIL_EDGE,
@@ -85,6 +86,12 @@ describe('painelLabelReserve', () => {
     );
     const elections = painelLabelReserve(input(360, 740, { leftRailCount: leftRail(true).length }));
     expect(elections.rects[0].h).toBe(base.rects[0].h + 48 + 10);
+  });
+
+  it('legenda fixa do mapa (Fase Q11) sobe a faixa de baixo', () => {
+    const plain = painelLabelReserve(input(360, 740));
+    const legend = painelLabelReserve(input(360, 740, { legend: true }));
+    expect(legend.insets.bottom - plain.insets.bottom).toBe(LEGEND_BAND);
   });
 
   it('paisagem 640×360: faixas baixas e trilhos de botões de 40', () => {

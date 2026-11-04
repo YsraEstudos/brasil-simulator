@@ -28,6 +28,16 @@ import {
   regionalSummary,
   ufDescription,
 } from './mapReading';
+import {
+  alphabeticalUfs,
+  campCounts,
+  filterByCamp,
+  GOVERNOR_CAMP_LABEL,
+  GOVERNOR_CAMPS,
+  UF_LIST_ORDER_LABEL,
+  type GovernorCamp,
+  type UfListOrder,
+} from './ufBrowse';
 
 function Search({ query, onChange }: { query: string; onChange: (value: string) => void }) {
   const { textScale } = useTheme();
@@ -59,6 +69,8 @@ export function ReadingList({
   onRegion,
   badge,
   onChoose,
+  camp,
+  onCamp,
 }: {
   rows: readonly UfRow[];
   indicator: MapIndicator;
@@ -67,11 +79,17 @@ export function ReadingList({
   onRegion: (region: string | null) => void;
   badge?: LayerBadgeInfo | null;
   onChoose: (id: string) => void;
+  /** Filtro pelo governador (D48): aliadas, neutras ou oposição; também apaga as outras UFs no mapa. */
+  camp: GovernorCamp | null;
+  onCamp: (camp: GovernorCamp | null) => void;
 }) {
   const [query, setQuery] = useState('');
+  const [order, setOrder] = useState<UfListOrder>('ranking');
   const s = useScaledStyles(styles);
   const ranked = rankUfs(indicator, rows);
-  const filtered = filterUfs(ranked, region, query);
+  const filtered = filterByCamp(filterUfs(ranked, region, query), camp);
+  const counts = campCounts(filterUfs(rows, region));
+  const listed = order === 'alfabetica' ? alphabeticalUfs(filtered) : filtered;
   const summary = regionalSummary(indicator, filterUfs(rows, region), state);
   const national = regionalSummary(indicator, rows, state);
   const titles = rankingTitles(indicator);
@@ -133,6 +151,23 @@ export function ReadingList({
           em relação ao Brasil. Média ponderada pela população.
         </Text>
       )}
+      <Text style={s.heading}>Governador</Text>
+      <View style={s.filters}>
+        {[null, ...GOVERNOR_CAMPS].map((id) => (
+          <Pressable
+            key={id ?? 'all'}
+            accessibilityRole="button"
+            accessibilityState={{ selected: camp === id }}
+            accessibilityLabel={
+              id ? `${GOVERNOR_CAMP_LABEL[id]}: ${counts[id]} UFs` : 'Todas as UFs, sem filtro de governador'
+            }
+            onPress={() => onCamp(id)}
+            style={[s.filter, camp === id && { borderColor: Hud.title }]}>
+            <Text style={s.value}>{id ? `${GOVERNOR_CAMP_LABEL[id]} · ${counts[id]}` : 'Todas'}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <Text style={s.note}>Aliadas: governador próximo ou aliado. Oposição: distante ou hostil.</Text>
       <Search query={query} onChange={setQuery} />
       {!query.trim() &&
         [filtered.slice(0, 5), filtered.slice(-5).reverse()].map((group, i) => (
@@ -141,8 +176,24 @@ export function ReadingList({
             {group.map(rowView)}
           </View>
         ))}
-      <Text style={s.heading}>Todas as UFs{region ? ` · ${REGION_NAMES[region]}` : ''}</Text>
-      {filtered.map(rowView)}
+      <View style={s.listHead}>
+        <Text style={[s.heading, { flex: 1 }]}>
+          {camp ? GOVERNOR_CAMP_LABEL[camp] : 'Todas as UFs'}
+          {region ? ` · ${REGION_NAMES[region]}` : ''}
+        </Text>
+        {(['ranking', 'alfabetica'] as const).map((id) => (
+          <Pressable
+            key={id}
+            accessibilityRole="button"
+            accessibilityState={{ selected: order === id }}
+            accessibilityLabel={id === 'alfabetica' ? 'Ordenar em ordem alfabética' : 'Ordenar pelo ranking da camada'}
+            onPress={() => setOrder(id)}
+            style={[s.filter, order === id && { borderColor: Hud.title }]}>
+            <Text style={s.value}>{UF_LIST_ORDER_LABEL[id]}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {listed.map(rowView)}
       {filtered.length === 0 && <Text style={s.note}>Nenhuma UF encontrada.</Text>}
     </>
   );
@@ -244,6 +295,7 @@ const styles = {
   value: { fontSize: 12, lineHeight: 18, color: Hud.text },
   note: { fontSize: 11, lineHeight: 17, color: Hud.textDim },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  listHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   filter: {
     minHeight: 44,
     justifyContent: 'center',

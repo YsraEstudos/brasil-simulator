@@ -54,6 +54,7 @@ import {
   EndMonthButton,
   GoalCheckRow,
   MapLayerLegend,
+  MapLegendStrip,
   MapLayerRow,
   MenuRow,
   MinistryRow,
@@ -66,6 +67,7 @@ import {
 import { hudFromCampaign, hudFromScenario, type HudStatId } from './hudData';
 import {
   DEMO_BADGE_BAND,
+  LEGEND_BAND,
   DOCK_HEIGHT_COMPACT,
   DOCK_HEIGHT_PORTRAIT,
   mesaSides,
@@ -92,6 +94,7 @@ import { availableIndicators, indicatorSpec, layerBadge, mapRows, type MapIndica
 import { UfDetail } from './StateDetail';
 import { ReadingList } from './MapReadingPanel';
 import { DIMMED_UF, rankUfs, ufDescription } from './mapReading';
+import { governorCamp, ufNeighbors, type GovernorCamp } from './ufBrowse';
 
 const logo = require('../../../assets/images/logo-brasil.png');
 
@@ -202,6 +205,8 @@ export function PainelScreen() {
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
   const [mapRegion, setMapRegion] = useState<string | null>(null);
+  // Filtro pelo governador na lista de UFs (Fase Q11, D48): como a região, apaga no mapa as UFs de fora.
+  const [mapCamp, setMapCamp] = useState<GovernorCamp | null>(null);
   const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
   // Indicador cuja explicação (botão "?") está aberta na gaveta de Indicadores (A18).
   const [guideIndicator, setGuideIndicator] = useState<IndicatorKey | null>(null);
@@ -301,6 +306,8 @@ export function PainelScreen() {
     active && mapLayer && layers.some((l) => l.id === mapLayer) && (mapLayer !== 'resultado' || election)
       ? mapLayer
       : null;
+  // Legenda fixa acima da doca (Fase Q11, B42): só com camada ativa; ocupa a faixa do selo de demonstração.
+  const legendShown = layer !== null;
   // Preferências de leitura: o modo para daltônicos troca as cores do mapa, do HUD e da legenda; a unidade fiscal
   // troca só o texto dos valores em % do PIB ou R$ (o motor não muda).
   const colorBlind = useGame((s) => s.prefs.colorBlind);
@@ -356,14 +363,17 @@ export function PainelScreen() {
   const mapModel = useMemo(
     () => ({
       ...baseMapModel,
-      fills: mapRegion
-        ? Object.fromEntries(
-            ufRows.map((r) => [
-              r.uf.id,
-              r.region === mapRegion ? (baseMapModel.fills[r.uf.id] ?? '#1f2a40') : DIMMED_UF,
-            ]),
-          )
-        : baseMapModel.fills,
+      fills:
+        mapRegion || mapCamp
+          ? Object.fromEntries(
+              ufRows.map((r) => [
+                r.uf.id,
+                (!mapRegion || r.region === mapRegion) && (!mapCamp || governorCamp(r.uf.governorRelation) === mapCamp)
+                  ? (baseMapModel.fills[r.uf.id] ?? '#1f2a40')
+                  : DIMMED_UF,
+              ]),
+            )
+          : baseMapModel.fills,
       descriptions: active
         ? Object.fromEntries(
             rankUfs(listIndicator, ufRows).map((r) => [
@@ -380,7 +390,7 @@ export function PainelScreen() {
           )
         : {},
     }),
-    [baseMapModel, mapRegion, ufRows, active, listIndicator, election],
+    [baseMapModel, mapRegion, mapCamp, ufRows, active, listIndicator, election],
   );
   // No mês da posse ainda não há relatório: a explicação inicial vem da própria distribuição.
   const explanations = useMemo(
@@ -433,12 +443,13 @@ export function PainelScreen() {
       insets,
       compact,
       demo: hud.demo,
+      legend: legendShown,
       leftRailCount: leftRail(showElections).length,
       rightRailCount: RIGHT_RAIL.length,
       leftHanded,
     });
     return { ...reserve, insets: { ...reserve.insets, top: Math.max(reserve.insets.top, topBarBottom) } };
-  }, [size.width, size.height, insets, compact, hud.demo, showElections, topBarBottom, leftHanded]);
+  }, [size.width, size.height, insets, compact, hud.demo, legendShown, showElections, topBarBottom, leftHanded]);
 
   /** Fecha o detalhe e limpa a seleção do mapa (o ✕, o toque fora e o voltar do Android passam por aqui). */
   const closeSheet = () => {
@@ -726,6 +737,8 @@ export function PainelScreen() {
                 state={active.state}
                 region={mapRegion}
                 onRegion={setMapRegion}
+                camp={mapCamp}
+                onCamp={setMapCamp}
                 indicator={listIndicator}
                 badge={layerBadge(listIndicator, election)}
                 onChoose={chooseState}
@@ -749,6 +762,8 @@ export function PainelScreen() {
               globe.current?.flyToUf(selectedRow.uf.id);
               setSheet(null);
             }}
+            neighbors={ufNeighbors(ufRows, selectedRow.uf.id)}
+            onNavigate={chooseState}
           />
         ) : (
           <EmptyNote text="Toque num estado do mapa para ver os números e o porquê da diferença." />
@@ -922,6 +937,7 @@ export function PainelScreen() {
                 paddingBottom:
                   (compact ? DOCK_HEIGHT_COMPACT : 8 + DOCK_HEIGHT_PORTRAIT + 10) +
                   (hud.demo ? DEMO_BADGE_BAND : 0) +
+                  (legendShown ? LEGEND_BAND : 0) +
                   insets.bottom,
                 paddingLeft: 8 + insets.left,
                 paddingRight: 8 + insets.right,
@@ -962,6 +978,11 @@ export function PainelScreen() {
             {!compact && hud.demo && (
               <View pointerEvents="none">
                 <DemoBadge />
+              </View>
+            )}
+            {legendShown && layer !== null && (
+              <View pointerEvents="none" style={styles.legendRow}>
+                <MapLegendStrip spec={indicatorSpec(layer)} />
               </View>
             )}
             {!compact && (
@@ -1106,6 +1127,7 @@ const styles = StyleSheet.create({
   bottomCompactStart: { alignItems: 'flex-start' },
   bottomCompactEnd: { alignItems: 'flex-end' },
   endRow: { alignSelf: 'stretch', alignItems: 'flex-end' },
+  legendRow: { alignSelf: 'stretch', alignItems: 'center', paddingBottom: 6 },
   endRowCanhoto: { alignItems: 'flex-start' },
   dock: { alignSelf: 'stretch', flexDirection: 'row', gap: 6 },
   dockCompact: { flexDirection: 'row', gap: 6 },
