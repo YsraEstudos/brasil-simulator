@@ -7,6 +7,8 @@ import {
   CAMPAIGN_NAME_MAX,
   checkNewCampaignInput,
   checkSetupForm,
+  copyName,
+  importedName,
   DEFAULT_SETUP_PREFS,
   DIFFICULTIES,
   isDifficulty,
@@ -445,5 +447,94 @@ describe('restartName (nome da partida recomeçada)', () => {
 
   it('nome que é só o sufixo (ex.: "(2)") cai em "Campanha" como base', () => {
     expect(restartName('(2)', [])).toBe('Campanha (2)');
+  });
+
+  it('não corta um emoji ao meio: o pedaço solto de par substituto não entra no nome', () => {
+    // 55 unidades + emoji (2 unidades) = 57: o corte de 56 (com " (2)") não cabe o emoji inteiro.
+    const nome = restartName(`${'a'.repeat(55)}😀`, []);
+    expect(nome).toBe(`${'a'.repeat(55)} (2)`);
+    expect(nome).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+  });
+});
+
+describe('importedName (nome de campanha importada de um arquivo)', () => {
+  it('nome livre entra como está; nome já usado ganha " (2)"', () => {
+    expect(importedName('Zeta', [])).toBe('Zeta');
+    expect(importedName('Zeta', ['Zeta'])).toBe('Zeta (2)');
+    expect(importedName('Zeta', ['Zeta', 'Zeta (2)'])).toBe('Zeta (3)');
+  });
+
+  it('a comparação com os nomes existentes é normalizada (NFD, espaços)', () => {
+    expect(importedName('Zé', ['Zé'.normalize('NFD')])).toBe('Zé (2)');
+    expect(importedName('Zeta', ['  Zeta  '])).toBe('Zeta (2)');
+  });
+
+  it('vazio, não-texto ou só invisível vira "Campanha"', () => {
+    for (const raw of ['', '   ', undefined, null, 42, {}]) {
+      expect(importedName(raw, [])).toBe('Campanha');
+    }
+  });
+
+  it('nome longo demais do arquivo é cortado no limite, sem pedaço de emoji', () => {
+    expect(importedName('a'.repeat(80), [])).toBe('a'.repeat(CAMPAIGN_NAME_MAX));
+    expect(importedName(`${'a'.repeat(59)}😀`, [])).toBe('a'.repeat(59));
+  });
+
+  it('remove controles e normaliza para NFC', () => {
+    expect(importedName('Zeta\u0007\n  ', [])).toBe('Zeta');
+    expect(importedName('Zé'.normalize('NFD'), [])).toBe('Zé');
+  });
+});
+
+describe('copyName (nome da cópia, "Salvar como")', () => {
+  it('sem tomada: "<nome> — cópia"', () => {
+    expect(copyName('Zeta', [])).toBe('Zeta — cópia');
+  });
+
+  it('com "Zeta — cópia" tomada: "Zeta — cópia 2"; com as duas tomadas: "Zeta — cópia 3"', () => {
+    expect(copyName('Zeta', ['Zeta', 'Zeta — cópia'])).toBe('Zeta — cópia 2');
+    expect(copyName('Zeta', ['Zeta — cópia', 'Zeta — cópia 2'])).toBe('Zeta — cópia 3');
+  });
+
+  it('usa o primeiro número livre, mesmo com buraco na sequência', () => {
+    expect(copyName('Zeta', ['Zeta — cópia 3'])).toBe('Zeta — cópia');
+    expect(copyName('Zeta', ['Zeta — cópia', 'Zeta — cópia 3'])).toBe('Zeta — cópia 2');
+  });
+
+  it('nome de origem é normalizado antes de receber o sufixo (espaços e quebras somem)', () => {
+    expect(copyName('  Zeta \n ', [])).toBe('Zeta — cópia');
+  });
+
+  it('nome vazio ou só com caracteres invisíveis usa "Campanha" como base', () => {
+    expect(copyName('   ', [])).toBe('Campanha — cópia');
+    expect(copyName('​​', [])).toBe('Campanha — cópia');
+  });
+
+  it('a comparação é normalizada: NFD, espaços e quebras na lista tomada não escondem o nome repetido', () => {
+    // "cópia" com "o" + acento combinante (NFD) é a mesma tomada.
+    expect(copyName('Zeta', ['Zeta — cópia'])).toBe('Zeta — cópia 2');
+    expect(copyName('Zeta', ['  Zeta — cópia  '])).toBe('Zeta — cópia 2');
+    expect(copyName('Zeta', ['Zeta —\ncópia'])).toBe('Zeta — cópia 2');
+  });
+
+  it('nome de origem em NFD sai em NFC', () => {
+    expect(copyName('Zé'.normalize('NFD'), [])).toBe('Zé — cópia');
+  });
+
+  it('nome de 60 caracteres: a base é cortada e o resultado cabe em CAMPAIGN_NAME_MAX', () => {
+    const cheio = 'a'.repeat(CAMPAIGN_NAME_MAX);
+    const primeiro = copyName(cheio, []);
+    expect(primeiro).toBe(`${'a'.repeat(CAMPAIGN_NAME_MAX - ' — cópia'.length)} — cópia`);
+    expect(primeiro.length).toBe(CAMPAIGN_NAME_MAX);
+    const segundo = copyName(cheio, [primeiro]);
+    expect(segundo).toBe(`${'a'.repeat(CAMPAIGN_NAME_MAX - ' — cópia 2'.length)} — cópia 2`);
+    expect(segundo.length).toBeLessThanOrEqual(CAMPAIGN_NAME_MAX);
+  });
+
+  it('não corta um emoji ao meio: o pedaço solto de par substituto não entra no nome', () => {
+    // 51 unidades + emoji (2) = 53; " — cópia" tem 8, então a base cabe em 52 e o emoji não entra inteiro.
+    const nome = copyName(`${'a'.repeat(51)}😀`, []);
+    expect(nome).toBe(`${'a'.repeat(51)} — cópia`);
+    expect(nome).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
   });
 });

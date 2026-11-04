@@ -137,6 +137,7 @@ const LEGACY_ICON: SymbolViewProps['name'] = { ios: 'trophy.fill', android: 'emo
 const MENU_ICON: SymbolViewProps['name'] = { ios: 'line.3.horizontal', android: 'menu', web: 'menu' };
 const HOME_ICON: SymbolViewProps['name'] = { ios: 'house.fill', android: 'home', web: 'home' };
 const SETTINGS_ICON: SymbolViewProps['name'] = { ios: 'gearshape.fill', android: 'settings', web: 'settings' };
+const SAVE_AS_ICON: SymbolViewProps['name'] = { ios: 'doc.on.doc.fill', android: 'content_copy', web: 'content_copy' };
 
 /**
  * Paisagem: largura mínima para a doca (4 × 48 + 3 × 6) ficar centrada sem encostar no Encerrar o mês compacto do
@@ -223,6 +224,8 @@ export function PainelScreen() {
   const sky = useMemo(() => ({ setting: dayTime, month: skyMonth }), [dayTime, skyMonth]);
   const [globeFailed, setGlobeFailed] = useState(false);
   const [globeNoticeClosed, setGlobeNoticeClosed] = useState(false);
+  // Aviso de sucesso do "Salvar como…" (o Painel só tinha aviso de erro).
+  const [copyNotice, setCopyNotice] = useState<string | null>(null);
 
   const scenarioId = active?.state.scenarioId ?? DEFAULT_SCENARIO_ID;
   const content = useMemo(() => loadContent(scenarioId), [scenarioId]);
@@ -468,6 +471,22 @@ export function PainelScreen() {
     closeSheet();
     if (active?.finished) await gameStore.getState().leaveCampaign();
     router.navigate('/');
+  };
+
+  /**
+   * "Salvar como…": cópia da partida aberta, que continua como está. Vai o que está salvo; o rascunho do mês não entra,
+   * por isso o aviso diz que as escolhas não confirmadas ficam de fora. Uma falha cai no aviso de erro da mesa.
+   */
+  const saveAsCopy = async () => {
+    if (!active) return;
+    closeSheet();
+    setCopyNotice(null);
+    const copyId = await gameStore.getState().duplicateCampaign(active.id);
+    if (copyId === null) return;
+    const copy = gameStore.getState().campaigns.find((c) => c.id === copyId);
+    setCopyNotice(
+      `Cópia criada: ${copy?.name ?? 'nova campanha'}. Você continua nesta partida. As escolhas ainda não confirmadas deste mês não vão para a cópia.`,
+    );
   };
 
   /**
@@ -728,6 +747,9 @@ export function PainelScreen() {
               disabled={busy}
               onPress={() => void leaveToMenu()}
             />
+            {active && (
+              <MenuRow icon={SAVE_AS_ICON} label="Salvar como…" disabled={busy} onPress={() => void saveAsCopy()} />
+            )}
             <MenuRow
               icon={SETTINGS_ICON}
               label="Configurações"
@@ -953,6 +975,26 @@ export function PainelScreen() {
                       gameStore.getState().clearError();
                     },
                   }}
+                />
+              </ForceHudTheme>
+            </View>
+          )}
+
+          {copyNotice && !error && !sheet && (
+            <View
+              style={[
+                styles.error,
+                {
+                  top: (compact ? TOP_INSET.compact : TOP_INSET.portrait) + insets.top,
+                  left: 64 + insets.left,
+                  right: 64 + insets.right,
+                },
+              ]}>
+              <ForceHudTheme>
+                <Alert
+                  tone="positive"
+                  title={copyNotice}
+                  action={{ label: 'Entendi', onPress: () => setCopyNotice(null) }}
                 />
               </ForceHudTheme>
             </View>

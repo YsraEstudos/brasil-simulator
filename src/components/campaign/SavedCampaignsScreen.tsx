@@ -36,6 +36,7 @@ import {
 } from './savedList';
 import { Badge, ConfirmSheet, enterAt, goBack, LAYOUT, PressScale, PrimaryAction, SetupHeader } from './SetupBits';
 import { governmentSummaryLine, savedCardActivityLine } from './saveCardView';
+import { pickSaveFileText, shareSaveFile } from './saveFiles';
 
 type Pending =
   | { kind: 'carregar'; campaign: CampaignSummary }
@@ -69,6 +70,9 @@ export function SavedCampaignsScreen() {
   const [renaming, setRenaming] = useState<CampaignSummary | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [restartingId, setRestartingId] = useState<string | null>(null);
+  const [copyingId, setCopyingId] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
   // Só erros das ações desta tela: o `error` global pode ser antigo (ex.: um mês que falhou ao encerrar).
   const [opError, setOpError] = useState<string | null>(null);
   // Resultado de um apagar em lote, lido em voz alta pelos leitores de tela.
@@ -84,7 +88,8 @@ export function SavedCampaignsScreen() {
 
   const visible = useMemo(() => sortAndFilterCampaigns(campaigns, prefs), [campaigns, prefs]);
   const finished = useMemo(() => finishedDeletionSummary(campaigns), [campaigns]);
-  const listBusy = busy || loadingId !== null || restartingId !== null;
+  const listBusy =
+    busy || loadingId !== null || restartingId !== null || copyingId !== null || exportingId !== null || importing;
 
   const load = async (c: CampaignSummary) => {
     setPending(null);
@@ -176,6 +181,69 @@ export function SavedCampaignsScreen() {
     else setOpError(gameStore.getState().error ?? 'Tente de novo em instantes.');
   };
 
+  /** Duplica `c` ("Salvar como" da lista): a cópia aparece na lista com o nome "<nome> — cópia". */
+  const duplicate = async (c: CampaignSummary) => {
+    if (listBusy) return;
+    setPending(null);
+    setOpError(null);
+    setNotice(null);
+    setCopyingId(c.id);
+    const copyId = await gameStore.getState().duplicateCampaign(c.id);
+    if (!mounted.current) return;
+    setCopyingId(null);
+    if (copyId) {
+      const copy = gameStore.getState().campaigns.find((x) => x.id === copyId);
+      setNotice(copy ? `Cópia criada: ${copy.name}` : 'Cópia criada.');
+    } else setOpError(gameStore.getState().error ?? 'Tente de novo em instantes.');
+  };
+
+  /** Exporta `c` como arquivo de save e abre o compartilhamento do sistema. */
+  const exportOne = async (c: CampaignSummary) => {
+    if (listBusy) return;
+    setPending(null);
+    setOpError(null);
+    setNotice(null);
+    setExportingId(c.id);
+    let failure: string | null = null;
+    try {
+      const exported = await gameStore.getState().exportCampaign(c.id);
+      if (exported) await shareSaveFile(exported.fileName, exported.json);
+      else failure = gameStore.getState().error ?? 'Tente de novo em instantes.';
+    } catch (e) {
+      failure = e instanceof Error ? e.message : 'Não foi possível exportar este save.';
+    }
+    if (!mounted.current) return;
+    setExportingId(null);
+    if (failure) setOpError(failure);
+  };
+
+  /** Escolhe um arquivo de save e o importa como campanha nova (nunca sobrescreve uma existente). */
+  const importSave = async () => {
+    if (listBusy) return;
+    setPending(null);
+    setOpError(null);
+    setNotice(null);
+    setImporting(true);
+    let importedId: string | null = null;
+    let failure: string | null = null;
+    try {
+      const text = await pickSaveFileText();
+      if (text !== null) {
+        const result = await gameStore.getState().importCampaign(text);
+        if (result.ok) importedId = result.campaignId;
+        else failure = result.error;
+      }
+    } catch (e) {
+      failure = e instanceof Error ? e.message : 'Não foi possível ler este arquivo.';
+    }
+    if (!mounted.current) return;
+    setImporting(false);
+    if (importedId) {
+      const imported = gameStore.getState().campaigns.find((x) => x.id === importedId);
+      setNotice(imported ? `Save importado: ${imported.name}` : 'Save importado.');
+    } else if (failure) setOpError(failure);
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -192,13 +260,36 @@ export function SavedCampaignsScreen() {
 
         {opError && status === 'pronto' && (
           <Animated.View entering={FadeInDown.springify().damping(16)} layout={LAYOUT}>
-            <Alert tone="negative" title="Algo deu errado ao carregar, editar ou apagar" message={opError} />
+            <Alert
+              tone="negative"
+              title="Algo deu errado ao carregar, editar, copiar, exportar, importar ou apagar"
+              message={opError}
+            />
           </Animated.View>
         )}
 
         {notice && status === 'pronto' && (
           <Animated.View entering={FadeInDown.springify().damping(16)} layout={LAYOUT}>
             <Alert tone="positive" title={notice} />
+          </Animated.View>
+        )}
+
+        {status === 'pronto' && (
+          <Animated.View entering={FadeIn.duration(300)} layout={LAYOUT}>
+            <PressScale
+              onPress={() => void importSave()}
+              disabled={listBusy}
+              accessibilityLabel="Importar save"
+              accessibilityHint="Escolhe um arquivo de save exportado do jogo e cria uma campanha com ele"
+              style={[styles.bulkButton, { borderColor: colors.accent }]}>
+              {importing ? (
+                <ActivityIndicator color={colors.accent} />
+              ) : (
+                <Text variant="label" color="accent" align="center">
+                  Importar save
+                </Text>
+              )}
+            </PressScale>
           </Animated.View>
         )}
 
@@ -267,9 +358,13 @@ export function SavedCampaignsScreen() {
                     isOpen={c.id === activeId}
                     loading={loadingId === c.id}
                     restarting={restartingId === c.id}
+                    copying={copyingId === c.id}
+                    exporting={exportingId === c.id}
                     disabled={listBusy}
                     onLoad={() => requestLoad(c)}
                     onRestart={() => requestRestart(c)}
+                    onDuplicate={() => void duplicate(c)}
+                    onExport={() => void exportOne(c)}
                     onDelete={() => setPending({ kind: 'apagar', campaign: c })}
                     onTogglePinned={() => void togglePinned(c)}
                     onToggleLocked={() => void toggleLocked(c)}
@@ -432,9 +527,13 @@ function SavedItem({
   isOpen,
   loading,
   restarting,
+  copying,
+  exporting,
   disabled,
   onLoad,
   onRestart,
+  onDuplicate,
+  onExport,
   onDelete,
   onTogglePinned,
   onToggleLocked,
@@ -444,9 +543,13 @@ function SavedItem({
   isOpen: boolean;
   loading: boolean;
   restarting: boolean;
+  copying: boolean;
+  exporting: boolean;
   disabled: boolean;
   onLoad: () => void;
   onRestart: () => void;
+  onDuplicate: () => void;
+  onExport: () => void;
   onDelete: () => void;
   onTogglePinned: () => void;
   onToggleLocked: () => void;
@@ -554,6 +657,32 @@ function SavedItem({
             )}
           </PressScale>
         )}
+        <PressScale
+          onPress={onDuplicate}
+          disabled={disabled}
+          accessibilityLabel={`Duplicar ${c.name}`}
+          style={[styles.itemButton, { borderColor: colors.accent }]}>
+          {copying ? (
+            <ActivityIndicator color={colors.accent} />
+          ) : (
+            <Text variant="label" color="accent">
+              Duplicar
+            </Text>
+          )}
+        </PressScale>
+        <PressScale
+          onPress={onExport}
+          disabled={disabled}
+          accessibilityLabel={`Exportar ${c.name}`}
+          style={[styles.itemButton, { borderColor: colors.accent }]}>
+          {exporting ? (
+            <ActivityIndicator color={colors.accent} />
+          ) : (
+            <Text variant="label" color="accent">
+              Exportar
+            </Text>
+          )}
+        </PressScale>
         {c.locked ? (
           // Protegida: some o "Apagar" e fica um rótulo no lugar, para não parecer um botão desligado por engano.
           <View

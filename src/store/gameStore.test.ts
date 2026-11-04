@@ -821,3 +821,177 @@ describe('recomeçar com as mesmas opções (Fase M4)', () => {
     expect(app.getState().campaigns).toBe(lista);
   });
 });
+
+describe('salvar como, exportar e importar (PLANO_MENU_SAVES_CONFIG.md, Fase M5)', () => {
+  /** Pacote de save como vem no arquivo (só os campos que estes testes leem). */
+  type Pacote = {
+    format: string;
+    dbVersion: number;
+    campaign: Record<string, unknown>;
+    tables: Record<string, Record<string, unknown>[]>;
+  };
+  const pacoteDe = (json: string) => JSON.parse(json) as Pacote;
+
+  it('duplicateCampaign: a cópia entra na lista com "<nome> — cópia", a partida ativa e a origem não mudam', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Origem', difficulty: 'casual', seed: 3 });
+    const origem = app.getState().active!.id;
+    const ativa = app.getState().active;
+    const listaAntes = app.getState().campaigns.find((c) => c.id === origem);
+
+    const copia = await app.getState().duplicateCampaign(origem);
+
+    expect(copia).toEqual(expect.any(String));
+    expect(copia).not.toBe(origem);
+    expect(app.getState().campaigns.find((c) => c.id === copia)).toMatchObject({ name: 'Origem — cópia' });
+    expect(app.getState().campaigns.find((c) => c.id === origem)).toEqual(listaAntes);
+    expect(app.getState().active).toBe(ativa);
+    expect(app.getState().error).toBeUndefined();
+  });
+
+  it('duplicar de novo usa o próximo número livre; a cópia abre no mesmo estado', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Origem', difficulty: 'casual', seed: 3 });
+    const origem = app.getState().active!.id;
+    const estado = app.getState().active!.state;
+    await app.getState().duplicateCampaign(origem);
+    const segunda = await app.getState().duplicateCampaign(origem);
+    expect(app.getState().campaigns.find((c) => c.id === segunda)).toMatchObject({ name: 'Origem — cópia 2' });
+
+    expect(await app.getState().continueCampaign(segunda!)).toBe(true);
+    expect(app.getState().active!.state).toEqual(estado);
+  });
+
+  it('duplicar campanha inexistente devolve null e mostra "Campanha não encontrada."', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    expect(await app.getState().duplicateCampaign('fantasma')).toBeNull();
+    expect(app.getState().error).toBe('Campanha não encontrada.');
+  });
+
+  it('exportCampaign devolve JSON parseável no formato do save e o nome do arquivo', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Governo Azul', difficulty: 'casual', seed: 3 });
+    const exportado = await app.getState().exportCampaign(app.getState().active!.id);
+
+    expect(exportado).not.toBeNull();
+    expect(exportado!.fileName).toBe('governo-azul-mes1.brasilsave.json');
+    expect(pacoteDe(exportado!.json)).toMatchObject({ format: 'brasil-save', campaign: { name: 'Governo Azul' } });
+  });
+
+  it('exportar campanha inexistente devolve null e mostra o erro', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    expect(await app.getState().exportCampaign('fantasma')).toBeNull();
+    expect(app.getState().error).toBe('Campanha não encontrada.');
+  });
+
+  it('importCampaign do texto exportado cria campanha nova e abre no mesmo estado; nome repetido vira "(2)", depois "(3)"', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Origem', difficulty: 'casual', seed: 3 });
+    const origem = app.getState().active!.id;
+    const estado = app.getState().active!.state;
+    const exportado = (await app.getState().exportCampaign(origem))!;
+
+    const primeira = await app.getState().importCampaign(exportado.json);
+    expect(primeira).toEqual({ ok: true, campaignId: expect.any(String) });
+    if (!primeira.ok) throw new Error('a importação deveria funcionar');
+    expect(app.getState().campaigns.find((c) => c.id === primeira.campaignId)).toMatchObject({ name: 'Origem (2)' });
+    expect(app.getState().active!.id).toBe(origem);
+
+    expect(await app.getState().continueCampaign(primeira.campaignId)).toBe(true);
+    expect(app.getState().active!.state).toEqual(estado);
+
+    const segunda = await app.getState().importCampaign(exportado.json);
+    if (!segunda.ok) throw new Error('a segunda importação deveria funcionar');
+    expect(app.getState().campaigns.find((c) => c.id === segunda.campaignId)?.name).toBe('Origem (3)');
+  });
+
+  it('importCampaign com nome do arquivo longo ou vazio grava um nome válido (até 60, nunca vazio)', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Origem', difficulty: 'casual', seed: 3 });
+    const pacote = pacoteDe((await app.getState().exportCampaign(app.getState().active!.id))!.json);
+    const comNome = (name: string) => JSON.stringify({ ...pacote, campaign: { ...pacote.campaign, name } });
+
+    const longo = await app.getState().importCampaign(comNome('x'.repeat(90)));
+    const vazio = await app.getState().importCampaign(comNome(''));
+
+    if (!longo.ok || !vazio.ok) throw new Error('as importações deveriam funcionar');
+    expect(app.getState().campaigns.find((c) => c.id === longo.campaignId)?.name).toBe('x'.repeat(60));
+    expect(app.getState().campaigns.find((c) => c.id === vazio.campaignId)?.name).toBe('Campanha');
+  });
+
+  it('importCampaign de texto que não é save devolve ok:false com "não é um save"', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    for (const texto of ['texto solto', '{"foo":1}', '[]', 'null', '{"format":"outro"}']) {
+      expect(await app.getState().importCampaign(texto)).toEqual({
+        ok: false,
+        error: expect.stringContaining('não é um save'),
+      });
+    }
+    expect(app.getState().campaigns).toEqual([]);
+  });
+
+  it('importCampaign de save de versão mais nova ou anterior devolve ok:false com a mensagem da versão', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Origem', difficulty: 'casual', seed: 3 });
+    const pacote = pacoteDe((await app.getState().exportCampaign(app.getState().active!.id))!.json);
+
+    const maisNova = await app
+      .getState()
+      .importCampaign(JSON.stringify({ ...pacote, dbVersion: LATEST_DB_VERSION + 1 }));
+    const anterior = await app
+      .getState()
+      .importCampaign(JSON.stringify({ ...pacote, dbVersion: LATEST_DB_VERSION - 1 }));
+    expect(maisNova).toEqual({ ok: false, error: expect.stringContaining('mais nova') });
+    expect(anterior).toEqual({ ok: false, error: expect.stringContaining('anterior') });
+  });
+
+  it('importCampaign de save com cenário inexistente (ou chave herdada do objeto) devolve ok:false com mensagem de cenário', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Origem', difficulty: 'casual', seed: 3 });
+    const pacote = pacoteDe((await app.getState().exportCampaign(app.getState().active!.id))!.json);
+    const campanhas = app.getState().campaigns.length;
+
+    for (const scenario_id of ['cenario_removido', 'constructor', '__proto__']) {
+      const texto = JSON.stringify({ ...pacote, campaign: { ...pacote.campaign, scenario_id } });
+      expect(await app.getState().importCampaign(texto)).toEqual({
+        ok: false,
+        error: expect.stringContaining('cenário'),
+      });
+    }
+    expect(app.getState().campaigns).toHaveLength(campanhas);
+  });
+
+  it('importCampaign que falha ao gravar (snapshot corrompido) não grava nada e não deixa "error" preso', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Origem', difficulty: 'casual', seed: 3 });
+    const pacote = pacoteDe((await app.getState().exportCampaign(app.getState().active!.id))!.json);
+    for (const s of pacote.tables.snapshots) s.state_json = '{"corrompido":';
+    const campanhas = app.getState().campaigns.length;
+
+    const r = await app.getState().importCampaign(JSON.stringify(pacote));
+
+    expect(r).toEqual({ ok: false, error: expect.stringContaining('incompleto') });
+    expect(app.getState().campaigns).toHaveLength(campanhas);
+    expect(app.getState().error).toBeUndefined();
+  });
+
+  it('o "error" global não fica preso depois de uma importação com falha', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    expect(await app.getState().importCampaign('lixo')).toEqual({ ok: false, error: expect.any(String) });
+    expect(app.getState().error).toBeUndefined();
+    await app.getState().newCampaign({ name: 'Depois', difficulty: 'casual', seed: 3 });
+    expect(app.getState().error).toBeUndefined();
+  });
+});

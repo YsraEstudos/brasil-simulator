@@ -25,6 +25,15 @@ import {
   type ProfileHistory,
   type RegionalPoint,
 } from '@/database/campaignRepository';
+import {
+  BundleError,
+  bundleFileName,
+  duplicateCampaign as duplicateCampaignInDb,
+  exportBundle,
+  importBundle,
+  parseBundle,
+  type CampaignBundle,
+} from '@/database/campaignBundle';
 import { getSetting, setSetting } from '@/database/settingsRepository';
 import type { SqlDatabase } from '@/database/types';
 import { DEFAULT_PROFILE_3D, type Profile3d } from '@/globe/qualityProfiles';
@@ -50,6 +59,9 @@ import {
   DEFAULT_SETUP_PREFS,
   LAST_DIFFICULTY_KEY,
   LAST_SCENARIO_KEY,
+  copyName,
+  importedName,
+  isKnownScenario,
   resolveSetupPrefs,
   restartName,
   validateCampaignName,
@@ -138,6 +150,18 @@ export interface GameStoreState {
    * Partida sem opções gravadas (anterior à migração 10) recomeça com dificuldade, cenário e semente da linha.
    */
   restartCampaign(id: string): Promise<NewCampaignResult>;
+  /**
+   * Duplica a campanha ("Salvar como", PLANO_MENU_SAVES_CONFIG.md M5.1): cópia do que está salvo (o rascunho do mês
+   * não entra), com nome "<nome> — cópia". A partida aberta não muda. Devolve o id da cópia ou `null`.
+   */
+  duplicateCampaign(id: string): Promise<string | null>;
+  /** Pacote da campanha em JSON e nome sugerido do arquivo (M5.2); `null` se falhar (erro em `error`). */
+  exportCampaign(id: string): Promise<{ fileName: string; json: string } | null>;
+  /**
+   * Importa o texto de um arquivo de save (M5.3) como campanha nova (id novo; nunca sobrescreve). Erros vêm com
+   * mensagem para o jogador.
+   */
+  importCampaign(text: string): Promise<{ ok: true; campaignId: string } | { ok: false; error: string }>;
   /** Carrega uma campanha salva; `true` se ela ficou ativa. A já ativa é mantida como está (com o rascunho). */
   continueCampaign(id: string): Promise<boolean>;
   /** Indicadores dos últimos meses gravados (série do Painel); vazio sem partida ou leitura falha. */
@@ -226,6 +250,9 @@ export function createGameStore(deps: GameStoreDeps) {
       }
     };
 
+    /** Id de campanha com sorteios próprios: não depende da semente, que o jogador pode repetir. */
+    const newCampaignId = () =>
+      `c_${Math.floor(deps.random() * 2 ** 31).toString(36)}_${Math.floor(deps.random() * 2 ** 31).toString(36)}`;
     const refreshList = async (d: SqlDatabase) => set({ campaigns: await listCampaigns(d) });
 
     return {
@@ -339,7 +366,7 @@ export function createGameStore(deps: GameStoreDeps) {
             const scenario = SCENARIOS[scenarioId];
             const seed = checked.input.seed ?? Math.floor(deps.random() * 2 ** 31);
             // O id usa sorteios próprios: não depende da semente, que o jogador pode repetir em outra campanha.
-            const id = `c_${Math.floor(deps.random() * 2 ** 31).toString(36)}_${Math.floor(deps.random() * 2 ** 31).toString(36)}`;
+            const id = newCampaignId();
             const state = createInitialState({
               content: loadContent(scenario.id),
               difficulty,
@@ -393,6 +420,69 @@ export function createGameStore(deps: GameStoreDeps) {
         } finally {
           set({ busy: false });
         }
+      },
+
+      async duplicateCampaign(id) {
+        const source = get().campaigns.find((c) => c.id === id);
+        if (!source) {
+          set({ error: 'Campanha não encontrada.' });
+          return null;
+        }
+        const copyId = newCampaignId();
+        const ok = await run(async (d) => {
+          await duplicateCampaignInDb(d, id, {
+            id: copyId,
+            name: copyName(
+              source.name,
+              get().campaigns.map((c) => c.name),
+            ),
+          });
+          await refreshList(d);
+        });
+        return ok ? copyId : null;
+      },
+
+      async exportCampaign(id) {
+        if (!db) return null;
+        try {
+          const bundle = await exportBundle(db, id);
+          return { fileName: bundleFileName(bundle), json: JSON.stringify(bundle) };
+        } catch (e) {
+          set({ error: e instanceof Error ? e.message : String(e) });
+          return null;
+        }
+      },
+
+      async importCampaign(text) {
+        let bundle: CampaignBundle;
+        try {
+          bundle = parseBundle(JSON.parse(text));
+        } catch (e) {
+          return {
+            ok: false,
+            error: e instanceof BundleError ? e.message : 'Este arquivo não é um save do Brasil Simulator.',
+          };
+        }
+        // Chave própria do cenário (`constructor` não é cenário); o nome vem do arquivo, então passa pela normalização.
+        if (!isKnownScenario(bundle.campaign.scenario_id)) {
+          return { ok: false, error: 'Este save usa um cenário que não existe nesta versão do jogo.' };
+        }
+        const taken = get().campaigns.map((c) => c.name);
+        const name = importedName(bundle.campaign.name, taken);
+        const campaignId = newCampaignId();
+        let failure = null as string | null;
+        const ok = await run(async (d) => {
+          try {
+            await importBundle(d, bundle, { id: campaignId, name });
+          } catch (e) {
+            failure = e instanceof BundleError ? e.message : e instanceof Error ? e.message : String(e);
+            return;
+          }
+          await refreshList(d);
+        });
+        if (failure) return { ok: false, error: failure };
+        if (!ok) return { ok: false, error: get().error ?? 'Não foi possível importar agora. Tente de novo.' };
+        return { ok: true, campaignId };
       },
 
       async restartCampaign(id) {

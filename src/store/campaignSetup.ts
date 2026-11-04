@@ -111,9 +111,45 @@ export function restartName(name: string, taken: readonly string[]): string {
   const used = new Set(taken.map((t) => normalizeCampaignName(t)));
   for (let n = 2; ; n++) {
     const suffix = ` (${n})`;
-    const candidate = `${base.slice(0, CAMPAIGN_NAME_MAX - suffix.length).trimEnd()}${suffix}`;
+    const candidate = `${cutName(base, CAMPAIGN_NAME_MAX - suffix.length).trimEnd()}${suffix}`;
     if (!used.has(candidate)) return candidate;
   }
+}
+
+/**
+ * Corta `s` para no máximo `max` unidades UTF-16 sem partir um par substituto (emoji): o pedaço solto não entra.
+ */
+function cutName(s: string, max: number): string {
+  let out = '';
+  for (const ch of s) {
+    if (out.length + ch.length > max) break;
+    out += ch;
+  }
+  return out;
+}
+
+/**
+ * Nome da cópia ("Salvar como", PLANO_MENU_SAVES_CONFIG.md M5.1): "<nome> — cópia", depois "<nome> — cópia 2"… até
+ * achar um nome livre em `taken`. A base é cortada para caber em `CAMPAIGN_NAME_MAX`.
+ */
+export function copyName(name: string, taken: readonly string[]): string {
+  const base = normalizeCampaignName(name) || 'Campanha';
+  const used = new Set(taken.map((t) => normalizeCampaignName(t)));
+  for (let n = 1; ; n++) {
+    const suffix = n === 1 ? ' — cópia' : ` — cópia ${n}`;
+    const candidate = `${cutName(base, CAMPAIGN_NAME_MAX - suffix.length).trimEnd()}${suffix}`;
+    if (!used.has(candidate)) return candidate;
+  }
+}
+
+/**
+ * Nome de campanha importada de um arquivo de save (M5.3). O arquivo não é confiável: o nome passa pela mesma
+ * normalização e pelo mesmo limite de um nome digitado; vazio vira "Campanha", e um nome já usado ganha " (2)"…
+ */
+export function importedName(raw: unknown, taken: readonly string[]): string {
+  const base = cutName(normalizeCampaignName(raw), CAMPAIGN_NAME_MAX).trimEnd() || 'Campanha';
+  const used = new Set(taken.map((t) => normalizeCampaignName(t)));
+  return used.has(base) ? restartName(base, taken) : base;
 }
 
 /**
