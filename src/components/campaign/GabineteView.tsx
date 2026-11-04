@@ -133,7 +133,7 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
           <AgendaFooter
             totals={totals}
             actionsMax={actionsMax}
-            money={(millions) => fiscal.money(millions)}
+            money={fiscal.money}
             canUndo={canUndo}
             onUndo={undoDraft}
             onClear={confirmClear}

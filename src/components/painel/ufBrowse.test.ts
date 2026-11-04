@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import { indicatorSpec } from './regionalMetrics';
-import { alphabeticalUfs, campCounts, filterByCamp, governorCamp, legendStrip, ufNeighbors } from './ufBrowse';
+import {
+  alphabeticalUfs,
+  campCounts,
+  filterByCamp,
+  governorCamp,
+  legendStrip,
+  rankingGroups,
+  ufNeighbors,
+} from './ufBrowse';
 
 const row = (id: string, name: string, governorRelation = 0) => ({ uf: { id, governorRelation }, name });
 
@@ -57,5 +65,17 @@ describe('legenda fixa (B42)', () => {
     const strip = legendStrip(indicatorSpec('seca'));
     expect(strip.low.startsWith('<')).toBe(true);
     expect(strip.high.startsWith('≥')).toBe(true);
+  });
+});
+
+describe('blocos de melhores e piores', () => {
+  it('só aparecem com mais de 10 UFs, para não repetir as mesmas', () => {
+    const ten = Array.from({ length: 10 }, (_, i) => i);
+    expect(rankingGroups(ten)).toBeNull();
+    const eleven = [...ten, 10];
+    expect(rankingGroups(eleven)).toEqual([
+      [0, 1, 2, 3, 4],
+      [10, 9, 8, 7, 6],
+    ]);
   });
 });
