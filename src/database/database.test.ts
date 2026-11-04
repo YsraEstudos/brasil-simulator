@@ -15,10 +15,16 @@ import {
 import {
   addPlayTime,
   cardSummaryOf,
+  CampaignLockedError,
   CampaignNotFoundError,
   createCampaign,
   deleteCampaign,
+  deleteFinishedCampaigns,
+  finishCampaign,
   listCampaigns,
+  renameCampaign,
+  setCampaignLocked,
+  setCampaignPinned,
   parseCardSummary,
   touchCampaign,
   loadElectionResults,
@@ -106,7 +112,7 @@ describe('migrações', () => {
     const db = openNodeDatabase();
     await migrate(db, MIGRATIONS.slice(0, 2));
     await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
-    expect(await migrate(db)).toEqual([3, 4, 5, 6, 7, 8]);
+    expect(await migrate(db)).toEqual([3, 4, 5, 6, 7, 8, 9]);
     expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
     expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Antiga']);
   });
@@ -305,7 +311,7 @@ describe('campanhas', () => {
       'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
       ['c1', 0, state.schemaVersion, JSON.stringify(state)],
     );
-    expect(await migrate(old)).toEqual([4, 5, 6, 7, 8]);
+    expect(await migrate(old)).toEqual([4, 5, 6, 7, 8, 9]);
     const [point] = await loadIndicatorHistory(old, 'c1');
     expect(point?.indicators).toEqual(state.indicators);
     expect(point?.selic).toBe(state.economy.selic);
@@ -498,7 +504,7 @@ describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
     await put(1, s1);
     await put(2, semRegioes); // snapshot de formato sem o bloco regional
 
-    expect(await migrate(old)).toEqual([5, 6, 7, 8]);
+    expect(await migrate(old)).toEqual([5, 6, 7, 8, 9]);
     const history = await loadRegionalHistory(old, 'c1');
     expect(history.map((p) => p.monthIndex)).toEqual([1]);
     for (const uf of s1.regions.ufs) {
@@ -743,5 +749,134 @@ describe('resumo do save e tempo de jogo (PLANO_MENU_SAVES_CONFIG.md, Fase M2)',
     expect(parseCardSummary('{"approval":0.5}')).toBeNull();
     const ok = { approval: 0.42, gdpGrowth12m: 0.01, monthIndex: 3 };
     expect(parseCardSummary(JSON.stringify(ok))).toEqual(ok);
+  });
+});
+
+describe('organização dos saves (migração 9, PLANO_MENU_SAVES_CONFIG.md, Fase M3)', () => {
+  let db: SqlDatabase;
+  beforeEach(async () => {
+    db = openNodeDatabase();
+    await migrate(db);
+  });
+
+  /** Cria uma campanha por id, com o mesmo estado inicial (semente fixa). */
+  const criar = async (...ids: string[]) => {
+    for (const id of ids) {
+      await createCampaign(db, { id, name: `Campanha ${id}`, scenarioVersion: '0.1.0', state: newState(5) });
+    }
+  };
+
+  it('a migração 9 cria pinned e locked com padrão 0 e só aceita 0 ou 1', async () => {
+    expect(LATEST_DB_VERSION).toBe(9);
+    expect(await currentVersion(db)).toBe(9);
+    const cols = await db.all<{ name: string; dflt_value: string | null; notnull: number }>(
+      'PRAGMA table_info(campaigns)',
+    );
+    for (const nome of ['pinned', 'locked']) {
+      const col = cols.find((c) => c.name === nome);
+      expect(col?.dflt_value).toBe('0');
+      expect(col?.notnull).toBe(1);
+    }
+    await criar('c1');
+    await expect(db.run('UPDATE campaigns SET locked = 2')).rejects.toThrow();
+    await expect(db.run('UPDATE campaigns SET pinned = -1')).rejects.toThrow();
+  });
+
+  it('campanha que já existia antes da migração 9 entra com pinned e locked falsos', async () => {
+    const old = openNodeDatabase();
+    await migrate(
+      old,
+      MIGRATIONS.filter((m) => m.version < 9),
+    );
+    // o helper de save legado só serve às primeiras versões; o INSERT de createCampaign não cita as colunas da v9
+    await createCampaign(old, { id: 'antiga', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
+    expect(await migrate(old)).toEqual([9]);
+    const [c] = await listCampaigns(old);
+    expect(c).toMatchObject({ id: 'antiga', pinned: false, locked: false });
+  });
+
+  it('listCampaigns entrega pinned e locked como booleanos', async () => {
+    await criar('c1');
+    const [c] = await listCampaigns(db);
+    expect(c.pinned).toBe(false);
+    expect(c.locked).toBe(false);
+  });
+
+  it('renomear troca o nome e não mexe em updated_at (a lista não reordena)', async () => {
+    await criar('c1');
+    await db.run("UPDATE campaigns SET updated_at = '2001-02-03T00:00:00.000Z'");
+    await renameCampaign(db, 'c1', 'Nome novo');
+    const [c] = await listCampaigns(db);
+    expect(c.name).toBe('Nome novo');
+    expect(c.updatedAt).toBe('2001-02-03T00:00:00.000Z');
+  });
+
+  it('renomear campanha inexistente lança CampaignNotFoundError', async () => {
+    await expect(renameCampaign(db, 'fantasma', 'x')).rejects.toBeInstanceOf(CampaignNotFoundError);
+  });
+
+  it('alfinete e cadeado aparecem em listCampaigns e podem ser desligados', async () => {
+    await criar('c1', 'c2');
+    await setCampaignPinned(db, 'c2', true);
+    await setCampaignLocked(db, 'c1', true);
+    const lista = Object.fromEntries((await listCampaigns(db)).map((c) => [c.id, c]));
+    expect(lista.c1).toMatchObject({ pinned: false, locked: true });
+    expect(lista.c2).toMatchObject({ pinned: true, locked: false });
+
+    await setCampaignPinned(db, 'c2', false);
+    await setCampaignLocked(db, 'c1', false);
+    expect((await listCampaigns(db)).every((c) => !c.pinned && !c.locked)).toBe(true);
+  });
+
+  it('deleteCampaign com cadeado lança CampaignLockedError e a campanha continua salva', async () => {
+    await criar('c1');
+    await setCampaignLocked(db, 'c1', true);
+    await expect(deleteCampaign(db, 'c1')).rejects.toBeInstanceOf(CampaignLockedError);
+    await expect(deleteCampaign(db, 'c1')).rejects.toMatchObject({ campaignId: 'c1' });
+    await expect(deleteCampaign(db, 'c1')).rejects.toThrow(/cadeado/);
+    expect((await listCampaigns(db)).map((c) => c.id)).toEqual(['c1']);
+    await expect(loadLatestState(db, 'c1')).resolves.toMatchObject({ monthIndex: 0 });
+  });
+
+  it('sem cadeado apaga; depois de abrir e fechar o cadeado, também apaga', async () => {
+    await criar('c1', 'c2');
+    await deleteCampaign(db, 'c1');
+    expect((await listCampaigns(db)).map((c) => c.id)).toEqual(['c2']);
+    await setCampaignLocked(db, 'c2', true);
+    await setCampaignLocked(db, 'c2', false);
+    await deleteCampaign(db, 'c2');
+    expect(await listCampaigns(db)).toEqual([]);
+  });
+
+  it('deleteFinishedCampaigns apaga só as encerradas sem cadeado e conta as que ficaram trancadas', async () => {
+    await criar('ativa', 'encerrada', 'encerrada_trancada', 'encerrada_2', 'ativa_trancada');
+    for (const id of ['encerrada', 'encerrada_trancada', 'encerrada_2']) await finishCampaign(db, id);
+    await setCampaignLocked(db, 'encerrada_trancada', true);
+    await setCampaignLocked(db, 'ativa_trancada', true);
+
+    expect(await deleteFinishedCampaigns(db)).toEqual({ deleted: 2, keptLocked: 1 });
+    const restantes = (await listCampaigns(db)).map((c) => c.id).sort();
+    expect(restantes).toEqual(['ativa', 'ativa_trancada', 'encerrada_trancada']);
+    // a cascata leva os snapshots das campanhas apagadas
+    expect(
+      await db.first<{ n: number }>(
+        "SELECT COUNT(*) AS n FROM snapshots WHERE campaign_id IN ('encerrada', 'encerrada_2')",
+      ),
+    ).toEqual({ n: 0 });
+  });
+
+  it('com só encerradas trancadas ou só ativas, nada é apagado', async () => {
+    await criar('ativa', 'trancada');
+    await finishCampaign(db, 'trancada');
+    await setCampaignLocked(db, 'trancada', true);
+    expect(await deleteFinishedCampaigns(db)).toEqual({ deleted: 0, keptLocked: 1 });
+    expect((await listCampaigns(db)).map((c) => c.id).sort()).toEqual(['ativa', 'trancada']);
+  });
+
+  it('sem nenhuma campanha, deleteFinishedCampaigns devolve {deleted: 0, keptLocked: 0}', async () => {
+    expect(await deleteFinishedCampaigns(db)).toEqual({ deleted: 0, keptLocked: 0 });
+    await criar('ativa');
+    expect(await deleteFinishedCampaigns(db)).toEqual({ deleted: 0, keptLocked: 0 });
+    expect((await listCampaigns(db)).map((c) => c.id)).toEqual(['ativa']);
   });
 });

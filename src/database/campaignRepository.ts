@@ -99,6 +99,10 @@ export interface CampaignSummary {
   lastPlayedAt: string | null;
   /** Mini-resumo do turno atual para o cartão do save; `null` em partidas sem resumo gravado. */
   cardSummary: CampaignCardSummary | null;
+  /** Fixada no topo da lista de campanhas (migração 9). */
+  pinned: boolean;
+  /** Protegida contra exclusão (migração 9): `deleteCampaign` recusa, `deleteFinishedCampaigns` pula. */
+  locked: boolean;
 }
 
 /** Mini-resumo do cartão do save (PLANO_MENU_SAVES_CONFIG.md M2.1), gravado em `campaigns.summary_json`. */
@@ -135,6 +139,14 @@ export function parseCardSummary(json: string | null): CampaignCardSummary | nul
 }
 
 export { SaveTooNewError };
+
+/** Tentativa de apagar uma campanha com cadeado (PLANO_MENU_SAVES_CONFIG.md M3.2). */
+export class CampaignLockedError extends Error {
+  constructor(readonly campaignId: string) {
+    super('Esta campanha está protegida pelo cadeado. Abra o cadeado para apagá-la.');
+    this.name = 'CampaignLockedError';
+  }
+}
 
 export class CampaignNotFoundError extends Error {
   constructor(readonly campaignId: string) {
@@ -524,6 +536,8 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     play_time_ms: number;
     last_played_at: string | null;
     summary_json: string | null;
+    pinned: number;
+    locked: number;
   }>('SELECT * FROM campaigns ORDER BY updated_at DESC, id');
   return rows.map((r) => ({
     id: r.id,
@@ -541,6 +555,8 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     playTimeMs: r.play_time_ms,
     lastPlayedAt: r.last_played_at,
     cardSummary: parseCardSummary(r.summary_json),
+    pinned: r.pinned === 1,
+    locked: r.locked === 1,
   }));
 }
 
@@ -586,7 +602,46 @@ export async function addPlayTime(db: SqlDatabase, campaignId: string, ms: numbe
 
 /** Apaga a campanha e, em cascata, snapshots, decisões, eventos, relatórios e o resumo da pré-campanha. */
 export async function deleteCampaign(db: SqlDatabase, campaignId: string): Promise<void> {
-  await db.run('DELETE FROM campaigns WHERE id = ?', [campaignId]);
+  const row = await db.first<{ locked: number }>('SELECT locked FROM campaigns WHERE id = ?', [campaignId]);
+  if (row?.locked === 1) throw new CampaignLockedError(campaignId);
+  await db.run('DELETE FROM campaigns WHERE id = ? AND locked = 0', [campaignId]);
+}
+
+/**
+ * Apaga de uma vez as campanhas encerradas sem cadeado (PLANO_MENU_SAVES_CONFIG.md M3.5), numa transação. Devolve
+ * quantas foram apagadas e quantas encerradas ficaram por causa do cadeado.
+ */
+export async function deleteFinishedCampaigns(db: SqlDatabase): Promise<{ deleted: number; keptLocked: number }> {
+  let deleted = 0;
+  let keptLocked = 0;
+  await db.transaction(async () => {
+    const kept = await db.first<{ n: number }>(
+      "SELECT COUNT(*) AS n FROM campaigns WHERE status = 'encerrada' AND locked = 1",
+    );
+    keptLocked = kept?.n ?? 0;
+    const result = await db.run("DELETE FROM campaigns WHERE status = 'encerrada' AND locked = 0");
+    deleted = result.changes;
+  });
+  return { deleted, keptLocked };
+}
+
+/**
+ * Renomeia a campanha (PLANO_MENU_SAVES_CONFIG.md M3.1). O nome já deve vir validado (`validateCampaignName`). Não mexe
+ * em `updated_at`: renomear não reordena a lista.
+ */
+export async function renameCampaign(db: SqlDatabase, campaignId: string, name: string): Promise<void> {
+  const result = await db.run('UPDATE campaigns SET name = ? WHERE id = ?', [name, campaignId]);
+  if (result.changes !== 1) throw new CampaignNotFoundError(campaignId);
+}
+
+/** Fixa ou solta a campanha no topo da lista (alfinete). */
+export async function setCampaignPinned(db: SqlDatabase, campaignId: string, pinned: boolean): Promise<void> {
+  await db.run('UPDATE campaigns SET pinned = ? WHERE id = ?', [pinned ? 1 : 0, campaignId]);
+}
+
+/** Liga ou desliga o cadeado contra exclusão. */
+export async function setCampaignLocked(db: SqlDatabase, campaignId: string, locked: boolean): Promise<void> {
+  await db.run('UPDATE campaigns SET locked = ? WHERE id = ?', [locked ? 1 : 0, campaignId]);
 }
 
 /** Grava o estado completo do mês e os pontos das séries de longo prazo, nacional e regional (na transação de quem chama). */
