@@ -18,8 +18,11 @@ import {
   buildPages,
   editionIndexOf,
   editionPage,
+  extraEditionMarks,
+  firstEditionPage,
   focusedView,
   isBombshell,
+  isExtraEditionNews,
   leadFontSize,
   mastheadFontSize,
   newspaperColumns,
@@ -294,6 +297,40 @@ describe('capa-bomba e páginas do jornal', () => {
     expect(focusedView(editions, pages, '2_1').page).toBe(1);
     expect(focusedView(editions, pages, '0_0').page).toBe(2);
     expect(focusedView(editions, pages, 'ausente').page).toBe(0);
+  });
+
+  it('edição extra no disparo de escândalo, crise grave e desastre severo (B86)', () => {
+    const scandal = item('3_1', 3, { kind: 'evento', sourceId: 'escandalo_ministerio' });
+    const noAnswer = item('4_0', 4, { kind: 'evento', tone: 'negativa', sourceId: 'escandalo_ministerio' });
+    const mildFlood = item('5_0', 5, {
+      kind: 'evento',
+      sourceId: 'enchentes_metropole_v2',
+      location: { affectedUfs: ['RS'], severityByUf: { RS: 0.3 } },
+    });
+    expect(isExtraEditionNews(scandal)).toBe(true);
+    expect(isBombshell(scandal)).toBe(true);
+    expect(isExtraEditionNews(noAnswer)).toBe(false);
+    expect(isExtraEditionNews(mildFlood)).toBe(false);
+    // A bomba é a primeira notícia bomba da edição, mesmo que não seja a primeira da lista.
+    const editions = buildEditions([item('3_0', 3, { kind: 'evento', sourceId: 'alta_petroleo' }), scandal]);
+    const pages = buildPages(editions);
+    expect(pages[0]).toMatchObject({ kind: 'bomba', item: { id: '3_1' } });
+    expect(pages[1]).toMatchObject({ kind: 'comum', skip: '3_1' });
+  });
+
+  it('saltos para a 1ª edição e marcas das edições extras (B86, B87)', () => {
+    const editions = buildEditions([item('0_0', 0, { kind: 'institucional' }), item('1_0', 1), bomba]);
+    const pages = buildPages(editions);
+    expect(pages.map((p) => `${p.kind}:${p.editionIndex}`)).toEqual([
+      'bomba:0',
+      'comum:0',
+      'comum:1',
+      'bomba:2',
+      'comum:2',
+    ]);
+    expect(firstEditionPage(pages)).toBe(3);
+    expect(extraEditionMarks(editions, pages).map((m) => m.page)).toEqual([0, 3]);
+    expect(firstEditionPage(buildPages([]))).toBe(0);
   });
 
   it('título da capa é maior que a manchete comum e tem limites', () => {

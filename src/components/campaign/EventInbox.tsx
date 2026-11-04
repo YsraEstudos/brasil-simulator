@@ -17,6 +17,15 @@ import { useTheme } from '@/hooks/use-theme';
 import type { GameEvent } from '@/types/event';
 
 import { ChoiceOption } from './ChoiceOption';
+import {
+  ALERT_SEVERITIES,
+  ALERT_SEVERITY_LABEL,
+  eventSeverity,
+  sanctionSeverity,
+  severityCounts,
+  type AlertSeverity,
+} from './eventGravity';
+import { FilterChip } from './GabineteBits';
 import { focusFirst } from './inboxModel';
 import { characterHeading, standingBand, standingText, type CharacterBrief, type StandingBand } from './characterView';
 import { monthLabel } from './labels';
@@ -106,8 +115,11 @@ export function EventInbox({
     items.some(({ pending }) => pending.instanceId === focusInstanceId) ? `event:${focusInstanceId}` : null,
   );
   const [seenFocus, setSeenFocus] = useState(focusInstanceId);
+  // Filtro por gravidade (Fase Q12, B82). Um marcador do mapa abrindo um evento limpa o filtro, para o evento aparecer.
+  const [severity, setSeverity] = useState<AlertSeverity | null>(null);
   if (seenFocus !== focusInstanceId) {
     setSeenFocus(focusInstanceId);
+    setSeverity(null);
     setExpanded(
       items.some(({ pending }) => pending.instanceId === focusInstanceId) ? `event:${focusInstanceId}` : null,
     );
@@ -125,12 +137,38 @@ export function EventInbox({
     items.filter(({ event }) => chosen[event.id] !== undefined).length +
     sanctions.filter(({ proposal }) => sanctionChosen[proposal.id] !== undefined).length;
 
+  const itemSeverity = (p: PendingItem) => eventSeverity(p.pending.eventId, p.pending.location);
+  const counts = severityCounts([
+    ...sanctions.map(({ proposal }) => sanctionSeverity(proposal.rider)),
+    ...items.map(itemSeverity),
+  ]);
+  const shownSanctions = sanctions.filter(
+    ({ proposal }) => severity === null || sanctionSeverity(proposal.rider) === severity,
+  );
+  const shownItems = items.filter((item) => severity === null || itemSeverity(item) === severity);
+
   return (
     <View style={styles.root}>
       <InboxSummary answered={answered} total={total} />
 
-      {sanctions.length > 0 && <SectionLabel text="Sanção ou veto" count={sanctions.length} />}
-      {sanctions.map(({ proposal, name }) => {
+      {total > 1 && (
+        <View style={styles.filters} accessibilityLabel="Filtrar por gravidade">
+          <FilterChip label="Todos" count={total} active={severity === null} onPress={() => setSeverity(null)} />
+          {ALERT_SEVERITIES.filter((s) => counts[s] > 0).map((s) => (
+            <FilterChip
+              key={s}
+              label={ALERT_SEVERITY_LABEL[s]}
+              count={counts[s]}
+              active={severity === s}
+              accessibilityLabel={`${ALERT_SEVERITY_LABEL[s]}: ${counts[s]}`}
+              onPress={() => setSeverity(severity === s ? null : s)}
+            />
+          ))}
+        </View>
+      )}
+
+      {shownSanctions.length > 0 && <SectionLabel text="Sanção ou veto" count={shownSanctions.length} />}
+      {shownSanctions.map(({ proposal, name }) => {
         const options: SanctionChoice[] =
           proposal.rider > 0 ? ['sancionar', 'vetar_acrescimos', 'vetar_total'] : ['sancionar', 'vetar_total'];
         // Só a escolha marcada aparece selecionada; sem ela vale a sanção tácita, que o selo "padrão" indica.
@@ -160,6 +198,7 @@ export function EventInbox({
                   agendaCost={0}
                   selected={selected === choice}
                   isDefault={choice === 'sancionar'}
+                  unanswered={selected === undefined}
                   enabled
                   onPress={() => onSanction(proposal.id, choice)}
                 />
@@ -169,8 +208,9 @@ export function EventInbox({
         );
       })}
 
-      {items.length > 0 && <SectionLabel text="Eventos do gabinete" count={items.length} />}
-      {focusFirst(items, focusInstanceId).map(({ event, pending }) => {
+      {shownItems.length > 0 && <SectionLabel text="Eventos do gabinete" count={shownItems.length} />}
+      {focusFirst(shownItems, focusInstanceId).map(({ event, pending }) => {
+        const critical = eventSeverity(pending.eventId, pending.location) === 'critico';
         const focused = pending.instanceId === focusInstanceId;
         const selectedId = chosen[event.id];
         // O padrão vale ao encerrar o mês em que o evento chegou à caixa (resolveEventsStep).
@@ -189,6 +229,7 @@ export function EventInbox({
             onToggle={() =>
               setExpanded(expanded === `event:${pending.instanceId}` ? null : `event:${pending.instanceId}`)
             }>
+            {critical && <Tag tone="negative" text="Crítico: escândalo, crise grave ou desastre" />}
             {character && <CharacterChip character={character} />}
             {pending.location && (
               <Text variant="label" color="textSecondary" style={styles.briefing}>
@@ -209,6 +250,7 @@ export function EventInbox({
                     agendaCost={choice.agendaCost}
                     selected={isSelected}
                     isDefault={event.defaultChoice === choice.id}
+                    unanswered={selectedId === undefined}
                     enabled={isSelected || canChoose(event.id, choice.id)}
                     onPress={() => onChoose(event.id, choice.id)}
                   />
@@ -444,6 +486,7 @@ function EventDispatch({ event, choiceId }: { event: GameEvent; choiceId: string
 
 const styles = StyleSheet.create({
   root: { gap: Spacing.two },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
   options: { gap: Spacing.one },
   caps: { fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
   bold: { fontWeight: '700' },

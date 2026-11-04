@@ -38,6 +38,9 @@ import {
   regularPage,
   type Edition,
   type NewspaperPage,
+  extraEditionMarks,
+  firstEditionPage,
+  type ExtraEditionMark,
 } from './newspaperView';
 
 /** Tinta e papel do jornal: fixos nos dois temas (é um objeto da mesa, não parte da interface). */
@@ -177,6 +180,16 @@ export function Newspaper({
     }
   };
 
+  /** Salta direto para uma página (1ª edição, edição atual, edição extra): sem virar folha a folha, só esmaece. */
+  const jump = (target: number) => {
+    if (still || turning || target === view.page || target < 0 || target >= pages.length) return;
+    fade.set(withSequence(withTiming(0.15, { duration: 0 }), withTiming(1, { duration: 280 })));
+    onViewChange({ ...view, page: target });
+    scroll.current?.scrollTo({ y: 0, animated: false });
+  };
+  const firstPage = firstEditionPage(pages);
+  const extras = extraEditionMarks(editions, pages);
+
   const pickFilter = (f: NewsFilter) => {
     if (f === view.filter) return;
     fade.set(withSequence(withTiming(0.15, { duration: 0 }), withTiming(1, { duration: 280 })));
@@ -211,6 +224,15 @@ export function Newspaper({
             canOlder={view.page < pages.length - 1}
             onTurn={turn}
           />
+          {pages.length > 1 && (
+            <EditionNav
+              page={view.page}
+              firstPage={firstPage}
+              oldestEdition={pages[firstPage]?.editionIndex === page.editionIndex}
+              extras={extras}
+              onJump={jump}
+            />
+          )}
           {page.kind === 'bomba' ? (
             <BombshellPage
               key={page.item.id}
@@ -650,6 +672,67 @@ function Box({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+/**
+ * Navegação entre edições (Fase Q12): `|◀ 1ª edição` e `Edição atual ▶|` (B87) e as edições extras marcadas (B86),
+ * que levam direto à capa-bomba de cada uma.
+ */
+function EditionNav({
+  page,
+  firstPage,
+  oldestEdition,
+  extras,
+  onJump,
+}: {
+  page: number;
+  firstPage: number;
+  oldestEdition: boolean;
+  extras: readonly ExtraEditionMark[];
+  onJump: (page: number) => void;
+}) {
+  const styles = useScaledStyles(baseStyles);
+  const jumpButton = (label: string, hint: string, target: number, enabled: boolean) => (
+    <Pressable
+      onPress={() => onJump(target)}
+      disabled={!enabled}
+      accessibilityRole="button"
+      accessibilityLabel={hint}
+      accessibilityState={{ disabled: !enabled }}
+      style={({ pressed }) => [styles.navButton, !enabled && styles.turnOff, pressed && styles.turnPressed]}>
+      <Text style={styles.navText}>{label}</Text>
+    </Pressable>
+  );
+  return (
+    <View style={styles.nav}>
+      <View style={styles.navRow}>
+        {jumpButton('|◀ 1ª edição', 'Ir para a primeira edição', firstPage, !oldestEdition)}
+        {jumpButton('Edição atual ▶|', 'Ir para a edição atual', 0, page !== 0)}
+      </View>
+      {extras.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navExtras}>
+          <Text style={styles.navExtrasLabel}>EDIÇÕES EXTRAS</Text>
+          {extras.map((mark) => (
+            <Pressable
+              key={mark.page}
+              onPress={() => onJump(mark.page)}
+              accessibilityRole="button"
+              accessibilityLabel={`Edição extra de ${mark.label}`}
+              accessibilityState={{ selected: mark.page === page }}
+              style={({ pressed }) => [
+                styles.extraChip,
+                mark.page === page && styles.extraChipOn,
+                pressed && styles.turnPressed,
+              ]}>
+              <Text style={[styles.extraChipText, mark.page === page && styles.extraChipTextOn]}>
+                {`★ ${mark.label}`}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
 function PageFooter({
   number,
   total,
@@ -864,6 +947,23 @@ const baseStyles = StyleSheet.create({
   boxSmall: { fontSize: 12, color: Paper.inkMuted },
   bullet: { fontFamily: serif, fontSize: 14, lineHeight: 20, color: Paper.ink },
   footerRule: { height: 1, backgroundColor: Paper.rule, marginTop: 22 },
+  nav: { gap: 4, paddingTop: 6 },
+  navRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  navButton: { minHeight: MIN_TOUCH, justifyContent: 'center', paddingHorizontal: 6 },
+  navText: { fontFamily: serif, fontSize: 13, fontWeight: '700', color: Paper.accent },
+  navExtras: { alignItems: 'center', gap: 6, paddingBottom: 4 },
+  navExtrasLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, color: Paper.extra },
+  extraChip: {
+    minHeight: 32,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: Paper.extra,
+    borderRadius: 16,
+  },
+  extraChipOn: { backgroundColor: Paper.extra },
+  extraChipText: { fontFamily: serif, fontSize: 12, fontWeight: '700', color: Paper.extra },
+  extraChipTextOn: { color: '#fff7e8' },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

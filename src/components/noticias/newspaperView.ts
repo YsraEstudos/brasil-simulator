@@ -1,5 +1,6 @@
 import type { NewsItem } from '@/engine';
 import { monthLabel } from '@/components/campaign/labels';
+import { isGraveEvent } from '@/components/campaign/eventGravity';
 
 import { filterNews, type NewsFilter } from '@/components/tabs/newsView';
 
@@ -89,13 +90,27 @@ export function mastheadFontSize(width: number, short: boolean): number {
 }
 
 /**
+ * A notícia do disparo de um escândalo, crise grave ou desastre (`isGraveEvent`, PLANO_QUICK_WINS.md, Fase Q12, B86).
+ * Só a do disparo: o motor grava o disparo com tom neutro, e "Sem resposta do governo", com tom negativo, não repete
+ * a extra.
+ */
+export function isExtraEditionNews(item: NewsItem): boolean {
+  return item.kind === 'evento' && item.tone === 'neutra' && isGraveEvent(item.sourceId, item.location);
+}
+
+/**
  * Manchete-bomba: ganha a capa inteira da edição (faixa de edição extra, título gigante e foto, se houver).
- * Toda notícia institucional é bomba (CPI, TCU, impeachment, eleições, candidatura); `extraIds` acrescenta
- * notícias pelo `sourceId` (ver `newsPhotos.ts`).
+ * Toda notícia institucional é bomba (CPI, TCU, impeachment, eleições, candidatura), e também o disparo de
+ * escândalo, crise grave ou desastre (`isExtraEditionNews`); `extraIds` acrescenta notícias pelo `sourceId` (ver
+ * `newsPhotos.ts`).
  */
 export function isBombshell(item: NewsItem | undefined, extraIds: ReadonlySet<string> = new Set()): boolean {
   if (!item) return false;
-  return item.kind === 'institucional' || (item.sourceId !== undefined && extraIds.has(item.sourceId));
+  return (
+    item.kind === 'institucional' ||
+    isExtraEditionNews(item) ||
+    (item.sourceId !== undefined && extraIds.has(item.sourceId))
+  );
 }
 
 /** Uma página do jornal: a capa-bomba de uma edição ou a página comum (manchete, colunas e quadros). */
@@ -104,19 +119,41 @@ export type NewspaperPage =
   | { kind: 'comum'; editionIndex: number; skip: string | undefined };
 
 /**
- * As páginas na ordem de folhear, da edição mais recente para a mais antiga: a capa-bomba (quando a notícia de
- * maior prioridade é bomba) e depois a página comum, que não repete a bomba. Sem edições, uma página comum vazia.
+ * As páginas na ordem de folhear, da edição mais recente para a mais antiga: a capa-bomba (a primeira notícia bomba
+ * da edição, na ordem de prioridade do motor) e depois a página comum, que não repete a bomba. Sem edições, uma
+ * página comum vazia.
  */
 export function buildPages(editions: readonly Edition[], extraIds: ReadonlySet<string> = new Set()): NewspaperPage[] {
   if (editions.length === 0) return [{ kind: 'comum', editionIndex: 0, skip: undefined }];
   return editions.flatMap((edition, editionIndex): NewspaperPage[] => {
-    const lead = edition.items[0];
-    if (!lead || !isBombshell(lead, extraIds)) return [{ kind: 'comum', editionIndex, skip: undefined }];
+    const lead = edition.items.find((item) => isBombshell(item, extraIds));
+    if (!lead) return [{ kind: 'comum', editionIndex, skip: undefined }];
     return [
       { kind: 'bomba', editionIndex, item: lead },
       { kind: 'comum', editionIndex, skip: lead.id },
     ];
   });
+}
+
+/** Saltos do leitor (B87): a primeira página da 1ª edição (a mais antiga) e a da edição atual (sempre 0). */
+export function firstEditionPage(pages: readonly NewspaperPage[]): number {
+  const oldest = Math.max(...pages.map((p) => p.editionIndex));
+  return Math.max(
+    0,
+    pages.findIndex((p) => p.editionIndex === oldest),
+  );
+}
+
+export interface ExtraEditionMark {
+  page: number;
+  label: string;
+}
+
+/** Edições extras para a navegação (B86): a página da capa-bomba de cada uma, da mais recente para a mais antiga. */
+export function extraEditionMarks(editions: readonly Edition[], pages: readonly NewspaperPage[]): ExtraEditionMark[] {
+  return pages.flatMap((p, page) =>
+    p.kind === 'bomba' ? [{ page, label: editions[p.editionIndex]?.label ?? `Edição ${p.editionIndex + 1}` }] : [],
+  );
 }
 
 /**
