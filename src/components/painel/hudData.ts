@@ -212,6 +212,11 @@ interface StatInput {
   /** Base das variações: o mês anterior ou a posse (B21). */
   previous?: Indicators;
   deltaBasis?: DeltaBasis;
+  /**
+   * Mês anterior, sempre: a célula do PIB mostra o crescimento em 12 meses, não uma variação, e a seta dela segue o
+   * mês mesmo com as variações desde a posse (uma seta da posse ao lado de "+1,4%" seria lida como a do número).
+   */
+  lastMonth?: Indicators;
   /** Capital político 0–100. */
   politicalCapital: number;
   /** PIB nominal anual em R$ milhões. */
@@ -240,11 +245,14 @@ function buildStats(input: StatInput): HudStat[] {
   const approval = delta('approval', GOOD_WHEN.approval, 0);
   const inflation = delta('inflation12m', GOOD_WHEN.inflation, 1);
   const unemployment = delta('unemployment', GOOD_WHEN.unemployment, 1);
-  const gdp = delta('gdpGrowth12m', GOOD_WHEN.gdp, 1);
-  /** Seta: sentido da mudança em relação ao mês anterior (sem mês anterior ou sem mudança, não há seta). */
-  const trendOf = (key: keyof Indicators): 'up' | 'down' | undefined => {
-    if (!p) return undefined;
-    const d = i[key] - p[key];
+  const lastMonth = input.lastMonth ?? p;
+  const gdpChange = lastMonth ? i.gdpGrowth12m - lastMonth.gdpGrowth12m : undefined;
+  const gdpSentiment: Sentiment =
+    gdpChange === undefined ? 'neutral' : deltaSentiment(gdpChange, GOOD_WHEN.gdp).sentiment;
+  /** Seta: sentido da mudança em relação à base (sem base ou sem mudança, não há seta). */
+  const trendOf = (key: keyof Indicators, base: Indicators | undefined = p): 'up' | 'down' | undefined => {
+    if (!base) return undefined;
+    const d = i[key] - base[key];
     return d === 0 ? undefined : d > 0 ? 'up' : 'down';
   };
 
@@ -282,8 +290,8 @@ function buildStats(input: StatInput): HudStat[] {
       label: 'PIB',
       value: formatMoneyMillions(input.nominalGdp),
       delta: signedPercent(i.gdpGrowth12m),
-      sentiment: gdp.sentiment === 'neutral' ? 'neutral' : gdp.sentiment,
-      trend: trendOf('gdpGrowth12m'),
+      sentiment: gdpSentiment,
+      trend: trendOf('gdpGrowth12m', lastMonth),
       progress: clamp01(i.gdpGrowth12m / 0.06),
       tone: bandTone(indicatorBand('gdpGrowth12m', i.gdpGrowth12m)),
       alert: outOfBandAlert('gdpGrowth12m', i.gdpGrowth12m),
@@ -457,6 +465,7 @@ export function hudFromCampaign(
           ? inaugurationIndicators(history, state.monthIndex, campaignMonths(state.scenarioId))
           : campaign.previous,
       deltaBasis,
+      lastMonth: campaign.previous,
       politicalCapital: state.resources.politicalCapital,
       nominalGdp,
       populationThousands: ufs.reduce((n, uf) => n + uf.population, 0),

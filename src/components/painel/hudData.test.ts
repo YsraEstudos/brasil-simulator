@@ -144,6 +144,27 @@ describe('Painel com a partida', () => {
     ).toBeUndefined();
   });
 
+  it('a seta do PIB segue o mês mesmo com as variações desde a posse', () => {
+    const base = campaign();
+    const gdp = base.state.indicators.gdpGrowth12m;
+    const active = {
+      ...base,
+      state: { ...base.state, monthIndex: 2 },
+      previous: { ...base.state.indicators, gdpGrowth12m: gdp - 0.002 },
+    };
+    const posse: IndicatorPoint = {
+      monthIndex: 0,
+      indicators: { ...base.state.indicators, gdpGrowth12m: gdp + 0.01 },
+      selic: null,
+      grossDebt: null,
+      credibility: null,
+      exchangeRate: null,
+      riskPremium: null,
+    };
+    const pib = stat(hudFromCampaign(active, content, [posse], null, null, false, 'pib', 'posse'), 'pib');
+    expect(pib).toMatchObject({ trend: 'up', sentiment: 'positive' });
+  });
+
   it('avalia a meta pela inflação e pelo resultado primário', () => {
     const active = campaign();
     const inflation = { ...active.state, indicators: { ...active.state.indicators, inflation12m: 0.09 } };
