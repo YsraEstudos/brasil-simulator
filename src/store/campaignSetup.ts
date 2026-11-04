@@ -102,6 +102,21 @@ function dropLoneSurrogates(s: string): string {
 }
 
 /**
+ * Nome da partida recomeçada (PLANO_MENU_SAVES_CONFIG.md M4.3): "<nome> (2)", ou o próximo número que ainda não
+ * existe entre `taken`. Um sufixo numérico já presente é trocado, não empilhado ("Zeta (2)" → "Zeta (3)"). A base é
+ * cortada para o resultado caber em `CAMPAIGN_NAME_MAX`.
+ */
+export function restartName(name: string, taken: readonly string[]): string {
+  const base = normalizeCampaignName(name).replace(/\s*\(\d+\)$/, '') || 'Campanha';
+  const used = new Set(taken.map((t) => normalizeCampaignName(t)));
+  for (let n = 2; ; n++) {
+    const suffix = ` (${n})`;
+    const candidate = `${base.slice(0, CAMPAIGN_NAME_MAX - suffix.length).trimEnd()}${suffix}`;
+    if (!used.has(candidate)) return candidate;
+  }
+}
+
+/**
  * Nome como será gravado: quebras de linha e tabulações coladas viram um espaço, caracteres de controle e metades
  * soltas de emoji somem, composição Unicode canônica (NFC) e sem espaços nas pontas. Valor que não é texto, ou feito
  * só de caracteres invisíveis, vira vazio.

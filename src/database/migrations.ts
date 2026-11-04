@@ -216,6 +216,17 @@ export const MIGRATIONS: readonly Migration[] = [
       ALTER TABLE campaigns ADD COLUMN locked INTEGER NOT NULL DEFAULT 0 CHECK (locked IN (0, 1));
     `,
   },
+  {
+    version: 10,
+    name: 'opcoes_da_partida',
+    sql: `
+      -- PLANO_MENU_SAVES_CONFIG.md, Fase M4: opções escolhidas no Novo Jogo (dificuldade, cenário, perfil inicial,
+      -- ponto de partida e semente), para "Recomeçar com as mesmas opções". O perfil predefinido não sobrevive no
+      -- estado (o perfil do governo se move com as decisões), por isso fica aqui. Partidas anteriores ficam sem a coluna
+      -- preenchida e recomeçam com dificuldade, cenário e semente da linha da campanha (AI_INSTRUCTIONS.md §2.1).
+      ALTER TABLE campaigns ADD COLUMN setup_json TEXT;
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

@@ -26,6 +26,7 @@ import {
   setCampaignLocked,
   setCampaignPinned,
   parseCardSummary,
+  parseSetupSnapshot,
   touchCampaign,
   loadElectionResults,
   loadIndicatorHistory,
@@ -112,7 +113,8 @@ describe('migrações', () => {
     const db = openNodeDatabase();
     await migrate(db, MIGRATIONS.slice(0, 2));
     await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
-    expect(await migrate(db)).toEqual([3, 4, 5, 6, 7, 8, 9]);
+    // Ajuste: a lista de pendentes ganhou a migração 10 (setup_json).
+    expect(await migrate(db)).toEqual([3, 4, 5, 6, 7, 8, 9, 10]);
     expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
     expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Antiga']);
   });
@@ -311,7 +313,7 @@ describe('campanhas', () => {
       'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
       ['c1', 0, state.schemaVersion, JSON.stringify(state)],
     );
-    expect(await migrate(old)).toEqual([4, 5, 6, 7, 8, 9]);
+    expect(await migrate(old)).toEqual([4, 5, 6, 7, 8, 9, 10]);
     const [point] = await loadIndicatorHistory(old, 'c1');
     expect(point?.indicators).toEqual(state.indicators);
     expect(point?.selic).toBe(state.economy.selic);
@@ -504,7 +506,7 @@ describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
     await put(1, s1);
     await put(2, semRegioes); // snapshot de formato sem o bloco regional
 
-    expect(await migrate(old)).toEqual([5, 6, 7, 8, 9]);
+    expect(await migrate(old)).toEqual([5, 6, 7, 8, 9, 10]);
     const history = await loadRegionalHistory(old, 'c1');
     expect(history.map((p) => p.monthIndex)).toEqual([1]);
     for (const uf of s1.regions.ufs) {
@@ -767,8 +769,9 @@ describe('organização dos saves (migração 9, PLANO_MENU_SAVES_CONFIG.md, Fas
   };
 
   it('a migração 9 cria pinned e locked com padrão 0 e só aceita 0 ou 1', async () => {
-    expect(LATEST_DB_VERSION).toBe(9);
-    expect(await currentVersion(db)).toBe(9);
+    // Ajuste: a migração 10 (setup_json) veio depois; o teste confere as colunas da 9, que continuam iguais.
+    expect(LATEST_DB_VERSION).toBe(10);
+    expect(await currentVersion(db)).toBe(10);
     const cols = await db.all<{ name: string; dflt_value: string | null; notnull: number }>(
       'PRAGMA table_info(campaigns)',
     );
@@ -788,9 +791,14 @@ describe('organização dos saves (migração 9, PLANO_MENU_SAVES_CONFIG.md, Fas
       old,
       MIGRATIONS.filter((m) => m.version < 9),
     );
-    // o helper de save legado só serve às primeiras versões; o INSERT de createCampaign não cita as colunas da v9
-    await createCampaign(old, { id: 'antiga', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
-    expect(await migrate(old)).toEqual([9]);
+    // Ajuste: createCampaign agora grava setup_json (migração 10), coluna que um banco na v8 não tem. A linha é
+    // gravada direto, com as colunas que existiam antes da v9 (o helper legado só serve à v1/v2).
+    await old.run(
+      `INSERT INTO campaigns (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month)
+       VALUES ('antiga', 'Antiga', ?, '0.1.0', 'estrategica', 1, '0.2.0', 0)`,
+      [DEFAULT_SCENARIO_ID],
+    );
+    expect(await migrate(old)).toEqual([9, 10]);
     const [c] = await listCampaigns(old);
     expect(c).toMatchObject({ id: 'antiga', pinned: false, locked: false });
   });
@@ -878,5 +886,106 @@ describe('organização dos saves (migração 9, PLANO_MENU_SAVES_CONFIG.md, Fas
     await criar('ativa');
     expect(await deleteFinishedCampaigns(db)).toEqual({ deleted: 0, keptLocked: 0 });
     expect((await listCampaigns(db)).map((c) => c.id)).toEqual(['ativa']);
+  });
+});
+
+// PLANO_MENU_SAVES_CONFIG.md, Fase M4: opções do Novo Jogo gravadas para "Recomeçar com as mesmas opções".
+describe('opções da partida (migração 10, PLANO_MENU_SAVES_CONFIG.md, Fase M4)', () => {
+  let db: SqlDatabase;
+  beforeEach(async () => {
+    db = openNodeDatabase();
+    await migrate(db);
+  });
+
+  const setup = {
+    difficulty: 'estrategica',
+    scenarioId: DEFAULT_SCENARIO_ID,
+    profileId: 'centro_esquerda',
+    startPoint: 'posse',
+    seed: 4242,
+  };
+
+  it('a migração 10 cria setup_json como TEXT, aceitando nulo', async () => {
+    expect(LATEST_DB_VERSION).toBe(10);
+    expect(await currentVersion(db)).toBe(10);
+    const cols = await db.all<{ name: string; type: string; notnull: number }>('PRAGMA table_info(campaigns)');
+    expect(cols.find((c) => c.name === 'setup_json')).toMatchObject({ type: 'TEXT', notnull: 0 });
+  });
+
+  it('campanha que já existia antes da migração 10 entra com setup nulo e continua na lista', async () => {
+    const old = openNodeDatabase();
+    await migrate(
+      old,
+      MIGRATIONS.filter((m) => m.version < 10),
+    );
+    // Linha gravada como o app gravava na v9 (sem setup_json); o helper legado só serve à v1/v2.
+    await old.run(
+      `INSERT INTO campaigns (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month)
+       VALUES ('antiga', 'Antiga', ?, '0.1.0', 'estrategica', 1, '0.2.0', 0)`,
+      [DEFAULT_SCENARIO_ID],
+    );
+    expect(await migrate(old)).toEqual([10]);
+    expect(await listCampaigns(old)).toMatchObject([{ id: 'antiga', name: 'Antiga', setup: null }]);
+  });
+
+  it('createCampaign com setup grava o JSON e listCampaigns devolve o mesmo objeto', async () => {
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state: newState(4242), setup });
+    const row = await db.first<{ setup_json: string }>('SELECT setup_json FROM campaigns WHERE id = ?', ['c1']);
+    expect(JSON.parse(row?.setup_json ?? 'null')).toEqual(setup);
+    const [c] = await listCampaigns(db);
+    expect(c.setup).toEqual(setup);
+  });
+
+  it('sem setup a coluna fica nula e listCampaigns devolve setup null', async () => {
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state: newState() });
+    expect(
+      await db.first<{ setup_json: string | null }>('SELECT setup_json FROM campaigns WHERE id = ?', ['c1']),
+    ).toEqual({ setup_json: null });
+    const [c] = await listCampaigns(db);
+    expect(c.setup).toBeNull();
+  });
+
+  it('setup_json corrompido não derruba a lista: setup vem null e a campanha aparece', async () => {
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state: newState(), setup });
+    await db.run("UPDATE campaigns SET setup_json = '{quebrado' WHERE id = 'c1'");
+    const lista = await listCampaigns(db);
+    expect(lista.map((c) => [c.id, c.setup])).toEqual([['c1', null]]);
+  });
+
+  it('parseSetupSnapshot: nulo, vazio, JSON inválido, não-objeto ou sem campo obrigatório vira null', () => {
+    expect(parseSetupSnapshot(null)).toBeNull();
+    expect(parseSetupSnapshot('')).toBeNull();
+    expect(parseSetupSnapshot('{não é json')).toBeNull();
+    expect(parseSetupSnapshot('null')).toBeNull();
+    expect(parseSetupSnapshot('5')).toBeNull();
+    expect(parseSetupSnapshot('"texto"')).toBeNull();
+    // sem semente, sem dificuldade, semente em texto e dificuldade de tipo errado
+    expect(parseSetupSnapshot(JSON.stringify({ difficulty: 'casual', scenarioId: DEFAULT_SCENARIO_ID }))).toBeNull();
+    expect(parseSetupSnapshot(JSON.stringify({ scenarioId: DEFAULT_SCENARIO_ID, seed: 1 }))).toBeNull();
+    expect(
+      parseSetupSnapshot(JSON.stringify({ difficulty: 'casual', scenarioId: DEFAULT_SCENARIO_ID, seed: '1' })),
+    ).toBeNull();
+    expect(parseSetupSnapshot(JSON.stringify({ difficulty: 1, scenarioId: DEFAULT_SCENARIO_ID, seed: 1 }))).toBeNull();
+  });
+
+  it('parseSetupSnapshot: perfil e ponto de partida ausentes não aparecem no objeto', () => {
+    expect(
+      parseSetupSnapshot(JSON.stringify({ difficulty: 'casual', scenarioId: 'prototipo_ficticio', seed: 9 })),
+    ).toStrictEqual({ difficulty: 'casual', scenarioId: 'prototipo_ficticio', seed: 9 });
+  });
+
+  it('parseSetupSnapshot: campos opcionais de tipo errado são ignorados; o completo volta igual', () => {
+    expect(
+      parseSetupSnapshot(
+        JSON.stringify({
+          difficulty: 'casual',
+          scenarioId: 'prototipo_ficticio',
+          seed: 9,
+          profileId: 3,
+          startPoint: null,
+        }),
+      ),
+    ).toStrictEqual({ difficulty: 'casual', scenarioId: 'prototipo_ficticio', seed: 9 });
+    expect(parseSetupSnapshot(JSON.stringify(setup))).toStrictEqual(setup);
   });
 });
