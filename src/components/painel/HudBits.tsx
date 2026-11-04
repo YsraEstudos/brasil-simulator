@@ -7,7 +7,7 @@ import { Radius } from '@/constants/theme';
 import { useGame } from '@/store';
 
 import type { HudGoalCheck, HudMinistry, HudRegion, HudSector, HudStat, HudTone } from './hudData';
-import { deltaArrow, Hud, hudSentimentColor, toneColor } from './hudTheme';
+import { Hud, hudSentimentColor, toneColor } from './hudTheme';
 
 /** Peças da mesa do Painel (GAME_DESIGN.md §4.2): painel com moldura dourada, barras, selos e linhas de dado. */
 
@@ -112,6 +112,7 @@ export function StatCell({
   compact,
   value,
   line,
+  a11yLabel,
 }: {
   stat: HudStat;
   compact?: boolean;
@@ -119,22 +120,33 @@ export function StatCell({
   value?: string;
   /** Linha de baixo no lugar da variação/contexto do `HudStat`. */
   line?: string;
+  /** Texto para leitores de tela quando o visível é só símbolo (ex.: as bolinhas das ações). */
+  a11yLabel?: string;
 }) {
   // "203,1 milhões" e "R$ 11,40 tri" não cabem na célula estreita; a versão curta é só de exibição.
   const colorBlind = useColorBlind();
   const shown = (value ?? stat.value).replace(' milhões', ' mi').replace(/(,\d)\d (tri|bi)$/, '$1 $2');
   const shownLine = line ?? stat.delta ?? stat.context;
-  // No modo para daltônicos a variação ganha seta (▲/▼) além do sinal do próprio texto, para não depender da cor.
-  const arrow = colorBlind && !line ? deltaArrow(stat.delta) : '';
+  // Seta da mudança em relação ao mês anterior (B19), em todos os modos; o sentido vem de `trend`, a cor de `sentiment`.
+  const arrow = !line && stat.trend ? (stat.trend === 'up' ? '▲' : '▼') : '';
   const deltaColor = hudSentimentColor(stat.sentiment, colorBlind);
+  // Semáforo (B57): o número ganha a cor da faixa do indicador; sem faixa (mês, população), fica na cor do texto.
+  const valueColor = stat.tone === 'neutral' ? Hud.text : toneColor(stat.tone, colorBlind);
+  // Fora da faixa (A36): o símbolo ⚠ marca o rótulo e o leitor de tela recebe o aviso junto com o número.
+  const label = a11yLabel ?? (stat.alert ? `${stat.label} ${shown}. ${stat.alert}` : undefined);
   return (
-    <View style={[styles.cell, compact && styles.cellCompact]} pointerEvents="none">
+    <View
+      style={[styles.cell, compact && styles.cellCompact]}
+      pointerEvents="none"
+      accessible={label !== undefined}
+      accessibilityLabel={label}>
       <Text style={styles.cellLabel} numberOfLines={1}>
         {stat.label}
+        {stat.alert ? <Text style={{ color: Hud.negative }}>{' ⚠'}</Text> : null}
       </Text>
       <Text
         tabular
-        style={[styles.cellValue, compact && styles.cellValueCompact]}
+        style={[styles.cellValue, { color: valueColor }, compact && styles.cellValueCompact]}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.72}>
