@@ -4,7 +4,21 @@ import { StyleSheet, View } from 'react-native';
 import { INSTRUMENT_LABEL, PROPOSAL_STATUS_LABEL, costText, shortMonthLabel } from '@/components/campaign/labels';
 import { ProposalList, ProposalTrail } from '@/components/campaign/ProposalList';
 import { requestDecision } from '@/components/campaign/gameConfirm';
+import { policyKind } from '@/components/campaign/policyCatalogModel';
+import { BaseScoreboard } from '@/components/congress/BaseScoreboard';
 import { CongressHemicycle } from '@/components/congress/CongressHemicycle';
+import {
+  filterProposals,
+  hasPendingVeto,
+  houseScore,
+  NO_PROPOSAL_FILTER,
+  situationCounts,
+  situationOf,
+  weakestAlly,
+  type ProposalFilter,
+} from '@/components/congress/congressBoard';
+import { ProposalFilterBar } from '@/components/congress/ProposalFilterBar';
+import { VoteMeter } from '@/components/congress/VoteMeter';
 import { Button, Card, formatNumber, formatPercent, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { loadContent } from '@/content';
@@ -16,16 +30,19 @@ import {
   CONCEDE_ACTION_ID,
   currentHouse,
   housePresident,
+  INTERESSE_EMENDAS,
   legislativeInstrument,
   ministriesOf,
   ministryOccupant,
   ministryScandalChance,
   NEGOTIATE_ACTION_ID,
   pautaOccupancy,
-  proposalForecast,
+  predictVotes,
   sessionAt,
   URGENCY_ACTION_ID,
   validateActionTarget,
+  voteEstimate,
+  votingPlan,
   type Decision,
   type GameContent,
   type GameState,
@@ -40,8 +57,12 @@ import { signedInt } from './StatRow';
 
 const HOUSES: readonly House[] = ['camara', 'senado'];
 const HOUSE_LABEL: Record<House, string> = { camara: 'Câmara', senado: 'Senado' };
-/** Situações mostradas em "Propostas no Congresso". */
-const IN_CONGRESS = new Set(['em_tramitacao', 'parada', 'apreciacao_veto']);
+const PRESIDES_LABEL: Record<House, string> = { camara: 'a Câmara', senado: 'o Senado' };
+/** Votos exigidos em cada Casa: maioria absoluta (PL, MP) e 3/5 (PEC), tirados do próprio plano de votação. */
+const QUORUM_BY_HOUSE = {
+  camara: { majority: votingPlan('projeto_lei')[0]!.required, pec: votingPlan('pec')[0]!.required },
+  senado: { majority: votingPlan('projeto_lei')[1]!.required, pec: votingPlan('pec')[2]!.required },
+};
 
 /**
  * Subtela Congresso (POLITICAL_RULES.md §6): hemiciclo da Câmara com a base do governo, Mesas e pauta das Casas,
@@ -68,14 +89,39 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
     toggle: (d: Decision) => requestDecision(d, content),
   };
 
-  // Veto aos acréscimos de uma lei já em execução também aguarda sessão do Congresso.
-  const inCongress = (p: Proposal) => IN_CONGRESS.has(p.status) || pendingVeto(p);
-  const proposals = state.proposals.filter(inCongress);
-  const closed = state.proposals.filter((p) => !inCongress(p));
+  // Placar da base e elo mais fraco (Fase Q8).
+  const relationOf = (bloc: Bloc) => blocRelation(state, bloc);
+  const chamber = houseScore(blocs, relationOf, (b) => b.chamberSeats, QUORUM_BY_HOUSE.camara);
+  const senate = houseScore(blocs, relationOf, (b) => b.senateSeats, QUORUM_BY_HOUSE.senado);
+  const weakLink = weakestAlly(
+    blocs,
+    relationOf,
+    (bloc) => ({
+      ministries: ministriesOf(content).filter((m) => ministryOccupant(state, m) === bloc.id).length,
+      demandsAmendments: bloc.interests.includes(INTERESSE_EMENDAS),
+      presides: HOUSES.filter((h) => housePresident(content, h)?.id === bloc.id).map((h) => PRESIDES_LABEL[h]),
+    }),
+    chamber,
+  );
+
+  // Propostas: filtro por situação e tipo. Veto aos acréscimos de lei em execução conta como "no Congresso".
+  const [filter, setFilter] = useState<ProposalFilter>(NO_PROPOSAL_FILTER);
+  const kindOf = (policyId: string) => {
+    const policy = content.policies[policyId];
+    return policyKind(policy ? legislativeInstrument(policy) : null);
+  };
+  const counts = situationCounts(state.proposals, filter.kind, kindOf);
+  const shown = filterProposals(state.proposals, filter, kindOf);
+  const proposals = shown.filter((p) => situationOf(p) !== 'fora');
+  const closed = shown.filter((p) => situationOf(p) === 'fora');
+  const showInCongress = filter.situation !== 'fora';
+  const showClosed = filter.situation === null || filter.situation === 'fora';
 
   return (
     <>
       <CongressHemicycle state={state} content={content} actionsUsed={actionsUsed} actionsMax={actionsMax} />
+
+      <BaseScoreboard chamber={chamber} senate={senate} weakLink={weakLink} />
 
       <Card title="Mesas e pauta">
         {HOUSES.map((house) => {
@@ -99,17 +145,29 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
         })}
       </Card>
 
-      <Card title="Propostas no Congresso">
-        {proposals.length === 0 ? (
-          <Text variant="body" color="textSecondary">
-            Nenhuma proposta em tramitação.
-          </Text>
-        ) : (
-          proposals.map((p) => <ProposalItem key={p.id} proposal={p} state={state} content={content} agenda={agenda} />)
-        )}
-      </Card>
+      {state.proposals.length > 0 ? (
+        <Card
+          title="Propostas"
+          subtitle="Filtre por situação e tipo. O número em cada situação já respeita o tipo escolhido.">
+          <ProposalFilterBar filter={filter} counts={counts} onChange={setFilter} />
+        </Card>
+      ) : null}
 
-      {closed.length > 0 ? <ProposalList proposals={closed} content={content} /> : null}
+      {showInCongress ? (
+        <Card title="Propostas no Congresso">
+          {proposals.length === 0 ? (
+            <Text variant="body" color="textSecondary">
+              {state.proposals.length === 0 ? 'Nenhuma proposta em tramitação.' : 'Nenhuma proposta com esse filtro.'}
+            </Text>
+          ) : (
+            proposals.map((p) => (
+              <ProposalItem key={p.id} proposal={p} state={state} content={content} agenda={agenda} />
+            ))
+          )}
+        </Card>
+      ) : null}
+
+      {showClosed && closed.length > 0 ? <ProposalList proposals={closed} content={content} /> : null}
 
       {blocs.map((bloc) => (
         <BlocCard key={bloc.id} bloc={bloc} state={state} content={content} />
@@ -149,14 +207,10 @@ function ActionButton({ decision, label, agenda }: { decision: Decision; label: 
   );
 }
 
-function pendingVeto(p: Proposal): boolean {
-  return p.veto !== null && p.veto.overridden === null;
-}
-
 function stageText(p: Proposal, content: GameContent, blocName: (id: string | null) => string): string {
   const policy = content.policies[p.policyId];
   const instrument = policy ? legislativeInstrument(policy) : null;
-  if (p.status !== 'apreciacao_veto' && pendingVeto(p)) {
+  if (p.status !== 'apreciacao_veto' && hasPendingVeto(p)) {
     const when = p.voteMonth === null ? '' : `: sessão conjunta em ${shortMonthLabel(p.voteMonth)}`;
     return `Lei em vigor; veto aos acréscimos do relator em apreciação${when}.`;
   }
@@ -191,7 +245,14 @@ function ProposalItem({
   const name = policy?.name ?? proposal.policyId;
   const instrument = policy ? legislativeInstrument(policy) : null;
   const blocName = (id: string | null) => content.scenario.blocs.find((b) => b.id === id)?.name ?? '—';
-  const forecast = proposal.status === 'em_tramitacao' ? proposalForecast(state, proposal, content) : null;
+  // Etapas da sessão atual, com a mesma estimativa da mesa de despacho (faixa fora do Casual).
+  const session = instrument && proposal.status === 'em_tramitacao' ? sessionAt(instrument, proposal.stage) : null;
+  const estimates =
+    policy && session
+      ? predictVotes(state, policy, content, proposal)
+          .slice(0, session.stages.length)
+          .map((prediction) => voteEstimate(state, policy.id, prediction))
+      : [];
   const n = proposal.negotiation;
   const negotiated = Object.entries(n.blocs)
     .filter(([, v]) => v > 0)
@@ -228,15 +289,9 @@ function ProposalItem({
       subtitle={`${instrument ? INSTRUMENT_LABEL[instrument] : ''} · ${PROPOSAL_STATUS_LABEL[proposal.status]}`}
       style={styles.nested}>
       <Text variant="body">{stageText(proposal, content, blocName)}</Text>
-      {forecast ? (
-        <Text
-          variant="body"
-          color={
-            forecast.tone === 'desfavoravel' ? 'negative' : forecast.tone === 'favoravel' ? 'positive' : 'textSecondary'
-          }>
-          {`Articulação: ${forecast.text}`}
-        </Text>
-      ) : null}
+      {estimates.map((estimate) => (
+        <VoteMeter key={estimate.label} estimate={estimate} />
+      ))}
       {facts.length > 0 ? (
         <Text variant="caption" color="textSecondary">
           {facts.join(' · ')}

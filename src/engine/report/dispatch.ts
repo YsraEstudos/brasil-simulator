@@ -180,35 +180,61 @@ function slack(v: VotePrediction): number {
   return (v.expectedYes - v.required) / v.total;
 }
 
-/** Parecer de articulação para a etapa mais apertada: faixa ou número exato, conforme a dificuldade. */
-export function votesOpinion(state: Readonly<GameState>, policyId: string, prediction: VotePrediction): Opinion {
+/**
+ * Estimativa de votos de uma etapa como o jogador a vê (GAME_DESIGN.md §4.4): número exato no Casual; faixa no
+ * Estratégico; faixa com viés no Realismo Extremo. Mesmo sorteio fixo do parecer (`adviceSeed`): a mesa de despacho
+ * e a aba Congresso mostram sempre os mesmos números. Não avança `state.rng`.
+ */
+export interface VoteEstimate {
+  /** "Câmara" ou "Senado (2º turno)". */
+  label: string;
+  /** Centro da estimativa, já com a incerteza da dificuldade. */
+  shown: number;
+  low: number;
+  high: number;
+  /** Número exato (Casual) ou faixa. */
+  exact: boolean;
+  required: number;
+  total: number;
+}
+
+export function voteEstimate(state: Readonly<GameState>, policyId: string, prediction: VotePrediction): VoteEstimate {
   const { required, total } = prediction;
   const house = HOUSE_LABEL[prediction.house] ?? prediction.house;
   const round = prediction.round > 1 ? ` (${prediction.round}º turno)` : '';
   const label = `${house}${round}`;
 
-  let shown: number;
-  let text: string;
   if (state.difficulty === 'casual') {
-    shown = Math.round(prediction.expectedYes);
-    text = `${label}: cerca de ${shown} votos para ${required} necessários.`;
-  } else {
-    const realismo = state.difficulty === 'realismo';
-    const margin = Math.max(
-      1,
-      Math.round((realismo ? ADVICE_PARAMS.marginRealismo : ADVICE_PARAMS.marginEstrategica) * total),
-    );
-    const bias = realismo ? Math.round(ADVICE_PARAMS.biasRealismo * total) : 0;
-    const rng = createRng(seedRng(adviceSeed(state, policyId)));
-    const center = prediction.expectedYes + rng.int(-margin, margin) + bias;
-    shown = Math.round(center);
-    const low = Math.max(0, Math.round(center - margin));
-    const high = Math.min(total, Math.round(center + margin));
-    text = `${label}: entre ${low} e ${high} votos para ${required} necessários.`;
+    const shown = Math.round(prediction.expectedYes);
+    return { label, shown, low: shown, high: shown, exact: true, required, total };
   }
+  const realismo = state.difficulty === 'realismo';
+  const margin = Math.max(
+    1,
+    Math.round((realismo ? ADVICE_PARAMS.marginRealismo : ADVICE_PARAMS.marginEstrategica) * total),
+  );
+  const bias = realismo ? Math.round(ADVICE_PARAMS.biasRealismo * total) : 0;
+  const rng = createRng(seedRng(adviceSeed(state, policyId)));
+  const center = prediction.expectedYes + rng.int(-margin, margin) + bias;
+  return {
+    label,
+    shown: Math.round(center),
+    low: Math.max(0, Math.round(center - margin)),
+    high: Math.min(total, Math.round(center + margin)),
+    exact: false,
+    required,
+    total,
+  };
+}
 
-  const slack = shown - required;
-  if (slack >= ADVICE_PARAMS.folgaVotos * total) return { text: `${text} Aprovação provável.`, tone: 'favoravel' };
+/** Parecer de articulação para a etapa mais apertada: faixa ou número exato, conforme a dificuldade. */
+export function votesOpinion(state: Readonly<GameState>, policyId: string, prediction: VotePrediction): Opinion {
+  const e = voteEstimate(state, policyId, prediction);
+  const text = e.exact
+    ? `${e.label}: cerca de ${e.shown} votos para ${e.required} necessários.`
+    : `${e.label}: entre ${e.low} e ${e.high} votos para ${e.required} necessários.`;
+  const slack = e.shown - e.required;
+  if (slack >= ADVICE_PARAMS.folgaVotos * e.total) return { text: `${text} Aprovação provável.`, tone: 'favoravel' };
   if (slack < 0) return { text: `${text} Tende a faltar votos.`, tone: 'desfavoravel' };
   return { text: `${text} Aprovação incerta.`, tone: 'neutro' };
 }

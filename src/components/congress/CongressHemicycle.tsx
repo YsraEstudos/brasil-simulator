@@ -7,14 +7,10 @@ import { blocRelation, type GameContent, type GameState } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
 
 import {
-  ALLY_RELATION,
-  allySeats,
   arcSegments,
   governmentSupport,
   groupCounts,
   hemicycleSeats,
-  PEC_CHAMBER,
-  PEC_SENATE,
   type IdeologyGroup,
   type Seat,
 } from './hemicycle';
@@ -50,7 +46,6 @@ export function CongressHemicycle({ state, content, actionsUsed, actionsMax }: C
   const counts = useMemo(() => groupCounts(blocs), [blocs]);
   const relationOf = (bloc: (typeof blocs)[number]) => blocRelation(state, bloc);
   const support = governmentSupport(blocs, relationOf);
-  const allies = allySeats(blocs, relationOf);
 
   const chartWidth = Math.min(width, MAX_CHART_WIDTH);
   const label = `Apoio ao Governo: ${formatPercent(support, 0)}`;
@@ -84,9 +79,6 @@ export function CongressHemicycle({ state, content, actionsUsed, actionsMax }: C
       <View style={styles.footer}>
         <Text variant="caption" color="textMuted">
           Apoio ao Governo: índice de 0 a 100 da relação média dos blocos, ponderada pelas cadeiras da Câmara.
-        </Text>
-        <Text variant="caption" color="textSecondary" tabular>
-          {`Base aliada (relação acima de ${ALLY_RELATION}): ${formatNumber(allies.chamber)} deputados, ${formatNumber(allies.senate)} senadores · PEC exige ${PEC_CHAMBER}/${PEC_SENATE}.`}
         </Text>
         <Text variant="caption" color="textSecondary" tabular>
           {`Ações de agenda do mês: ${actionsUsed} de ${actionsMax}. Negociações e nomeações marcadas aqui entram na agenda e valem ao encerrar o mês no Gabinete.`}

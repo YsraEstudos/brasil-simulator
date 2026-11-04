@@ -90,6 +90,7 @@ export {
   blocRelation,
   blocSupport,
   housePresident,
+  INTERESSE_EMENDAS,
   legislativeInstrument,
   predictVotes,
   sessionAt,
