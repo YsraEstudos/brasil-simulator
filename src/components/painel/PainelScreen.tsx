@@ -46,6 +46,7 @@ import { draftCost, gameStore, hasPendingChoices, planMapQuality, useGame, type 
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
 import { governmentCalendar } from './governmentCalendar';
+import { nextRailSheet, nightKey, quoteForSeed } from './navigationModel';
 import { GdpChart } from './GdpChart';
 import {
   BellButton,
@@ -97,6 +98,9 @@ import { DIMMED_UF, rankUfs, ufDescription } from './mapReading';
 const logo = require('../../../assets/images/logo-brasil.png');
 
 /** Referência estável para "sem série regional ainda" (evita refazer o cartão a cada render). */
+const shownInaugurations = new Set<string>();
+let lastNightNotice: string | null = null;
+
 const EMPTY_REGIONAL: readonly RegionalPoint[] = [];
 
 /** Título do grupo de camadas do mapa eleitoral na folha Camadas (PLANO_GLOBO.md §5.3). */
@@ -152,7 +156,7 @@ const SAVE_AS_ICON: SymbolViewProps['name'] = { ios: 'doc.on.doc.fill', android:
 const COMPACT_DOCK_CENTER_MIN_WIDTH = 600;
 
 /** Folhas da mesa: as dos trilhos, mais o cartão do estado (toque no globo) e o menu (botão ☰ do topo). */
-type SheetId = RailSheetId | 'estado' | 'menu' | 'calendario';
+type SheetId = RailSheetId | 'estado' | 'menu' | 'calendario' | 'posse';
 
 const SHEET_TITLES: Record<SheetId, string> = {
   alertas: 'Alertas e Eventos',
@@ -167,6 +171,7 @@ const SHEET_TITLES: Record<SheetId, string> = {
   estado: 'Estado',
   menu: 'Menu',
   calendario: 'Calendário do Governo',
+  posse: 'Posse',
 };
 
 const CENTER_ICON: SymbolViewProps['name'] = { ios: 'globe.americas', android: 'public', web: 'public' };
@@ -201,6 +206,8 @@ export function PainelScreen() {
   // Fotografias das eleições gerais por UF (banco): a camada Resultado mostra a mais recente. Mesma regra do par id + dados.
   const [elections, setElections] = useState<{ id: string; results: readonly ElectionResult[] } | null>(null);
   const [sheet, setSheet] = useState<SheetId | null>(null);
+  const [interfaceHidden, setInterfaceHidden] = useState(false);
+  const [nightNotice, setNightNotice] = useState(false);
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
   const [mapRegion, setMapRegion] = useState<string | null>(null);
@@ -245,6 +252,21 @@ export function PainelScreen() {
   const content = useMemo(() => loadContent(scenarioId), [scenarioId]);
   const activeId = active?.id;
   const monthIndex = active?.state.monthIndex;
+  useEffect(() => {
+    if (
+      !active ||
+      active.finished ||
+      isPreInauguration(active.state) ||
+      active.state.monthIndex !== 0 ||
+      shownInaugurations.has(active.id)
+    )
+      return;
+    const timer = setTimeout(() => {
+      shownInaugurations.add(active.id);
+      setSheet('posse');
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [active]);
 
   // Série do PIB: relida do banco quando a partida ou o mês mudam; a tela não guarda histórico próprio.
   // O par (id, pontos) evita mostrar a série de uma partida anterior enquanto a nova ainda não chegou.
@@ -551,6 +573,11 @@ export function PainelScreen() {
     const after = gameStore.getState().active;
     const outcome = endMonthOutcome(before, after?.state, after?.finished ?? false);
     setEndMonthFailed(outcome === 'nada' && gameStore.getState().error !== undefined);
+    const night = nightKey(new Date());
+    if (outcome !== 'nada' && night !== null && lastNightNotice !== night) {
+      lastNightNotice = night;
+      setNightNotice(true);
+    }
     if (outcome === 'relatorio') setSheet('relatorio');
     else if (outcome === 'legado') go('/legado');
   };
@@ -589,7 +616,30 @@ export function PainelScreen() {
 
   const statCell = (id: HudStatId, props?: { value?: string; line?: string; a11yLabel?: string }) => {
     const stat = hud.stats.find((s) => s.id === id);
-    return stat ? <StatCell key={id} stat={stat} compact={compact} {...props} /> : null;
+    if (!stat) return null;
+    const indicators: Partial<Record<HudStatId, IndicatorKey>> = {
+      aprovacao: 'approval',
+      pib: 'gdpGrowth12m',
+      inflacao: 'inflation12m',
+      desemprego: 'unemployment',
+    };
+    const indicator = indicators[id];
+    return indicator ? (
+      <Pressable
+        key={id}
+        accessibilityRole="button"
+        accessibilityLabel={`${stat.label}, ${stat.value}${stat.delta ? `, variação ${stat.delta}` : ''}${stat.alert ? `. ${stat.alert}` : ''}. Abrir indicador`}
+        onPress={() => {
+          setOpenIndicator(indicator);
+          setGuideIndicator(null);
+          setSheet('indicadores');
+        }}
+        style={{ flex: 1, minWidth: 0 }}>
+        <StatCell stat={stat} compact={compact} {...props} />
+      </Pressable>
+    ) : (
+      <StatCell key={id} stat={stat} compact={compact} {...props} />
+    );
   };
 
   const topCells = (
@@ -645,6 +695,15 @@ export function PainelScreen() {
 
   const sheetBody = (): ReactNode => {
     switch (sheet) {
+      case 'posse':
+        return active ? (
+          <Card title="Um novo governo começa">
+            <Text variant="body">{`“${quoteForSeed(active.state.seed)}”`}</Text>
+            <Text variant="caption" color="textSecondary">
+              Citação fictícia
+            </Text>
+          </Card>
+        ) : null;
       case 'calendario':
         return calendar ? (
           <>
@@ -938,6 +997,7 @@ export function PainelScreen() {
             }}
             style={[
               styles.top,
+              interfaceHidden && { display: 'none' },
               { paddingTop: insets.top + 6, paddingLeft: 8 + insets.left, paddingRight: 8 + insets.right },
             ]}>
             <View pointerEvents="box-none" style={styles.topRow}>
@@ -948,7 +1008,7 @@ export function PainelScreen() {
                 resizeMode="contain"
               />
               {compact && (
-                <View pointerEvents="none" style={styles.topCellsInline}>
+                <View pointerEvents="box-none" style={styles.topCellsInline}>
                   {topCells}
                 </View>
               )}
@@ -960,13 +1020,22 @@ export function PainelScreen() {
                 onPress={() => globe.current?.reset()}
               />
               <BellButton count={pendingCount} onPress={() => setSheet('alertas')} />
+              <RoundButton
+                icon={{ ios: 'eye', android: 'visibility', web: 'visibility' }}
+                label="Ocultar interface"
+                size={compact ? 36 : 40}
+                onPress={() => {
+                  setInterfaceHidden(true);
+                  closeSheet();
+                }}
+              />
             </View>
             {!compact && (
               <>
-                <View pointerEvents="none" style={styles.topCellsRow}>
+                <View pointerEvents="box-none" style={styles.topCellsRow}>
                   {topCells}
                 </View>
-                <View pointerEvents="none" style={styles.topCellsRow}>
+                <View pointerEvents="box-none" style={styles.topCellsRow}>
                   {SECOND_ROW_STATS.map((id) => statCell(id))}
                 </View>
               </>
@@ -987,6 +1056,7 @@ export function PainelScreen() {
             style={[
               StyleSheet.absoluteFill,
               styles.rails,
+              interfaceHidden && { display: 'none' },
               {
                 paddingTop: Math.max((compact ? TOP_INSET.compact : TOP_INSET.portrait) + insets.top, topBarBottom + 8),
                 // Os trilhos param acima da doca (+ selo de demonstração acima dela). Em paisagem a doca é baixa, mas
@@ -1021,6 +1091,7 @@ export function PainelScreen() {
             pointerEvents="box-none"
             style={[
               styles.bottom,
+              interfaceHidden && { display: 'none' },
               compact ? styles.bottomCompact : endLeft ? styles.bottomPortraitCanhoto : styles.bottomPortrait,
               // Paisagem estreita: centrada, a doca encostaria no Encerrar o mês do canto (direito; no canhoto, esquerdo).
               compact &&
@@ -1055,7 +1126,7 @@ export function PainelScreen() {
               ))}
             </View>
           </View>
-          {compact && (
+          {compact && !interfaceHidden && (
             <View
               pointerEvents="box-none"
               style={{
@@ -1066,7 +1137,7 @@ export function PainelScreen() {
               {endButton}
             </View>
           )}
-          {compact && hud.demo && (
+          {compact && hud.demo && !interfaceHidden && (
             <View
               pointerEvents="none"
               style={{
@@ -1078,6 +1149,34 @@ export function PainelScreen() {
             </View>
           )}
 
+          {interfaceHidden && (
+            <View style={{ position: 'absolute', top: insets.top + 4, right: insets.right + 4 }}>
+              <RoundButton
+                icon={{
+                  ios: interfaceHidden ? 'eye.slash' : 'eye',
+                  android: interfaceHidden ? 'visibility_off' : 'visibility',
+                  web: interfaceHidden ? 'visibility_off' : 'visibility',
+                }}
+                label={interfaceHidden ? 'Mostrar interface' : 'Ocultar interface'}
+                size={36}
+                onPress={() => {
+                  setInterfaceHidden((hidden) => !hidden);
+                  closeSheet();
+                }}
+              />
+            </View>
+          )}
+          {nightNotice && !sheet && (
+            <View style={[styles.error, { top: topBarBottom + 8, left: 64, right: 64 }]}>
+              <ForceHudTheme>
+                <Alert
+                  tone="info"
+                  title="Só mais um mês...?"
+                  action={{ label: 'Entendi', onPress: () => setNightNotice(false) }}
+                />
+              </ForceHudTheme>
+            </View>
+          )}
           {error && !sheet && (
             <View
               style={[
@@ -1152,6 +1251,42 @@ export function PainelScreen() {
 
           {sheet && (
             <InfoSheet
+              onPrevious={
+                nextRailSheet(
+                  [...leftRail(showElections), ...RIGHT_RAIL].map((entry) => entry.id),
+                  sheet,
+                  -1,
+                  leftHanded,
+                )
+                  ? () =>
+                      setSheet(
+                        nextRailSheet(
+                          [...leftRail(showElections), ...RIGHT_RAIL].map((entry) => entry.id),
+                          sheet,
+                          -1,
+                          leftHanded,
+                        ),
+                      )
+                  : undefined
+              }
+              onNext={
+                nextRailSheet(
+                  [...leftRail(showElections), ...RIGHT_RAIL].map((entry) => entry.id),
+                  sheet,
+                  1,
+                  leftHanded,
+                )
+                  ? () =>
+                      setSheet(
+                        nextRailSheet(
+                          [...leftRail(showElections), ...RIGHT_RAIL].map((entry) => entry.id),
+                          sheet,
+                          1,
+                          leftHanded,
+                        ),
+                      )
+                  : undefined
+              }
               title={
                 sheet === 'estado' && selectedRow ? `${selectedRow.name} · ${selectedRow.uf.id}` : SHEET_TITLES[sheet]
               }
