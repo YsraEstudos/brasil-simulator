@@ -4,7 +4,7 @@ import { Text } from '@/components/ui';
 import { MIN_TOUCH, Radius, Spacing, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import type { AgendaTotals } from './agendaModel';
+import { readableAmount, type AgendaTotals, type Money } from './agendaModel';
 import { Icon, ICONS, type IconName } from './GabineteBits';
 
 /**
@@ -24,7 +24,7 @@ export function AgendaFooter({
   totals: AgendaTotals;
   actionsMax: number;
   /** Valor em R$ milhões já na unidade da preferência (R$ ou % do PIB). */
-  money: (millions: number) => string;
+  money: Money;
   canUndo: boolean;
   onUndo: () => void;
   onClear: () => void;
@@ -79,11 +79,11 @@ export function AgendaFooter({
 
 function fiscalTotal(
   millions: number,
-  money: (millions: number) => string,
+  money: Money,
 ): { value: string; caption: string; tone: ThemeColor; speech: string } {
   if (Math.abs(millions) < 0.5)
     return { value: '—', caption: 'sem custo', tone: 'textSecondary', speech: 'sem custo fiscal' };
-  const amount = money(Math.abs(millions));
+  const amount = readableAmount(Math.abs(millions), money);
   return millions > 0
     ? { value: amount, caption: 'a mais por ano', tone: 'warning', speech: `custo de ${amount} por ano` }
     : { value: amount, caption: 'de economia por ano', tone: 'positive', speech: `economia de ${amount} por ano` };

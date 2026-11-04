@@ -10,7 +10,15 @@ import {
 import { EMPTY_DRAFT, toggleDecision, type AgendaDraft } from '@/store/agendaDraft';
 import { TEST_BILL, TEST_DECREE, TEST_EVENT, TEST_MP, TEST_PEC, testContent } from '@/tests/fixtures';
 
-import { agendaTotals, clearAgendaMessage, irreversibleWarning, lagNotice, restartMonthMessage } from './agendaModel';
+import {
+  agendaTotals,
+  clearAgendaMessage,
+  irreversibleWarning,
+  lagNotice,
+  readableAmount,
+  restartMonthMessage,
+} from './agendaModel';
+import { formatFiscal } from '@/components/ui/format';
 
 const content = testContent();
 const policy = (id: string): Decision => ({ policyId: id, agendaCost: 0 });
@@ -133,5 +141,16 @@ describe('textos de limpar e recomeçar', () => {
     expect(restartMonthMessage(totals(0, 1))).toBe(
       'Tudo o que foi marcado neste mês sai, inclusive a resposta ao evento. Dá para desfazer até encerrar o mês.',
     );
+  });
+});
+
+describe('valor fiscal legível', () => {
+  const gdp = 13_000_000; // R$ 13 tri em milhões
+  const pib = (millions: number, opts?: { decimals?: number }) => formatFiscal(millions, gdp, 'pib', opts);
+
+  it('um custo pequeno nunca aparece como zero', () => {
+    expect(readableAmount(130_000, pib)).toBe('1,0% do PIB');
+    expect(readableAmount(1_300, pib)).toBe('0,01% do PIB');
+    expect(readableAmount(100, pib)).toBe('menos de 0,01% do PIB');
   });
 });
