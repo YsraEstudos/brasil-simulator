@@ -1,3 +1,4 @@
+import type { FiscalFormatOptions } from '@/components/ui/format';
 import {
   APPOINT_ACTION_ID,
   DIRECTIVE_ACTION_ID,
@@ -143,4 +144,20 @@ export function clearAgendaMessage(totals: AgendaTotals): string {
 export function restartMonthMessage(totals: AgendaTotals): string {
   const answers = totals.eventAnswers === 1 ? 'a resposta ao evento' : `as ${totals.eventAnswers} respostas a eventos`;
   return `Tudo o que foi marcado neste mês sai, inclusive ${answers}. Dá para desfazer até encerrar o mês.`;
+}
+
+// Valor fiscal legível (o rodapé nunca mostra "0,0% do PIB" para um custo que existe)
+
+export type Money = (millions: number, opts?: FiscalFormatOptions) => string;
+
+/**
+ * Valor que nunca aparece como zero: em % do PIB, um custo pequeno arredondaria para "0,0% do PIB". Tenta uma casa,
+ * depois duas; abaixo disso, "menos de 0,01% do PIB".
+ */
+export function readableAmount(millions: number, money: Money): string {
+  for (const decimals of [1, 2]) {
+    const text = money(millions, { decimals });
+    if (text !== money(0, { decimals })) return text;
+  }
+  return `menos de ${money(0, { decimals: 2 }).replace('0,00', '0,01')}`;
 }
