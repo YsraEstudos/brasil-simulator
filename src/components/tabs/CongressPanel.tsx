@@ -17,9 +17,17 @@ import {
   weakestAlly,
   type ProposalFilter,
 } from '@/components/congress/congressBoard';
+import {
+  amendmentsThisYear,
+  mpDeadline,
+  pautaLocks,
+  scandalAlert,
+  tenureText,
+} from '@/components/congress/congressDeadlines';
 import { ProposalFilterBar } from '@/components/congress/ProposalFilterBar';
 import { VoteMeter } from '@/components/congress/VoteMeter';
-import { Button, Card, formatNumber, formatPercent, Text } from '@/components/ui';
+import { Icon, ICONS } from '@/components/campaign/GabineteBits';
+import { Alert, Button, Card, formatNumber, formatPercent, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { loadContent } from '@/content';
 import {
@@ -35,10 +43,12 @@ import {
   ministriesOf,
   ministryOccupant,
   ministryScandalChance,
+  ministrySince,
   NEGOTIATE_ACTION_ID,
   pautaOccupancy,
   predictVotes,
   sessionAt,
+  toCalendar,
   URGENCY_ACTION_ID,
   validateActionTarget,
   voteEstimate,
@@ -58,6 +68,7 @@ import { signedInt } from './StatRow';
 const HOUSES: readonly House[] = ['camara', 'senado'];
 const HOUSE_LABEL: Record<House, string> = { camara: 'Câmara', senado: 'Senado' };
 const PRESIDES_LABEL: Record<House, string> = { camara: 'a Câmara', senado: 'o Senado' };
+const PAUTA_OF: Record<House, string> = { camara: 'da Câmara', senado: 'do Senado' };
 /** Votos exigidos em cada Casa: maioria absoluta (PL, MP) e 3/5 (PEC), tirados do próprio plano de votação. */
 const QUORUM_BY_HOUSE = {
   camara: { majority: votingPlan('projeto_lei')[0]!.required, pec: votingPlan('pec')[0]!.required },
@@ -117,13 +128,46 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
   const showInCongress = filter.situation !== 'fora';
   const showClosed = filter.situation === null || filter.situation === 'fora';
 
+  // Prazos (Fase Q9): MPs que trancam a pauta e emendas liberadas no ano.
+  const isMeasure = (proposalId: string) => {
+    const p = state.proposals.find((x) => x.id === proposalId);
+    const policy = p ? content.policies[p.policyId] : undefined;
+    return policy !== undefined && legislativeInstrument(policy) === 'medida_provisoria';
+  };
+  const locks = pautaLocks(state.proposals, state.monthIndex, isMeasure, (proposalId) => {
+    const p = state.proposals.find((x) => x.id === proposalId);
+    return p ? currentHouse(p, content) : null;
+  });
+  const lockName = (proposalId: string) => {
+    const p = state.proposals.find((x) => x.id === proposalId);
+    return (p && content.policies[p.policyId]?.name) ?? 'medida provisória';
+  };
+  const amendments = amendmentsThisYear(state.proposals, state.monthIndex);
+
   return (
     <>
+      {locks.map((lock) => (
+        <Alert
+          key={lock.proposalId}
+          tone={lock.now ? 'warning' : 'info'}
+          title={
+            lock.now ? `Pauta ${PAUTA_OF[lock.house]} trancada` : `Pauta ${PAUTA_OF[lock.house]} tranca no mês que vem`
+          }
+          message={
+            lock.now
+              ? `A MP "${lockName(lock.proposalId)}" passou de 45 dias: as outras propostas ${PAUTA_OF[lock.house]} só são votadas depois dela.`
+              : `A MP "${lockName(lock.proposalId)}" completa 45 dias no mês que vem. Se não for votada, as outras propostas ${PAUTA_OF[lock.house]} esperam.`
+          }
+        />
+      ))}
+
       <CongressHemicycle state={state} content={content} actionsUsed={actionsUsed} actionsMax={actionsMax} />
 
       <BaseScoreboard chamber={chamber} senate={senate} weakLink={weakLink} />
 
-      <Card title="Mesas e pauta">
+      <Card
+        title="Mesas e pauta"
+        subtitle={`Emendas liberadas em ${toCalendar(state.monthIndex).year}: ${amendments} ${amendments === 1 ? 'vez' : 'vezes'}. O jogo não tem saldo de emendas: cada liberação vale para uma votação.`}>
         {HOUSES.map((house) => {
           const president = housePresident(content, house);
           const relation = president ? blocRelation(state, president) : 0;
@@ -259,6 +303,7 @@ function ProposalItem({
     .map(([id]) => blocName(id));
   const mpInForce =
     instrument === 'medida_provisoria' && (proposal.status === 'em_tramitacao' || proposal.status === 'parada');
+  const deadline = mpInForce ? mpDeadline(proposal.createdMonth, state.monthIndex) : null;
   const facts = [
     mpInForce ? 'em vigor desde a edição (medida provisória)' : null,
     n.amendments ? 'emendas liberadas' : null,
@@ -289,6 +334,14 @@ function ProposalItem({
       subtitle={`${instrument ? INSTRUMENT_LABEL[instrument] : ''} · ${PROPOSAL_STATUS_LABEL[proposal.status]}`}
       style={styles.nested}>
       <Text variant="body">{stageText(proposal, content, blocName)}</Text>
+      {deadline ? (
+        <View style={styles.note}>
+          <Icon name={ICONS.inProgress} size={14} color={deadline.tone} />
+          <Text variant="caption" color={deadline.tone} style={styles.noteText}>
+            {`${deadline.text} Último mês para votar: ${shortMonthLabel(deadline.lastMonth)}.`}
+          </Text>
+        </View>
+      ) : null}
       {estimates.map((estimate) => (
         <VoteMeter key={estimate.label} estimate={estimate} />
       ))}
@@ -369,6 +422,8 @@ function MinistriesCard({ state, content, agenda }: { state: GameState; content:
       {ministries.map((m: Ministry) => {
         const occupant = ministryOccupant(state, m);
         const risk = ministryScandalChance(state, m, content.calibration);
+        const alert = scandalAlert(risk, content.calibration.escandalo_max_mes);
+        const tenure = tenureText(ministrySince(state, m), state.monthIndex, occupant === m.occupant);
         const pending = agenda.pending(actionDecision(APPOINT_ACTION_ID, { ministryId: m.id, occupant: '' }));
         const pendingOccupant = typeof pending?.params?.occupant === 'string' ? pending.params.occupant : null;
         const options = [TECHNICAL_MINISTER, ...content.scenario.blocs.map((b) => b.id)].filter((o) => o !== occupant);
@@ -378,6 +433,18 @@ function MinistriesCard({ state, content, agenda }: { state: GameState; content:
             <Text variant="body" color="textSecondary">
               {`${occupantName(occupant)} · peso ${formatPercent(m.weight, 0)}${risk > 0 ? ` · risco de escândalo ${formatPercent(risk, 1)} ao mês` : ''}`}
             </Text>
+            <Text variant="caption" color="textMuted">
+              {tenure}
+            </Text>
+            {alert ? (
+              <View style={styles.note}>
+                <Icon name={ICONS.warning} size={14} color="negative" />
+                <Text variant="caption" color="negative" style={styles.noteText}>
+                  Risco de escândalo perto do teto: o risco cresce com o tempo no cargo. Trocar o ocupante recomeça a
+                  conta; um técnico não tem esse risco.
+                </Text>
+              </View>
+            ) : null}
             {pendingOccupant ? (
               <Text variant="caption" color="accent">
                 {`● Na agenda: ${occupantName(pendingOccupant)}`}
@@ -443,4 +510,6 @@ const styles = StyleSheet.create({
   nested: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: Spacing.one },
   row: { gap: Spacing.half, paddingVertical: Spacing.one },
   actions: { gap: Spacing.one },
+  note: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
+  noteText: { flex: 1 },
 });
