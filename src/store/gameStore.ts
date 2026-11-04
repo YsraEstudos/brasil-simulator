@@ -34,7 +34,7 @@ import {
   parseBundle,
   type CampaignBundle,
 } from '@/database/campaignBundle';
-import { getSetting, setSetting } from '@/database/settingsRepository';
+import { deleteSettings, getSetting, setSetting } from '@/database/settingsRepository';
 import type { SqlDatabase } from '@/database/types';
 import { DEFAULT_PROFILE_3D, type Profile3d } from '@/globe/qualityProfiles';
 import { DEFAULT_DAY_TIME, type DayTimeSetting } from '@/globe/visualClock';
@@ -74,6 +74,7 @@ import {
   DEFAULT_PREFERENCES,
   loadPreferences,
   PREFERENCE_DEFS,
+  PREFERENCE_KEYS,
   type PreferenceKey,
   type Preferences,
 } from './preferences';
@@ -217,6 +218,11 @@ export interface GameStoreState {
   /** Liga ou desliga as nuvens do mapa; vale na hora e é gravada. */
   setMapClouds(on: boolean): Promise<boolean>;
   setReduceMotion(on: boolean): Promise<boolean>;
+  /**
+   * Restaurar configurações padrão (M9): apaga as chaves de `RESETTABLE_SETTING_KEYS` e volta a tela aos padrões.
+   * Partidas salvas e o resto das preferências não mudam.
+   */
+  resetSettings(): Promise<boolean>;
   /** Muda uma preferência do registro: vale na hora e é gravada (falha de gravação vira `error`, a escolha fica). */
   setPreference<K extends PreferenceKey>(key: K, value: Preferences[K]): Promise<boolean>;
 }
@@ -228,6 +234,23 @@ export interface GameStoreDeps {
 }
 
 const TEXT_SCALE_KEY = 'textScale';
+const REDUCE_MOTION_KEY = 'reduceMotion';
+
+/**
+ * Chaves apagadas por "Restaurar configurações padrão" (PLANO_MENU_SAVES_CONFIG.md M9): só preferências do jogador
+ * nas Configurações. Ficam fora, de propósito: partidas salvas, a última dificuldade e o último cenário do Novo Jogo,
+ * a ordem da lista de campanhas e o perfil medido pelo ajuste automático do globo (medição do aparelho, não escolha).
+ * A chave antiga do renderizador entra para a migração dela não trazer a escolha de volta.
+ */
+export const RESETTABLE_SETTING_KEYS: readonly string[] = [
+  ...PREFERENCE_KEYS.map((k) => PREFERENCE_DEFS[k].key),
+  TEXT_SCALE_KEY,
+  REDUCE_MOTION_KEY,
+  MAP_QUALITY_KEY,
+  LEGACY_MAP_RENDERER_KEY,
+  MAP_DAY_TIME_KEY,
+  MAP_CLOUDS_KEY,
+];
 
 /**
  * Estado da interface (AI_INSTRUCTIONS.md §3): única ponte entre telas, motor e banco. Toda mudança de
@@ -337,7 +360,7 @@ export function createGameStore(deps: GameStoreDeps) {
           }
           let reduceMotion = false;
           try {
-            reduceMotion = (await getSetting<unknown>(db, 'reduceMotion', false)) === true;
+            reduceMotion = (await getSetting<unknown>(db, REDUCE_MOTION_KEY, false)) === true;
           } catch {
             /* Uma preferência ilegível não impede abrir a campanha. */
           }
@@ -757,9 +780,22 @@ export function createGameStore(deps: GameStoreDeps) {
         }
       },
 
+      resetSettings: () =>
+        run(async (d) => {
+          await deleteSettings(d, RESETTABLE_SETTING_KEYS);
+          set({
+            prefs: DEFAULT_PREFERENCES,
+            textScale: 1,
+            reduceMotion: false,
+            mapQuality: DEFAULT_MAP_QUALITY,
+            dayTime: DEFAULT_DAY_TIME,
+            mapClouds: DEFAULT_MAP_CLOUDS,
+          });
+        }),
+
       setReduceMotion: (on) =>
         run(async (db) => {
-          await setSetting(db, 'reduceMotion', on);
+          await setSetting(db, REDUCE_MOTION_KEY, on);
           set({ reduceMotion: on });
         }),
 

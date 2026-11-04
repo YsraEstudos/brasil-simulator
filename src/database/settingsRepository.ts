@@ -11,6 +11,12 @@ export async function getSetting<T>(db: SqlDatabase, key: string, fallback: T): 
   }
 }
 
+/** Apaga preferências (as chaves que não existirem são ignoradas). */
+export async function deleteSettings(db: SqlDatabase, keys: readonly string[]): Promise<void> {
+  if (keys.length === 0) return;
+  await db.run(`DELETE FROM settings WHERE key IN (${keys.map(() => '?').join(', ')})`, keys);
+}
+
 export async function setSetting(db: SqlDatabase, key: string, value: unknown): Promise<void> {
   await db.run(
     `INSERT INTO settings (key, value_json) VALUES (?, ?)
