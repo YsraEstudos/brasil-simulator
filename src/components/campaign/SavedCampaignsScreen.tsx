@@ -11,6 +11,7 @@ import { MaxContentWidth, MIN_TOUCH, Radius, Spacing } from '@/constants/theme';
 import type { CampaignSummary } from '@/database/campaignRepository';
 import { useTheme } from '@/hooks/use-theme';
 import { gameStore, hasPendingChoices, isKnownScenario, useGame } from '@/store';
+import { governmentsLabel } from '@/store/governments';
 import { campaignMonths, SCENARIOS } from '@/store/scenarios';
 import {
   SAVED_LIST_FILTERS,
@@ -42,7 +43,8 @@ type Pending =
   | { kind: 'carregar'; campaign: CampaignSummary }
   | { kind: 'recomecar'; campaign: CampaignSummary }
   | { kind: 'apagar'; campaign: CampaignSummary }
-  | { kind: 'apagarEncerradas'; deletable: number; locked: number };
+  | { kind: 'apagarEncerradas'; deletable: number; locked: number }
+  | { kind: 'descartarRascunho'; campaign: CampaignSummary };
 
 /** Ícones do cabeçalho do cartão: SF Symbols no iOS, Material Symbols no Android e na web. */
 const ICON = {
@@ -66,6 +68,9 @@ export function SavedCampaignsScreen() {
   const campaigns = useGame((s) => s.campaigns);
   const prefs = useGame((s) => s.savedListPrefs);
   const activeId = useGame((s) => s.active?.id ?? null);
+  const draft = useGame((s) => s.draft);
+  const hideSeed = useGame((s) => s.prefs.hideSeed);
+  const governments = useGame((s) => s.governments);
   const [pending, setPending] = useState<Pending | null>(null);
   const [renaming, setRenaming] = useState<CampaignSummary | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -116,6 +121,19 @@ export function SavedCampaignsScreen() {
     }
     void load(c);
   };
+
+  /**
+   * Descarta as decisões do mês ainda não confirmadas da partida aberta (PLANO_QUICK_WINS.md, B51). O rascunho vive só
+   * na memória do app: descartar não mexe nos meses já gravados.
+   */
+  const discardDraft = () => {
+    setPending(null);
+    setOpError(null);
+    gameStore.getState().clearDraft();
+    setNotice('Decisões não confirmadas descartadas.');
+  };
+
+  const toggleSeed = () => void gameStore.getState().setPreference('hideSeed', !hideSeed);
 
   /** Recomeça a partida encerrada `c` com as mesmas opções: a nova fica ativa e o Painel abre (M4.3). */
   const restart = async (c: CampaignSummary) => {
@@ -258,6 +276,12 @@ export function SavedCampaignsScreen() {
         ]}>
         <SetupHeader title="CARREGAR JOGO" subtitle="Retome uma das suas campanhas" onBack={goBack} />
 
+        {governmentsLabel(governments) !== '' && (
+          <Text variant="caption" color="textSecondary">
+            {governmentsLabel(governments)}
+          </Text>
+        )}
+
         {opError && status === 'pronto' && (
           <Animated.View entering={FadeInDown.springify().damping(16)} layout={LAYOUT}>
             <Alert
@@ -356,6 +380,10 @@ export function SavedCampaignsScreen() {
                   <SavedItem
                     campaign={c}
                     isOpen={c.id === activeId}
+                    hasDraft={c.id === activeId && c.status !== 'encerrada' && hasPendingChoices(draft)}
+                    seedHidden={hideSeed}
+                    onToggleSeed={toggleSeed}
+                    onDiscardDraft={() => setPending({ kind: 'descartarRascunho', campaign: c })}
                     loading={loadingId === c.id}
                     restarting={restartingId === c.id}
                     copying={copyingId === c.id}
@@ -406,6 +434,16 @@ export function SavedCampaignsScreen() {
           message={`A campanha aberta continuará salva, mas as decisões ainda não confirmadas deste mês serão descartadas ao recomeçar “${pending.campaign.name}”.`}
           confirmLabel="RECOMEÇAR MESMO ASSIM"
           onConfirm={() => void restart(pending.campaign)}
+          onCancel={() => setPending(null)}
+        />
+      )}
+      {pending?.kind === 'descartarRascunho' && (
+        <ConfirmSheet
+          danger
+          title="Descartar as decisões deste mês?"
+          message="As escolhas ainda não confirmadas deste mês são apagadas. Os meses já gravados não mudam."
+          confirmLabel="DESCARTAR"
+          onConfirm={discardDraft}
           onCancel={() => setPending(null)}
         />
       )}
@@ -525,6 +563,10 @@ function CardIconButton({
 function SavedItem({
   campaign: c,
   isOpen,
+  hasDraft,
+  seedHidden,
+  onToggleSeed,
+  onDiscardDraft,
   loading,
   restarting,
   copying,
@@ -541,6 +583,11 @@ function SavedItem({
 }: {
   campaign: CampaignSummary;
   isOpen: boolean;
+  /** Partida aberta com decisões do mês ainda não confirmadas (o rascunho). */
+  hasDraft: boolean;
+  seedHidden: boolean;
+  onToggleSeed: () => void;
+  onDiscardDraft: () => void;
   loading: boolean;
   restarting: boolean;
   copying: boolean;
@@ -627,7 +674,19 @@ function SavedItem({
           {activity}
         </Text>
       )}
-      <SeedRow seed={c.seed} />
+      <SeedRow seed={c.seed} hidden={seedHidden} onToggleHidden={onToggleSeed} />
+      {hasDraft && (
+        <PressScale
+          onPress={onDiscardDraft}
+          disabled={disabled}
+          accessibilityLabel={`Descartar as decisões pendentes de ${c.name}`}
+          accessibilityHint="Apaga as escolhas do mês que ainda não foram confirmadas"
+          style={[styles.bulkButton, { borderColor: colors.negative }]}>
+          <Text variant="label" color="negative" align="center">
+            Descartar decisões pendentes
+          </Text>
+        </PressScale>
+      )}
       <View style={styles.itemActions}>
         <PressScale
           onPress={onLoad}
@@ -712,8 +771,11 @@ function SavedItem({
 
 type CopyStatus = 'idle' | 'copiada' | 'falhou';
 
-/** Semente em texto selecionável, com cópia em um toque; a confirmação some sozinha após 2 s. */
-function SeedRow({ seed }: { seed: number }) {
+/**
+ * Semente em texto selecionável, com cópia em um toque; a confirmação some sozinha após 2 s. Oculta (D19): mostra só
+ * pontos e não copia; o botão troca nos cartões todos de uma vez (preferência `hideSeed`).
+ */
+function SeedRow({ seed, hidden, onToggleHidden }: { seed: number; hidden: boolean; onToggleHidden: () => void }) {
   const { colors } = useTheme();
   const [status, setStatus] = useState<CopyStatus>('idle');
   const alive = useRef(true);
@@ -742,15 +804,26 @@ function SeedRow({ seed }: { seed: number }) {
 
   return (
     <View style={styles.seedRow}>
-      <Text variant="caption" color="textMuted" selectable style={styles.seedText}>
-        {`Semente: ${seed}`}
+      <Text variant="caption" color="textMuted" selectable={!hidden} style={styles.seedText}>
+        {hidden ? 'Semente: ••••••' : `Semente: ${seed}`}
       </Text>
+      {!hidden && (
+        <PressScale
+          onPress={() => void copy()}
+          accessibilityLabel={`Copiar semente ${seed}`}
+          style={[styles.seedButton, { borderColor: colors.accent }]}>
+          <Text variant="label" color="accent">
+            Copiar
+          </Text>
+        </PressScale>
+      )}
       <PressScale
-        onPress={() => void copy()}
-        accessibilityLabel={`Copiar semente ${seed}`}
+        onPress={onToggleHidden}
+        accessibilityLabel={hidden ? 'Mostrar a semente nos cartões' : 'Ocultar a semente nos cartões'}
+        accessibilityHint="Vale para todas as partidas da lista e fica gravado neste aparelho"
         style={[styles.seedButton, { borderColor: colors.accent }]}>
         <Text variant="label" color="accent">
-          Copiar
+          {hidden ? 'Mostrar' : 'Ocultar'}
         </Text>
       </PressScale>
       {/* A região fica sempre montada: leitores de tela só anunciam mudanças em regiões que já existem. */}

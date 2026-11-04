@@ -54,6 +54,7 @@ import {
 } from '@/engine';
 
 import { draftInput, EMPTY_DRAFT, toggleDecision, toggleEventChoice, type AgendaDraft } from './agendaDraft';
+import { GOVERNMENTS_KEY, resolveGovernmentCount } from './governments';
 import {
   checkNewCampaignInput,
   DEFAULT_SETUP_PREFS,
@@ -150,6 +151,8 @@ export interface GameStoreState {
   draft: AgendaDraft;
   /** Últimas dificuldade e cenário usados em NOVO JOGO (lidos uma vez no início, gravados após criar). */
   setupPrefs: SetupPrefs;
+  /** Governos iniciados neste aparelho (NOVO JOGO e RECOMEÇAR; guardado em `settings`, nunca diminui). */
+  governments: number;
 
   init(): Promise<void>;
   /** Cria a campanha e só a torna ativa depois de gravada; a anterior continua salva no banco. */
@@ -304,6 +307,7 @@ export function createGameStore(deps: GameStoreDeps) {
       mapClouds: DEFAULT_MAP_CLOUDS,
       draft: EMPTY_DRAFT,
       setupPrefs: DEFAULT_SETUP_PREFS,
+      governments: 0,
 
       async init() {
         if (db) return;
@@ -364,9 +368,16 @@ export function createGameStore(deps: GameStoreDeps) {
           } catch {
             /* Uma preferência ilegível não impede abrir a campanha. */
           }
+          let governments = 0;
+          try {
+            governments = resolveGovernmentCount(await getSetting<unknown>(db, GOVERNMENTS_KEY, 0));
+          } catch {
+            /* O contador é só informativo: sem leitura, começa em zero. */
+          }
           set({
             textScale,
             reduceMotion,
+            governments,
             prefs,
             savedListPrefs,
             mapQuality,
@@ -457,6 +468,14 @@ export function createGameStore(deps: GameStoreDeps) {
             await setSetting(d, LAST_SCENARIO_KEY, scenarioId);
           } catch {
             // Preferência é secundária: na memória ela já vale para a próxima abertura de NOVO JOGO.
+          }
+          // Governo iniciado (NOVO JOGO e RECOMEÇAR): o contador vale para sempre, mesmo se o save for apagado depois.
+          const governments = get().governments + 1;
+          set({ governments });
+          try {
+            await setSetting(d, GOVERNMENTS_KEY, governments);
+          } catch {
+            // Só o contador da lista de saves; na memória ele já está certo até fechar o app.
           }
           return { ok: true, campaignId: created.id };
         } finally {

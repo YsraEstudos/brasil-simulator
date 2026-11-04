@@ -259,7 +259,14 @@ export function MainMenuScreen() {
           )}
 
           <View style={styles.footer}>
-            <Text style={styles.version}>{`v${version} - BETA`}</Text>
+            {/* B55: tocar na versão abre o histórico de atualizações. */}
+            <Pressable
+              onPress={() => router.push('/historico')}
+              accessibilityRole="button"
+              accessibilityLabel={`Versão ${version}: abrir histórico de atualizações`}
+              hitSlop={8}>
+              <Text style={styles.version}>{`v${version} - BETA`}</Text>
+            </Pressable>
             <View style={styles.loginRow}>
               <Text style={styles.loginLabel}>Login:</Text>
               {SOCIALS.map((s) => (
