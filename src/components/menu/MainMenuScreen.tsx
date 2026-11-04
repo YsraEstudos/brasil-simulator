@@ -12,6 +12,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { gameStore, useGame } from '@/store';
 
 import { Menu } from './menuTheme';
+import { loadingTip } from '@/components/painel/monthReview';
 
 const logo = require('../../../assets/images/logo-brasil-metal.png');
 
@@ -78,6 +79,8 @@ export function MainMenuScreen() {
   const active = useGame((s) => s.active);
   const campaigns = useGame((s) => s.campaigns);
   const [note, setNote] = useState<string | null>(null);
+  const [loadingResume, setLoadingResume] = useState(false);
+  const [tip] = useState(() => loadingTip(Date.now()));
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Área útil dentro de safe areas e margens: estimada pela janela e corrigida pelo onLayout.
@@ -150,12 +153,15 @@ export function MainMenuScreen() {
         return;
       }
       // Só entra no Painel se a partida carregou de fato (a falha fica registrada na store).
-      if (!(await gameStore.getState().continueCampaign(last.id))) {
+      setLoadingResume(true);
+      const loaded = await gameStore.getState().continueCampaign(last.id);
+      setLoadingResume(false);
+      if (!loaded) {
         showNote('Não foi possível carregar a última partida');
         return;
       }
     }
-    router.push('/painel');
+    router.push({ pathname: '/painel', params: { retomada: '1' } });
   }, [active, busy, campaigns, showNote, status]);
 
   const onPressItem = useCallback(
@@ -285,6 +291,13 @@ export function MainMenuScreen() {
         </View>
       </View>
 
+      {loadingResume && (
+        <View style={[styles.toastWrap, { bottom: insets.bottom + 80 }]}>
+          <View style={styles.toast}>
+            <Text style={styles.toastText}>{`Carregando… Dica: ${tip}`}</Text>
+          </View>
+        </View>
+      )}
       {note ? (
         <View pointerEvents="none" style={[styles.toastWrap, { bottom: insets.bottom + 80 }]}>
           <View style={styles.toast}>

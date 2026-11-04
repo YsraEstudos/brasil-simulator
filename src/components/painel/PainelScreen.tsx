@@ -1,4 +1,4 @@
-import { router, useIsFocused } from 'expo-router';
+import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BackHandler, Image, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
@@ -19,7 +19,7 @@ import {
 } from '@/components/campaign/inboxModel';
 import { MonthSummary } from '@/components/campaign/MonthSummary';
 import { WhyChanged } from '@/components/campaign/WhyChanged';
-import { Alert, Card, Indicator, Text } from '@/components/ui';
+import { Alert, Button, Card, Indicator, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
@@ -46,6 +46,7 @@ import { draftCost, gameStore, hasPendingChoices, planMapQuality, useGame, type 
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
 import { governmentCalendar } from './governmentCalendar';
+import { monthReview } from './monthReview';
 import { nextRailSheet, nightKey, quoteForSeed } from './navigationModel';
 import { GdpChart } from './GdpChart';
 import {
@@ -99,7 +100,7 @@ const logo = require('../../../assets/images/logo-brasil.png');
 
 /** Referência estável para "sem série regional ainda" (evita refazer o cartão a cada render). */
 const shownInaugurations = new Set<string>();
-let lastNightNotice: string | null = null;
+const shownNights = new Set<string>();
 
 const EMPTY_REGIONAL: readonly RegionalPoint[] = [];
 
@@ -156,7 +157,7 @@ const SAVE_AS_ICON: SymbolViewProps['name'] = { ios: 'doc.on.doc.fill', android:
 const COMPACT_DOCK_CENTER_MIN_WIDTH = 600;
 
 /** Folhas da mesa: as dos trilhos, mais o cartão do estado (toque no globo) e o menu (botão ☰ do topo). */
-type SheetId = RailSheetId | 'estado' | 'menu' | 'calendario' | 'posse';
+type SheetId = RailSheetId | 'estado' | 'menu' | 'calendario' | 'posse' | 'revisao' | 'retomada';
 
 const SHEET_TITLES: Record<SheetId, string> = {
   alertas: 'Alertas e Eventos',
@@ -172,6 +173,8 @@ const SHEET_TITLES: Record<SheetId, string> = {
   menu: 'Menu',
   calendario: 'Calendário do Governo',
   posse: 'Posse',
+  revisao: 'Antes de encerrar',
+  retomada: 'Onde você parou',
 };
 
 const CENTER_ICON: SymbolViewProps['name'] = { ios: 'globe.americas', android: 'public', web: 'public' };
@@ -189,6 +192,7 @@ const CENTER_ICON: SymbolViewProps['name'] = { ios: 'globe.americas', android: '
  * que mantém a partida em memória, e configurações). Com uma subtela por cima o globo pausa o desenho.
  */
 export function PainelScreen() {
+  const { retomada } = useLocalSearchParams<{ retomada?: string }>();
   const active = useGame((s) => s.active);
   const draft = useGame((s) => s.draft);
   const busy = useGame((s) => s.busy);
@@ -205,7 +209,7 @@ export function PainelScreen() {
   const [regional, setRegional] = useState<{ id: string; points: readonly RegionalPoint[] } | null>(null);
   // Fotografias das eleições gerais por UF (banco): a camada Resultado mostra a mais recente. Mesma regra do par id + dados.
   const [elections, setElections] = useState<{ id: string; results: readonly ElectionResult[] } | null>(null);
-  const [sheet, setSheet] = useState<SheetId | null>(null);
+  const [sheet, setSheet] = useState<SheetId | null>(() => (retomada === '1' ? 'retomada' : null));
   const [interfaceHidden, setInterfaceHidden] = useState(false);
   const [nightNotice, setNightNotice] = useState(false);
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
@@ -255,6 +259,7 @@ export function PainelScreen() {
   useEffect(() => {
     if (
       !active ||
+      retomada === '1' ||
       active.finished ||
       isPreInauguration(active.state) ||
       active.state.monthIndex !== 0 ||
@@ -266,7 +271,7 @@ export function PainelScreen() {
       setSheet('posse');
     }, 0);
     return () => clearTimeout(timer);
-  }, [active]);
+  }, [active, retomada]);
 
   // Série do PIB: relida do banco quando a partida ou o mês mudam; a tela não guarda histórico próprio.
   // O par (id, pontos) evita mostrar a série de uma partida anterior enquanto a nova ainda não chegou.
@@ -458,6 +463,22 @@ export function PainelScreen() {
   const characters = useMemo(() => (active ? characterBriefs(active.state, content) : []), [active, content]);
   // Selo do sino e do botão de alertas: o que ainda não tem resposta marcada no rascunho.
   const pendingCount = playing ? inboxCount(active.state, content, draft) : 0;
+  const review =
+    active && playing
+      ? monthReview({
+          events: inbox.map(({ event }) => ({ id: event.id, name: event.title })),
+          choices: draft.eventChoices,
+          actionsMax,
+          actionsUsed: draftCost(draft, content),
+          proposals: active.state.proposals.map((proposal) => ({
+            name: content.policies[proposal.policyId]?.name ?? proposal.policyId,
+            voteMonth: proposal.voteMonth,
+            status: proposal.status,
+          })),
+          monthIndex: active.state.monthIndex,
+        })
+      : null;
+  const pendingSanctions = sanctions.filter(({ proposal }) => sanctionChosen[proposal.id] === undefined);
 
   // Eleições só entram no trilho na janela eleitoral; os selos da doca vêm do estado (funções puras em `mesaNav`).
   const showElections = playing && electionsRelevant(content.scenario.elections, active.state.monthIndex);
@@ -574,8 +595,8 @@ export function PainelScreen() {
     const outcome = endMonthOutcome(before, after?.state, after?.finished ?? false);
     setEndMonthFailed(outcome === 'nada' && gameStore.getState().error !== undefined);
     const night = nightKey(new Date());
-    if (outcome !== 'nada' && night !== null && lastNightNotice !== night) {
-      lastNightNotice = night;
+    if (outcome !== 'nada' && night !== null && !shownNights.has(night)) {
+      shownNights.add(night);
       setNightNotice(true);
     }
     if (outcome === 'relatorio') setSheet('relatorio');
@@ -689,12 +710,72 @@ export function PainelScreen() {
       busy={busy && endControl.mode === 'encerrar'}
       disabled={endControl.disabled}
       compact={compact}
-      onPress={endControl.mode === 'legado' ? () => go('/legado') : () => void endMonth()}
+      holdToReview={endControl.mode === 'encerrar'}
+      onPress={endControl.mode === 'legado' ? () => go('/legado') : () => setSheet('revisao')}
     />
   );
 
   const sheetBody = (): ReactNode => {
     switch (sheet) {
+      case 'revisao':
+      case 'retomada':
+        return active && review ? (
+          <>
+            {sheet === 'retomada' && (
+              <Card title={hud.shortLabel} subtitle="Situação atual">
+                <Text variant="body">
+                  {hud.stats
+                    .filter((stat) => ['aprovacao', 'inflacao', 'desemprego', 'pib'].includes(stat.id))
+                    .map((stat) => `${stat.label}: ${stat.value}`)
+                    .join(' · ')}
+                </Text>
+              </Card>
+            )}
+            <Card title="Pendências do mês">
+              <Text variant="body">
+                {review.events.length
+                  ? `Eventos sem resposta: ${review.events.join(', ')}.`
+                  : 'Nenhum evento sem resposta.'}
+              </Text>
+              {pendingSanctions.length > 0 && (
+                <Text variant="body">{`Sanções sem escolha: ${pendingSanctions.map((item) => item.name).join(', ')}.`}</Text>
+              )}
+              <Text variant="body">{`${review.actionsLeft} ${review.actionsLeft === 1 ? 'ação de agenda livre' : 'ações de agenda livres'}.`}</Text>
+              <Text variant="body">
+                {review.proposals.length
+                  ? `Votação prevista: ${review.proposals.join(', ')}.`
+                  : 'Nenhuma votação prevista neste mês.'}
+              </Text>
+              {(review.events.length > 0 || pendingSanctions.length > 0) && (
+                <Button label="Ver alertas" variant="secondary" onPress={() => setSheet('alertas')} />
+              )}
+              {review.proposals.length > 0 && (
+                <Button label="Ver Congresso" variant="secondary" onPress={() => go('/congresso')} />
+              )}
+            </Card>
+            {sheet === 'revisao' && (
+              <>
+                <Text variant="body">
+                  {review.actionsLeft > 0
+                    ? `Você ainda tem ${review.actionsLeft} ${review.actionsLeft === 1 ? 'ação' : 'ações'}. Encerrar mesmo assim?`
+                    : 'Encerrar este mês?'}
+                </Text>
+                <Button
+                  label="Confirmar encerramento"
+                  loading={busy}
+                  onPress={() => {
+                    closeSheet();
+                    void endMonth();
+                  }}
+                  block
+                />
+                <Button label="Voltar ao Painel" variant="ghost" onPress={closeSheet} block />
+              </>
+            )}
+          </>
+        ) : (
+          <EmptyNote text="Nenhuma partida em andamento." />
+        );
       case 'posse':
         return active ? (
           <Card title="Um novo governo começa">

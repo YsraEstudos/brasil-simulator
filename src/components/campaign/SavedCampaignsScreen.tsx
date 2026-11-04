@@ -7,6 +7,7 @@ import Animated, { FadeIn, FadeInDown, FadeOutLeft, ZoomIn } from 'react-native-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Alert, Text } from '@/components/ui';
+import { loadingTip } from '@/components/painel/monthReview';
 import { MaxContentWidth, MIN_TOUCH, Radius, Spacing } from '@/constants/theme';
 import type { CampaignSummary } from '@/database/campaignRepository';
 import { useTheme } from '@/hooks/use-theme';
@@ -74,6 +75,7 @@ export function SavedCampaignsScreen() {
   const [pending, setPending] = useState<Pending | null>(null);
   const [renaming, setRenaming] = useState<CampaignSummary | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [tip] = useState(() => loadingTip(Date.now()));
   const [restartingId, setRestartingId] = useState<string | null>(null);
   const [copyingId, setCopyingId] = useState<string | null>(null);
   const [exportingId, setExportingId] = useState<string | null>(null);
@@ -100,7 +102,7 @@ export function SavedCampaignsScreen() {
     setPending(null);
     if (c.id === activeId) {
       // A mesma partida já está aberta: volta a ela sem recarregar (o rascunho do mês continua).
-      router.replace('/painel');
+      router.replace({ pathname: '/painel', params: { retomada: '1' } });
       return;
     }
     setLoadingId(c.id);
@@ -108,7 +110,7 @@ export function SavedCampaignsScreen() {
     const ok = await gameStore.getState().continueCampaign(c.id);
     if (!mounted.current) return;
     setLoadingId(null);
-    if (ok) router.replace('/painel');
+    if (ok) router.replace({ pathname: '/painel', params: { retomada: '1' } });
     else setOpError(gameStore.getState().error ?? 'Tente de novo em instantes.');
   };
 
@@ -276,6 +278,7 @@ export function SavedCampaignsScreen() {
         ]}>
         <SetupHeader title="CARREGAR JOGO" subtitle="Retome uma das suas campanhas" onBack={goBack} />
 
+        {loadingId && <Alert title="Carregando partida" message={`Dica: ${tip}`} />}
         {governmentsLabel(governments) !== '' && (
           <Text variant="caption" color="textSecondary">
             {governmentsLabel(governments)}

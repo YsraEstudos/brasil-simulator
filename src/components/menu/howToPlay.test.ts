@@ -9,9 +9,11 @@ const FICTION_NOTICE = 'Simulação fictícia e independente, sem afiliação a 
 const MAX_PARAGRAPH_LENGTH = 320;
 
 describe('Como jogar (conteúdo da tela de instruções básicas)', () => {
-  it('tem de 5 a 8 seções', () => {
+  it('inclui as instruções e a seção de desfechos', () => {
     expect(HOW_TO_PLAY_SECTIONS.length).toBeGreaterThanOrEqual(5);
-    expect(HOW_TO_PLAY_SECTIONS.length).toBeLessThanOrEqual(8);
+    expect(HOW_TO_PLAY_SECTIONS.find((section) => section.id === 'ganhar-perder')?.title).toBe(
+      'Como se ganha e como se perde',
+    );
   });
 
   it('tem ids únicos', () => {

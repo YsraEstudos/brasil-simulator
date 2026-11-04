@@ -38,7 +38,8 @@ async function decideStartup(): Promise<void> {
       openLastCampaign: state.prefs.openLastCampaign,
       campaigns: state.campaigns,
     });
-    if (id !== null && (await gameStore.getState().continueCampaign(id))) router.push('/painel');
+    if (id !== null && (await gameStore.getState().continueCampaign(id)))
+      router.push({ pathname: '/painel', params: { retomada: '1' } });
   } catch {
     // fica no menu
   }

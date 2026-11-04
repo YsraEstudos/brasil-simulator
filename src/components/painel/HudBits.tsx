@@ -1,5 +1,16 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { ActivityIndicator, Pressable, type StyleProp, View, type ViewStyle } from 'react-native';
+import { useEffect, useState } from 'react';
+import Svg, { Circle } from 'react-native-svg';
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  Animated,
+  Platform,
+  Pressable,
+  type StyleProp,
+  View,
+  type ViewStyle,
+} from 'react-native';
 
 import { binColor, numericLegendLabels, type LayerBadgeInfo, type MapIndicatorSpec } from './regionalMetrics';
 import { Text } from '@/components/ui';
@@ -8,6 +19,8 @@ import { useGame } from '@/store';
 
 import type { HudGoalCheck, HudMinistry, HudRegion, HudSector, HudStat, HudTone } from './hudData';
 import { Hud, hudSentimentColor, toneColor } from './hudTheme';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 /** Peças da mesa do Painel (GAME_DESIGN.md §4.2): painel com moldura dourada, barras, selos e linhas de dado. */
 
@@ -269,6 +282,7 @@ export function EndMonthButton({
   disabled,
   compact,
   onPress,
+  holdToReview,
 }: {
   icon: SymbolViewProps['name'];
   label: string;
@@ -279,14 +293,53 @@ export function EndMonthButton({
   disabled?: boolean;
   compact?: boolean;
   onPress: () => void;
+  holdToReview?: boolean;
 }) {
+  const [screenReader, setScreenReader] = useState(false);
+  const reduceMotion = useGame((s) => s.reduceMotion);
+  const [progress] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    // React Native Web informa sempre `true`; no navegador, a ativação acessível é identificada pelo clique sem ponteiro.
+    if (Platform.OS === 'web') return;
+    let live = true;
+    void AccessibilityInfo.isScreenReaderEnabled().then((enabled) => {
+      if (live) setScreenReader(enabled);
+    });
+    const sub = AccessibilityInfo.addEventListener('screenReaderChanged', setScreenReader);
+    return () => {
+      live = false;
+      sub.remove();
+    };
+  }, []);
+  const start = () => {
+    if (!holdToReview || screenReader) return;
+    progress.setValue(0);
+    Animated.timing(progress, { toValue: 1, duration: 500, useNativeDriver: false }).start();
+  };
+  const stop = () => {
+    progress.stopAnimation();
+    progress.setValue(0);
+  };
   return (
     <Pressable
-      onPress={onPress}
+      onPress={(event) => {
+        const detail = (event.nativeEvent as unknown as { detail?: number }).detail;
+        if (!holdToReview || screenReader || (Platform.OS === 'web' && detail === 0)) onPress();
+      }}
+      onAccessibilityTap={holdToReview ? onPress : undefined}
+      onLongPress={holdToReview && !screenReader ? onPress : undefined}
+      delayLongPress={500}
+      onPressIn={start}
+      onPressOut={stop}
       disabled={disabled}
       hitSlop={compact ? 4 : 2}
       accessibilityRole="button"
       accessibilityLabel={`${label}. ${caption}`}
+      accessibilityHint={
+        holdToReview
+          ? 'Segure por meio segundo para revisar as pendências. Pelo teclado ou leitor de tela, ative normalmente.'
+          : undefined
+      }
       accessibilityState={{ disabled: !!disabled, busy: !!busy }}
       style={({ pressed }) => [
         styles.endButton,
@@ -294,6 +347,23 @@ export function EndMonthButton({
         disabled && !busy && styles.endButtonDisabled,
         pressed && styles.endButtonPressed,
       ]}>
+      {holdToReview && !screenReader && !reduceMotion && (
+        <Svg width={30} height={30} style={{ position: 'absolute', left: 5 }}>
+          <Circle cx={15} cy={15} r={13} fill="none" stroke={Hud.board} opacity={0.25} strokeWidth={2} />
+          <AnimatedCircle
+            cx={15}
+            cy={15}
+            r={13}
+            fill="none"
+            stroke={Hud.board}
+            strokeWidth={2}
+            strokeDasharray={82}
+            strokeDashoffset={progress.interpolate({ inputRange: [0, 1], outputRange: [82, 0] })}
+            rotation={-90}
+            origin="15, 15"
+          />
+        </Svg>
+      )}
       {busy ? (
         <ActivityIndicator size="small" color={Hud.board} />
       ) : (
