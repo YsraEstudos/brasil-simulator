@@ -8,6 +8,7 @@ import { useGame } from '@/store';
 
 import type { HudGoalCheck, HudMinistry, HudRegion, HudSector, HudStat, HudTone } from './hudData';
 import { Hud, hudSentimentColor, toneColor } from './hudTheme';
+import { legendStrip } from './ufBrowse';
 
 /** Peças da mesa do Painel (GAME_DESIGN.md §4.2): painel com moldura dourada, barras, selos e linhas de dado. */
 
@@ -504,6 +505,33 @@ export function MapLayerLegend({ spec, badge }: { spec: MapIndicatorSpec; badge?
   );
 }
 
+/**
+ * Legenda fixa do mapa (Fase Q11, B42): nome da camada, as cinco cores e as pontas escritas, acima da doca. O leitor
+ * de tela recebe todas as faixas; o selo (estimativa, resultado) segue na gaveta Camadas.
+ */
+export function MapLegendStrip({ spec }: { spec: MapIndicatorSpec }) {
+  const colorBlind = useColorBlind();
+  const strip = legendStrip(spec);
+  return (
+    <View accessible accessibilityRole="text" accessibilityLabel={strip.accessibilityLabel} style={styles.legendStrip}>
+      <Text style={styles.legendStripTitle} numberOfLines={1}>
+        {strip.title}
+      </Text>
+      <Text style={styles.legendStripEnd} numberOfLines={1}>
+        {strip.low}
+      </Text>
+      <View style={styles.legendStripRamp}>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <View key={i} style={[styles.legendStripSwatch, { backgroundColor: binColor(spec, i, colorBlind) }]} />
+        ))}
+      </View>
+      <Text style={styles.legendStripEnd} numberOfLines={1}>
+        {strip.high}
+      </Text>
+    </View>
+  );
+}
+
 export function GoalCheckRow({ check }: { check: HudGoalCheck }) {
   const colorBlind = useColorBlind();
   const color = hudSentimentColor(check.met ? 'positive' : 'negative', colorBlind);
@@ -756,6 +784,23 @@ const styles = {
   layerLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   layerSwatch: { width: 10, height: 10, borderRadius: 3 },
   layerLegendLabel: { color: Hud.textDim, fontSize: 9.5 },
+  legendStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    maxWidth: '100%',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: Hud.glassBorder,
+    borderRadius: Radius.pill,
+    backgroundColor: Hud.glass,
+  },
+  legendStripTitle: { flexShrink: 1, color: Hud.title, fontSize: 10, fontWeight: '800' },
+  legendStripEnd: { color: Hud.textDim, fontSize: 9.5 },
+  legendStripRamp: { flexDirection: 'row', gap: 2 },
+  legendStripSwatch: { width: 14, height: 8, borderRadius: 2 },
   goalMark: { fontSize: 11, fontWeight: '800' },
   goalLabel: { flex: 1, color: Hud.textDim, fontSize: 11 },
   goalValue: { fontSize: 11, fontWeight: '700' },

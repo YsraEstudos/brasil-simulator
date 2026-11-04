@@ -21,6 +21,7 @@ import { buildUfFieldView, preventionText, type UfFieldView } from '@/components
 import { LayerBadge, LinkRow } from './HudBits';
 import { Hud, hudSentimentColor } from './hudTheme';
 import { UfComparison } from './MapReadingPanel';
+import type { UfNeighbors } from './ufBrowse';
 import { useScaledStyles } from '@/hooks/use-scaled-styles';
 import {
   bin,
@@ -217,6 +218,8 @@ export function UfDetail({
   regionalHistory,
   election,
   onFly,
+  neighbors,
+  onNavigate,
 }: {
   row: UfRow;
   indicator: MapIndicator;
@@ -230,6 +233,9 @@ export function UfDetail({
   election: ElectionResult | null;
   /** Leva a câmera do globo até a UF; quem chama fecha a folha para o mapa aparecer. */
   onFly: () => void;
+  /** UF anterior e próxima em ordem alfabética (B43); sem elas, as setas não aparecem. */
+  neighbors?: UfNeighbors | null;
+  onNavigate?: (id: string) => void;
 }) {
   const draft = useGame((s) => s.draft);
   const styles = useScaledStyles(baseStyles);
@@ -275,6 +281,28 @@ export function UfDetail({
 
   return (
     <>
+      {neighbors && onNavigate ? (
+        <View style={styles.neighbors}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`UF anterior: ${neighbors.previous.name}`}
+            onPress={() => onNavigate(neighbors.previous.id)}
+            style={styles.neighbor}>
+            <Text style={styles.neighborText} numberOfLines={1}>
+              {`‹ ${neighbors.previous.name}`}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Próxima UF: ${neighbors.next.name}`}
+            onPress={() => onNavigate(neighbors.next.id)}
+            style={[styles.neighbor, styles.neighborNext]}>
+            <Text style={styles.neighborText} numberOfLines={1}>
+              {`${neighbors.next.name} ›`}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
       <Text style={styles.sub}>
         {`Região ${REGION_NAMES[row.region] ?? row.region} · governador do bloco ${bloc?.name ?? '—'}, relação `}
         {`${relationLabel(uf.governorRelation)} (${formatValue('governador', uf.governorRelation)})`}
@@ -400,6 +428,18 @@ export function UfList({
 
 const baseStyles = {
   sub: { color: Hud.textDim, fontSize: 11, lineHeight: 15 },
+  neighbors: { flexDirection: 'row', gap: 8, paddingBottom: 6 },
+  neighbor: {
+    flex: 1,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: Hud.border,
+    borderRadius: 5,
+  },
+  neighborNext: { alignItems: 'flex-end' },
+  neighborText: { color: Hud.text, fontSize: 12, fontWeight: '700' },
   metricRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 8, paddingVertical: 1 },
   metricLabel: { flex: 1, color: Hud.textDim, fontSize: 11 },
   metricValue: { color: Hud.text, fontSize: 12, fontWeight: '700' },

@@ -14,6 +14,8 @@ export const DOCK_HEIGHT_PORTRAIT = 54 + 6 + 52;
 export const DOCK_HEIGHT_COMPACT = 6 + 40 + 8;
 /** Faixa do `DemoBadge` acima da doca (selo + espaçamento). */
 export const DEMO_BADGE_BAND = 28;
+/** Faixa da legenda fixa do mapa acima da doca, quando há camada ativa (Fase Q11, B42). */
+export const LEGEND_BAND = 30;
 
 /** Tamanho dos botões redondos dos trilhos e o espaço entre eles. */
 export const RAIL_BUTTON = { portrait: 48, compact: 40 } as const;
@@ -34,6 +36,8 @@ export type PainelReserveInput = {
   compact: boolean;
   /** Selo "demonstração" acima da doca (sem partida). */
   demo: boolean;
+  /** Legenda fixa do mapa acima da doca (camada ativa). */
+  legend?: boolean;
   /**
    * Botões do trilho "o mês" (`leftRail` do `mesaNav`) e do trilho "o país" (`RIGHT_RAIL`). "Esquerdo" e "direito" são
    * os do modo destro: no canhoto os trilhos trocam de lado, a contagem continua a de cada um.
@@ -59,9 +63,14 @@ export function mesaSides(leftHanded: boolean): { monthRail: MesaSide; countryRa
 }
 
 /** Altura (px) da faixa de baixo ocupada pela doca, o Encerrar o mês e o selo de demonstração. */
-export function bottomBandHeight({ compact, demo, insets }: Pick<PainelReserveInput, 'compact' | 'demo' | 'insets'>) {
+export function bottomBandHeight({
+  compact,
+  demo,
+  legend = false,
+  insets,
+}: Pick<PainelReserveInput, 'compact' | 'demo' | 'legend' | 'insets'>) {
   const dock = compact ? DOCK_HEIGHT_COMPACT : RAIL_EDGE + DOCK_HEIGHT_PORTRAIT;
-  return dock + (demo ? DEMO_BADGE_BAND : 0) + insets.bottom;
+  return dock + (demo ? DEMO_BADGE_BAND : 0) + (legend ? LEGEND_BAND : 0) + insets.bottom;
 }
 
 /** Altura (px) da faixa de cima (barra do topo com os números, em retrato duas linhas de números). */
