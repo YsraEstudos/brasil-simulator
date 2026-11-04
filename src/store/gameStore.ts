@@ -5,6 +5,10 @@ import {
   addPlayTime,
   createCampaign,
   deleteCampaign,
+  deleteFinishedCampaigns,
+  renameCampaign,
+  setCampaignLocked,
+  setCampaignPinned,
   finishCampaign,
   listCampaigns,
   loadElectionResults,
@@ -47,11 +51,18 @@ import {
   LAST_DIFFICULTY_KEY,
   LAST_SCENARIO_KEY,
   resolveSetupPrefs,
+  validateCampaignName,
   type NewCampaignInput,
   type SetupErrors,
   type SetupPrefs,
 } from './campaignSetup';
 import { DEFAULT_MAP_CLOUDS, MAP_CLOUDS_KEY, resolveMapClouds } from './mapClouds';
+import {
+  DEFAULT_SAVED_LIST_PREFS,
+  resolveSavedListPrefs,
+  SAVED_LIST_PREFS_KEY,
+  type SavedListPrefs,
+} from './savedListPrefs';
 import { MAP_DAY_TIME_KEY, resolveDayTime } from './mapDayTime';
 import {
   DEFAULT_MAP_QUALITY,
@@ -145,6 +156,17 @@ export interface GameStoreState {
   clearError(): void;
   leaveCampaign(): Promise<boolean>;
   deleteCampaign(id: string): Promise<boolean>;
+  /** Renomeia (valida com `validateCampaignName`; nome inválido vira `error`). Atualiza a partida aberta. */
+  renameCampaign(id: string, name: string): Promise<boolean>;
+  /** Alfinete: fixa ou solta a campanha no topo da lista. */
+  setCampaignPinned(id: string, pinned: boolean): Promise<boolean>;
+  /** Cadeado: protege ou libera a campanha contra exclusão. */
+  setCampaignLocked(id: string, locked: boolean): Promise<boolean>;
+  /** Apaga as encerradas sem cadeado; `null` se a operação não rodou (ocupado ou falha). */
+  deleteFinishedCampaigns(): Promise<{ deleted: number; keptLocked: number } | null>;
+  /** Ordem e filtro da lista de campanhas (lembrados em `settings`). */
+  savedListPrefs: SavedListPrefs;
+  setSavedListPrefs(prefs: SavedListPrefs): Promise<boolean>;
   setTextScale(scale: TextScale): Promise<boolean>;
   /** Escolha manual (ou volta ao Automático). Um perfil fixo desliga o ajuste automático. */
   setMapQuality(choice: MapQualityChoice): Promise<boolean>;
@@ -206,6 +228,7 @@ export function createGameStore(deps: GameStoreDeps) {
       active: null,
       textScale: 1,
       reduceMotion: false,
+      savedListPrefs: DEFAULT_SAVED_LIST_PREFS,
       mapQuality: DEFAULT_MAP_QUALITY,
       autoProfile: DEFAULT_PROFILE_3D,
       dayTime: DEFAULT_DAY_TIME,
@@ -254,6 +277,12 @@ export function createGameStore(deps: GameStoreDeps) {
           } catch {
             // segue com as nuvens ligadas
           }
+          let savedListPrefs = DEFAULT_SAVED_LIST_PREFS;
+          try {
+            savedListPrefs = resolveSavedListPrefs(await getSetting<unknown>(db, SAVED_LIST_PREFS_KEY, null));
+          } catch {
+            // segue com a ordem padrão
+          }
           let reduceMotion = false;
           try {
             reduceMotion = (await getSetting<unknown>(db, 'reduceMotion', false)) === true;
@@ -263,6 +292,7 @@ export function createGameStore(deps: GameStoreDeps) {
           set({
             textScale,
             reduceMotion,
+            savedListPrefs,
             mapQuality,
             autoProfile,
             dayTime,
@@ -502,6 +532,46 @@ export function createGameStore(deps: GameStoreDeps) {
           await deleteCampaign(d, id);
           if (get().active?.id === id) set({ active: null, draft: EMPTY_DRAFT });
           await refreshList(d);
+        }),
+
+      renameCampaign: (id, raw) =>
+        run(async (d) => {
+          const name = validateCampaignName(raw);
+          if (!name.ok) throw new Error(name.error);
+          await renameCampaign(d, id, name.value);
+          const active = get().active;
+          if (active?.id === id) set({ active: { ...active, name: name.value } });
+          await refreshList(d);
+        }),
+
+      setCampaignPinned: (id, pinned) =>
+        run(async (d) => {
+          await setCampaignPinned(d, id, pinned);
+          await refreshList(d);
+        }),
+
+      setCampaignLocked: (id, locked) =>
+        run(async (d) => {
+          await setCampaignLocked(d, id, locked);
+          await refreshList(d);
+        }),
+
+      async deleteFinishedCampaigns() {
+        let outcome: { deleted: number; keptLocked: number } | null = null;
+        const ok = await run(async (d) => {
+          outcome = await deleteFinishedCampaigns(d);
+          await refreshList(d);
+          // A partida aberta pode ter sido uma das apagadas (encerrada e sem cadeado).
+          const active = get().active;
+          if (active && !get().campaigns.some((c) => c.id === active.id)) set({ active: null, draft: EMPTY_DRAFT });
+        });
+        return ok ? outcome : null;
+      },
+
+      setSavedListPrefs: (prefs) =>
+        run(async (d) => {
+          set({ savedListPrefs: prefs });
+          await setSetting(d, SAVED_LIST_PREFS_KEY, prefs);
         }),
 
       setTextScale: (scale) =>

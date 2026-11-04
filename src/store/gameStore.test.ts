@@ -4,12 +4,14 @@ import { migrate } from '@/database/migrate';
 import { LATEST_DB_VERSION, MIGRATIONS } from '@/database/migrations';
 import { openNodeDatabase } from '@/database/nodeDatabase';
 import type { SqlDatabase } from '@/database/types';
-import { createCampaign, listCampaigns } from '@/database/campaignRepository';
+import { createCampaign, finishCampaign, listCampaigns } from '@/database/campaignRepository';
 import { setSetting } from '@/database/settingsRepository';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { campaignOutcome, createInitialState, DIRECTIVE_ACTION_ID } from '@/engine';
 
+import { NAME_ERRORS } from './campaignSetup';
 import { createGameStore } from './gameStore';
+import { SAVED_LIST_PREFS_KEY } from './savedListPrefs';
 import { campaignMonths, PROTOTYPE_MONTHS, SCENARIOS } from './scenarios';
 
 /** Sequência fixa no lugar de Math.random, para o teste ser reproduzível. */
@@ -397,8 +399,8 @@ describe('migração 2 (configurações)', () => {
       scenarioVersion: '0.1.0',
       state: createInitialState({ content: loadContent('prototipo_ficticio'), difficulty: 'casual', seed: 1 }),
     });
-    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6, 7, 8]);
-    expect(LATEST_DB_VERSION).toBe(8);
+    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(LATEST_DB_VERSION).toBe(9);
     await v1.getState().init();
     expect(v1.getState().campaigns.map((c) => c.name)).toEqual(['Campanha da v1']);
   });
@@ -495,5 +497,136 @@ describe('tempo de jogo e última jogada (PLANO_MENU_SAVES_CONFIG.md, Fase M2)',
     const saved = await listCampaigns(db);
     expect(saved.find((c) => c.id === 'antiga')?.playTimeMs).toBe(900);
     expect(saved.find((c) => c.id === activeId)?.playTimeMs).toBe(0);
+  });
+});
+
+describe('organização dos saves (PLANO_MENU_SAVES_CONFIG.md, Fase M3)', () => {
+  it('ordem e filtro da lista começam em mais recentes e todas', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    expect(app.getState().savedListPrefs).toEqual({ sort: 'recentes', filter: 'todas' });
+  });
+
+  it('setSavedListPrefs persiste e sobrevive a fechar e reabrir o app', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    expect(await app.getState().setSavedListPrefs({ sort: 'nome', filter: 'encerradas' })).toBe(true);
+    expect(app.getState().savedListPrefs).toEqual({ sort: 'nome', filter: 'encerradas' });
+    expect((await launchApp()).getState().savedListPrefs).toEqual({ sort: 'nome', filter: 'encerradas' });
+  });
+
+  it('valor inválido gravado direto no banco cai no padrão sem impedir a abertura', async () => {
+    const { db, launchApp } = await device();
+    await setSetting(db, SAVED_LIST_PREFS_KEY, { sort: 'aleatoria', filter: 'ativas' });
+    const app = await launchApp();
+    expect(app.getState().status).toBe('pronto');
+    expect(app.getState().savedListPrefs).toEqual({ sort: 'recentes', filter: 'ativas' });
+    await setSetting(db, SAVED_LIST_PREFS_KEY, 'lixo');
+    expect((await launchApp()).getState().savedListPrefs).toEqual({ sort: 'recentes', filter: 'todas' });
+  });
+
+  it('renomear atualiza a lista e o nome da partida aberta, sem reordenar', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Antigo', difficulty: 'casual' });
+    const id = app.getState().active!.id;
+    const updatedAntes = app.getState().campaigns[0].updatedAt;
+    expect(await app.getState().renameCampaign(id, '  Novo nome  ')).toBe(true);
+    expect(app.getState().active!.name).toBe('Novo nome');
+    expect(app.getState().campaigns).toMatchObject([{ id, name: 'Novo nome', updatedAt: updatedAntes }]);
+    expect(app.getState().error).toBeUndefined();
+  });
+
+  it('renomear campanha que não está aberta muda só a lista, não a partida aberta', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'A', difficulty: 'casual' });
+    const idA = app.getState().active!.id;
+    await app.getState().leaveCampaign();
+    await app.getState().newCampaign({ name: 'B', difficulty: 'casual' });
+    expect(await app.getState().renameCampaign(idA, 'A renomeada')).toBe(true);
+    expect(app.getState().campaigns.find((c) => c.id === idA)?.name).toBe('A renomeada');
+    expect(app.getState().active!.name).toBe('B');
+  });
+
+  it('nome vazio não renomeia: devolve false, preenche error e mantém o nome', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Original', difficulty: 'casual' });
+    const id = app.getState().active!.id;
+    expect(await app.getState().renameCampaign(id, '   ')).toBe(false);
+    expect(app.getState().error).toBe(NAME_ERRORS.empty);
+    expect(app.getState().active!.name).toBe('Original');
+    expect(app.getState().campaigns[0].name).toBe('Original');
+  });
+
+  it('partida com cadeado não é apagada: devolve false com erro e continua na lista; destrancada, apaga', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Trancada', difficulty: 'casual' });
+    const id = app.getState().active!.id;
+    expect(await app.getState().setCampaignLocked(id, true)).toBe(true);
+    expect(app.getState().campaigns).toMatchObject([{ id, locked: true }]);
+
+    expect(await app.getState().deleteCampaign(id)).toBe(false);
+    expect(app.getState().error).toMatch(/cadeado/);
+    expect(app.getState().campaigns.map((c) => c.id)).toEqual([id]);
+    expect(app.getState().active?.id).toBe(id);
+
+    app.getState().clearError();
+    expect(await app.getState().setCampaignLocked(id, false)).toBe(true);
+    expect(await app.getState().deleteCampaign(id)).toBe(true);
+    expect(app.getState().campaigns).toEqual([]);
+    expect(app.getState().active).toBeNull();
+  });
+
+  it('deleteFinishedCampaigns apaga as encerradas sem cadeado, conta as trancadas e não mexe nas ativas', async () => {
+    const { db, launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Encerrada', difficulty: 'casual' });
+    const encerrada = app.getState().active!.id;
+    await app.getState().leaveCampaign();
+    await app.getState().newCampaign({ name: 'Encerrada trancada', difficulty: 'casual' });
+    const trancada = app.getState().active!.id;
+    await app.getState().setCampaignLocked(trancada, true);
+    await app.getState().leaveCampaign();
+    await app.getState().newCampaign({ name: 'Em andamento', difficulty: 'casual' });
+    const ativa = app.getState().active!.id;
+    await finishCampaign(db, encerrada);
+    await finishCampaign(db, trancada);
+
+    expect(await app.getState().deleteFinishedCampaigns()).toEqual({ deleted: 1, keptLocked: 1 });
+    expect(app.getState().error).toBeUndefined();
+    expect(
+      app
+        .getState()
+        .campaigns.map((c) => c.id)
+        .sort(),
+    ).toEqual([ativa, trancada].sort());
+    expect(app.getState().active?.id).toBe(ativa);
+  });
+
+  it('apagar a partida aberta, encerrada e sem cadeado, zera a partida ativa', async () => {
+    const { db, launchApp } = await device();
+    let app = await launchApp();
+    await app.getState().newCampaign({ name: 'Aberta e encerrada', difficulty: 'casual' });
+    const id = app.getState().active!.id;
+    await finishCampaign(db, id);
+    app = await launchApp();
+    expect(await app.getState().continueCampaign(id)).toBe(true);
+    expect(app.getState().active?.id).toBe(id);
+
+    expect(await app.getState().deleteFinishedCampaigns()).toEqual({ deleted: 1, keptLocked: 0 });
+    expect(app.getState().active).toBeNull();
+    expect(app.getState().campaigns).toEqual([]);
+  });
+
+  it('sem campanhas encerradas devolve {deleted: 0, keptLocked: 0} e não grava erro', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Só ativa', difficulty: 'casual' });
+    expect(await app.getState().deleteFinishedCampaigns()).toEqual({ deleted: 0, keptLocked: 0 });
+    expect(app.getState().error).toBeUndefined();
+    expect(app.getState().active).not.toBeNull();
   });
 });

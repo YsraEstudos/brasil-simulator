@@ -1,6 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOutLeft, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,17 +12,48 @@ import type { CampaignSummary } from '@/database/campaignRepository';
 import { useTheme } from '@/hooks/use-theme';
 import { gameStore, hasPendingChoices, isKnownScenario, useGame } from '@/store';
 import { campaignMonths, SCENARIOS } from '@/store/scenarios';
+import {
+  SAVED_LIST_FILTERS,
+  SAVED_LIST_SORTS,
+  type SavedListFilter,
+  type SavedListPrefs,
+  type SavedListSort,
+} from '@/store/savedListPrefs';
 
 import { durationLabel, scenarioTitle } from './campaignSetupView';
 import { CAREER_STAGE_LABEL, DIFFICULTY, shortMonthLabel } from './labels';
+import { RenameCampaignSheet } from './RenameCampaignSheet';
+import {
+  deleteFinishedButtonLabel,
+  deleteFinishedConfirmMessage,
+  deletedResultMessage,
+  emptyFilterLabel,
+  finishedDeletionSummary,
+  SAVED_LIST_FILTER_LABEL,
+  SAVED_LIST_SORT_LABEL,
+  savedListCountLabel,
+  sortAndFilterCampaigns,
+} from './savedList';
 import { Badge, ConfirmSheet, enterAt, goBack, LAYOUT, PressScale, PrimaryAction, SetupHeader } from './SetupBits';
 import { governmentSummaryLine, savedCardActivityLine } from './saveCardView';
 
-type Pending = { kind: 'carregar'; campaign: CampaignSummary } | { kind: 'apagar'; campaign: CampaignSummary };
+type Pending =
+  | { kind: 'carregar'; campaign: CampaignSummary }
+  | { kind: 'apagar'; campaign: CampaignSummary }
+  | { kind: 'apagarEncerradas'; deletable: number; locked: number };
+
+/** Ícones do cabeçalho do cartão: SF Symbols no iOS, Material Symbols no Android e na web. */
+const ICON = {
+  pin: { ios: 'pin.fill', android: 'push_pin', web: 'push_pin' },
+  lockOn: { ios: 'lock.fill', android: 'lock', web: 'lock' },
+  lockOff: { ios: 'lock.open', android: 'lock_open', web: 'lock_open' },
+  rename: { ios: 'pencil', android: 'edit', web: 'edit' },
+} satisfies Record<string, SymbolViewProps['name']>;
 
 /**
  * CARREGAR JOGO (rota `/carregar-jogo`): só as partidas salvas, sem formulário de criação. Abrir esta tela não
  * fecha a campanha em andamento; trocar de partida com decisões pendentes pede confirmação.
+ * A lista é filtrada e ordenada por `sortAndFilterCampaigns`; a escolha fica gravada (`savedListPrefs`).
  */
 export function SavedCampaignsScreen() {
   const { colors } = useTheme();
@@ -30,11 +62,15 @@ export function SavedCampaignsScreen() {
   const busy = useGame((s) => s.busy);
   const error = useGame((s) => s.error);
   const campaigns = useGame((s) => s.campaigns);
+  const prefs = useGame((s) => s.savedListPrefs);
   const activeId = useGame((s) => s.active?.id ?? null);
   const [pending, setPending] = useState<Pending | null>(null);
+  const [renaming, setRenaming] = useState<CampaignSummary | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   // Só erros das ações desta tela: o `error` global pode ser antigo (ex.: um mês que falhou ao encerrar).
   const [opError, setOpError] = useState<string | null>(null);
+  // Resultado de um apagar em lote, lido em voz alta pelos leitores de tela.
+  const [notice, setNotice] = useState<string | null>(null);
   const mounted = useRef(true);
   useEffect(() => {
     // Reativa ao remontar (StrictMode e fast refresh desmontam e remontam os efeitos).
@@ -43,6 +79,10 @@ export function SavedCampaignsScreen() {
       mounted.current = false;
     };
   }, []);
+
+  const visible = useMemo(() => sortAndFilterCampaigns(campaigns, prefs), [campaigns, prefs]);
+  const finished = useMemo(() => finishedDeletionSummary(campaigns), [campaigns]);
+  const listBusy = busy || loadingId !== null;
 
   const load = async (c: CampaignSummary) => {
     setPending(null);
@@ -77,6 +117,39 @@ export function SavedCampaignsScreen() {
     if (!ok && mounted.current) setOpError(gameStore.getState().error ?? 'Tente de novo em instantes.');
   };
 
+  const choosePrefs = (next: SavedListPrefs) => {
+    if (listBusy) return;
+    void gameStore.getState().setSavedListPrefs(next);
+  };
+
+  const togglePinned = async (c: CampaignSummary) => {
+    setOpError(null);
+    const ok = await gameStore.getState().setCampaignPinned(c.id, !c.pinned);
+    if (!ok && mounted.current) setOpError(gameStore.getState().error ?? 'Tente de novo em instantes.');
+  };
+
+  const toggleLocked = async (c: CampaignSummary) => {
+    setOpError(null);
+    const ok = await gameStore.getState().setCampaignLocked(c.id, !c.locked);
+    if (!ok && mounted.current) setOpError(gameStore.getState().error ?? 'Tente de novo em instantes.');
+  };
+
+  const requestDeleteFinished = () => {
+    if (listBusy || finished.deletable === 0) return;
+    setNotice(null);
+    setPending({ kind: 'apagarEncerradas', deletable: finished.deletable, locked: finished.locked });
+  };
+
+  const deleteFinished = async () => {
+    setPending(null);
+    setOpError(null);
+    setNotice(null);
+    const outcome = await gameStore.getState().deleteFinishedCampaigns();
+    if (!mounted.current) return;
+    if (outcome) setNotice(deletedResultMessage(outcome.deleted, outcome.keptLocked));
+    else setOpError(gameStore.getState().error ?? 'Tente de novo em instantes.');
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -93,7 +166,13 @@ export function SavedCampaignsScreen() {
 
         {opError && status === 'pronto' && (
           <Animated.View entering={FadeInDown.springify().damping(16)} layout={LAYOUT}>
-            <Alert tone="negative" title="Algo deu errado ao carregar ou apagar" message={opError} />
+            <Alert tone="negative" title="Algo deu errado ao carregar, editar ou apagar" message={opError} />
+          </Animated.View>
+        )}
+
+        {notice && status === 'pronto' && (
+          <Animated.View entering={FadeInDown.springify().damping(16)} layout={LAYOUT}>
+            <Alert tone="positive" title={notice} />
           </Animated.View>
         )}
 
@@ -120,23 +199,71 @@ export function SavedCampaignsScreen() {
           </Animated.View>
         ) : (
           <View style={styles.list}>
+            <Animated.View entering={FadeIn.duration(300)} style={styles.controls}>
+              <ChoiceRow<SavedListSort>
+                label="Ordenar:"
+                options={SAVED_LIST_SORTS}
+                labels={SAVED_LIST_SORT_LABEL}
+                value={prefs.sort}
+                disabled={listBusy}
+                onChange={(sort) => choosePrefs({ ...prefs, sort })}
+              />
+              <ChoiceRow<SavedListFilter>
+                label="Mostrar:"
+                options={SAVED_LIST_FILTERS}
+                labels={SAVED_LIST_FILTER_LABEL}
+                value={prefs.filter}
+                disabled={listBusy}
+                onChange={(filter) => choosePrefs({ ...prefs, filter })}
+              />
+            </Animated.View>
+
             <Animated.View entering={FadeIn.duration(300)}>
               <Text variant="caption" color="textSecondary">
-                {campaigns.length === 1 ? '1 campanha salva' : `${campaigns.length} campanhas salvas`}
+                {savedListCountLabel(visible.length, campaigns.length, prefs.filter)}
               </Text>
             </Animated.View>
-            {campaigns.map((c, i) => (
-              <Animated.View key={c.id} entering={enterAt(i + 1)} exiting={FadeOutLeft.duration(220)} layout={LAYOUT}>
-                <SavedItem
-                  campaign={c}
-                  isOpen={c.id === activeId}
-                  loading={loadingId === c.id}
-                  disabled={busy || loadingId !== null}
-                  onLoad={() => requestLoad(c)}
-                  onDelete={() => setPending({ kind: 'apagar', campaign: c })}
-                />
+
+            {visible.length === 0 ? (
+              <Animated.View
+                entering={FadeIn.duration(250)}
+                layout={LAYOUT}
+                style={[styles.emptyFilter, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                <Text variant="body" color="textSecondary" align="center">
+                  {emptyFilterLabel(prefs.filter)}
+                </Text>
               </Animated.View>
-            ))}
+            ) : (
+              visible.map((c, i) => (
+                <Animated.View key={c.id} entering={enterAt(i + 1)} exiting={FadeOutLeft.duration(220)} layout={LAYOUT}>
+                  <SavedItem
+                    campaign={c}
+                    isOpen={c.id === activeId}
+                    loading={loadingId === c.id}
+                    disabled={listBusy}
+                    onLoad={() => requestLoad(c)}
+                    onDelete={() => setPending({ kind: 'apagar', campaign: c })}
+                    onTogglePinned={() => void togglePinned(c)}
+                    onToggleLocked={() => void toggleLocked(c)}
+                    onRename={() => setRenaming(c)}
+                  />
+                </Animated.View>
+              ))
+            )}
+
+            {prefs.filter === 'encerradas' && finished.deletable > 0 && (
+              <Animated.View entering={enterAt(visible.length + 1)} layout={LAYOUT}>
+                <PressScale
+                  onPress={requestDeleteFinished}
+                  disabled={listBusy}
+                  accessibilityLabel={deleteFinishedButtonLabel(finished.deletable)}
+                  style={[styles.bulkButton, { borderColor: colors.negative }]}>
+                  <Text variant="label" color="negative" align="center">
+                    {deleteFinishedButtonLabel(finished.deletable)}
+                  </Text>
+                </PressScale>
+              </Animated.View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -160,7 +287,106 @@ export function SavedCampaignsScreen() {
           onCancel={() => setPending(null)}
         />
       )}
+      {pending?.kind === 'apagarEncerradas' && (
+        <ConfirmSheet
+          danger
+          title="Apagar campanhas encerradas?"
+          message={deleteFinishedConfirmMessage(pending.deletable, pending.locked)}
+          confirmLabel="APAGAR"
+          onConfirm={() => void deleteFinished()}
+          onCancel={() => setPending(null)}
+        />
+      )}
+      {renaming && <RenameCampaignSheet key={renaming.id} campaign={renaming} onClose={() => setRenaming(null)} />}
     </View>
+  );
+}
+
+/** Linha de escolha exclusiva (ordem ou filtro): rótulo à esquerda e chips com o selecionado em destaque. */
+function ChoiceRow<T extends string>({
+  label,
+  options,
+  labels,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  options: readonly T[];
+  labels: Record<T, string>;
+  value: T;
+  disabled: boolean;
+  onChange: (next: T) => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.choiceRow}>
+      <Text variant="caption" color="textSecondary" style={styles.choiceLabel}>
+        {label}
+      </Text>
+      <View style={styles.chips}>
+        {options.map((option) => {
+          const selected = option === value;
+          return (
+            <PressScale
+              key={option}
+              onPress={() => onChange(option)}
+              disabled={disabled}
+              accessibilityRole="radio"
+              accessibilityLabel={`${label} ${labels[option]}`}
+              accessibilityState={{ selected }}
+              style={[
+                styles.chip,
+                {
+                  borderColor: selected ? colors.accent : colors.border,
+                  backgroundColor: selected ? colors.accent : colors.surface,
+                },
+              ]}>
+              <Text variant="caption" color={selected ? 'onAccent' : 'textSecondary'} style={styles.chipText}>
+                {labels[option]}
+              </Text>
+            </PressScale>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+/** Botão-ícone do cabeçalho do cartão (48 px de toque). `highlight` acende a cor quando fixada ou protegida. */
+function CardIconButton({
+  label,
+  name,
+  highlight,
+  checked,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  name: SymbolViewProps['name'];
+  highlight: boolean;
+  /** Para alternadores (fixar, proteger): informa o estado ao leitor de tela. */
+  checked?: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <PressScale
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityLabel={label}
+      accessibilityRole={checked === undefined ? 'button' : 'checkbox'}
+      accessibilityState={checked === undefined ? undefined : { checked }}
+      style={[
+        styles.iconButton,
+        {
+          borderColor: highlight ? colors.accent : colors.border,
+          backgroundColor: highlight ? colors.surfaceRaised : colors.surface,
+        },
+      ]}>
+      <SymbolView name={name} size={22} tintColor={highlight ? colors.accent : colors.textSecondary} />
+    </PressScale>
   );
 }
 
@@ -171,6 +397,9 @@ function SavedItem({
   disabled,
   onLoad,
   onDelete,
+  onTogglePinned,
+  onToggleLocked,
+  onRename,
 }: {
   campaign: CampaignSummary;
   isOpen: boolean;
@@ -178,6 +407,9 @@ function SavedItem({
   disabled: boolean;
   onLoad: () => void;
   onDelete: () => void;
+  onTogglePinned: () => void;
+  onToggleLocked: () => void;
+  onRename: () => void;
 }) {
   const { colors } = useTheme();
   const done = c.status === 'encerrada';
@@ -200,12 +432,39 @@ function SavedItem({
     <View
       style={[styles.item, { backgroundColor: colors.surface, borderColor: isOpen ? colors.accent : colors.border }]}>
       <View style={styles.itemHead}>
-        <Text variant="heading" style={styles.flex} numberOfLines={2}>
-          {c.name}
-        </Text>
-        <View style={styles.badges}>
-          {isOpen && <Badge label="Aberta agora" />}
-          <Badge label={done ? 'Encerrada' : 'Ativa'} tone={done ? 'textSecondary' : 'positive'} />
+        <View style={styles.titleCol}>
+          <Text variant="heading" numberOfLines={2}>
+            {c.name}
+          </Text>
+          <View style={styles.badges}>
+            {isOpen && <Badge label="Aberta agora" />}
+            <Badge label={done ? 'Encerrada' : 'Ativa'} tone={done ? 'textSecondary' : 'positive'} />
+          </View>
+        </View>
+        <View style={styles.iconRow}>
+          <CardIconButton
+            label={c.pinned ? 'Soltar do topo' : 'Fixar no topo'}
+            name={ICON.pin}
+            highlight={c.pinned}
+            checked={c.pinned}
+            disabled={disabled}
+            onPress={onTogglePinned}
+          />
+          <CardIconButton
+            label={c.locked ? 'Remover proteção' : 'Proteger contra exclusão'}
+            name={c.locked ? ICON.lockOn : ICON.lockOff}
+            highlight={c.locked}
+            checked={c.locked}
+            disabled={disabled}
+            onPress={onToggleLocked}
+          />
+          <CardIconButton
+            label={`Renomear ${c.name}`}
+            name={ICON.rename}
+            highlight={false}
+            disabled={disabled}
+            onPress={onRename}
+          />
         </View>
       </View>
       <Text variant="caption" color="textSecondary">
@@ -239,15 +498,28 @@ function SavedItem({
             </Text>
           )}
         </PressScale>
-        <PressScale
-          onPress={onDelete}
-          disabled={disabled}
-          accessibilityLabel={`Apagar ${c.name}`}
-          style={[styles.itemButton, { borderColor: colors.border }]}>
-          <Text variant="label" color="negative">
-            Apagar
-          </Text>
-        </PressScale>
+        {c.locked ? (
+          // Protegida: some o "Apagar" e fica um rótulo no lugar, para não parecer um botão desligado por engano.
+          <View
+            accessible
+            accessibilityLabel={`${c.name} está protegida contra exclusão`}
+            style={[styles.itemButton, styles.protectedTag, { borderColor: colors.border }]}>
+            <SymbolView name={ICON.lockOn} size={16} tintColor={colors.textSecondary} />
+            <Text variant="label" color="textSecondary">
+              Protegida
+            </Text>
+          </View>
+        ) : (
+          <PressScale
+            onPress={onDelete}
+            disabled={disabled}
+            accessibilityLabel={`Apagar ${c.name}`}
+            style={[styles.itemButton, { borderColor: colors.border }]}>
+            <Text variant="label" color="negative">
+              Apagar
+            </Text>
+          </PressScale>
+        )}
       </View>
     </View>
   );
@@ -331,10 +603,46 @@ const styles = StyleSheet.create({
     marginTop: Spacing.four,
   },
   list: { gap: Spacing.three },
-  flex: { flex: 1, flexShrink: 1 },
+  controls: { gap: Spacing.two },
+  choiceRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.two },
+  choiceLabel: { minWidth: 76 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', flexShrink: 1, gap: Spacing.two },
+  chip: {
+    minHeight: MIN_TOUCH,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.pill,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipText: { fontWeight: '600' },
+  emptyFilter: {
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.four,
+    alignItems: 'stretch',
+  },
+  bulkButton: {
+    minHeight: MIN_TOUCH,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   item: { borderWidth: 1.5, borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.one },
-  itemHead: { flexDirection: 'row', alignItems: 'flex-start', flexWrap: 'wrap', gap: Spacing.two },
+  itemHead: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
+  titleCol: { flex: 1, flexShrink: 1, gap: Spacing.one },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
+  iconRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  iconButton: {
+    width: MIN_TOUCH,
+    height: MIN_TOUCH,
+    borderRadius: MIN_TOUCH / 2,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   itemActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.two },
   itemButton: {
     minHeight: MIN_TOUCH,
@@ -345,4 +653,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  protectedTag: { flexDirection: 'row', gap: Spacing.one },
 });

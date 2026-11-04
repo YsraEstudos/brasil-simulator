@@ -206,6 +206,16 @@ export const MIGRATIONS: readonly Migration[] = [
       ALTER TABLE campaigns ADD COLUMN summary_json TEXT;
     `,
   },
+  {
+    version: 9,
+    name: 'organizacao_dos_saves',
+    sql: `
+      -- PLANO_MENU_SAVES_CONFIG.md, Fase M3: alfinete (fixada no topo da lista) e cadeado (protege contra exclusão;
+      -- a trava vale no banco: deleteCampaign recusa e deleteFinishedCampaigns pula campanhas com cadeado).
+      ALTER TABLE campaigns ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1));
+      ALTER TABLE campaigns ADD COLUMN locked INTEGER NOT NULL DEFAULT 0 CHECK (locked IN (0, 1));
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
