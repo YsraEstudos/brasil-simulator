@@ -111,6 +111,7 @@ describe('queryCatalog: busca, filtros e ordem se combinam', () => {
     expect(ids(queryCatalog(entries, query({ search: 'MEDICOS' })))).toEqual(['sus']);
     expect(ids(queryCatalog(entries, query({ search: 'saude' })))).toEqual(['sus', 'ubs']);
     expect(ids(queryCatalog(entries, query({ search: 'pec' })))).toEqual(['pec_teto']);
+    expect(ids(queryCatalog(entries, query({ search: 'emenda a constituicao' })))).toEqual(['pec_teto']);
     expect(ids(queryCatalog(entries, query({ search: '  educação  crédito ' })))).toEqual(['credito']);
   });
 
