@@ -1,11 +1,11 @@
 import { router, useIsFocused } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { BackHandler, Image, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { BackHandler, Image, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
 
-import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campaign/labels';
+import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER, monthLabel } from '@/components/campaign/labels';
 import { ElectionsCard } from '@/components/campaign/ElectionsCard';
 import { EventInbox } from '@/components/campaign/EventInbox';
 import {
@@ -19,12 +19,13 @@ import {
 } from '@/components/campaign/inboxModel';
 import { MonthSummary } from '@/components/campaign/MonthSummary';
 import { WhyChanged } from '@/components/campaign/WhyChanged';
-import { Alert, Indicator, Text } from '@/components/ui';
+import { Alert, Card, Indicator, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import type { IndicatorPoint } from '@/database/campaignRepository';
 import {
   indicatorsFromScenario,
+  isPreInauguration,
   initialRegions,
   SANCTION_ACTION_ID,
   toCalendar,
@@ -44,6 +45,7 @@ import type { Profile3d } from '@/globe/qualityProfiles';
 import { draftCost, gameStore, hasPendingChoices, planMapQuality, useGame, type RegionalPoint } from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
+import { governmentCalendar } from './governmentCalendar';
 import { GdpChart } from './GdpChart';
 import {
   BellButton,
@@ -150,7 +152,7 @@ const SAVE_AS_ICON: SymbolViewProps['name'] = { ios: 'doc.on.doc.fill', android:
 const COMPACT_DOCK_CENTER_MIN_WIDTH = 600;
 
 /** Folhas da mesa: as dos trilhos, mais o cartão do estado (toque no globo) e o menu (botão ☰ do topo). */
-type SheetId = RailSheetId | 'estado' | 'menu';
+type SheetId = RailSheetId | 'estado' | 'menu' | 'calendario';
 
 const SHEET_TITLES: Record<SheetId, string> = {
   alertas: 'Alertas e Eventos',
@@ -164,6 +166,7 @@ const SHEET_TITLES: Record<SheetId, string> = {
   perfil: 'Perfil do Governo',
   estado: 'Estado',
   menu: 'Menu',
+  calendario: 'Calendário do Governo',
 };
 
 const CENTER_ICON: SymbolViewProps['name'] = { ios: 'globe.americas', android: 'public', web: 'public' };
@@ -394,6 +397,32 @@ export function PainelScreen() {
   // Caixa de entrada (folha Alertas): a mesma montagem que o Gabinete tinha, agora feita aqui. Sem partida ou com a
   // campanha encerrada não há o que responder.
   const playing = active !== null && !active.finished;
+  const calendar =
+    playing && !isPreInauguration(active.state)
+      ? governmentCalendar(active.state.monthIndex, {
+          electionMonth: content.scenario.elections?.mesEleicaoGeral,
+          copomMonths: content.scenario.copomMonths,
+          honeymoonMonths: content.calibration.meses_lua_de_mel,
+          casual: active.state.difficulty === 'casual',
+        })
+      : null;
+  const calendarLabels = calendar
+    ? [
+        calendar.electionIn === null
+          ? null
+          : calendar.electionIn === 0
+            ? 'Eleição neste mês'
+            : `Eleição em ${calendar.electionIn} ${calendar.electionIn === 1 ? 'mês' : 'meses'}`,
+        calendar.recess ? 'Recesso' : null,
+        calendar.honeymoonLeft
+          ? `Lua de mel: ${calendar.honeymoonLeft} ${calendar.honeymoonLeft === 1 ? 'mês' : 'meses'}`
+          : null,
+        calendar.electionYear ? 'Ano eleitoral' : null,
+        ...calendar.budget.map((entry) => `${entry.name}: ${entry.date}`),
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
   const actionsMax = active?.state.resources.agendaActionsPerMonth ?? 0;
   const inbox = useMemo(
     () => (active && !active.finished ? pendingItems(active.state, content) : []),
@@ -616,6 +645,40 @@ export function PainelScreen() {
 
   const sheetBody = (): ReactNode => {
     switch (sheet) {
+      case 'calendario':
+        return calendar ? (
+          <>
+            {calendar.electionIn !== null && (
+              <Card
+                title={
+                  calendar.electionIn === 0
+                    ? 'Eleição neste mês'
+                    : `Eleição em ${calendar.electionIn} ${calendar.electionIn === 1 ? 'mês' : 'meses'}`
+                }
+              />
+            )}
+            {calendar.recess && (
+              <Card title="Recesso">
+                <Text variant="body">As votações previstas para janeiro passam para fevereiro.</Text>
+              </Card>
+            )}
+            {calendar.honeymoonLeft > 0 && (
+              <Card title={`Lua de mel: ${calendar.honeymoonLeft} ${calendar.honeymoonLeft === 1 ? 'mês' : 'meses'}`}>
+                <Text variant="body">Nos primeiros meses do mandato, algumas perdas de aprovação pesam menos.</Text>
+              </Card>
+            )}
+            {calendar.electionYear && (
+              <Card title="Entrando em ano eleitoral">
+                <Text variant="body">{`Eleição geral em ${monthLabel(calendar.electionYear.election)}. ${calendar.electionYear.banStart === null || calendar.electionYear.banEnd === null ? 'No modo Casual, não há vedação eleitoral.' : `De ${monthLabel(calendar.electionYear.banStart)} a ${monthLabel(calendar.electionYear.banEnd)}, novos benefícios exigem quebra declarada da vedação, com penalidades.`}`}</Text>
+              </Card>
+            )}
+            {calendar.budget.map((entry) => (
+              <Card key={entry.name} title={`Orçamento: ${entry.name}`}>
+                <Text variant="body">{`Prazo de envio: ${entry.date}. Lembrete de calendário; não exige uma ação no jogo.`}</Text>
+              </Card>
+            ))}
+          </>
+        ) : null;
       case 'alertas':
         // Responder aqui: escolha das respostas, pareceres da mesa de despacho e sanção/veto (o Gabinete só decide).
         return active && (inbox.length > 0 || sanctions.length > 0) ? (
@@ -908,6 +971,15 @@ export function PainelScreen() {
                 </View>
               </>
             )}
+            {calendarLabels !== '' && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Calendário do governo. ${calendarLabels}. Abrir detalhes`}
+                onPress={() => setSheet('calendario')}
+                style={styles.calendarBar}>
+                <Text style={styles.calendarText}>{calendarLabels} · detalhes ›</Text>
+              </Pressable>
+            )}
           </View>
 
           <View
@@ -916,7 +988,7 @@ export function PainelScreen() {
               StyleSheet.absoluteFill,
               styles.rails,
               {
-                paddingTop: (compact ? TOP_INSET.compact : TOP_INSET.portrait) + insets.top,
+                paddingTop: Math.max((compact ? TOP_INSET.compact : TOP_INSET.portrait) + insets.top, topBarBottom + 8),
                 // Os trilhos param acima da doca (+ selo de demonstração acima dela). Em paisagem a doca é baixa, mas
                 // estreita ela vai para a esquerda e o Encerrar fica no canto direito: sem a reserva, um trilho de
                 // quatro botões encostaria neles em telas baixas.
@@ -1097,6 +1169,15 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Hud.board },
   top: { position: 'absolute', top: 0, left: 0, right: 0, gap: 6 },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  calendarBar: {
+    alignSelf: 'center',
+    maxWidth: '100%',
+    backgroundColor: '#171d20ee',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  calendarText: { color: Hud.text, fontSize: 11, textAlign: 'center' },
   topCellsInline: { flex: 1, minWidth: 0, flexDirection: 'row', gap: 4, marginHorizontal: 8 },
   topCellsRow: { flexDirection: 'row', gap: 4 },
   rails: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
