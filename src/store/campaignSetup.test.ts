@@ -16,6 +16,7 @@ import {
   NAME_ERRORS,
   parseSeedInput,
   resolveSetupPrefs,
+  restartName,
   scenarioOptions,
   SEED_ERRORS,
   SEED_MAX,
@@ -395,5 +396,54 @@ describe('checkSetupForm', () => {
       ok: false,
       errors: { name: NAME_ERRORS.empty, seed: SEED_ERRORS.digits },
     });
+  });
+});
+
+// PLANO_MENU_SAVES_CONFIG.md M4.3: "Recomeçar com as mesmas opções" dá à partida nova o nome "<nome> (2)".
+describe('restartName (nome da partida recomeçada)', () => {
+  it('acrescenta " (2)" ao nome livre', () => {
+    expect(restartName('Zeta', ['Zeta'])).toBe('Zeta (2)');
+  });
+
+  it('pula os números já usados: com "Zeta (2)" tomado, dá "Zeta (3)"', () => {
+    expect(restartName('Zeta', ['Zeta', 'Zeta (2)'])).toBe('Zeta (3)');
+  });
+
+  it('usa o primeiro número livre, mesmo com buraco na sequência', () => {
+    expect(restartName('Zeta', ['Zeta', 'Zeta (3)'])).toBe('Zeta (2)');
+  });
+
+  it('de origem "Zeta (2)": troca o sufixo, não empilha; com "Zeta (2)" tomado, dá "Zeta (3)"', () => {
+    expect(restartName('Zeta (2)', ['Zeta', 'Zeta (2)'])).toBe('Zeta (3)');
+    expect(restartName('Zeta (2)', ['Zeta (2)'])).toBe('Zeta (3)');
+  });
+
+  it('de origem "Zeta (2)" sem nenhum "Zeta (2)" na lista, o próprio sufixo volta livre: "Zeta (2)"', () => {
+    expect(restartName('Zeta (2)', [])).toBe('Zeta (2)');
+  });
+
+  it('a comparação usa o nome normalizado: quebra de linha, espaços e NFC não escondem um nome já usado', () => {
+    expect(restartName('Zeta', ['Zeta\n(2)'])).toBe('Zeta (3)');
+    expect(restartName('Zeta', ['  Zeta (2)  '])).toBe('Zeta (3)');
+    // "e" + acento combinante (NFD) é o mesmo "é" de "Zé (2)" (NFC).
+    expect(restartName('Zé', ['Zé (2)'])).toBe('Zé (3)');
+  });
+
+  it('o nome de origem é normalizado antes de receber o sufixo', () => {
+    expect(restartName('  Zeta \n ', [])).toBe('Zeta (2)');
+  });
+
+  it('nome de 60 caracteres: a base é cortada e o resultado cabe em CAMPAIGN_NAME_MAX', () => {
+    const cheio = 'a'.repeat(CAMPAIGN_NAME_MAX);
+    const primeiro = restartName(cheio, [cheio]);
+    expect(primeiro).toBe(`${'a'.repeat(CAMPAIGN_NAME_MAX - ' (2)'.length)} (2)`);
+    expect(primeiro.length).toBeLessThanOrEqual(CAMPAIGN_NAME_MAX);
+    const segundo = restartName(cheio, [cheio, primeiro]);
+    expect(segundo).toBe(`${'a'.repeat(CAMPAIGN_NAME_MAX - ' (3)'.length)} (3)`);
+    expect(segundo.length).toBeLessThanOrEqual(CAMPAIGN_NAME_MAX);
+  });
+
+  it('nome que é só o sufixo (ex.: "(2)") cai em "Campanha" como base', () => {
+    expect(restartName('(2)', [])).toBe('Campanha (2)');
   });
 });

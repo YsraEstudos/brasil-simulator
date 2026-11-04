@@ -39,6 +39,7 @@ import { governmentSummaryLine, savedCardActivityLine } from './saveCardView';
 
 type Pending =
   | { kind: 'carregar'; campaign: CampaignSummary }
+  | { kind: 'recomecar'; campaign: CampaignSummary }
   | { kind: 'apagar'; campaign: CampaignSummary }
   | { kind: 'apagarEncerradas'; deletable: number; locked: number };
 
@@ -67,6 +68,7 @@ export function SavedCampaignsScreen() {
   const [pending, setPending] = useState<Pending | null>(null);
   const [renaming, setRenaming] = useState<CampaignSummary | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [restartingId, setRestartingId] = useState<string | null>(null);
   // Só erros das ações desta tela: o `error` global pode ser antigo (ex.: um mês que falhou ao encerrar).
   const [opError, setOpError] = useState<string | null>(null);
   // Resultado de um apagar em lote, lido em voz alta pelos leitores de tela.
@@ -82,7 +84,7 @@ export function SavedCampaignsScreen() {
 
   const visible = useMemo(() => sortAndFilterCampaigns(campaigns, prefs), [campaigns, prefs]);
   const finished = useMemo(() => finishedDeletionSummary(campaigns), [campaigns]);
-  const listBusy = busy || loadingId !== null;
+  const listBusy = busy || loadingId !== null || restartingId !== null;
 
   const load = async (c: CampaignSummary) => {
     setPending(null);
@@ -108,6 +110,30 @@ export function SavedCampaignsScreen() {
       return;
     }
     void load(c);
+  };
+
+  /** Recomeça a partida encerrada `c` com as mesmas opções: a nova fica ativa e o Painel abre (M4.3). */
+  const restart = async (c: CampaignSummary) => {
+    setPending(null);
+    setOpError(null);
+    setRestartingId(c.id);
+    const result = await gameStore.getState().restartCampaign(c.id);
+    if (!mounted.current) return;
+    setRestartingId(null);
+    if (result.ok) router.replace('/painel');
+    else setOpError(result.error);
+  };
+
+  const requestRestart = (c: CampaignSummary) => {
+    if (listBusy) return;
+    // Recomeçar troca a partida ativa: se ela tem decisões do mês ainda não confirmadas, pede a mesma confirmação
+    // de CARREGAR JOGO.
+    const { active, draft } = gameStore.getState();
+    if (active && !active.finished && hasPendingChoices(draft)) {
+      setPending({ kind: 'recomecar', campaign: c });
+      return;
+    }
+    void restart(c);
   };
 
   const remove = async (c: CampaignSummary) => {
@@ -240,8 +266,10 @@ export function SavedCampaignsScreen() {
                     campaign={c}
                     isOpen={c.id === activeId}
                     loading={loadingId === c.id}
+                    restarting={restartingId === c.id}
                     disabled={listBusy}
                     onLoad={() => requestLoad(c)}
+                    onRestart={() => requestRestart(c)}
                     onDelete={() => setPending({ kind: 'apagar', campaign: c })}
                     onTogglePinned={() => void togglePinned(c)}
                     onToggleLocked={() => void toggleLocked(c)}
@@ -274,6 +302,15 @@ export function SavedCampaignsScreen() {
           message={`A campanha aberta continuará salva, mas as decisões ainda não confirmadas deste mês serão descartadas ao carregar “${pending.campaign.name}”.`}
           confirmLabel="CARREGAR MESMO ASSIM"
           onConfirm={() => void load(pending.campaign)}
+          onCancel={() => setPending(null)}
+        />
+      )}
+      {pending?.kind === 'recomecar' && (
+        <ConfirmSheet
+          title="Recomeçar a partida?"
+          message={`A campanha aberta continuará salva, mas as decisões ainda não confirmadas deste mês serão descartadas ao recomeçar “${pending.campaign.name}”.`}
+          confirmLabel="RECOMEÇAR MESMO ASSIM"
+          onConfirm={() => void restart(pending.campaign)}
           onCancel={() => setPending(null)}
         />
       )}
@@ -394,8 +431,10 @@ function SavedItem({
   campaign: c,
   isOpen,
   loading,
+  restarting,
   disabled,
   onLoad,
+  onRestart,
   onDelete,
   onTogglePinned,
   onToggleLocked,
@@ -404,8 +443,10 @@ function SavedItem({
   campaign: CampaignSummary;
   isOpen: boolean;
   loading: boolean;
+  restarting: boolean;
   disabled: boolean;
   onLoad: () => void;
+  onRestart: () => void;
   onDelete: () => void;
   onTogglePinned: () => void;
   onToggleLocked: () => void;
@@ -498,6 +539,21 @@ function SavedItem({
             </Text>
           )}
         </PressScale>
+        {done && (
+          <PressScale
+            onPress={onRestart}
+            disabled={disabled}
+            accessibilityLabel={`Recomeçar ${c.name} com as mesmas opções`}
+            style={[styles.itemButton, { borderColor: colors.accent }]}>
+            {restarting ? (
+              <ActivityIndicator color={colors.accent} />
+            ) : (
+              <Text variant="label" color="accent">
+                Recomeçar
+              </Text>
+            )}
+          </PressScale>
+        )}
         {c.locked ? (
           // Protegida: some o "Apagar" e fica um rótulo no lugar, para não parecer um botão desligado por engano.
           <View

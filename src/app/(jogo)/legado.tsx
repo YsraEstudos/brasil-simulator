@@ -24,5 +24,5 @@ function LegadoBody({ campaign }: { campaign: ActiveCampaign }) {
       </Card>
     );
   }
-  return <LegacyReport state={state} content={content} />;
+  return <LegacyReport state={state} content={content} campaignId={campaign.id} />;
 }

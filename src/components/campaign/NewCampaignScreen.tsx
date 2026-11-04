@@ -1,4 +1,6 @@
+import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useFocusEffect } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,12 +24,14 @@ import {
   DIFFICULTIES,
   gameStore,
   hasPendingChoices,
+  parseSeedInput,
   scenarioOptions,
   useGame,
   type CampaignSetupForm,
   type SetupPrefs,
 } from '@/store';
 
+import { randomCampaignName, yearOfPeriod } from './campaignNames';
 import {
   createActionLabel,
   difficultyView,
@@ -50,6 +54,7 @@ import {
   goBack,
   LAYOUT,
   OptionCard,
+  PressScale,
   PrimaryAction,
   SetupHeader,
   SummaryRow,
@@ -57,6 +62,9 @@ import {
 
 const SCENARIOS = scenarioOptions();
 const PROFILES = profilePresetViews();
+
+const CLIPBOARD_READ_ERROR = 'Não foi possível ler a área de transferência.';
+const CLIPBOARD_SEED_ERROR = 'A área de transferência não tem uma semente válida.';
 
 /**
  * NOVO JOGO (rota `/novo-jogo`): nome, dificuldade, cenário, semente opcional e resumo, numa única rolagem. O
@@ -120,6 +128,7 @@ function NewCampaignForm({
 }) {
   const { colors, textScale } = useTheme();
   const busy = useGame((s) => s.busy);
+  const campaigns = useGame((s) => s.campaigns);
   // Preferências lidas uma única vez no início do app: o formulário nasce com elas e não é sobrescrito depois.
   const [form, setForm] = useState<CampaignSetupForm>(() => initialForm(gameStore.getState().setupPrefs));
   const [nameTouched, setNameTouched] = useState(false);
@@ -129,6 +138,8 @@ function NewCampaignForm({
   const [confirm, setConfirm] = useState<null | { pending: boolean }>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Erro do botão "Colar" (área de transferência sem semente válida); some ao editar o campo de semente.
+  const [seedPasteError, setSeedPasteError] = useState<string | null>(null);
   // Trava síncrona: cobre a janela entre o fim da gravação e a troca de tela, quando `busy` já voltou a falso.
   const submitLock = useRef(false);
   const completed = useRef(false);
@@ -171,6 +182,7 @@ function NewCampaignForm({
   const older = SCENARIOS.filter((o) => o.kind !== 'atual');
   const nameError = (nameTouched || attempted) && errors.name ? errors.name : null;
   const seedError = errors.seed ?? null;
+  const seedMessage = seedPasteError ?? seedError;
   const locked = submitting || busy;
 
   const startPoints = startPointViews(form.scenarioId);
@@ -185,6 +197,36 @@ function NewCampaignForm({
       scenarioId,
       startPoint: startPointViews(scenarioId).some((p) => p.id === form.startPoint) ? form.startPoint : 'posse',
     });
+
+  // Sorteia um nome que não repete as campanhas salvas; o ano do cenário escolhido entra às vezes no nome.
+  const rollName = () => {
+    const name = randomCampaignName(
+      () => Math.random(),
+      campaigns.map((c) => c.name),
+      yearOfPeriod(selectedScenario?.startPeriod),
+    );
+    setNameTouched(true);
+    update({ name });
+  };
+
+  // Lê a área de transferência e só preenche a semente se for um número válido pelo mesmo validador do campo.
+  const pasteSeed = async () => {
+    let text: string;
+    try {
+      text = await Clipboard.getStringAsync();
+    } catch {
+      setSeedPasteError(CLIPBOARD_READ_ERROR);
+      return;
+    }
+    if (!mounted.current) return;
+    const parsed = parseSeedInput(text);
+    if (!parsed.ok || parsed.value === null) {
+      setSeedPasteError(CLIPBOARD_SEED_ERROR);
+      return;
+    }
+    setSeedPasteError(null);
+    update({ seedText: text.trim() });
+  };
 
   const create = async () => {
     if (submitLock.current) return;
@@ -259,24 +301,38 @@ function NewCampaignForm({
               <Text variant="label" color="textSecondary" nativeID="campaign-name-label">
                 Nome da campanha
               </Text>
-              <TextInput
-                value={form.name}
-                onChangeText={(name) => update({ name })}
-                onBlur={() => setNameTouched(true)}
-                placeholder="Ex.: Governo de união nacional"
-                placeholderTextColor={colors.textMuted}
-                // Limite nativo (RF04): o campo não passa de 60 unidades; a store ainda recusa nome longo vindo de
-                // outro caminho e a normalização remove metade solta de emoji se o corte cair no meio de um.
-                maxLength={CAMPAIGN_NAME_MAX}
-                multiline={false}
-                returnKeyType="done"
-                autoCapitalize="sentences"
-                editable={!locked}
-                accessibilityLabel="Nome da campanha"
-                accessibilityLabelledBy="campaign-name-label"
-                accessibilityHint={`Obrigatório, até ${CAMPAIGN_NAME_MAX} caracteres`}
-                style={[...inputStyle, { borderColor: nameError ? colors.negative : colors.border }]}
-              />
+              <View style={styles.inputRow}>
+                <TextInput
+                  value={form.name}
+                  onChangeText={(name) => update({ name })}
+                  onBlur={() => setNameTouched(true)}
+                  placeholder="Ex.: Governo de união nacional"
+                  placeholderTextColor={colors.textMuted}
+                  // Limite nativo (RF04): o campo não passa de 60 unidades; a store ainda recusa nome longo vindo de
+                  // outro caminho e a normalização remove metade solta de emoji se o corte cair no meio de um.
+                  maxLength={CAMPAIGN_NAME_MAX}
+                  multiline={false}
+                  returnKeyType="done"
+                  autoCapitalize="sentences"
+                  editable={!locked}
+                  accessibilityLabel="Nome da campanha"
+                  accessibilityLabelledBy="campaign-name-label"
+                  accessibilityHint={`Obrigatório, até ${CAMPAIGN_NAME_MAX} caracteres`}
+                  style={[styles.flex, ...inputStyle, { borderColor: nameError ? colors.negative : colors.border }]}
+                />
+                <PressScale
+                  onPress={rollName}
+                  disabled={locked}
+                  accessibilityLabel="Sortear um nome"
+                  accessibilityHint="Preenche o nome com uma sugestão"
+                  style={[styles.iconButton, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                  <SymbolView
+                    name={{ ios: 'dice.fill', android: 'casino', web: 'casino' }}
+                    size={22}
+                    tintColor={colors.accent}
+                  />
+                </PressScale>
+              </View>
               <View style={styles.fieldFoot}>
                 {nameError ? (
                   <Animated.View
@@ -454,25 +510,40 @@ function NewCampaignForm({
                   Usar a mesma semente com o mesmo cenário, dificuldade e decisões permite reproduzir os resultados da
                   simulação na mesma versão do motor.
                 </Text>
-                <TextInput
-                  value={form.seedText}
-                  onChangeText={(seedText) => update({ seedText })}
-                  placeholder="Vazio = aleatória"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="number-pad"
-                  inputMode="numeric"
-                  maxLength={16}
-                  multiline={false}
-                  editable={!locked}
-                  accessibilityLabel="Semente da simulação, opcional"
-                  accessibilityLabelledBy="campaign-seed-label"
-                  accessibilityHint="Número inteiro de 0 a 4.294.967.295. Deixe vazio para sortear"
-                  style={[...inputStyle, { borderColor: seedError ? colors.negative : colors.border }]}
-                />
-                {seedError && (
+                <View style={styles.inputRow}>
+                  <TextInput
+                    value={form.seedText}
+                    onChangeText={(seedText) => {
+                      setSeedPasteError(null);
+                      update({ seedText });
+                    }}
+                    placeholder="Vazio = aleatória"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="number-pad"
+                    inputMode="numeric"
+                    maxLength={16}
+                    multiline={false}
+                    editable={!locked}
+                    accessibilityLabel="Semente da simulação, opcional"
+                    accessibilityLabelledBy="campaign-seed-label"
+                    accessibilityHint="Número inteiro de 0 a 4.294.967.295. Deixe vazio para sortear"
+                    style={[styles.flex, ...inputStyle, { borderColor: seedMessage ? colors.negative : colors.border }]}
+                  />
+                  <PressScale
+                    onPress={() => void pasteSeed()}
+                    disabled={locked}
+                    accessibilityLabel="Colar semente"
+                    accessibilityHint="Preenche a semente com o número copiado"
+                    style={[styles.textButton, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                    <Text variant="label" color="accent">
+                      Colar
+                    </Text>
+                  </PressScale>
+                </View>
+                {seedMessage && (
                   <Animated.View entering={FadeInDown.duration(200)} exiting={FadeOut.duration(120)}>
                     <Text variant="caption" color="negative" accessibilityLiveRegion="polite" accessibilityRole="alert">
-                      {seedError}
+                      {seedMessage}
                     </Text>
                   </Animated.View>
                 )}
@@ -603,6 +674,24 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.three,
+  },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  iconButton: {
+    width: MIN_TOUCH,
+    height: MIN_TOUCH,
+    borderWidth: 1.5,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textButton: {
+    minWidth: MIN_TOUCH,
+    minHeight: MIN_TOUCH,
+    paddingHorizontal: Spacing.three,
+    borderWidth: 1.5,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fieldFoot: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
   flex: { flex: 1, flexShrink: 1 },

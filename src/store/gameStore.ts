@@ -51,6 +51,7 @@ import {
   LAST_DIFFICULTY_KEY,
   LAST_SCENARIO_KEY,
   resolveSetupPrefs,
+  restartName,
   validateCampaignName,
   type NewCampaignInput,
   type SetupErrors,
@@ -131,6 +132,12 @@ export interface GameStoreState {
   init(): Promise<void>;
   /** Cria a campanha e só a torna ativa depois de gravada; a anterior continua salva no banco. */
   newCampaign(input: NewCampaignInput): Promise<NewCampaignResult>;
+  /**
+   * Recomeçar com as mesmas opções (PLANO_MENU_SAVES_CONFIG.md M4.3): cria uma partida nova com dificuldade, cenário,
+   * perfil, ponto de partida e semente da campanha `id`, com o nome "<nome> (2)" (ou o próximo número livre).
+   * Partida sem opções gravadas (anterior à migração 10) recomeça com dificuldade, cenário e semente da linha.
+   */
+  restartCampaign(id: string): Promise<NewCampaignResult>;
   /** Carrega uma campanha salva; `true` se ela ficou ativa. A já ativa é mantida como está (com o rascunho). */
   continueCampaign(id: string): Promise<boolean>;
   /** Indicadores dos últimos meses gravados (série do Painel); vazio sem partida ou leitura falha. */
@@ -346,6 +353,13 @@ export function createGameStore(deps: GameStoreDeps) {
               scenarioVersion: scenario.version,
               state,
               content: loadContent(scenario.id),
+              setup: {
+                difficulty,
+                scenarioId,
+                ...(profileId ? { profileId } : {}),
+                ...(startPoint ? { startPoint } : {}),
+                seed,
+              },
             });
             const baseline = inaugurationTurnIndex(state) === null ? undefined : state;
             created = { id, name, state, baseline, finished: false };
@@ -379,6 +393,30 @@ export function createGameStore(deps: GameStoreDeps) {
         } finally {
           set({ busy: false });
         }
+      },
+
+      async restartCampaign(id) {
+        const source = get().campaigns.find((c) => c.id === id);
+        if (!source) return { ok: false, reason: 'falha', error: 'Campanha não encontrada.' };
+        const setup = source.setup ?? {
+          difficulty: source.difficulty,
+          scenarioId: source.scenarioId,
+          seed: source.seed,
+        };
+        // As opções gravadas são strings do banco: `newCampaign` passa tudo pelo `checkNewCampaignInput`, que recusa
+        // dificuldade, cenário, perfil ou ponto de partida desconhecidos com mensagem clara.
+        const input = {
+          name: restartName(
+            source.name,
+            get().campaigns.map((c) => c.name),
+          ),
+          difficulty: setup.difficulty,
+          scenarioId: setup.scenarioId,
+          ...(setup.profileId ? { profileId: setup.profileId } : {}),
+          ...(setup.startPoint ? { startPoint: setup.startPoint } : {}),
+          seed: setup.seed,
+        } as NewCampaignInput;
+        return get().newCampaign(input);
       },
 
       async continueCampaign(id) {

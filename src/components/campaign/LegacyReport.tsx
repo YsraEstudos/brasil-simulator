@@ -1,6 +1,8 @@
+import { router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Alert, Card, formatMoneyMillions, formatNumber, formatPercent, Text } from '@/components/ui';
+import { Alert, Button, Card, formatMoneyMillions, formatNumber, formatPercent, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import {
   campaignOutcome,
@@ -14,6 +16,7 @@ import {
 } from '@/engine';
 import type { PublicPolicyState } from '@/engine/publicPolicies/types';
 import type { SocietyState } from '@/engine/society/types';
+import { gameStore, useGame } from '@/store';
 
 import { INDICATOR_META, INDICATOR_ORDER, PROPOSAL_STATUS_LABEL, monthLabel } from './labels';
 
@@ -46,10 +49,12 @@ export function legacyScore(
 export interface LegacyReportProps {
   state: GameState;
   content: GameContent;
+  /** Id da partida ativa, já encerrada: liga o "Recomeçar com as mesmas opções". Ausente = sem essa ação. */
+  campaignId?: string;
 }
 
 /** Relatório de legado ao fim da campanha (GAME_DESIGN.md §7.1). */
-export function LegacyReport({ state, content }: LegacyReportProps) {
+export function LegacyReport({ state, content, campaignId }: LegacyReportProps) {
   const initial = content.scenario.indicators;
   const initialValues = {
     approval: initial.approval.value,
@@ -180,7 +185,63 @@ export function LegacyReport({ state, content }: LegacyReportProps) {
       <ProposalGroup title="Propostas aprovadas" proposals={approved} content={content} />
       <ProposalGroup title="Propostas rejeitadas" proposals={rejected} content={content} />
       <ProposalGroup title="Propostas executadas" proposals={executed} content={content} />
+
+      {campaignId && <RestartCard campaignId={campaignId} />}
     </View>
+  );
+}
+
+/**
+ * Recomeçar com as mesmas opções (PLANO_MENU_SAVES_CONFIG.md M4.3): cria outra partida com a mesma dificuldade,
+ * cenário, perfil e semente e a torna a ativa; a encerrada continua salva na lista.
+ */
+function RestartCard({ campaignId }: { campaignId: string }) {
+  const busy = useGame((s) => s.busy);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Trava síncrona: dois toques antes de a tela re-renderizar não criam duas partidas.
+  const submitLock = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    // Reativa ao remontar (StrictMode e fast refresh desmontam e remontam os efeitos).
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const restart = async () => {
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitting(true);
+    setError(null);
+    const result = await gameStore.getState().restartCampaign(campaignId);
+    if (!mounted.current) return;
+    if (result.ok) {
+      // A campanha nova já está gravada e ativa: entra no Painel sem deixar o legado na pilha.
+      router.replace('/painel');
+      return;
+    }
+    submitLock.current = false;
+    setSubmitting(false);
+    setError(result.error);
+  };
+
+  return (
+    <Card>
+      <Button
+        label="Recomeçar com as mesmas opções"
+        onPress={() => void restart()}
+        block
+        disabled={submitting || busy}
+        loading={submitting}
+        accessibilityHint="Cria outra partida com as mesmas opções e a abre no Painel"
+      />
+      <Text variant="caption" color="textSecondary">
+        Mesma dificuldade, cenário, perfil e semente.
+      </Text>
+      {error && <Alert tone="negative" title="Não foi possível recomeçar a campanha" message={error} />}
+    </Card>
   );
 }
 

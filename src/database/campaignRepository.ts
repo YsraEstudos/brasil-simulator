@@ -103,6 +103,42 @@ export interface CampaignSummary {
   pinned: boolean;
   /** Protegida contra exclusão (migração 9): `deleteCampaign` recusa, `deleteFinishedCampaigns` pula. */
   locked: boolean;
+  /** Opções do Novo Jogo (migração 10); `null` em partidas criadas antes dela. */
+  setup: CampaignSetupSnapshot | null;
+}
+
+/**
+ * Opções com que a partida foi criada (PLANO_MENU_SAVES_CONFIG.md M4.3), gravadas em `campaigns.setup_json` para
+ * "Recomeçar com as mesmas opções". Strings sem validação de domínio aqui: quem usa passa pelo `checkNewCampaignInput`.
+ */
+export interface CampaignSetupSnapshot {
+  difficulty: string;
+  scenarioId: string;
+  /** Perfil ideológico predefinido; ausente = padrão (Centro). */
+  profileId?: string;
+  /** Ponto de partida; ausente = posse. */
+  startPoint?: string;
+  seed: number;
+}
+
+/** Lê `setup_json`; ilegível ou incompleto vira `null`. */
+export function parseSetupSnapshot(json: string | null): CampaignSetupSnapshot | null {
+  if (!json) return null;
+  try {
+    const v = JSON.parse(json) as Record<string, unknown> | null;
+    if (!v || typeof v.difficulty !== 'string' || typeof v.scenarioId !== 'string' || typeof v.seed !== 'number') {
+      return null;
+    }
+    return {
+      difficulty: v.difficulty,
+      scenarioId: v.scenarioId,
+      ...(typeof v.profileId === 'string' ? { profileId: v.profileId } : {}),
+      ...(typeof v.startPoint === 'string' ? { startPoint: v.startPoint } : {}),
+      seed: v.seed,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** Mini-resumo do cartão do save (PLANO_MENU_SAVES_CONFIG.md M2.1), gravado em `campaigns.summary_json`. */
@@ -180,15 +216,23 @@ const stageColumn = (state: GameState): CareerStage | null =>
 /** Cria a campanha e grava o estado inicial (turno 0) e, se a partida começa antes da posse, o resumo vazio. */
 export async function createCampaign(
   db: SqlDatabase,
-  c: { id: string; name: string; scenarioVersion: string; state: GameState; content?: GameContent },
+  c: {
+    id: string;
+    name: string;
+    scenarioVersion: string;
+    state: GameState;
+    content?: GameContent;
+    /** Opções do Novo Jogo (migração 10), para recomeçar a partida igual. */
+    setup?: CampaignSetupSnapshot;
+  },
 ): Promise<void> {
   const s = c.state;
   await db.transaction(async () => {
     await db.run(
       `INSERT INTO campaigns
          (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month, current_turn, stage,
-          last_played_at, summary_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?)`,
+          last_played_at, summary_json, setup_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?, ?)`,
       [
         c.id,
         c.name,
@@ -201,6 +245,7 @@ export async function createCampaign(
         turnIndexOf(s),
         stageColumn(s),
         JSON.stringify(cardSummaryOf(s)),
+        c.setup ? JSON.stringify(c.setup) : null,
       ],
     );
     if (s.career) {
@@ -538,6 +583,7 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     summary_json: string | null;
     pinned: number;
     locked: number;
+    setup_json: string | null;
   }>('SELECT * FROM campaigns ORDER BY updated_at DESC, id');
   return rows.map((r) => ({
     id: r.id,
@@ -557,6 +603,7 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     cardSummary: parseCardSummary(r.summary_json),
     pinned: r.pinned === 1,
     locked: r.locked === 1,
+    setup: parseSetupSnapshot(r.setup_json),
   }));
 }
 

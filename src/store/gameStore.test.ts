@@ -4,13 +4,13 @@ import { migrate } from '@/database/migrate';
 import { LATEST_DB_VERSION, MIGRATIONS } from '@/database/migrations';
 import { openNodeDatabase } from '@/database/nodeDatabase';
 import type { SqlDatabase } from '@/database/types';
-import { createCampaign, finishCampaign, listCampaigns } from '@/database/campaignRepository';
+import { createCampaign, finishCampaign, listCampaigns, loadStateAt } from '@/database/campaignRepository';
 import { setSetting } from '@/database/settingsRepository';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
-import { campaignOutcome, createInitialState, DIRECTIVE_ACTION_ID } from '@/engine';
+import { campaignOutcome, createInitialState, DIRECTIVE_ACTION_ID, turnIndexOf } from '@/engine';
 
 import { NAME_ERRORS } from './campaignSetup';
-import { createGameStore } from './gameStore';
+import { createGameStore, type NewCampaignResult } from './gameStore';
 import { SAVED_LIST_PREFS_KEY } from './savedListPrefs';
 import { campaignMonths, PROTOTYPE_MONTHS, SCENARIOS } from './scenarios';
 
@@ -399,8 +399,10 @@ describe('migração 2 (configurações)', () => {
       scenarioVersion: '0.1.0',
       state: createInitialState({ content: loadContent('prototipo_ficticio'), difficulty: 'casual', seed: 1 }),
     });
-    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
-    expect(LATEST_DB_VERSION).toBe(9);
+    // Ajuste: a lista de pendentes e a última versão ganharam a migração 10 (setup_json); a campanha antiga segue sem
+    // setup e continua aparecendo.
+    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(LATEST_DB_VERSION).toBe(10);
     await v1.getState().init();
     expect(v1.getState().campaigns.map((c) => c.name)).toEqual(['Campanha da v1']);
   });
@@ -628,5 +630,194 @@ describe('organização dos saves (PLANO_MENU_SAVES_CONFIG.md, Fase M3)', () => 
     expect(await app.getState().deleteFinishedCampaigns()).toEqual({ deleted: 0, keptLocked: 0 });
     expect(app.getState().error).toBeUndefined();
     expect(app.getState().active).not.toBeNull();
+  });
+});
+
+// PLANO_MENU_SAVES_CONFIG.md, Fase M4: opções gravadas no Novo Jogo e "Recomeçar com as mesmas opções".
+describe('recomeçar com as mesmas opções (Fase M4)', () => {
+  const okId = (r: NewCampaignResult): string => {
+    if (!r.ok) throw new Error(`esperava sucesso, veio ${r.reason}: ${r.error}`);
+    return r.campaignId;
+  };
+  /**
+   * Nova store sobre o mesmo banco, com sorteio real: a de `device()` recomeça a mesma sequência fixa e geraria o
+   * mesmo id de campanha já gravada. A semente das partidas é sempre explícita aqui, então o sorteio só dá ids.
+   */
+  const reabrir = async (db: SqlDatabase) => {
+    const store = createGameStore({ openDb: async () => ({ ...db, close: async () => {} }), random: Math.random });
+    await store.getState().init();
+    return store;
+  };
+
+  it('newCampaign grava as opções escolhidas (dificuldade, cenário, perfil, ponto de partida e semente)', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    okId(
+      await app.getState().newCampaign({
+        name: 'Opções',
+        difficulty: 'realismo',
+        scenarioId: DEFAULT_SCENARIO_ID,
+        profileId: 'centro_esquerda',
+        startPoint: 'corrida',
+        seed: 31337,
+      }),
+    );
+    const setup = {
+      difficulty: 'realismo',
+      scenarioId: DEFAULT_SCENARIO_ID,
+      profileId: 'centro_esquerda',
+      startPoint: 'corrida',
+      seed: 31337,
+    };
+    expect(app.getState().campaigns).toMatchObject([{ setup }]);
+    // Reabrir o app devolve as mesmas opções da lista.
+    const reaberto = await launchApp();
+    expect(reaberto.getState().campaigns).toMatchObject([{ setup }]);
+  });
+
+  it('sem perfil e ponto de partida escolhidos, o setup grava os padrões (Centro e posse)', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    okId(await app.getState().newCampaign({ name: 'Padrões', difficulty: 'casual', seed: 5 }));
+    expect(app.getState().campaigns[0].setup).toEqual({
+      difficulty: 'casual',
+      scenarioId: DEFAULT_SCENARIO_ID,
+      profileId: 'centro',
+      startPoint: 'posse',
+      seed: 5,
+    });
+  });
+
+  it('recomeçar cria partida nova, ativa, com as mesmas opções, rascunho vazio e nome "<nome> (2)"', async () => {
+    const { db, launchApp } = await device();
+    const app = await launchApp();
+    const origem = okId(
+      await app.getState().newCampaign({
+        name: 'Governo Azul',
+        difficulty: 'realismo',
+        profileId: 'centro_esquerda',
+        startPoint: 'corrida',
+        seed: 31337,
+      }),
+    );
+    const original = app.getState().active!.state;
+    const turno = turnIndexOf(original);
+    const origemNoBanco = await loadStateAt(db, origem, turno);
+    app.getState().toggleDecision({ policyId: 'contingenciamento', agendaCost: 0 });
+
+    const novo = okId(await app.getState().restartCampaign(origem));
+    expect(novo).not.toBe(origem);
+    expect(app.getState().active).toMatchObject({ id: novo, name: 'Governo Azul (2)', finished: false });
+    expect(app.getState().draft.decisions).toEqual([]);
+    expect(
+      app
+        .getState()
+        .campaigns.map((c) => c.name)
+        .sort(),
+    ).toEqual(['Governo Azul', 'Governo Azul (2)']);
+    const lista = app.getState().campaigns;
+    expect(lista.find((c) => c.id === novo)?.setup).toEqual(lista.find((c) => c.id === origem)?.setup);
+    expect(lista.find((c) => c.id === novo)?.setup).toMatchObject({
+      difficulty: 'realismo',
+      profileId: 'centro_esquerda',
+      startPoint: 'corrida',
+      seed: 31337,
+    });
+
+    // Mesmo estado inicial que a partida original (gravado no banco, no mesmo turno de início).
+    expect(origemNoBanco).not.toBeNull();
+    expect(await loadStateAt(db, novo, turno)).toEqual(origemNoBanco);
+    expect(app.getState().active!.state).toEqual(original);
+
+    // Mesmos meses seguintes: encerrar o mês na nova e na original dá o mesmo estado.
+    expect(await app.getState().endMonth()).toBe(true);
+    const depoisNova = app.getState().active!.state;
+    expect(await app.getState().continueCampaign(origem)).toBe(true);
+    expect(await app.getState().endMonth()).toBe(true);
+    expect(app.getState().active!.state).toEqual(depoisNova);
+
+    // Segunda vez: o "(2)" já existe, então o nome pula para "(3)".
+    const terceiro = okId(await app.getState().restartCampaign(origem));
+    expect(terceiro).not.toBe(novo);
+    expect(app.getState().active).toMatchObject({ id: terceiro, name: 'Governo Azul (3)' });
+  });
+
+  it('partida sem opções gravadas recomeça com a dificuldade, o cenário e a semente da linha', async () => {
+    const { db, launchApp } = await device();
+    let app = await launchApp();
+    const origem = okId(await app.getState().newCampaign({ name: 'Antiga', difficulty: 'casual', seed: 777 }));
+    const turno = turnIndexOf(app.getState().active!.state);
+    const origemNoBanco = await loadStateAt(db, origem, turno);
+    // Simula uma partida criada antes da migração 10: a linha continua com dificuldade, cenário e semente.
+    await db.run('UPDATE campaigns SET setup_json = NULL WHERE id = ?', [origem]);
+    app = await reabrir(db);
+    expect(app.getState().campaigns.find((c) => c.id === origem)?.setup).toBeNull();
+
+    const novo = okId(await app.getState().restartCampaign(origem));
+    expect(app.getState().active).toMatchObject({ id: novo, name: 'Antiga (2)' });
+    expect(app.getState().active!.state).toMatchObject({
+      difficulty: 'casual',
+      seed: 777,
+      scenarioId: DEFAULT_SCENARIO_ID,
+    });
+    expect(app.getState().campaigns.find((c) => c.id === novo)?.setup).toEqual({
+      difficulty: 'casual',
+      scenarioId: DEFAULT_SCENARIO_ID,
+      profileId: 'centro',
+      startPoint: 'posse',
+      seed: 777,
+    });
+    // Sem ponto de partida gravado, o padrão é a posse: a original também começou na posse.
+    expect(origemNoBanco).not.toBeNull();
+    expect(await loadStateAt(db, novo, turno)).toEqual(origemNoBanco);
+  });
+
+  it('recomeçar mantém o cenário do protótipo fictício', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    const origem = okId(
+      await app
+        .getState()
+        .newCampaign({ name: 'Protótipo', difficulty: 'casual', scenarioId: 'prototipo_ficticio', seed: 12 }),
+    );
+    const novo = okId(await app.getState().restartCampaign(origem));
+    expect(app.getState().active!.state.scenarioId).toBe('prototipo_ficticio');
+    expect(app.getState().campaigns.find((c) => c.id === novo)?.setup).toEqual({
+      difficulty: 'casual',
+      scenarioId: 'prototipo_ficticio',
+      profileId: 'centro',
+      startPoint: 'posse',
+      seed: 12,
+    });
+  });
+
+  it('recomeçar uma campanha encerrada (a do Legado) abre a nova e deixa a encerrada salva', async () => {
+    const { db, launchApp } = await device();
+    let app = await launchApp();
+    const origem = okId(await app.getState().newCampaign({ name: 'Encerrada', difficulty: 'casual', seed: 8 }));
+    await finishCampaign(db, origem);
+    app = await reabrir(db);
+    expect(await app.getState().continueCampaign(origem)).toBe(true);
+    expect(app.getState().active!.finished).toBe(true);
+
+    const novo = okId(await app.getState().restartCampaign(origem));
+    expect(app.getState().active).toMatchObject({ id: novo, name: 'Encerrada (2)', finished: false });
+    expect(app.getState().campaigns.find((c) => c.id === origem)?.status).toBe('encerrada');
+  });
+
+  it('id inexistente devolve ok:false sem mexer na partida ativa nem na lista', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    okId(await app.getState().newCampaign({ name: 'Ativa', difficulty: 'casual', seed: 1 }));
+    const ativa = app.getState().active;
+    const lista = app.getState().campaigns;
+
+    expect(await app.getState().restartCampaign('fantasma')).toEqual({
+      ok: false,
+      reason: 'falha',
+      error: 'Campanha não encontrada.',
+    });
+    expect(app.getState().active).toBe(ativa);
+    expect(app.getState().campaigns).toBe(lista);
   });
 });
