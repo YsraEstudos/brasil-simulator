@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,7 +18,8 @@ import {
   useGame,
 } from '@/store';
 
-import { enterAt, goBack, SetupHeader } from '../campaign/SetupBits';
+import { ConfirmSheet, enterAt, goBack, SetupHeader } from '../campaign/SetupBits';
+import { HowToPlayCard } from './HowToPlayCard';
 import { PreferenceCards } from './PreferenceCards';
 
 /**
@@ -33,6 +35,8 @@ export function SettingsScreen() {
   const autoProfile = useGame((s) => s.autoProfile);
   const dayTime = useGame((s) => s.dayTime);
   const mapClouds = useGame((s) => s.mapClouds);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetNotice, setResetNotice] = useState<string | null>(null);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -166,7 +170,47 @@ export function SettingsScreen() {
             </Text>
           </Card>
         </Animated.View>
+
+        <Animated.View entering={reduceMotion ? undefined : enterAt(4)} style={styles.stack}>
+          <HowToPlayCard />
+          <Card title="Restaurar padrões" subtitle="Volta todos os ajustes desta tela ao padrão">
+            <Button
+              label="Restaurar configurações padrão"
+              variant="secondary"
+              onPress={() => {
+                setResetNotice(null);
+                setConfirmReset(true);
+              }}
+            />
+            <Text variant="caption" color="textSecondary">
+              Não apaga partidas salvas.
+            </Text>
+            {resetNotice ? (
+              <Text variant="caption" color="positive" accessibilityLiveRegion="polite">
+                {resetNotice}
+              </Text>
+            ) : null}
+          </Card>
+        </Animated.View>
       </ScrollView>
+
+      {confirmReset ? (
+        <ConfirmSheet
+          title="Restaurar configurações padrão?"
+          message="Tema, acessibilidade, tamanho do texto, mapa, globo, animações e abertura do app voltam ao padrão. Suas partidas salvas não são apagadas."
+          confirmLabel="RESTAURAR"
+          onCancel={() => setConfirmReset(false)}
+          onConfirm={() => {
+            setConfirmReset(false);
+            void gameStore
+              .getState()
+              .resetSettings()
+              .then((ok) =>
+                setResetNotice(ok ? 'Configurações restauradas.' : 'Não foi possível restaurar agora. Tente de novo.'),
+              );
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -176,4 +220,5 @@ const styles = StyleSheet.create({
   content: { gap: Spacing.three, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   option: { gap: Spacing.one },
+  stack: { gap: Spacing.three },
 });

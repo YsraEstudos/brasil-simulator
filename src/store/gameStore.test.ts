@@ -9,8 +9,10 @@ import { setSetting } from '@/database/settingsRepository';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { campaignOutcome, createInitialState, DIRECTIVE_ACTION_ID, turnIndexOf } from '@/engine';
 
-import { NAME_ERRORS } from './campaignSetup';
-import { createGameStore, type NewCampaignResult } from './gameStore';
+import { LAST_DIFFICULTY_KEY, NAME_ERRORS } from './campaignSetup';
+import { createGameStore, RESETTABLE_SETTING_KEYS, type NewCampaignResult } from './gameStore';
+import { DEFAULT_MAP_QUALITY } from './mapQuality';
+import { DEFAULT_PREFERENCES, PREFERENCE_DEFS, PREFERENCE_KEYS } from './preferences';
 import { SAVED_LIST_PREFS_KEY } from './savedListPrefs';
 import { campaignMonths, PROTOTYPE_MONTHS, SCENARIOS } from './scenarios';
 
@@ -993,5 +995,63 @@ describe('salvar como, exportar e importar (PLANO_MENU_SAVES_CONFIG.md, Fase M5)
     expect(app.getState().error).toBeUndefined();
     await app.getState().newCampaign({ name: 'Depois', difficulty: 'casual', seed: 3 });
     expect(app.getState().error).toBeUndefined();
+  });
+});
+
+describe('restaurar configurações padrão (PLANO_MENU_SAVES_CONFIG.md M9)', () => {
+  it('volta todas as preferências ao padrão e grava, sem tocar em partidas e escolhas do Novo Jogo', async () => {
+    const { db, launchApp } = await device();
+    try {
+      const store = await launchApp();
+      expect((await store.getState().newCampaign({ name: 'Mantida', difficulty: 'casual' })).ok).toBe(true);
+      const s = store.getState();
+      await s.setPreference('theme', 'escuro');
+      await s.setPreference('colorBlind', true);
+      await s.setPreference('fiscalUnit', 'reais');
+      await s.setPreference('globeFps', 30);
+      await s.setTextScale(1.3);
+      await s.setReduceMotion(true);
+      await s.setMapClouds(false);
+      await s.setSavedListPrefs({ sort: 'nome', filter: 'ativas' });
+
+      expect(await store.getState().resetSettings()).toBe(true);
+      const after = store.getState();
+      expect(after.prefs).toEqual(DEFAULT_PREFERENCES);
+      expect(after.textScale).toBe(1);
+      expect(after.reduceMotion).toBe(false);
+      expect(after.mapClouds).toBe(true);
+
+      // Nada das chaves restauráveis sobra no banco; o que não é preferência das Configurações fica.
+      const keys = (await db.all<{ key: string }>('SELECT key FROM settings')).map((r) => r.key);
+      for (const k of RESETTABLE_SETTING_KEYS) expect(keys).not.toContain(k);
+      expect(keys).toContain(SAVED_LIST_PREFS_KEY);
+      expect(keys).toContain(LAST_DIFFICULTY_KEY);
+      expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Mantida']);
+
+      // Reabrir o app lê os padrões.
+      const reopened = await launchApp();
+      expect(reopened.getState().prefs).toEqual(DEFAULT_PREFERENCES);
+      expect(reopened.getState().textScale).toBe(1);
+      expect(reopened.getState().savedListPrefs).toEqual({ sort: 'nome', filter: 'ativas' });
+    } finally {
+      await db.close();
+    }
+  });
+
+  it('a chave antiga do renderizador também sai, para a migração dela não trazer a escolha de volta', async () => {
+    const { db, launchApp } = await device();
+    try {
+      await setSetting(db, 'mapa_renderizador', 'flat');
+      const store = await launchApp();
+      expect(await store.getState().resetSettings()).toBe(true);
+      const reopened = await launchApp();
+      expect(reopened.getState().mapQuality).toBe(DEFAULT_MAP_QUALITY);
+    } finally {
+      await db.close();
+    }
+  });
+
+  it('cada preferência do registro está entre as chaves restauráveis', () => {
+    for (const k of PREFERENCE_KEYS) expect(RESETTABLE_SETTING_KEYS).toContain(PREFERENCE_DEFS[k].key);
   });
 });
