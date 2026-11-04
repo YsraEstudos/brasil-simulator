@@ -53,7 +53,15 @@ import {
   type MonthReport,
 } from '@/engine';
 
-import { draftInput, EMPTY_DRAFT, toggleDecision, toggleEventChoice, type AgendaDraft } from './agendaDraft';
+import {
+  clearAgenda,
+  draftInput,
+  EMPTY_DRAFT,
+  pushDraftHistory,
+  toggleDecision,
+  toggleEventChoice,
+  type AgendaDraft,
+} from './agendaDraft';
 import { GOVERNMENTS_KEY, resolveGovernmentCount } from './governments';
 import {
   checkNewCampaignInput,
@@ -96,6 +104,9 @@ import {
   resolveMapQuality,
   type MapQualityChoice,
 } from './mapQuality';
+
+/** Rascunho vazio e sem passos para desfazer: o começo de cada mês (e de cada campanha aberta). */
+const FRESH_DRAFT = { draft: EMPTY_DRAFT, draftHistory: [] as readonly AgendaDraft[] };
 
 /** Campanha encerrada: prazo do cenário cumprido ou condenação por impeachment (FASE_07.md). */
 function isFinished(state: GameState): boolean {
@@ -149,6 +160,8 @@ export interface GameStoreState {
   prefs: Preferences;
   /** Agenda do mês em montagem, compartilhada pelas abas (não é salva). */
   draft: AgendaDraft;
+  /** Rascunhos anteriores do mês, do mais antigo ao mais recente, para o "Desfazer" (zera ao virar o mês). */
+  draftHistory: readonly AgendaDraft[];
   /** Últimas dificuldade e cenário usados em NOVO JOGO (lidos uma vez no início, gravados após criar). */
   setupPrefs: SetupPrefs;
   /** Governos iniciados neste aparelho (NOVO JOGO e RECOMEÇAR; guardado em `settings`, nunca diminui). */
@@ -195,7 +208,12 @@ export interface GameStoreState {
   /** Marca/desmarca no rascunho; ignorado enquanto o mês é gravado (`busy`) ou com a campanha encerrada. */
   toggleDecision(decision: Decision): void;
   toggleEventChoice(eventId: string, choiceId: string): void;
+  /** Volta o rascunho ao começo do mês: tira decisões e respostas a eventos (pode ser desfeito). */
   clearDraft(): void;
+  /** Tira só as decisões e mantém as respostas a eventos (pode ser desfeito). */
+  clearAgenda(): void;
+  /** Desfaz a última mudança no rascunho do mês. */
+  undoDraft(): void;
   /** Apaga o aviso de erro (o jogador fechou o aviso). */
   clearError(): void;
   leaveCampaign(): Promise<boolean>;
@@ -305,7 +323,7 @@ export function createGameStore(deps: GameStoreDeps) {
       autoProfile: DEFAULT_PROFILE_3D,
       dayTime: DEFAULT_DAY_TIME,
       mapClouds: DEFAULT_MAP_CLOUDS,
-      draft: EMPTY_DRAFT,
+      ...FRESH_DRAFT,
       setupPrefs: DEFAULT_SETUP_PREFS,
       governments: 0,
 
@@ -451,7 +469,7 @@ export function createGameStore(deps: GameStoreDeps) {
           }
 
           // Commit confirmado: a campanha existe, e nada daqui em diante pode transformá-la em fracasso.
-          set({ active: created, draft: EMPTY_DRAFT, setupPrefs: { difficulty, scenarioId } });
+          set({ active: created, ...FRESH_DRAFT, setupPrefs: { difficulty, scenarioId } });
           // Partida recém-criada conta como jogada agora; falha aqui não desfaz a criação.
           try {
             await touchCampaign(d, created.id);
@@ -601,7 +619,7 @@ export function createGameStore(deps: GameStoreDeps) {
               lastReport,
               finished,
             },
-            draft: EMPTY_DRAFT,
+            ...FRESH_DRAFT,
           });
           // Abrir a partida conta como jogada (`last_played_at`) e atualiza o cartão; falha aqui não impede abrir.
           try {
@@ -676,7 +694,7 @@ export function createGameStore(deps: GameStoreDeps) {
               lastReport: result.report,
               finished,
             },
-            draft: EMPTY_DRAFT,
+            ...FRESH_DRAFT,
           });
           await refreshList(d);
         }),
@@ -701,25 +719,39 @@ export function createGameStore(deps: GameStoreDeps) {
       // fim, então uma escolha feita nesse meio se perderia. Campanha encerrada não tem próximo mês para decidir.
       toggleDecision: (decision) => {
         if (draftLocked()) return;
-        set((s) => ({ draft: toggleDecision(s.draft, decision) }));
+        set((s) => withDraft(s, toggleDecision(s.draft, decision)));
       },
       toggleEventChoice: (eventId, choiceId) => {
         if (draftLocked()) return;
-        set((s) => ({ draft: toggleEventChoice(s.draft, eventId, choiceId) }));
+        set((s) => withDraft(s, toggleEventChoice(s.draft, eventId, choiceId)));
       },
-      clearDraft: () => set({ draft: EMPTY_DRAFT }),
+      clearDraft: () => {
+        if (draftLocked()) return;
+        set((s) => withDraft(s, EMPTY_DRAFT));
+      },
+      clearAgenda: () => {
+        if (draftLocked()) return;
+        set((s) => withDraft(s, clearAgenda(s.draft)));
+      },
+      undoDraft: () => {
+        if (draftLocked()) return;
+        set((s) => {
+          const previous = s.draftHistory[s.draftHistory.length - 1];
+          return previous ? { draft: previous, draftHistory: s.draftHistory.slice(0, -1) } : s;
+        });
+      },
       clearError: () => set({ error: undefined }),
 
       leaveCampaign: () =>
         run(async (d) => {
-          set({ active: null, draft: EMPTY_DRAFT });
+          set({ active: null, ...FRESH_DRAFT });
           await refreshList(d);
         }),
 
       deleteCampaign: (id) =>
         run(async (d) => {
           await deleteCampaign(d, id);
-          if (get().active?.id === id) set({ active: null, draft: EMPTY_DRAFT });
+          if (get().active?.id === id) set({ active: null, ...FRESH_DRAFT });
           await refreshList(d);
         }),
 
@@ -752,7 +784,7 @@ export function createGameStore(deps: GameStoreDeps) {
           await refreshList(d);
           // A partida aberta pode ter sido uma das apagadas (encerrada e sem cadeado).
           const active = get().active;
-          if (active && !get().campaigns.some((c) => c.id === active.id)) set({ active: null, draft: EMPTY_DRAFT });
+          if (active && !get().campaigns.some((c) => c.id === active.id)) set({ active: null, ...FRESH_DRAFT });
         });
         return ok ? outcome : null;
       },
@@ -832,3 +864,12 @@ export function createGameStore(deps: GameStoreDeps) {
 }
 
 export type GameStore = ReturnType<typeof createGameStore>;
+
+/** Troca o rascunho guardando o anterior para o "Desfazer". */
+function withDraft(
+  s: { draft: AgendaDraft; draftHistory: readonly AgendaDraft[] },
+  next: AgendaDraft,
+): { draft: AgendaDraft; draftHistory: readonly AgendaDraft[] } {
+  if (next === s.draft) return s;
+  return { draft: next, draftHistory: pushDraftHistory(s.draftHistory, s.draft, next) };
+}

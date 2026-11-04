@@ -42,6 +42,9 @@ export const ICONS = {
   sort: icon('arrow.up.arrow.down', 'swap_vert'),
   checkboxOn: icon('checkmark.square.fill', 'check_box'),
   checkboxOff: icon('square', 'check_box_outline_blank'),
+  undo: icon('arrow.uturn.backward', 'undo'),
+  clear: icon('trash', 'delete_sweep'),
+  restart: icon('arrow.counterclockwise', 'restart_alt'),
 } as const;
 
 export function Icon({ name, size = 18, color = 'accent' }: { name: IconName; size?: number; color?: ThemeColor }) {

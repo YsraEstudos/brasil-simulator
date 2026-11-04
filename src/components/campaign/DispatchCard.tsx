@@ -10,6 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useGame } from '@/store';
 import type { Policy } from '@/types/policy';
 
+import { lagNotice } from './agendaModel';
 import { Icon, ICONS, type IconName } from './GabineteBits';
 import { INSTRUMENT_LABEL } from './labels';
 
@@ -57,6 +58,7 @@ export function DispatchCard({
     { title: 'Comunicação', role: 'opinião pública', icon: ICONS.comunicacao, opinion: advice.comunicacao },
   ];
   const blocked = !included && !canInclude;
+  const lag = lagNotice(policy);
 
   return (
     <View style={[styles.root, { borderTopColor: colors.border }]}>
@@ -92,6 +94,7 @@ export function DispatchCard({
         );
       })}
       <RegionalPreviewCard state={state} content={content} policyId={policy.id} />
+      {lag && <Alert tone="info" title="Efeito com defasagem" message={lag} />}
       {vedacao && (
         <Alert
           tone="warning"

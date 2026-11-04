@@ -19,11 +19,15 @@ import type { Policy } from '@/types/policy';
 import { decisionCost, draftCost, fits, gameStore, useGame, type ActiveCampaign } from '@/store';
 
 import { AgendaActions } from './AgendaActions';
+import { AgendaFooter } from './AgendaFooter';
 import { decisionLabel } from './agendaLabel';
+import { agendaTotals, clearAgendaMessage, restartMonthMessage } from './agendaModel';
 import { DecisionPanel } from './DecisionPanel';
+import { askConfirm, requestDecision } from './gameConfirm';
 import { Icon, ICONS, SectionTab, type IconName } from './GabineteBits';
 import { DIFFICULTY } from './labels';
 import { DirectivesPanel, ProjectsPanel } from './PublicPoliciesPanel';
+import { useFiscal } from './useFiscal';
 
 type Section = 'decisoes' | 'diretrizes' | 'projetos' | 'acoes';
 
@@ -45,11 +49,13 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
   const content = useMemo(() => loadContent(state.scenarioId), [state.scenarioId]);
 
   const draft = useGame((s) => s.draft);
+  const canUndo = useGame((s) => s.draftHistory.length > 0);
+  const fiscal = useFiscal(state, content);
   const [expandedPolicy, setExpandedPolicy] = useState<string | null>(null);
 
   const actionsMax = state.resources.agendaActionsPerMonth;
   const actionsUsed = draftCost(draft, content);
-  const { toggleDecision } = gameStore.getState();
+  const { toggleDecision, undoDraft, clearAgenda, clearDraft } = gameStore.getState();
 
   // Políticas e ações marcadas sem alvo; as com alvo (negociação, ministérios) aparecem na subtela Congresso. Decisões
   // com apenas a quebra declarada da vedação contam como simples (a mesa de despacho as marca e desmarca).
@@ -66,14 +72,14 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
 
   const toggleSimple = (id: string) => {
     const decision = simple(id);
-    if (selected.includes(id) || fits(draft, decision, content, actionsMax)) toggleDecision(decision);
+    if (selected.includes(id) || fits(draft, decision, content, actionsMax)) requestDecision(decision, content);
   };
 
   // Vedação eleitoral (Fase 08): incluir novo benefício na janela exige a quebra declarada (`vedacao_bypass`).
   const isVedada = (policy: Policy): boolean => vedacaoAtiva(state, content) && isNovoBeneficio(policy);
   const toggleBypass = (id: string) => {
     const decision: Decision = { ...simple(id), params: { vedacao_bypass: true } };
-    if (selected.includes(id) || fits(draft, decision, content, actionsMax)) toggleDecision(decision);
+    if (selected.includes(id) || fits(draft, decision, content, actionsMax)) requestDecision(decision, content);
   };
 
   if (finished) {
@@ -94,6 +100,25 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
     acoes: draft.decisions.filter((d) => AGENDA_ACTIONS[d.policyId]?.listed).length,
   };
 
+  const totals = agendaTotals(draft, content);
+  // Limpar e recomeçar perguntam antes; as duas dão para desfazer até encerrar o mês.
+  const confirmClear = () =>
+    askConfirm({
+      title: 'Limpar a agenda do mês?',
+      message: clearAgendaMessage(totals),
+      confirmLabel: 'LIMPAR',
+      danger: false,
+      onConfirm: clearAgenda,
+    });
+  const confirmRestart = () =>
+    askConfirm({
+      title: 'Recomeçar o mês?',
+      message: restartMonthMessage(totals),
+      confirmLabel: 'RECOMEÇAR',
+      danger: true,
+      onConfirm: clearDraft,
+    });
+
   return (
     <View style={styles.root}>
       <AgendaSummary
@@ -104,6 +129,17 @@ export function GabineteView({ campaign }: { campaign: ActiveCampaign }) {
         actionsUsed={actionsUsed}
         actionsMax={actionsMax}
         onRemove={toggleDecision}
+        footer={
+          <AgendaFooter
+            totals={totals}
+            actionsMax={actionsMax}
+            money={fiscal.money}
+            canUndo={canUndo}
+            onUndo={undoDraft}
+            onClear={confirmClear}
+            onRestart={confirmRestart}
+          />
+        }
       />
 
       <SectionsSwitcher
@@ -197,6 +233,7 @@ function AgendaSummary({
   actionsUsed,
   actionsMax,
   onRemove,
+  footer,
 }: {
   campaignLabel: string;
   content: GameContent;
@@ -205,6 +242,8 @@ function AgendaSummary({
   actionsUsed: number;
   actionsMax: number;
   onRemove: (decision: Decision) => void;
+  /** Custo total e ferramentas (Desfazer, Limpar, Recomeçar). */
+  footer: ReactNode;
 }) {
   const { colors } = useTheme();
   const left = actionsMax - actionsUsed;
@@ -287,6 +326,7 @@ function AgendaSummary({
           )}
         </View>
       )}
+      {footer}
     </View>
   );
 }
