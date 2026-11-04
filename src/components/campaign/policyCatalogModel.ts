@@ -184,9 +184,17 @@ export function foldSearch(text: string): string {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleLowerCase('pt-BR').trim();
 }
 
+/** Nomes do tipo que a busca reconhece: a sigla do selo e o nome por extenso ("medida provisória" acha as MPs). */
+const KIND_SEARCH_TERMS: Readonly<Record<PolicyKind, string>> = {
+  decreto: 'Decreto ato do Executivo',
+  mp: 'MP medida provisória',
+  pl: 'Projeto de lei PL',
+  pec: 'PEC proposta de emenda à Constituição',
+};
+
 function matchesSearch(entry: CatalogEntry, folded: string): boolean {
   if (folded === '') return true;
-  const haystack = [entry.policy.name, entry.areaName, POLICY_KIND_LABEL[entry.kind].short].map(foldSearch);
+  const haystack = [entry.policy.name, entry.areaName, KIND_SEARCH_TERMS[entry.kind]].map(foldSearch);
   return folded.split(/\s+/).every((word) => haystack.some((text) => text.includes(word)));
 }
 
