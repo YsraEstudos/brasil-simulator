@@ -19,6 +19,7 @@ import { EARTH_RADIUS_M, TILE_GRID, terrainExaggeration } from './config';
 import type { GlobeController } from './controller';
 import { deviceUtc } from './deviceClock';
 import { ufFillGeometries } from './fills';
+import { FrameThrottle } from './frameLimiter';
 import { lonLatToVec3, raySphere, tileBounds, vec3ToLonLat, type Vec3 } from './geo';
 import { GlobeLabels, type LabelInsets, type LabelsUpdater } from './GlobeLabels';
 import type { Rect } from './labels';
@@ -235,6 +236,8 @@ type Props = {
   clouds: boolean;
   /** O globo está desenhando (não pausado): é a condição do laço das nuvens animadas e do pulso dos marcadores. */
   drawing: boolean;
+  /** Teto de quadros por segundo da inércia, do voo de câmera e da transição do Sol (`frameLimiter.ts`). */
+  fps: number;
   /** Marcadores de eventos e notícias (um por UF), desenhados com os rótulos. */
   markers: readonly GlobeMarker[];
   /** Muda quando há marcador novo e crítico para pulsar; vazio = nenhum. */
@@ -258,6 +261,7 @@ export function GlobeScene({
   climate,
   clouds: cloudsSetting,
   drawing,
+  fps,
   markers,
   pulseKey,
   onPulseDone,
@@ -272,6 +276,13 @@ export function GlobeScene({
     () => new TileStore(() => invalidate(), Math.min(4, gl.capabilities.getMaxAnisotropy())),
     [gl, invalidate],
   );
+  // Quadros contínuos (inércia, voo de câmera, Sol em transição): com o teto de `fps`, pedem o próximo no instante
+  // permitido. Pausado ou desmontado, o agendamento some (nada de quadro sem laço).
+  const frames = useMemo(() => new FrameThrottle(() => invalidate()), [invalidate]);
+  useEffect(() => () => frames.cancel(), [frames]);
+  useEffect(() => {
+    if (!drawing) frames.cancel();
+  }, [drawing, frames]);
   const [world, setWorld] = useState<THREE.Texture | null>(null);
   const sunUniforms = useMemo<SunUniforms>(
     () => ({ uSunDir: { value: new THREE.Vector3(0, 0, 1) }, uSunOn: { value: 0 } }),
@@ -641,7 +652,7 @@ export function GlobeScene({
     if (flight) {
       const transition = sunTransition(flight.from, flight.to, performance.now() - flight.start, reduceMotion);
       sunUniforms.uSunDir.value.set(...transition.dir);
-      if (transition.active) invalidate();
+      if (transition.active) frames.request(fps);
       else {
         sunFlight.current = null;
         lastSun.current.key = '';
@@ -777,7 +788,8 @@ export function GlobeScene({
       e.tilesBusy = store.busy;
       onFrame(e);
     }
-    if (moving) invalidate();
+    // Inércia e voo de câmera: quadro contínuo, limitado a `fps` (o arrasto no dedo pede quadro direto, em GlobeView).
+    if (moving) frames.request(fps);
   });
 
   return (

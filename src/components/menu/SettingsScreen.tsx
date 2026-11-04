@@ -18,6 +18,7 @@ import {
 } from '@/store';
 
 import { enterAt, goBack, SetupHeader } from '../campaign/SetupBits';
+import { PreferenceCards } from './PreferenceCards';
 
 /**
  * CONFIGURAÇÕES (rota `/configuracoes`): ajustes do jogador fora das abas, abertos pelo botão CONFIGURAÇÕES do
@@ -73,6 +74,10 @@ export function SettingsScreen() {
               O ajuste de acessibilidade do sistema continua valendo por cima desta escolha.
             </Text>
           </Card>
+        </Animated.View>
+
+        <Animated.View entering={reduceMotion ? undefined : enterAt(1)}>
+          <PreferenceCards />
         </Animated.View>
 
         <Animated.View entering={enterAt(1)}>

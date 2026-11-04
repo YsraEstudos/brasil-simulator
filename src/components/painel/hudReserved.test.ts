@@ -22,6 +22,7 @@ import {
   RAIL_EDGE,
   TOP_INSET,
   bottomBandHeight,
+  mesaSides,
   painelLabelReserve,
   topBandHeight,
   type PainelReserveInput,
@@ -98,6 +99,56 @@ describe('painelLabelReserve', () => {
   it('sem botões num trilho não reserva nada', () => {
     expect(painelLabelReserve(input(360, 740, { leftRailCount: 0, rightRailCount: 0 })).rects).toEqual([]);
   });
+
+  it('leftHanded: false (ou ausente) dá exatamente as mesmas reservas', () => {
+    expect(painelLabelReserve(input(360, 740, { leftHanded: false }))).toEqual(painelLabelReserve(input(360, 740)));
+  });
+
+  it('canhoto 360×740: o trilho "o mês" (3 botões) vai para a direita e "o país" (5) para a esquerda', () => {
+    const r = painelLabelReserve(input(360, 740, { leftHanded: true }));
+    expect(r.insets).toEqual(painelLabelReserve(input(360, 740)).insets);
+    expect(r.rects).toHaveLength(2);
+    const [month, country] = r.rects;
+    // mesmas medidas do destro, só o x muda: 360 - 8 - 48 - 4 (margem) = 300
+    expect(month).toEqual({ x: 360 - RAIL_EDGE - 48 - 4, y: 318, w: 56, h: 172 });
+    expect(country).toEqual({ x: RAIL_EDGE - 4, y: 260, w: 56, h: 288 });
+  });
+
+  it('canhoto é o espelho exato do destro (sem inset lateral): cada trilho mantém y, h e w', () => {
+    for (const [w, h] of [
+      [320, 640],
+      [360, 740],
+      [400, 860],
+      [640, 360],
+    ]) {
+      for (const extra of [{}, { demo: true }, { insets: NOTCH }, { leftRailCount: 4 }]) {
+        const destro = painelLabelReserve(input(w, h, { insets: NO_SAFE, ...extra }));
+        const canhoto = painelLabelReserve(input(w, h, { insets: NO_SAFE, leftHanded: true, ...extra }));
+        const mirror = (r: { x: number; y: number; w: number; h: number }) => ({ ...r, x: w - r.x - r.w });
+        expect(canhoto.rects[0]).toEqual(mirror(destro.rects[0]));
+        expect(canhoto.rects[1]).toEqual(mirror(destro.rects[1]));
+        expect(canhoto.insets).toEqual(destro.insets);
+      }
+    }
+  });
+
+  it('canhoto respeita as áreas seguras laterais em cada lado', () => {
+    const side = { top: 0, right: 20, bottom: 0, left: 12 };
+    const destro = painelLabelReserve(input(360, 740, { insets: side }));
+    const canhoto = painelLabelReserve(input(360, 740, { insets: side, leftHanded: true }));
+    // o trilho "o mês" no canhoto ocupa o x que "o país" ocupa no destro, e vice-versa
+    expect(canhoto.rects[0].x).toBe(destro.rects[1].x);
+    expect(canhoto.rects[1].x).toBe(destro.rects[0].x);
+    // a área segura da esquerda agora protege o trilho "o país"
+    expect(canhoto.rects[1].x).toBe(12 + RAIL_EDGE - 4);
+    expect(canhoto.rects[0].x + canhoto.rects[0].w).toBe(360 - 20 - RAIL_EDGE + 4);
+    expect(canhoto.insets).toEqual({ top: destro.insets.top, right: 20, bottom: destro.insets.bottom, left: 12 });
+  });
+
+  it('mesaSides: destro e canhoto espelham trilhos e o Encerrar o mês', () => {
+    expect(mesaSides(false)).toEqual({ monthRail: 'left', countryRail: 'right', endMonth: 'right' });
+    expect(mesaSides(true)).toEqual({ monthRail: 'right', countryRail: 'left', endMonth: 'left' });
+  });
 });
 
 /**
@@ -131,12 +182,15 @@ describe('rótulos do globo no Painel (320×640, 360×740, 400×860)', () => {
     return { reserve, viewport, candidates, shown, shownRects };
   }
 
-  it('nenhum rótulo visível toca um botão do HUD, uma barra ou sai da tela', () => {
+  it.each([
+    ['destro', {}],
+    ['canhoto', { leftHanded: true }],
+  ] as const)('nenhum rótulo visível toca um botão do HUD, uma barra ou sai da tela (%s)', (_side, side) => {
     for (const [w, h] of SIZES)
       for (const altitude of ALTITUDES)
         for (const insets of [SAFE, NOTCH])
           for (const textScale of [0.9, 1.3]) {
-            const { reserve, viewport, shownRects } = run(w, h, altitude, { insets }, textScale);
+            const { reserve, viewport, shownRects } = run(w, h, altitude, { insets, ...side }, textScale);
             expect(shownRects.length, `${w}x${h} alt ${altitude}`).toBeGreaterThan(0);
             for (const { id, rect } of shownRects) {
               const where = `${id} em ${w}x${h}, altitude ${altitude}`;
@@ -149,10 +203,13 @@ describe('rótulos do globo no Painel (320×640, 360×740, 400×860)', () => {
           }
   });
 
-  it('nenhum par de rótulos visíveis se sobrepõe', () => {
+  it.each([
+    ['destro', {}],
+    ['canhoto', { leftHanded: true }],
+  ] as const)('nenhum par de rótulos visíveis se sobrepõe (%s)', (_side, side) => {
     for (const [w, h] of SIZES)
       for (const altitude of ALTITUDES) {
-        const { shownRects } = run(w, h, altitude);
+        const { shownRects } = run(w, h, altitude, side);
         for (let i = 0; i < shownRects.length; i++)
           for (let j = i + 1; j < shownRects.length; j++)
             expect(

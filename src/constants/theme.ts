@@ -36,6 +36,14 @@ const palette = {
   blue400: '#7cb7ff',
   blue500: '#6f9fe0',
   blue700: '#1f5fae',
+  // Modo para daltônicos: positivo azul, negativo laranja (ver COLOR_BLIND_TONES).
+  blue800: '#1d5aa6',
+  orange400: '#ff8a3d',
+  orange700: '#a84400',
+  blueSoft50: '#e2edf9',
+  orangeSoft50: '#fbe9d6',
+  blueSoft900: '#0f2238',
+  orangeSoft900: '#3a2110',
 } as const;
 
 export interface ThemeColors {
@@ -114,6 +122,43 @@ export const Colors: Record<ColorScheme, ThemeColors> = {
     spectrumRight: palette.blue500,
   },
 };
+
+/**
+ * Modo para daltônicos: troca só os tons de bom/ruim. O positivo vira azul e o negativo laranja, para o sentido não
+ * depender de distinguir verde de vermelho (a forma de deuteranopia e protanopia mais comum). Os alertas de aviso
+ * (âmbar) e de informação (azul) seguem como estão, e a direção vem sempre com sinal `+`/`−` e seta (ver Indicator).
+ *
+ * Contraste WCAG medido (texto sobre o fundo e sobre a superfície elevada do mesmo tema; o mínimo é 4,5:1):
+ * - claro: azul `#1d5aa6` 6,1:1 sobre `#f4f1e8`, 6,6:1 sobre `#fbfaf6`, 5,4:1 sobre `#e9e4d6`;
+ *   laranja `#a84400` 5,3:1, 5,8:1 e 4,7:1 nos mesmos fundos. Sobre os fundos suaves (`#e2edf9` e `#fbe9d6`): 5,8:1 e 5,1:1.
+ * - escuro: azul `#7cb7ff` 9,7:1 sobre `#05070f`, 9,1:1 sobre `#0b1020`, 7,6:1 sobre `#18213d`;
+ *   laranja `#ff8a3d` 8,6:1, 8,1:1 e 6,8:1 nos mesmos fundos. Sobre os fundos suaves (`#0f2238` e `#3a2110`): 7,7:1 e 6,4:1.
+ */
+const COLOR_BLIND_TONES: Record<
+  ColorScheme,
+  Pick<ThemeColors, 'positive' | 'negative' | 'positiveSoft' | 'negativeSoft'>
+> = {
+  light: {
+    positive: palette.blue800,
+    negative: palette.orange700,
+    positiveSoft: palette.blueSoft50,
+    negativeSoft: palette.orangeSoft50,
+  },
+  dark: {
+    positive: palette.blue400,
+    negative: palette.orange400,
+    positiveSoft: palette.blueSoft900,
+    negativeSoft: palette.orangeSoft900,
+  },
+};
+
+/**
+ * Tokens de cor do esquema escolhido, com a variante para daltônicos quando `colorBlind` for verdadeiro. Função pura:
+ * quem lê a preferência é o provedor de tema. Sem o modo, devolve o próprio `Colors[scheme]` (mesma referência).
+ */
+export function paletteFor(scheme: ColorScheme, colorBlind: boolean): ThemeColors {
+  return colorBlind ? { ...Colors[scheme], ...COLOR_BLIND_TONES[scheme] } : Colors[scheme];
+}
 
 export type ThemeColor = keyof ThemeColors;
 

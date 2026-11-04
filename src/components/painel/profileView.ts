@@ -164,8 +164,18 @@ export function extremesLine(ufs: readonly { id: string; approvalDeviation: numb
 }
 
 /**
+ * Cores da legenda do plano: as duas pontas da camada Alinhamento (alinhado e distante), na mesma escala do mapa,
+ * para que o ponto da UF e a legenda digam a mesma coisa. `colorBlind` usa a escala azul ↔ laranja.
+ */
+export function alignmentLegendColors(colorBlind = false): { aligned: string; distant: string } {
+  const spec = indicatorSpec('alinhamento');
+  return { aligned: binColor(spec, 4, colorBlind), distant: binColor(spec, 0, colorBlind) };
+}
+
+/**
  * Tudo o que a folha mostra. `trail` vem do banco (do mais antigo ao mais recente) e pode ser curto ou vazio; `moves`,
- * dos relatórios retidos. Sem inclinação das UFs no cenário o plano some e fica o aviso.
+ * dos relatórios retidos. Sem inclinação das UFs no cenário o plano some e fica o aviso. `colorBlind` (preferência)
+ * escolhe a escala das UFs no plano.
  */
 export function buildProfileView(
   state: Pick<GameState, 'government'>,
@@ -174,6 +184,7 @@ export function buildProfileView(
     trail: readonly { monthIndex: number; profile: IdeologyPoint }[];
     moves: readonly { monthIndex: number; moves: readonly ProfileMove[] }[];
   },
+  colorBlind = false,
 ): ProfileView {
   const view = alignmentView(state, content);
   const label = describeProfile(state.government.profile).label;
@@ -207,7 +218,7 @@ export function buildProfileView(
       ufs: view.ufs.map((u) => ({
         id: u.id,
         ...planePoint(u.lean),
-        color: binColor(spec, bin(spec, u.approvalDeviation)),
+        color: binColor(spec, bin(spec, u.approvalDeviation), colorBlind),
       })),
       description: `Governo em ${label}; eleitor mediano em ${medianLabel}; ${view.ufs.length} estados pela inclinação política.`,
     },

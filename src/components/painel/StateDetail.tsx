@@ -19,7 +19,7 @@ import { buildUfElectoralView, isElectoralLayer } from '@/components/map/elector
 import { buildUfFieldView, preventionText, type UfFieldView } from '@/components/map/fieldView';
 
 import { LayerBadge, LinkRow } from './HudBits';
-import { Hud } from './hudTheme';
+import { Hud, hudSentimentColor } from './hudTheme';
 import { UfComparison } from './MapReadingPanel';
 import { useScaledStyles } from '@/hooks/use-scaled-styles';
 import {
@@ -39,7 +39,6 @@ import {
   buildUfSeriesView,
   seriesMetricFor,
   sparklinePoints,
-  type ComparisonTone,
   type ComparisonView,
   type UfSeriesView,
 } from './regionalSeriesView';
@@ -75,18 +74,13 @@ const SPARK_PAD = 4;
 const SPARK_STROKE = 2;
 const SPARK_DOT = 3;
 
-const TONE_COLOR: Record<ComparisonTone, string> = {
-  positive: Hud.positive,
-  negative: Hud.negative,
-  neutral: Hud.textDim,
-};
-
 function Comparison({ view }: { view: ComparisonView }) {
   const styles = useScaledStyles(baseStyles);
+  const colorBlind = useGame((s) => s.prefs.colorBlind);
   return (
     <View style={styles.metricRow}>
       <Text style={styles.metricLabel}>{view.label}</Text>
-      <Text tabular style={[styles.metricValue, { color: TONE_COLOR[view.tone] }]}>
+      <Text tabular style={[styles.metricValue, { color: hudSentimentColor(view.tone, colorBlind) }]}>
         {view.text}
       </Text>
     </View>
@@ -96,7 +90,8 @@ function Comparison({ view }: { view: ComparisonView }) {
 /** Variação, mini-série de 12 meses e posição da UF no indicador do mapa (dados de `regionalSeriesView`). */
 function SeriesBlock({ view }: { view: UfSeriesView }) {
   const styles = useScaledStyles(baseStyles);
-  const color = TONE_COLOR[view.seriesTone];
+  const colorBlind = useGame((s) => s.prefs.colorBlind);
+  const color = hudSentimentColor(view.seriesTone, colorBlind);
   const points = view.hasSeries ? sparklinePoints(view.series, SPARK_WIDTH, SPARK_HEIGHT, SPARK_PAD) : [];
   const last = points[points.length - 1];
   return (
@@ -239,6 +234,7 @@ export function UfDetail({
   const draft = useGame((s) => s.draft);
   const styles = useScaledStyles(baseStyles);
   const baseline = useGame((s) => s.active?.baseline);
+  const colorBlind = useGame((s) => s.prefs.colorBlind);
   const { uf } = row;
   const scenarioUf = content.scenario.regions?.ufs.find((u) => u.id === uf.id);
   const bloc = content.scenario.blocs.find((b) => b.id === scenarioUf?.governor.bloc);
@@ -317,7 +313,12 @@ export function UfDetail({
             pieces.map((piece) => (
               <View key={piece.cause} style={styles.metricRow}>
                 <Text style={styles.metricLabel}>{piece.label}</Text>
-                <Text tabular style={[styles.metricValue, { color: piece.delta >= 0 ? Hud.positive : Hud.negative }]}>
+                <Text
+                  tabular
+                  style={[
+                    styles.metricValue,
+                    { color: hudSentimentColor(piece.delta >= 0 ? 'positive' : 'negative', colorBlind) },
+                  ]}>
                   {formatPiece(indicator, piece.delta)}
                 </Text>
               </View>

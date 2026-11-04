@@ -34,10 +34,29 @@ export type PainelReserveInput = {
   compact: boolean;
   /** Selo "demonstração" acima da doca (sem partida). */
   demo: boolean;
-  /** Botões do trilho esquerdo e do direito. */
+  /**
+   * Botões do trilho "o mês" (`leftRail` do `mesaNav`) e do trilho "o país" (`RIGHT_RAIL`). "Esquerdo" e "direito" são
+   * os do modo destro: no canhoto os trilhos trocam de lado, a contagem continua a de cada um.
+   */
   leftRailCount: number;
   rightRailCount: number;
+  /** Modo canhoto (`prefs.leftHanded`): espelha os trilhos e o Encerrar o mês. Padrão: destro. */
+  leftHanded?: boolean;
 };
+
+/** Lado da tela onde fica um conjunto da mesa. */
+export type MesaSide = 'left' | 'right';
+
+/**
+ * Lado de cada conjunto da mesa (preferência `prefs.leftHanded`, modo canhoto). Destro: o trilho "o mês" à esquerda, "o país"
+ * à direita e o Encerrar o mês no canto inferior direito. Canhoto: os trilhos trocam de lado e o Encerrar vai para o
+ * canto inferior esquerdo. A doca de subtelas não muda: ela é uma faixa centralizada ou esticada na largura toda.
+ */
+export function mesaSides(leftHanded: boolean): { monthRail: MesaSide; countryRail: MesaSide; endMonth: MesaSide } {
+  return leftHanded
+    ? { monthRail: 'right', countryRail: 'left', endMonth: 'left' }
+    : { monthRail: 'left', countryRail: 'right', endMonth: 'right' };
+}
 
 /** Altura (px) da faixa de baixo ocupada pela doca, o Encerrar o mês e o selo de demonstração. */
 export function bottomBandHeight({ compact, demo, insets }: Pick<PainelReserveInput, 'compact' | 'demo' | 'insets'>) {
@@ -76,12 +95,16 @@ function railRect(count: number, x: number, input: PainelReserveInput): Rect | n
  * tela é do mapa.
  */
 export function painelLabelReserve(input: PainelReserveInput): { rects: Rect[]; insets: LabelViewport['insets'] } {
-  const { width, insets, compact } = input;
+  const { width, insets, compact, leftHanded = false } = input;
   const button = compact ? RAIL_BUTTON.compact : RAIL_BUTTON.portrait;
-  const left = railRect(input.leftRailCount, RAIL_EDGE + insets.left, input);
-  const right = railRect(input.rightRailCount, width - RAIL_EDGE - insets.right - button, input);
+  const sides = mesaSides(leftHanded);
+  // Os trilhos são colados às bordas da área segura; o lado de cada um vem de `mesaSides` (no canhoto, espelhado).
+  const xOf = (side: MesaSide) =>
+    side === 'left' ? RAIL_EDGE + insets.left : width - RAIL_EDGE - insets.right - button;
+  const monthRect = railRect(input.leftRailCount, xOf(sides.monthRail), input);
+  const countryRect = railRect(input.rightRailCount, xOf(sides.countryRail), input);
   return {
-    rects: [left, right].filter((r): r is Rect => r !== null),
+    rects: [monthRect, countryRect].filter((r): r is Rect => r !== null),
     insets: {
       top: topBandHeight(input),
       right: insets.right,

@@ -222,6 +222,13 @@ export function availableIndicators(content: GameContent): readonly MapIndicator
  * é o que se destaca. A identidade nunca fica só na cor: o cartão e a lista mostram os números.
  */
 export const DIVERGING = ['#e34948', '#ec9a8f', '#9a9893', '#86b6ef', '#3987e5'] as const;
+/**
+ * Divergente para daltônicos: o lado ruim sai do vermelho para o laranja e o lado bom segue azul, como no padrão.
+ * Laranja e azul se distinguem nos dois tipos de daltonismo mais comuns (sem depender de verde e vermelho). O cinza do
+ * meio fica igual. Contra a terra do mapa (`#1f2a40`), o laranja forte tem cerca de 6,1:1 e o azul, 3,9:1 (as faixas
+ * são cores de preenchimento, não texto; a legenda traz os rótulos).
+ */
+export const DIVERGING_COLORBLIND = ['#ff8a3d', '#ffc08a', '#9a9893', '#86b6ef', '#3987e5'] as const;
 export const SEQUENTIAL = ['#184f95', '#2a78d6', '#5598e7', '#9ec5f4', '#cde2fb'] as const;
 
 /** Selo da camada (texto e natureza) ou `null` se ela não é do mapa eleitoral. O do resultado leva a data da eleição. */
@@ -276,9 +283,14 @@ export function ufValue(
 
 const RENT_EDGES = [0.5, 0.75, 1, 1.5] as const;
 
-/** Paleta das 5 faixas da camada. */
-export function paletteOf(spec: MapIndicatorSpec): readonly string[] {
-  return spec.palette ?? (spec.scale === 'sequential' ? SEQUENTIAL : DIVERGING);
+/**
+ * Paleta das 5 faixas da camada. `colorBlind` troca só a escala divergente padrão (vermelho ↔ azul por azul ↔ laranja);
+ * as camadas com paleta própria (chuva, inclinação, voto) e a sequencial seguem iguais.
+ */
+export function paletteOf(spec: MapIndicatorSpec, colorBlind = false): readonly string[] {
+  if (spec.palette) return spec.palette;
+  if (spec.scale === 'sequential') return SEQUENTIAL;
+  return colorBlind ? DIVERGING_COLORBLIND : DIVERGING;
 }
 
 /** Índice da faixa de cor (0 … 4). Divergente: 2 = na média; 0 e 4 = longe dela (vermelho = pior). */
@@ -294,8 +306,8 @@ export function bin(spec: MapIndicatorSpec, value: number): number {
   return -signed < 3 * spec.step ? 1 : 0;
 }
 
-export function binColor(spec: MapIndicatorSpec, index: number): string {
-  return paletteOf(spec)[index];
+export function binColor(spec: MapIndicatorSpec, index: number, colorBlind = false): string {
+  return paletteOf(spec, colorBlind)[index];
 }
 
 /** Rótulos das faixas da legenda, da primeira à última cor. */
@@ -373,12 +385,14 @@ export interface UfRow {
 /**
  * Linhas do mapa e da lista (ordem do cenário), com o valor e a cor do indicador. `election` é a última fotografia
  * da eleição geral (lida do banco); só a camada Resultado a usa, e sem ela todas as UFs ficam no valor 0.
+ * `colorBlind` escolhe a escala divergente para daltônicos (azul ↔ laranja); o valor não muda.
  */
 export function mapRows(
   id: MapIndicator,
   state: GameState,
   content: GameContent,
   election: ElectionResult | null = null,
+  colorBlind = false,
 ): UfRow[] {
   const spec = indicatorSpec(id);
   const scenarioUfs = regionsOf(content);
@@ -399,7 +413,7 @@ export function mapRows(
       region: scenarioUfs[i].region,
       populationShare: pop[i],
       value,
-      color: binColor(spec, bin(spec, value)),
+      color: binColor(spec, bin(spec, value), colorBlind),
     };
   });
 }

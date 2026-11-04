@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAP_INDICATORS, mapFills, mapRows } from '@/components/painel/regionalMetrics';
+import { binColor, indicatorSpec, MAP_INDICATORS, mapFills, mapRows } from '@/components/painel/regionalMetrics';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { createInitialState } from '@/engine';
 
@@ -46,5 +46,16 @@ describe('RegionalMapViewModel', () => {
   it('é determinístico e a legenda do indicador usa as cores da paleta', () => {
     expect(indicatorLegend('renda')).toEqual(indicatorLegend('renda'));
     expect(new Set(indicatorLegend('renda').entries.map((e) => e.color)).size).toBe(5);
+  });
+
+  it('modo para daltônicos: a legenda e o mapa usam as mesmas cores azul ↔ laranja', () => {
+    const spec = indicatorSpec('desemprego');
+    const legend = indicatorLegend('desemprego', null, true);
+    expect(legend.entries.map((e) => e.color)).toEqual([0, 1, 2, 3, 4].map((i) => binColor(spec, i, true)));
+    expect(indicatorLegend('desemprego').entries.map((e) => e.color)).not.toEqual(legend.entries.map((e) => e.color));
+    const fills = mapFills(mapRows('desemprego', state, content, null, true));
+    const vm = buildRegionalMapViewModel({ indicator: 'desemprego', fills, colorBlind: true });
+    expect(vm.legend?.entries.map((e) => e.color)).toEqual(legend.entries.map((e) => e.color));
+    for (const color of Object.values(fills)) expect(legend.entries.map((e) => e.color)).toContain(color);
   });
 });

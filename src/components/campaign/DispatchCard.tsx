@@ -7,6 +7,7 @@ import { Radius, Spacing, type ThemeColor } from '@/constants/theme';
 import { adviseDecision, type GameContent, type GameState, type Opinion } from '@/engine';
 import { legislativeInstrument } from '@/engine/congress/congress';
 import { useTheme } from '@/hooks/use-theme';
+import { useGame } from '@/store';
 import type { Policy } from '@/types/policy';
 
 import { Icon, ICONS, type IconName } from './GabineteBits';
@@ -44,7 +45,8 @@ export function DispatchCard({
   onToggleBypass,
 }: DispatchCardProps) {
   const { colors } = useTheme();
-  const advice = useMemo(() => adviseDecision(state, policy.id, content), [state, policy.id, content]);
+  const unit = useGame((s) => s.prefs.fiscalUnit);
+  const advice = useMemo(() => adviseDecision(state, policy.id, content, unit), [state, policy.id, content, unit]);
   const instrument = legislativeInstrument(policy);
   const instrumentText = instrument
     ? `${INSTRUMENT_LABEL[instrument]} — passa pelo Congresso`

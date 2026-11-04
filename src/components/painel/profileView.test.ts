@@ -4,6 +4,7 @@ import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { createInitialState, medianVoter, type ProfileMove } from '@/engine';
 
 import {
+  alignmentLegendColors,
   buildProfileView,
   directionText,
   extremesLine,
@@ -17,7 +18,7 @@ import {
   topMoveRows,
   trailCaption,
 } from './profileView';
-import { DIVERGING } from './regionalMetrics';
+import { DIVERGING, DIVERGING_COLORBLIND } from './regionalMetrics';
 
 // Folha "Perfil do governo" (PLANO_GLOBO.md §5.2): geometria do plano, rastro, termo nacional e lista de decisões.
 
@@ -167,5 +168,33 @@ describe('extremos', () => {
   it('lista os mais alinhados e os mais distantes pelo desvio de aprovação', () => {
     const ufs = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((id, i) => ({ id, approvalDeviation: 0.03 - i * 0.01 }));
     expect(extremesLine(ufs)).toBe('Mais alinhados: A, B, C · mais distantes: G, F, E');
+  });
+});
+
+describe('modo para daltônicos no plano do governo', () => {
+  it('as UFs usam a escala azul ↔ laranja, na mesma faixa de antes', () => {
+    const state = start('liberal');
+    const normal = buildProfileView(state, content, EMPTY).plane?.ufs ?? [];
+    const cb = buildProfileView(state, content, EMPTY, true).plane?.ufs ?? [];
+    expect(cb).toHaveLength(normal.length);
+    normal.forEach((uf, i) => {
+      expect(DIVERGING_COLORBLIND).toContain(cb[i].color);
+      expect(DIVERGING_COLORBLIND.indexOf(cb[i].color as (typeof DIVERGING_COLORBLIND)[number])).toBe(
+        DIVERGING.indexOf(uf.color as (typeof DIVERGING)[number]),
+      );
+    });
+  });
+
+  it('o padrão (sem o argumento) é a escala de sempre', () => {
+    const state = start('liberal');
+    expect(buildProfileView(state, content, EMPTY)).toEqual(buildProfileView(state, content, EMPTY, false));
+  });
+
+  it('a legenda das pontas (alinhado e distante) usa a mesma escala das UFs', () => {
+    expect(alignmentLegendColors()).toEqual({ aligned: DIVERGING[4], distant: DIVERGING[0] });
+    expect(alignmentLegendColors(true)).toEqual({
+      aligned: DIVERGING_COLORBLIND[4],
+      distant: DIVERGING_COLORBLIND[0],
+    });
   });
 });

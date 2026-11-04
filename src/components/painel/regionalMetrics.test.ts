@@ -8,6 +8,7 @@ import {
   bin,
   binColor,
   DIVERGING,
+  DIVERGING_COLORBLIND,
   explanationFor,
   formatValue,
   indicatorSpec,
@@ -244,5 +245,43 @@ describe('camadas Chuva e Seca (PLANO_GLOBO.md §4.2)', () => {
     expect(explanationFor('seca', protectedUf).map((p) => p.cause)).toEqual(['clima_seca', 'clima_seca_prevencao']);
     expect(formatPiece('chuva', -0.003)).toBe('−0,3 p.p.');
     expect(formatPiece('seca', -0.004)).toBe('−0,4%');
+  });
+
+  it('modo para daltônicos: a escala divergente vai de azul (bom) a laranja (ruim); o cinza do meio e o lado bom ficam', () => {
+    expect(DIVERGING_COLORBLIND[2]).toBe(DIVERGING[2]);
+    expect(DIVERGING_COLORBLIND[3]).toBe(DIVERGING[3]);
+    expect(DIVERGING_COLORBLIND[4]).toBe(DIVERGING[4]);
+    // Os dois lados ruins saem do vermelho: nenhuma faixa da escala do daltônico é vermelha (R domina sobre G e B).
+    for (const hex of DIVERGING_COLORBLIND.slice(0, 2)) {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      expect(r).toBeGreaterThan(g);
+      expect(g).toBeGreaterThan(b);
+    }
+    expect(DIVERGING_COLORBLIND).not.toContain(DIVERGING[0]);
+    expect(DIVERGING_COLORBLIND).not.toContain(DIVERGING[1]);
+  });
+
+  it('paletteOf e binColor trocam só a escala divergente; sequencial e paletas próprias ficam iguais', () => {
+    const unemployment = indicatorSpec('desemprego');
+    expect(paletteOf(unemployment)).toBe(DIVERGING);
+    expect(paletteOf(unemployment, true)).toBe(DIVERGING_COLORBLIND);
+    expect(binColor(unemployment, 0, true)).toBe(DIVERGING_COLORBLIND[0]);
+    expect(binColor(unemployment, 4, true)).toBe(DIVERGING[4]);
+    for (const id of ['renda', 'seca', 'intencao', 'chuva', 'inclinacao'] as const) {
+      const spec = indicatorSpec(id);
+      expect(paletteOf(spec, true)).toEqual(paletteOf(spec));
+    }
+  });
+
+  it('mapRows: a cor muda com o modo, o valor e a faixa não mudam', () => {
+    const normal = mapRows('aprovacao', state, content);
+    const blind = mapRows('aprovacao', state, content, null, true);
+    expect(blind.map((r) => r.value)).toEqual(normal.map((r) => r.value));
+    const spec = indicatorSpec('aprovacao');
+    for (let i = 0; i < normal.length; i++) {
+      expect(blind[i].color).toBe(binColor(spec, bin(spec, normal[i].value), true));
+    }
+    // A faixa neutra (na média) é a mesma nos dois modos.
+    expect(blind.some((r) => r.color === DIVERGING[2])).toBe(normal.some((r) => r.color === DIVERGING[2]));
   });
 });

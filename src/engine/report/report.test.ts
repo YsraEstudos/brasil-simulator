@@ -131,6 +131,14 @@ describe('adviseDecision', () => {
     expect(advice.forecast.annualFiscalImpact).toBeGreaterThan(0);
   });
 
+  it('custo fiscal: texto em % do PIB por padrão e em R$ quando a unidade pedir', () => {
+    const pibText = adviseDecision(testState(), TEST_BILL.id, content).fazenda.text;
+    const reaisText = adviseDecision(testState(), TEST_BILL.id, content, 'reais').fazenda.text;
+    expect(pibText).toContain('do PIB ao ano');
+    expect(reaisText).toMatch(/Custo de R\$ [\d.,]+ (bi|mi|tri) ao ano/);
+    expect(reaisText).not.toContain('do PIB ao ano');
+  });
+
   it('corte por decreto: fazenda favorável', () => {
     const advice = adviseDecision(testState(), TEST_DECREE.id, content);
     expect(advice.fazenda.tone).toBe('favoravel');

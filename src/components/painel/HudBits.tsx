@@ -4,11 +4,17 @@ import { ActivityIndicator, Pressable, type StyleProp, View, type ViewStyle } fr
 import { binColor, numericLegendLabels, type LayerBadgeInfo, type MapIndicatorSpec } from './regionalMetrics';
 import { Text } from '@/components/ui';
 import { Radius } from '@/constants/theme';
+import { useGame } from '@/store';
 
 import type { HudGoalCheck, HudMinistry, HudRegion, HudSector, HudStat, HudTone } from './hudData';
-import { Hud, toneColor } from './hudTheme';
+import { deltaArrow, Hud, hudSentimentColor, toneColor } from './hudTheme';
 
 /** Peças da mesa do Painel (GAME_DESIGN.md §4.2): painel com moldura dourada, barras, selos e linhas de dado. */
+
+/** Modo para daltônicos (`prefs.colorBlind`): bom é azul, ruim é laranja, e as variações ganham seta e sinal. */
+function useColorBlind(): boolean {
+  return useGame((s) => s.prefs.colorBlind);
+}
 
 export function HudIcon({
   name,
@@ -95,8 +101,9 @@ export function HudBar({ value, color, height = 4 }: { value: number; color: str
 }
 
 export function TrendGlyph({ tone, size = 12 }: { tone: HudTone; size?: number }) {
+  const colorBlind = useColorBlind();
   const glyph = tone === 'positive' ? '▲' : tone === 'negative' ? '▼' : '—';
-  return <Text style={{ color: toneColor(tone), fontSize: size, fontWeight: '700' }}>{glyph}</Text>;
+  return <Text style={{ color: toneColor(tone, colorBlind), fontSize: size, fontWeight: '700' }}>{glyph}</Text>;
 }
 
 /** Célula de número da faixa do topo (ou da faixa de baixo): rótulo, valor e variação/contexto. */
@@ -114,10 +121,12 @@ export function StatCell({
   line?: string;
 }) {
   // "203,1 milhões" e "R$ 11,40 tri" não cabem na célula estreita; a versão curta é só de exibição.
+  const colorBlind = useColorBlind();
   const shown = (value ?? stat.value).replace(' milhões', ' mi').replace(/(,\d)\d (tri|bi)$/, '$1 $2');
   const shownLine = line ?? stat.delta ?? stat.context;
-  const deltaColor =
-    stat.sentiment === 'positive' ? Hud.positive : stat.sentiment === 'negative' ? Hud.negative : Hud.textDim;
+  // No modo para daltônicos a variação ganha seta (▲/▼) além do sinal do próprio texto, para não depender da cor.
+  const arrow = colorBlind && !line ? deltaArrow(stat.delta) : '';
+  const deltaColor = hudSentimentColor(stat.sentiment, colorBlind);
   return (
     <View style={[styles.cell, compact && styles.cellCompact]} pointerEvents="none">
       <Text style={styles.cellLabel} numberOfLines={1}>
@@ -140,7 +149,7 @@ export function StatCell({
             fontWeight: stat.delta ? '700' : '400',
             color: stat.delta ? deltaColor : Hud.textMuted,
           }}>
-          {shownLine}
+          {arrow ? `${arrow} ${shownLine}` : shownLine}
         </Text>
       ) : null}
     </View>
@@ -322,7 +331,8 @@ export function BellButton({ count, onPress }: { count: number; onPress: () => v
 
 /** Linha de ministério: ícone, pasta, ocupante, relação e seta de tendência. */
 export function MinistryRow({ ministry }: { ministry: HudMinistry }) {
-  const color = toneColor(ministry.tone);
+  const colorBlind = useColorBlind();
+  const color = toneColor(ministry.tone, colorBlind);
   return (
     <View style={styles.row}>
       <View style={styles.rowIcon}>
@@ -352,16 +362,19 @@ export function LinkRow({ label, onPress }: { label: string; onPress: () => void
 
 /** Tile de um setor da economia (Indicadores Nacionais). */
 export function SectorTile({ sector }: { sector: HudSector }) {
+  const colorBlind = useColorBlind();
   const up = sector.growth >= 0;
-  const color = up ? Hud.positive : Hud.negative;
+  const color = hudSentimentColor(up ? 'positive' : 'negative', colorBlind);
   const growth = `${up ? '+' : ''}${(sector.growth * 100).toFixed(2).replace('.', ',')}%`;
+  // Seta só no modo para daltônicos; crescimento zero não tem seta (o texto já traz "0,00%").
+  const arrow = colorBlind ? (sector.growth > 0 ? '▲' : sector.growth < 0 ? '▼' : '') : '';
   return (
     <View style={styles.tile}>
       <Text style={styles.tileLabel} numberOfLines={1}>
         {sector.label}
       </Text>
       <Text tabular style={[styles.tileValue, { color }]}>
-        {growth}
+        {arrow ? `${arrow} ${growth}` : growth}
       </Text>
       <Text style={styles.tileContext}>no mês</Text>
       <HudBar value={Math.min(1, sector.share / 0.6)} color={Hud.title} height={3} />
@@ -426,6 +439,7 @@ export function MapLayerRow({
   disabled?: boolean;
   onPress: () => void;
 }) {
+  const colorBlind = useColorBlind();
   return (
     <Pressable
       onPress={onPress}
@@ -451,7 +465,7 @@ export function MapLayerRow({
       {spec && (
         <View style={styles.layerStrip}>
           {[0, 1, 2, 3, 4].map((i) => (
-            <View key={i} style={[styles.layerStripCell, { backgroundColor: binColor(spec, i) }]} />
+            <View key={i} style={[styles.layerStripCell, { backgroundColor: binColor(spec, i, colorBlind) }]} />
           ))}
         </View>
       )}
@@ -464,12 +478,13 @@ export function MapLayerRow({
 
 /** Legenda compacta da camada ativa: o que cada faixa de cor quer dizer (mesmos rótulos do mapa da UF). */
 export function MapLayerLegend({ spec, badge }: { spec: MapIndicatorSpec; badge?: LayerBadgeInfo | null }) {
+  const colorBlind = useColorBlind();
   return (
     <View style={styles.layerLegend}>
       {badge ? <LayerBadge badge={badge} /> : null}
       {numericLegendLabels(spec).map((label, i) => (
         <View key={label} style={styles.layerLegendItem}>
-          <View style={[styles.layerSwatch, { backgroundColor: binColor(spec, i) }]} />
+          <View style={[styles.layerSwatch, { backgroundColor: binColor(spec, i, colorBlind) }]} />
           <Text style={styles.layerLegendLabel}>{label}</Text>
         </View>
       ))}
@@ -478,7 +493,8 @@ export function MapLayerLegend({ spec, badge }: { spec: MapIndicatorSpec; badge?
 }
 
 export function GoalCheckRow({ check }: { check: HudGoalCheck }) {
-  const color = check.met ? Hud.positive : Hud.negative;
+  const colorBlind = useColorBlind();
+  const color = hudSentimentColor(check.met ? 'positive' : 'negative', colorBlind);
   return (
     <View style={styles.goalRow}>
       <Text style={[styles.goalMark, { color }]}>{check.met ? '✔' : '✖'}</Text>
