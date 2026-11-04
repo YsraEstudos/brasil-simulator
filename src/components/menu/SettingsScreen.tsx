@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -159,6 +160,12 @@ export function SettingsScreen() {
             <Text variant="caption" color="textSecondary">
               {MAP_CLOUDS_DESCRIPTION}
             </Text>
+          </Card>
+        </Animated.View>
+
+        <Animated.View entering={enterAt(4)}>
+          <Card title="Sobre" subtitle="Versões do app, do motor e dos cenários, aviso de ficção e fontes de dados">
+            <Button label="Abrir Sobre" variant="secondary" onPress={() => router.push('/sobre')} />
           </Card>
         </Animated.View>
       </ScrollView>

@@ -403,3 +403,39 @@ describe('migração 2 (configurações)', () => {
     expect(v1.getState().campaigns.map((c) => c.name)).toEqual(['Campanha da v1']);
   });
 });
+
+describe('aviso de ficção (PLANO_MENU_SAVES_CONFIG.md M1.2)', () => {
+  it('aparece na primeira abertura, some ao ser lido e fica gravado após reiniciar', async () => {
+    const db = openNodeDatabase();
+    await migrate(db);
+    const openDb = async () => ({ ...db, close: async () => {} });
+    try {
+      const first = createGameStore({ openDb, random: fakeRandom() });
+      await first.getState().init();
+      expect(first.getState().fictionNoticeSeen).toBe(false);
+      expect(await first.getState().markFictionNoticeSeen()).toBe(true);
+      expect(first.getState().fictionNoticeSeen).toBe(true);
+      const second = createGameStore({ openDb, random: fakeRandom() });
+      await second.getState().init();
+      expect(second.getState().fictionNoticeSeen).toBe(true);
+    } finally {
+      await db.close();
+    }
+  });
+
+  it('com o banco fora do ar, a folha fecha só em memória e não grava erro na tela', async () => {
+    const broken = createGameStore({
+      openDb: async () => {
+        throw new Error('banco indisponível');
+      },
+      random: fakeRandom(),
+    });
+    await broken.getState().init();
+    expect(broken.getState().status).toBe('erro');
+    expect(broken.getState().fictionNoticeSeen).toBe(false);
+    const errorBefore = broken.getState().error;
+    await broken.getState().markFictionNoticeSeen();
+    expect(broken.getState().fictionNoticeSeen).toBe(true);
+    expect(broken.getState().error).toBe(errorBefore);
+  });
+});

@@ -3,14 +3,27 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  BackHandler,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { gameStore, useGame } from '@/store';
 
+import { FICTION_FOOTER_TEXT, FictionNotice } from './FictionNotice';
+import { continueLabel, pickContinueTarget } from './menuModel';
 import { Menu } from './menuTheme';
 
 const logo = require('../../../assets/images/logo-brasil-metal.png');
@@ -22,7 +35,7 @@ interface MenuItem {
 }
 
 /** Botões do mockup, na ordem: os três primeiros entram no jogo e CONFIGURAÇÕES abre os ajustes; o resto avisa "em breve". */
-const ITEMS: readonly MenuItem[] = [
+const ALL_ITEMS: readonly MenuItem[] = [
   { id: 'novo', label: 'NOVO JOGO', icon: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' } },
   { id: 'continuar', label: 'CONTINUAR', icon: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' } },
   { id: 'carregar', label: 'CARREGAR JOGO', icon: { ios: 'square.and.arrow.down', android: 'save', web: 'save' } },
@@ -32,11 +45,16 @@ const ITEMS: readonly MenuItem[] = [
   { id: 'sair', label: 'SAIR', icon: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout', web: 'logout' } },
 ];
 
+/**
+ * Botões visíveis nesta plataforma. SAIR só no Android: iOS não permite fechar o app por código (diretriz da App
+ * Store) e na web não faz sentido. O painel recalcula a altura a partir desta lista (BUTTONS).
+ */
+const ITEMS: readonly MenuItem[] = ALL_ITEMS.filter((item) => item.id !== 'sair' || Platform.OS === 'android');
+
 /** O que ainda não tem tela: o toque mostra "em breve" em vez de navegar. */
 const SOON: Partial<Record<MenuItem['id'], string>> = {
   multi: 'Multijogador',
   conquistas: 'Conquistas',
-  sair: 'Sair',
 };
 
 /** Login social do rodapé (ações ainda não implementadas). */
@@ -50,10 +68,10 @@ const SOCIALS = [
 const BUTTONS = ITEMS.length;
 const PANEL_GAP = Spacing.two;
 const PANEL_PAD = Spacing.two;
-/** Moldura do painel: padding dos dois lados + folga entre os 7 botões. */
+/** Moldura do painel: padding dos dois lados + folga entre os botões. */
 const PANEL_CHROME = 2 * PANEL_PAD + (BUTTONS - 1) * PANEL_GAP;
-/** Espaço reservado ao rodapé (versão + login) e à folga entre a logo e o painel. */
-const FOOTER_H = 60;
+/** Espaço reservado ao rodapé (aviso de ficção em até duas linhas, versão e login) e à folga entre a logo e o painel. */
+const FOOTER_H = 92;
 const STACK_GAP = Spacing.two;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -114,6 +132,10 @@ export function MainMenuScreen() {
   const labelSize = Math.round(btnH * 0.35 * Math.min(textScale, 1.3));
   const iconSize = Math.round(btnH * 0.45);
 
+  // Alvo do CONTINUAR (partida aberta, ou a salva mais recente) e o rótulo que mostra qual é.
+  const continueTarget = useMemo(() => pickContinueTarget(active, campaigns), [active, campaigns]);
+  const continueText = continueLabel(continueTarget);
+
   /** Aviso rápido no rodapé ("em breve", "nenhuma partida salva"). */
   const showNote = useCallback((text: string) => {
     setNote(text);
@@ -141,22 +163,33 @@ export function MainMenuScreen() {
       return;
     }
     if (!active) {
-      const last = campaigns.reduce<(typeof campaigns)[number] | null>(
-        (best, c) => (!best || c.updatedAt > best.updatedAt ? c : best),
-        null,
-      );
-      if (!last) {
+      if (!continueTarget) {
         showNote('Nenhuma partida salva — comece um NOVO JOGO');
         return;
       }
       // Só entra no Painel se a partida carregou de fato (a falha fica registrada na store).
-      if (!(await gameStore.getState().continueCampaign(last.id))) {
+      if (!(await gameStore.getState().continueCampaign(continueTarget.id))) {
         showNote('Não foi possível carregar a última partida');
         return;
       }
     }
     router.push('/painel');
-  }, [active, busy, campaigns, showNote, status]);
+  }, [active, busy, continueTarget, showNote, status]);
+
+  /** SAIR: confirma antes; a partida aberta já está salva no início do mês, só o mês em curso se perde. */
+  const confirmExit = useCallback(() => {
+    const losesMonth = active !== null && !active.finished;
+    Alert.alert(
+      'Sair do jogo?',
+      losesMonth
+        ? 'A partida aberta fica salva no início do mês; ações do mês ainda não encerrado serão perdidas.'
+        : 'Até a próxima!',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Sair', onPress: () => BackHandler.exitApp() },
+      ],
+    );
+  }, [active]);
 
   const onPressItem = useCallback(
     (id: MenuItem['id']) => {
@@ -178,10 +211,14 @@ export function MainMenuScreen() {
         void continueLast();
         return;
       }
+      if (id === 'sair') {
+        confirmExit();
+        return;
+      }
       const label = SOON[id];
       if (label) showSoon(label);
     },
-    [continueLast, showSoon],
+    [confirmExit, continueLast, showSoon],
   );
 
   const panel = (
@@ -197,29 +234,33 @@ export function MainMenuScreen() {
           alignSelf: sideBySide ? undefined : landscape ? 'flex-start' : 'center',
         },
       ]}>
-      {ITEMS.map((item) => (
-        <Pressable
-          key={item.id}
-          accessibilityLabel={item.label}
-          accessibilityRole="button"
-          disabled={busy}
-          hitSlop={btnH < 44 ? Spacing.one : undefined}
-          onPress={() => onPressItem(item.id)}
-          style={({ pressed }) => [
-            styles.button,
-            { height: btnH, paddingHorizontal: btnH >= 40 ? Spacing.three : Spacing.two + Spacing.half },
-            pressed && !busy && styles.buttonPressed,
-          ]}>
-          <Text
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-            numberOfLines={1}
-            style={[styles.buttonLabel, { fontSize: labelSize }]}>
-            {item.label}
-          </Text>
-          <SymbolView name={item.icon} size={iconSize} tintColor={Menu.icon} />
-        </Pressable>
-      ))}
+      {ITEMS.map((item) => {
+        // CONTINUAR mostra a partida que abre; o rótulo completo vai para a leitura de tela.
+        const label = item.id === 'continuar' ? continueText : item.label;
+        return (
+          <Pressable
+            key={item.id}
+            accessibilityLabel={label}
+            accessibilityRole="button"
+            disabled={busy}
+            hitSlop={btnH < 44 ? Spacing.one : undefined}
+            onPress={() => onPressItem(item.id)}
+            style={({ pressed }) => [
+              styles.button,
+              { height: btnH, paddingHorizontal: btnH >= 40 ? Spacing.three : Spacing.two + Spacing.half },
+              pressed && !busy && styles.buttonPressed,
+            ]}>
+            <Text
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              numberOfLines={1}
+              style={[styles.buttonLabel, { fontSize: labelSize }]}>
+              {label}
+            </Text>
+            <SymbolView name={item.icon} size={iconSize} tintColor={Menu.icon} />
+          </Pressable>
+        );
+      })}
     </View>
   );
 
@@ -259,7 +300,18 @@ export function MainMenuScreen() {
           )}
 
           <View style={styles.footer}>
-            <Text style={styles.version}>{`v${version} - BETA`}</Text>
+            <Text numberOfLines={2} style={styles.fiction}>
+              {FICTION_FOOTER_TEXT}
+            </Text>
+            {/* Tocar na versão abre a tela Sobre. */}
+            <Pressable
+              accessibilityLabel={`Versão ${version}, abrir Sobre`}
+              accessibilityRole="link"
+              hitSlop={Spacing.two}
+              onPress={() => router.push('/sobre')}
+              style={({ pressed }) => [pressed && styles.versionPressed]}>
+              <Text style={styles.version}>{`v${version} - BETA`}</Text>
+            </Pressable>
             <View style={styles.loginRow}>
               <Text style={styles.loginLabel}>Login:</Text>
               {SOCIALS.map((s) => (
@@ -285,6 +337,8 @@ export function MainMenuScreen() {
           </View>
         </View>
       ) : null}
+
+      <FictionNotice />
     </View>
   );
 }
@@ -321,7 +375,9 @@ const styles = StyleSheet.create({
   },
   buttonLabel: { color: Menu.text, fontWeight: '700', letterSpacing: 1 },
   footer: { alignItems: 'flex-end', gap: Spacing.one },
+  fiction: { color: Menu.textDim, fontSize: 11, textAlign: 'right' },
   version: { color: Menu.textDim, fontSize: 12, fontWeight: '600', letterSpacing: 0.4 },
+  versionPressed: { opacity: 0.6 },
   loginRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   loginLabel: { color: Menu.text, fontSize: 13, fontWeight: '600' },
   social: {
