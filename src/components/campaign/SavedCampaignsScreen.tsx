@@ -1,3 +1,4 @@
+import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
@@ -14,6 +15,7 @@ import { campaignMonths, SCENARIOS } from '@/store/scenarios';
 import { durationLabel, scenarioTitle } from './campaignSetupView';
 import { CAREER_STAGE_LABEL, DIFFICULTY, shortMonthLabel } from './labels';
 import { Badge, ConfirmSheet, enterAt, goBack, LAYOUT, PressScale, PrimaryAction, SetupHeader } from './SetupBits';
+import { governmentSummaryLine, savedCardActivityLine } from './saveCardView';
 
 type Pending = { kind: 'carregar'; campaign: CampaignSummary } | { kind: 'apagar'; campaign: CampaignSummary };
 
@@ -191,6 +193,8 @@ function SavedItem({
       ? `${CAREER_STAGE_LABEL[c.stage]} · turno ${c.currentTurn + 1} · antes da posse`
       : `${shortMonthLabel(c.currentMonth)} · mês ${c.currentMonth + 1} de até ${months}`;
   const difficulty = DIFFICULTY[c.difficulty]?.name ?? c.difficulty;
+  const summary = governmentSummaryLine(c.cardSummary, c.stage);
+  const activity = savedCardActivityLine(c, new Date());
 
   return (
     <View
@@ -210,9 +214,17 @@ function SavedItem({
       <Text variant="caption" color="textSecondary">
         {`${difficulty} · ${where} · duração máxima de ${durationLabel(months)}`}
       </Text>
-      <Text variant="caption" color="textMuted" selectable accessibilityHint="Toque e segure para copiar">
-        {`Semente: ${c.seed}`}
-      </Text>
+      {summary !== '' && (
+        <Text variant="caption" color="textSecondary">
+          {summary}
+        </Text>
+      )}
+      {activity !== '' && (
+        <Text variant="caption" color="textSecondary">
+          {activity}
+        </Text>
+      )}
+      <SeedRow seed={c.seed} />
       <View style={styles.itemActions}>
         <PressScale
           onPress={onLoad}
@@ -241,8 +253,73 @@ function SavedItem({
   );
 }
 
+type CopyStatus = 'idle' | 'copiada' | 'falhou';
+
+/** Semente em texto selecionável, com cópia em um toque; a confirmação some sozinha após 2 s. */
+function SeedRow({ seed }: { seed: number }) {
+  const { colors } = useTheme();
+  const [status, setStatus] = useState<CopyStatus>('idle');
+  const alive = useRef(true);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    // Reativa ao remontar (StrictMode): sem isso a cópia em voo acharia que o cartão já saiu.
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+
+  const copy = async () => {
+    let next: CopyStatus;
+    try {
+      next = (await Clipboard.setStringAsync(String(seed))) ? 'copiada' : 'falhou';
+    } catch {
+      next = 'falhou';
+    }
+    if (!alive.current) return;
+    setStatus(next);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setStatus('idle'), 2000);
+  };
+
+  return (
+    <View style={styles.seedRow}>
+      <Text variant="caption" color="textMuted" selectable style={styles.seedText}>
+        {`Semente: ${seed}`}
+      </Text>
+      <PressScale
+        onPress={() => void copy()}
+        accessibilityLabel={`Copiar semente ${seed}`}
+        style={[styles.seedButton, { borderColor: colors.accent }]}>
+        <Text variant="label" color="accent">
+          Copiar
+        </Text>
+      </PressScale>
+      {/* A região fica sempre montada: leitores de tela só anunciam mudanças em regiões que já existem. */}
+      <Text
+        variant="caption"
+        color={status === 'falhou' ? 'negative' : 'positive'}
+        accessibilityLiveRegion="polite"
+        style={styles.seedText}>
+        {status === 'copiada' ? 'Semente copiada' : status === 'falhou' ? 'Não foi possível copiar' : ''}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  seedRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.two },
+  seedText: { flexShrink: 1 },
+  seedButton: {
+    minHeight: MIN_TOUCH,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   content: { gap: Spacing.three, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
   center: { paddingVertical: Spacing.six, alignItems: 'center' },
   empty: {

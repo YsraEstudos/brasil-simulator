@@ -20,6 +20,14 @@ export function formatPercent(fraction: number, decimals = 1): string {
   return Number.isFinite(fraction) ? `${formatNumber(fraction * 100, decimals)}%` : '—';
 }
 
+/** Variação em porcentagem com sinal: 0.018 → "+1,8%"; zero → "±0,0%" */
+export function formatSignedPercent(fraction: number, decimals = 1): string {
+  if (!Number.isFinite(fraction)) return '—';
+  const rounded = Number((fraction * 100).toFixed(decimals));
+  const sign = rounded > 0 ? '+' : rounded < 0 ? '' : '±';
+  return `${sign}${formatPercent(fraction, decimals)}`;
+}
+
 /** Variação em pontos percentuais com sinal: 0.0012 → "+0,1 p.p." */
 export function formatPointsDelta(fractionDelta: number, decimals = 1): string {
   if (!Number.isFinite(fractionDelta)) return '—';

@@ -93,6 +93,45 @@ export interface CampaignSummary {
   stage: CareerStage | null;
   createdAt: string;
   updatedAt: string;
+  /** Tempo total de jogo com a partida aberta e o app em primeiro plano, em ms (migração 8). */
+  playTimeMs: number;
+  /** Última vez que a partida foi aberta ou teve um mês encerrado (ISO 8601); `null` = nunca registrado. */
+  lastPlayedAt: string | null;
+  /** Mini-resumo do turno atual para o cartão do save; `null` em partidas sem resumo gravado. */
+  cardSummary: CampaignCardSummary | null;
+}
+
+/** Mini-resumo do cartão do save (PLANO_MENU_SAVES_CONFIG.md M2.1), gravado em `campaigns.summary_json`. */
+export interface CampaignCardSummary {
+  /** Aprovação do governo, 0–1 (`Indicators.approval`). */
+  approval: number;
+  /** Crescimento do PIB real em 12 meses, fração (`Indicators.gdpGrowth12m`). */
+  gdpGrowth12m: number;
+  /** Mês do mandato (`GameState.monthIndex`). */
+  monthIndex: number;
+}
+
+/** Monta o mini-resumo a partir do estado (função pura). */
+export function cardSummaryOf(state: GameState): CampaignCardSummary {
+  return {
+    approval: state.indicators.approval,
+    gdpGrowth12m: state.indicators.gdpGrowth12m,
+    monthIndex: state.monthIndex,
+  };
+}
+
+/** Lê `summary_json`; JSON ilegível ou incompleto vira `null` (o cartão mostra só o mês). */
+export function parseCardSummary(json: string | null): CampaignCardSummary | null {
+  if (!json) return null;
+  try {
+    const v = JSON.parse(json) as Partial<CampaignCardSummary> | null;
+    if (v && typeof v.approval === 'number' && typeof v.gdpGrowth12m === 'number' && typeof v.monthIndex === 'number') {
+      return { approval: v.approval, gdpGrowth12m: v.gdpGrowth12m, monthIndex: v.monthIndex };
+    }
+  } catch {
+    // segue sem resumo
+  }
+  return null;
 }
 
 export { SaveTooNewError };
@@ -135,8 +174,9 @@ export async function createCampaign(
   await db.transaction(async () => {
     await db.run(
       `INSERT INTO campaigns
-         (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month, current_turn, stage)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, name, scenario_id, scenario_version, difficulty, seed, engine_version, current_month, current_turn, stage,
+          last_played_at, summary_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?)`,
       [
         c.id,
         c.name,
@@ -148,6 +188,7 @@ export async function createCampaign(
         s.monthIndex,
         turnIndexOf(s),
         stageColumn(s),
+        JSON.stringify(cardSummaryOf(s)),
       ],
     );
     if (s.career) {
@@ -186,9 +227,20 @@ export async function recordMonth(
     const updated = await db.run(
       `UPDATE campaigns SET current_month = ?, current_turn = ?, stage = ?, engine_version = ?,
          status = CASE WHEN ? THEN 'encerrada' ELSE status END,
-         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+         last_played_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+         summary_json = ?
        WHERE id = ? AND current_turn = ?`,
-      [state.monthIndex, nextTurn, stageColumn(state), state.engineVersion, options.finish ? 1 : 0, campaignId, turn],
+      [
+        state.monthIndex,
+        nextTurn,
+        stageColumn(state),
+        state.engineVersion,
+        options.finish ? 1 : 0,
+        JSON.stringify(cardSummaryOf(state)),
+        campaignId,
+        turn,
+      ],
     );
     if (updated.changes !== 1) {
       throw new Error(`campanha ${campaignId} não está no turno ${turn}`);
@@ -469,6 +521,9 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     stage: CareerStage | null;
     created_at: string;
     updated_at: string;
+    play_time_ms: number;
+    last_played_at: string | null;
+    summary_json: string | null;
   }>('SELECT * FROM campaigns ORDER BY updated_at DESC, id');
   return rows.map((r) => ({
     id: r.id,
@@ -483,6 +538,9 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     stage: r.stage,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+    playTimeMs: r.play_time_ms,
+    lastPlayedAt: r.last_played_at,
+    cardSummary: parseCardSummary(r.summary_json),
   }));
 }
 
@@ -501,6 +559,29 @@ export async function finishCampaign(db: SqlDatabase, campaignId: string): Promi
     `UPDATE campaigns SET status = 'encerrada', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
     [campaignId],
   );
+}
+
+/**
+ * Marca a última vez que a partida foi aberta (`last_played_at`). Não mexe em `updated_at`, que ordena a lista de
+ * partidas: abrir um save não deve reordená-la.
+ */
+export async function touchCampaign(db: SqlDatabase, campaignId: string): Promise<void> {
+  await db.run(`UPDATE campaigns SET last_played_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`, [
+    campaignId,
+  ]);
+}
+
+/**
+ * Soma tempo de jogo (ms) à partida, arredondado para inteiro. Valores não finitos ou que não somam nada (≤ 0, ou
+ * menores que 0,5 ms após o arredondamento) são ignorados. Devolve o que foi somado (0 se nada). Não mexe em
+ * `updated_at`.
+ */
+export async function addPlayTime(db: SqlDatabase, campaignId: string, ms: number): Promise<number> {
+  if (!Number.isFinite(ms)) return 0;
+  const add = Math.round(ms);
+  if (add <= 0) return 0;
+  await db.run('UPDATE campaigns SET play_time_ms = play_time_ms + ? WHERE id = ?', [add, campaignId]);
+  return add;
 }
 
 /** Apaga a campanha e, em cascata, snapshots, decisões, eventos, relatórios e o resumo da pré-campanha. */

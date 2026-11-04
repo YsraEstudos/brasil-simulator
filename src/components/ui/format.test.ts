@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { deltaSentiment, formatMoneyMillions, formatNumber, formatPercent, formatPointsDelta } from './format';
+import {
+  deltaSentiment,
+  formatMoneyMillions,
+  formatNumber,
+  formatPercent,
+  formatPointsDelta,
+  formatSignedPercent,
+} from './format';
 
 describe('formatação pt-BR', () => {
   it('agrupa milhares com ponto e usa vírgula decimal', () => {
@@ -14,6 +21,13 @@ describe('formatação pt-BR', () => {
   it('formata frações como porcentagem', () => {
     expect(formatPercent(0.045)).toBe('4,5%');
     expect(formatPercent(-0.005, 2)).toBe('−0,50%');
+  });
+
+  it('formata variação em porcentagem com sinal', () => {
+    expect(formatSignedPercent(0.018)).toBe('+1,8%');
+    expect(formatSignedPercent(-0.0234)).toBe('−2,3%');
+    expect(formatSignedPercent(0.00001)).toBe('±0,0%');
+    expect(formatSignedPercent(NaN)).toBe('—');
   });
 
   it('formata variação em pontos percentuais com sinal', () => {

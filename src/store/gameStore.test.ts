@@ -4,7 +4,7 @@ import { migrate } from '@/database/migrate';
 import { LATEST_DB_VERSION, MIGRATIONS } from '@/database/migrations';
 import { openNodeDatabase } from '@/database/nodeDatabase';
 import type { SqlDatabase } from '@/database/types';
-import { createCampaign } from '@/database/campaignRepository';
+import { createCampaign, listCampaigns } from '@/database/campaignRepository';
 import { setSetting } from '@/database/settingsRepository';
 import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import { campaignOutcome, createInitialState, DIRECTIVE_ACTION_ID } from '@/engine';
@@ -397,9 +397,103 @@ describe('migração 2 (configurações)', () => {
       scenarioVersion: '0.1.0',
       state: createInitialState({ content: loadContent('prototipo_ficticio'), difficulty: 'casual', seed: 1 }),
     });
-    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6, 7]);
-    expect(LATEST_DB_VERSION).toBe(7);
+    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6, 7, 8]);
+    expect(LATEST_DB_VERSION).toBe(8);
     await v1.getState().init();
     expect(v1.getState().campaigns.map((c) => c.name)).toEqual(['Campanha da v1']);
+  });
+});
+
+describe('tempo de jogo e última jogada (PLANO_MENU_SAVES_CONFIG.md, Fase M2)', () => {
+  it('abrir a partida grava a última jogada e não mexe em updated_at (a lista não reordena)', async () => {
+    const { db, launchApp } = await device();
+    let app = await launchApp();
+    await app.getState().newCampaign({ name: 'Abrir', difficulty: 'casual' });
+    const id = app.getState().active!.id;
+    await db.run(
+      "UPDATE campaigns SET last_played_at = '2000-01-01T00:00:00.000Z', updated_at = '2001-02-03T00:00:00.000Z' WHERE id = ?",
+      [id],
+    );
+    app = await launchApp();
+    expect(await app.getState().continueCampaign(id)).toBe(true);
+    const summary = app.getState().campaigns.find((c) => c.id === id)!;
+    expect(summary.lastPlayedAt).not.toBe('2000-01-01T00:00:00.000Z');
+    expect(summary.updatedAt).toBe('2001-02-03T00:00:00.000Z');
+    expect(app.getState().error).toBeUndefined();
+  });
+
+  it('falha ao marcar a jogada não impede abrir a partida', async () => {
+    const { db, launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Falha', difficulty: 'casual' });
+    const id = app.getState().active!.id;
+    const failingTouch: SqlDatabase = {
+      ...db,
+      run: (sql, params) =>
+        sql.startsWith('UPDATE campaigns SET last_played_at')
+          ? Promise.reject(new Error('disco cheio'))
+          : db.run(sql, params),
+      close: async () => {},
+    };
+    const degraded = createGameStore({ openDb: async () => failingTouch, random: fakeRandom() });
+    await degraded.getState().init();
+    expect(await degraded.getState().continueCampaign(id)).toBe(true);
+    expect(degraded.getState().active?.id).toBe(id);
+    expect(degraded.getState().error).toBeUndefined();
+  });
+
+  it('encerrar o mês atualiza o resumo do cartão na lista', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Resumo', difficulty: 'casual' });
+    await app.getState().endMonth();
+    const [summary] = app.getState().campaigns;
+    expect(summary.currentMonth).toBe(1);
+    expect(summary.cardSummary?.monthIndex).toBe(1);
+    expect(summary.cardSummary?.approval).toBe(app.getState().active!.state.indicators.approval);
+  });
+
+  it('recordPlayTime soma na partida ativa, na lista e no banco; valores inválidos são ignorados', async () => {
+    const { launchApp } = await device();
+    let app = await launchApp();
+    await app.getState().newCampaign({ name: 'Tempo', difficulty: 'casual' });
+    const id = app.getState().active!.id;
+    await app.getState().recordPlayTime(1500);
+    await app.getState().recordPlayTime(-20);
+    await app.getState().recordPlayTime(NaN);
+    expect(app.getState().campaigns.find((c) => c.id === id)?.playTimeMs).toBe(1500);
+    expect(app.getState().error).toBeUndefined();
+
+    app = await launchApp();
+    expect(app.getState().campaigns[0].playTimeMs).toBe(1500);
+  });
+
+  it('grava o tempo mesmo enquanto o mês é encerrado (busy), sem marcar erro', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Ocupada', difficulty: 'casual' });
+    const month = app.getState().endMonth();
+    expect(app.getState().busy).toBe(true);
+    await app.getState().recordPlayTime(700);
+    expect(await month).toBe(true);
+    expect(app.getState().error).toBeUndefined();
+    expect(app.getState().campaigns[0].playTimeMs).toBe(700);
+  });
+
+  it('com id explícito, grava na partida indicada mesmo que outra esteja ativa', async () => {
+    const { db, launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Ativa', difficulty: 'casual' });
+    const activeId = app.getState().active!.id;
+    await createCampaign(db, {
+      id: 'antiga',
+      name: 'Antiga',
+      scenarioVersion: '0.1.0',
+      state: app.getState().active!.state,
+    });
+    await app.getState().recordPlayTime(900, 'antiga');
+    const saved = await listCampaigns(db);
+    expect(saved.find((c) => c.id === 'antiga')?.playTimeMs).toBe(900);
+    expect(saved.find((c) => c.id === activeId)?.playTimeMs).toBe(0);
   });
 });

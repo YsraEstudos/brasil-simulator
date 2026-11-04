@@ -194,6 +194,18 @@ export const MIGRATIONS: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 8,
+    name: 'resumo_do_save',
+    sql: `
+      -- PLANO_MENU_SAVES_CONFIG.md, Fase M2: o cartão do save mostra tempo de jogo, a última vez que a partida foi
+      -- jogada e um mini-resumo (aprovação, PIB, mês) sem abrir snapshot nenhum. summary_json é gravado pelo
+      -- createCampaign e pelo recordMonth; partidas anteriores ficam sem resumo até o próximo mês (AI_INSTRUCTIONS.md §2.1).
+      ALTER TABLE campaigns ADD COLUMN play_time_ms INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE campaigns ADD COLUMN last_played_at TEXT;
+      ALTER TABLE campaigns ADD COLUMN summary_json TEXT;
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
