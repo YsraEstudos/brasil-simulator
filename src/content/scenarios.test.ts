@@ -269,14 +269,17 @@ describe('brasil_2027_01_v080 (PR 4 do PLANO_GLOBO: inclinação política das U
     expect(v070.regions?.meta.lean).toBeUndefined();
   });
 
-  it('difere do v0.7.0 apenas em id, version, na inclinação (lean) das UFs, nas políticas de prevenção do PR 13 e no bloco career (PLANO_CAMPANHA.md Fase C1)', () => {
+  it('difere do v0.7.0 apenas em id, version, na inclinação (lean) das UFs, nas políticas de prevenção do PR 13, no bloco career (PLANO_CAMPANHA.md Fase C1) e no salário mínimo em R$ (PLANO_QUICK_WINS.md, Fase Q10)', () => {
     const semLean = (scenario: Scenario): Record<string, unknown> => {
       const resto: Record<string, unknown> = { ...scenario };
       delete resto.id;
       delete resto.version;
       delete resto.career;
+      const fiscal = scenario.fiscal ? { ...scenario.fiscal } : undefined;
+      if (fiscal) delete fiscal.minimumWage;
       return {
         ...resto,
+        fiscal,
         policies: scenario.policies.filter((id) => !PREVENTION_POLICY_IDS.includes(id)),
         regions: {
           meta: { ...scenario.regions?.meta, lean: undefined },

@@ -1,8 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
+import { sectorSensitivity, type SensitivityLevel } from '@/components/economy/economyInsights';
 import { Card, formatNumber, formatPercent, formatPointsDelta, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { GameState } from '@/engine';
+import { DEFAULT_SOCIETY_CALIBRATION } from '@/engine/society/calibration';
 import type { SocietyExplanation, SocietyMetric, SocietyState } from '@/engine/society/types';
 
 const SECTOR_LABEL: Record<string, string> = {
@@ -78,7 +81,9 @@ export function SocietyPanel({ state }: { state: GameState }) {
         </Text>
       </Card>
 
-      <Card title="PIB por setor" subtitle="As seis parcelas somam o PIB social do mês.">
+      <Card
+        title="PIB por setor"
+        subtitle="As seis parcelas somam o PIB social do mês. A etiqueta diz quanto o setor sente o preço das exportações, que anda com o câmbio e as commodities.">
         {society.sectors.map((sector) => (
           <View key={sector.id} style={styles.row}>
             <Text variant="label">{SECTOR_LABEL[sector.id] ?? 'Setor'}</Text>
@@ -88,6 +93,7 @@ export function SocietyPanel({ state }: { state: GameState }) {
             <Text variant="caption" color="textSecondary" tabular>
               Crescimento setorial: {formatPercent(sector.growth, 1)}
             </Text>
+            <SensitivityTag value={DEFAULT_SOCIETY_CALIBRATION.termsOfTradeSensitivity[sector.id]} />
           </View>
         ))}
       </Card>
@@ -123,6 +129,28 @@ export function SocietyPanel({ state }: { state: GameState }) {
   );
 }
 
+const LEVEL_DOTS: Record<SensitivityLevel, string> = { alta: '●●●', media: '●●○', baixa: '●○○' };
+const LEVEL_COLOR: Record<SensitivityLevel, 'warning' | 'textSecondary'> = {
+  alta: 'warning',
+  media: 'textSecondary',
+  baixa: 'textSecondary',
+};
+
+/** Etiqueta de sensibilidade do setor (Fase Q10, B75): pontos e texto, a cor só reforça. */
+function SensitivityTag({ value }: { value: number }) {
+  const { colors } = useTheme();
+  const s = sectorSensitivity(value);
+  return (
+    <View accessible accessibilityLabel={s.label} style={[styles.tag, { borderColor: colors.border }]}>
+      <Text variant="caption" color={LEVEL_COLOR[s.level]}>
+        {LEVEL_DOTS[s.level]}
+      </Text>
+      <Text variant="caption" color="textSecondary">
+        {s.label}
+      </Text>
+    </View>
+  );
+}
 const styles = StyleSheet.create({
   root: { gap: Spacing.three },
   row: {
@@ -130,5 +158,15 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'transparent',
     paddingTop: Spacing.one,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    alignItems: 'center',
+    gap: Spacing.one,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
   },
 });

@@ -223,6 +223,12 @@
         "status": "PROVISORIO",
         "note": "Despesas fora do limite (complementação do Fundeb e demais exceções da LC 200/2023). Placeholder: fração do PIB, ordem de grandeza do RTN 2024–2025; soma igual à despesa primária do cenário."
       }
+    },
+    "minimumWage": {
+      "value": 1700,
+      "unit": "R$ por mês",
+      "status": "PROVISORIO",
+      "note": "Salário mínimo na posse (jan/2027). Placeholder: ordem de grandeza do mínimo de 2026 corrigido pela regra de valorização; só a interface lê (o motor usa o índice real)."
     }
   },
   "parameters": {},

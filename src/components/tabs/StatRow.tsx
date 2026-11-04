@@ -30,10 +30,12 @@ export type StatRowProps = {
   goodWhen?: 'up' | 'down';
   /** Texto de contexto abaixo do rótulo. */
   context?: string;
+  /** Cor do contexto quando ele é um alerta; o texto já diz o problema, a cor só reforça. */
+  contextColor?: ThemeColor;
 };
 
 /** Linha de indicador: rótulo e contexto à esquerda, valor e variação (com texto, não só cor) à direita. */
-export function StatRow({ label, value, delta, goodWhen = 'up', context }: StatRowProps) {
+export function StatRow({ label, value, delta, goodWhen = 'up', context, contextColor }: StatRowProps) {
   const sentiment = delta === undefined ? undefined : deltaSentiment(delta, goodWhen).sentiment;
   const deltaText = delta === undefined ? undefined : `Variação no mês: ${formatPointsDelta(delta)}`;
   const accessibilityLabel = [label, value, context, deltaText].filter(Boolean).join('. ');
@@ -43,7 +45,7 @@ export function StatRow({ label, value, delta, goodWhen = 'up', context }: StatR
       <View style={styles.labels}>
         <Text variant="label">{label}</Text>
         {context ? (
-          <Text variant="caption" color="textSecondary">
+          <Text variant="caption" color={contextColor ?? 'textSecondary'}>
             {context}
           </Text>
         ) : null}
