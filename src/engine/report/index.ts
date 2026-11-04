@@ -5,7 +5,9 @@ export {
   adviseEventChoice,
   ADVICE_PARAMS,
   proposalForecast,
+  voteEstimate,
   type DispatchAdvice,
   type EventAdvice,
   type Opinion,
+  type VoteEstimate,
 } from './dispatch';
