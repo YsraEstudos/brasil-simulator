@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ForceHudTheme } from '@/theme/ThemeProvider';
@@ -7,6 +7,7 @@ import { useGame } from '@/store';
 
 import { HudPanel } from './HudBits';
 import { Hud } from './hudTheme';
+import { ScrollTopButton } from './ScrollTopButton';
 
 /**
  * Detalhe de um painel da mesa (GAME_DESIGN.md §4.2): a folha sobe por cima do globo com fundo escurecido e
@@ -14,9 +15,23 @@ import { Hud } from './hudTheme';
  * fora, e ao navegar para outra tela. O conteúdo usa sempre a paleta do HUD (`ForceHudTheme`), para aceitar
  * componentes do sistema de design (`Indicator`, `MonthSummary`…) sem destoar do HUD.
  */
-export function InfoSheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function InfoSheet({
+  title,
+  onClose,
+  onPrevious,
+  onNext,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  children: ReactNode;
+}) {
   const { height } = useWindowDimensions();
   const reduceMotion = useGame((s) => s.reduceMotion);
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const [scrolled, setScrolled] = useState(false);
   // `useState` com inicializador: o valor animado é estável como um ref, mas pode ser lido no render (regras do lint).
   const [anim] = useState(() => new Animated.Value(0));
 
@@ -65,19 +80,61 @@ export function InfoSheet({ title, onClose, children }: { title: string; onClose
           style={[styles.sheet, { maxHeight: height * 0.88, transform: [{ translateY }] }]}>
           <HudPanel
             title={title}
-            accessory={<CloseButton onPress={close} />}
+            accessory={
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                {onPrevious && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Gaveta anterior"
+                    hitSlop={8}
+                    onPress={onPrevious}>
+                    <TextArrow text="‹" />
+                  </Pressable>
+                )}
+                {onNext && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Próxima gaveta"
+                    hitSlop={8}
+                    onPress={onNext}>
+                    <TextArrow text="›" />
+                  </Pressable>
+                )}
+                <CloseButton onPress={close} />
+              </View>
+            }
             style={styles.panel}
             bodyStyle={styles.panelBody}>
             <ScrollView
+              ref={scroll}
+              onScroll={(event) => setScrolled(event.nativeEvent.contentOffset.y > 240)}
+              scrollEventThrottle={100}
               style={styles.scroll}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}>
               <ForceHudTheme>{children}</ForceHudTheme>
             </ScrollView>
+            {scrolled && (
+              <ScrollTopButton onPress={() => scroll.current?.scrollTo({ y: 0, animated: !reduceMotion })} />
+            )}
           </HudPanel>
         </Animated.View>
       </View>
     </View>
+  );
+}
+
+function TextArrow({ text }: { text: string }) {
+  return (
+    <SymbolView
+      name={
+        text === '‹'
+          ? { ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }
+          : { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }
+      }
+      tintColor={Hud.title}
+      size={18}
+    />
   );
 }
 

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,6 +15,7 @@ import { draftCost, useGame, type ActiveCampaign } from '@/store';
 
 import { RoundButton } from './HudBits';
 import { Hud } from './hudTheme';
+import { ScrollTopButton } from './ScrollTopButton';
 
 /** Tamanho do botão redondo de voltar (alvo de toque folgado; o `RoundButton` ainda soma `hitSlop`). */
 const BACK_SIZE = 40;
@@ -56,6 +57,9 @@ export function SubScreen({ title, render }: { title: string; render: (campaign:
 
 function SubScreenBody({ title, render }: { title: string; render: (campaign: ActiveCampaign) => ReactNode }) {
   const { colors } = useTheme();
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const reduceMotion = useGame((s) => s.reduceMotion);
   const status = useGame((s) => s.status);
   const error = useGame((s) => s.error);
   const active = useGame((s) => s.active);
@@ -85,6 +89,9 @@ function SubScreenBody({ title, render }: { title: string; render: (campaign: Ac
         // key: trocar de partida recria a rolagem, voltando ao topo
         <ScrollView
           key={active.id}
+          ref={scroll}
+          onScroll={(event) => setScrolled(event.nativeEvent.contentOffset.y > 240)}
+          scrollEventThrottle={100}
           style={styles.root}
           contentContainerStyle={[styles.content, sideInsets, { paddingBottom: Spacing.six + insets.bottom }]}>
           {alert}
@@ -102,6 +109,9 @@ function SubScreenBody({ title, render }: { title: string; render: (campaign: Ac
           {alert}
           <NoCampaign />
         </ScrollView>
+      )}
+      {active && scrolled && (
+        <ScrollTopButton onPress={() => scroll.current?.scrollTo({ y: 0, animated: !reduceMotion })} />
       )}
     </View>
   );
