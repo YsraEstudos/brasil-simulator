@@ -1,6 +1,7 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { View } from 'react-native';
 
+import { GameConfirmHost } from '@/components/campaign/GameConfirmHost';
 import { Hud } from '@/components/painel/hudTheme';
 import { usePlayTime } from '@/hooks/use-play-time';
 import { useTheme } from '@/hooks/use-theme';
@@ -43,6 +44,8 @@ export default function JogoLayout() {
           <Stack.Screen name="noticias" options={{ animation: 'fade' }} />
           <Stack.Screen name="legado" options={{ animation: 'fade' }} />
         </Stack>
+        {/* Confirmações (decisões irreversíveis, limpar a agenda) por cima de qualquer tela do jogo. */}
+        <GameConfirmHost />
       </View>
     </ThemeProvider>
   );

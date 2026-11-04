@@ -4,16 +4,41 @@ import { APPOINT_ACTION_ID, NEGOTIATE_ACTION_ID, PRESSURE_ACTION_ID, type Decisi
 import { TEST_BILL, TEST_EVENT, TEST_PEC, testContent } from '@/tests/fixtures';
 
 import {
+  clearAgenda,
   draftInput,
   draftCost,
+  DRAFT_HISTORY_LIMIT,
   EMPTY_DRAFT,
   findDecision,
   fits,
   hasDecision,
   hasPendingChoices,
+  pushDraftHistory,
   toggleDecision,
   toggleEventChoice,
+  type AgendaDraft,
 } from './agendaDraft';
+
+describe('limpar agenda e histórico do "Desfazer" (Fase Q7)', () => {
+  const withEvent: AgendaDraft = {
+    decisions: [{ policyId: TEST_BILL.id, agendaCost: 0 }],
+    eventChoices: { [TEST_EVENT.id]: 'a' },
+  };
+
+  it('limpar tira as decisões e mantém as respostas a eventos', () => {
+    expect(clearAgenda(withEvent)).toEqual({ decisions: [], eventChoices: { [TEST_EVENT.id]: 'a' } });
+    expect(clearAgenda(EMPTY_DRAFT)).toBe(EMPTY_DRAFT);
+  });
+
+  it('o histórico guarda o anterior, ignora o que não mudou e respeita o limite', () => {
+    expect(pushDraftHistory([], EMPTY_DRAFT, withEvent)).toEqual([EMPTY_DRAFT]);
+    expect(pushDraftHistory([], withEvent, withEvent)).toEqual([]);
+    const full = Array.from({ length: DRAFT_HISTORY_LIMIT }, () => EMPTY_DRAFT);
+    const pushed = pushDraftHistory(full, withEvent, EMPTY_DRAFT);
+    expect(pushed).toHaveLength(DRAFT_HISTORY_LIMIT);
+    expect(pushed[pushed.length - 1]).toBe(withEvent);
+  });
+});
 
 const content = testContent();
 const policy = (id: string): Decision => ({ policyId: id, agendaCost: 0 });

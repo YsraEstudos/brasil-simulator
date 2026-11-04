@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { INSTRUMENT_LABEL, PROPOSAL_STATUS_LABEL, costText, shortMonthLabel } from '@/components/campaign/labels';
 import { ProposalList, ProposalTrail } from '@/components/campaign/ProposalList';
+import { requestDecision } from '@/components/campaign/gameConfirm';
 import { CongressHemicycle } from '@/components/congress/CongressHemicycle';
 import { Button, Card, formatNumber, formatPercent, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
@@ -32,7 +33,7 @@ import {
   type Proposal,
 } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
-import { draftCost, findDecision, fits, gameStore, hasDecision, useGame, type ActiveCampaign } from '@/store';
+import { draftCost, findDecision, fits, hasDecision, useGame, type ActiveCampaign } from '@/store';
 import { TECHNICAL_MINISTER, type Bloc, type Ministry } from '@/types/scenario';
 
 import { signedInt } from './StatRow';
@@ -64,7 +65,7 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
       return action !== undefined && validateActionTarget(action, d, state, content) === null;
     },
     fits: (d: Decision) => fits(draft, d, content, actionsMax),
-    toggle: (d: Decision) => gameStore.getState().toggleDecision(d),
+    toggle: (d: Decision) => requestDecision(d, content),
   };
 
   // Veto aos acréscimos de uma lei já em execução também aguarda sessão do Congresso.

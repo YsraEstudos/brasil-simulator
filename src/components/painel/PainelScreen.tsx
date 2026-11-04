@@ -8,6 +8,7 @@ import type { SymbolViewProps } from 'expo-symbols';
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campaign/labels';
 import { ElectionsCard } from '@/components/campaign/ElectionsCard';
 import { EventInbox } from '@/components/campaign/EventInbox';
+import { requestDecision } from '@/components/campaign/gameConfirm';
 import {
   canChooseEvent,
   canToggleDecision,
@@ -629,9 +630,7 @@ export function PainelScreen() {
             sanctions={sanctions}
             sanctionChosen={sanctionChosen}
             onSanction={(proposalId, choice) =>
-              gameStore
-                .getState()
-                .toggleDecision({ policyId: SANCTION_ACTION_ID, agendaCost: 0, params: { proposalId, choice } })
+              requestDecision({ policyId: SANCTION_ACTION_ID, agendaCost: 0, params: { proposalId, choice } }, content)
             }
           />
         ) : (

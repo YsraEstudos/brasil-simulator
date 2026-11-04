@@ -88,6 +88,28 @@ export function draftInput(draft: AgendaDraft, content: GameContent): MonthInput
   };
 }
 
+/** Tira todas as decisões da agenda e mantém as respostas a eventos (PLANO_QUICK_WINS.md, B26). */
+export function clearAgenda(draft: AgendaDraft): AgendaDraft {
+  return draft.decisions.length === 0 ? draft : { ...draft, decisions: [] };
+}
+
+/** Quantos passos o "Desfazer" guarda no mês. */
+export const DRAFT_HISTORY_LIMIT = 30;
+
+/**
+ * Guarda o rascunho anterior para o "Desfazer" (B9). Mudança que não muda nada não entra; o mais antigo sai quando
+ * passa do limite.
+ */
+export function pushDraftHistory(
+  history: readonly AgendaDraft[],
+  previous: AgendaDraft,
+  next: AgendaDraft,
+): readonly AgendaDraft[] {
+  if (previous === next) return history;
+  const grown = [...history, previous];
+  return grown.length > DRAFT_HISTORY_LIMIT ? grown.slice(grown.length - DRAFT_HISTORY_LIMIT) : grown;
+}
+
 /** O rascunho tem decisões ou respostas a eventos ainda não confirmadas (seriam perdidas ao trocar de campanha). */
 export function hasPendingChoices(draft: AgendaDraft): boolean {
   return draft.decisions.length > 0 || Object.keys(draft.eventChoices).length > 0;

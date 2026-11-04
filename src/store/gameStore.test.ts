@@ -142,6 +142,40 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     expect(app.getState().draft.decisions).toHaveLength(1);
   });
 
+  it('desfazer, limpar agenda e recomeçar o mês (PLANO_QUICK_WINS.md, Fase Q7)', async () => {
+    const { launchApp } = await device();
+    const app = await launchApp();
+    await app.getState().newCampaign({ name: 'Desfazer', difficulty: 'estrategica' });
+    const s = () => app.getState();
+    s().toggleDecision({ policyId: 'contingenciamento', agendaCost: 0 });
+    s().toggleEventChoice('alta_petroleo', 'qualquer');
+    s().toggleDecision({ policyId: 'irpf_tabela', agendaCost: 0 });
+    expect(s().draftHistory).toHaveLength(3);
+
+    // Desfazer volta um passo por vez.
+    s().undoDraft();
+    expect(s().draft.decisions.map((d) => d.policyId)).toEqual(['contingenciamento']);
+    expect(s().draft.eventChoices).toEqual({ alta_petroleo: 'qualquer' });
+
+    // Limpar agenda tira as decisões e mantém as respostas a eventos; dá para desfazer.
+    s().clearAgenda();
+    expect(s().draft).toEqual({ decisions: [], eventChoices: { alta_petroleo: 'qualquer' } });
+    s().undoDraft();
+    expect(s().draft.decisions).toHaveLength(1);
+
+    // Recomeçar tira tudo; também dá para desfazer.
+    s().clearDraft();
+    expect(s().draft).toEqual({ decisions: [], eventChoices: {} });
+    s().undoDraft();
+    expect(s().draft.eventChoices).toEqual({ alta_petroleo: 'qualquer' });
+
+    // Virar o mês zera o histórico; desfazer sem histórico não faz nada.
+    await s().endMonth();
+    expect(s().draftHistory).toEqual([]);
+    s().undoDraft();
+    expect(s().draft).toEqual({ decisions: [], eventChoices: {} });
+  });
+
   it('cenário novo continua após 12 meses e encerra no primeiro mandato (derrota ou fim), sem avançar mais', async () => {
     const { launchApp } = await device();
     const app = await launchApp();
