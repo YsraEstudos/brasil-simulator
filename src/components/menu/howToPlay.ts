@@ -22,6 +22,16 @@ export const HOW_TO_PLAY_SECTIONS: readonly HowToPlaySection[] = [
     ],
   },
   {
+    id: 'ganhar-perder',
+    title: 'Como se ganha e como se perde',
+    paragraphs: [
+      'O jogo termina ao alcançar a duração do cenário ou quando um sucessor toma posse; o Legado mostra os resultados do governo.',
+      'A campanha também termina por condenação no impeachment ou derrota na eleição geral, inclusive quando o presidente apoia um sucessor.',
+      'Se disputar e vencer a reeleição no primeiro mandato, o governo continua no segundo, até o limite do cenário.',
+      'Não há uma pontuação única que determine vitória: avalie suas metas e o país que deixou no relatório de Legado.',
+    ],
+  },
+  {
     id: 'painel',
     title: 'O Painel',
     paragraphs: [
@@ -37,8 +47,8 @@ export const HOW_TO_PLAY_SECTIONS: readonly HowToPlaySection[] = [
     paragraphs: [
       'Cada mês é um turno, e o topo mostra o turno atual e as ações de agenda que ainda restam.',
       'São 4 ações por mês no modo Casual e 3 na Estratégica e no Realismo Extremo; cada decisão gasta ações, e sancionar ou vetar não gasta nenhuma.',
-      'Eventos aparecem na folha Alertas e Eventos com prazo: sem resposta até o fim do mês, vale a escolha padrão do evento.',
-      'Quando estiver pronto, toque em Encerrar o mês, na doca de baixo; a legenda mostra as ações usadas, e o Relatório do Mês abre com o que mudou e o porquê.',
+      'Eventos aparecem na folha Alertas e Eventos com prazo: sem resposta até o fim do mês seguinte ao surgimento, vale a escolha padrão do evento.',
+      'Quando estiver pronto, segure Encerrar o mês por meio segundo e confira as pendências antes de confirmar. Com teclado ou leitor de tela, ative o botão normalmente.',
     ],
   },
   {
