@@ -106,6 +106,8 @@ export const scenarioFiscalSchema = z
         exceptions: dataValueSchema,
       })
       .strict(),
+    /** Salário mínimo em R$ na posse (jan/2027); a interface multiplica pelo índice real e pelos preços (D-Q4). */
+    minimumWage: dataValueSchema.optional(),
   })
   .strict();
 export type ScenarioFiscal = z.infer<typeof scenarioFiscalSchema>;

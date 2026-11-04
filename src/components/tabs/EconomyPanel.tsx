@@ -1,5 +1,23 @@
-import { monthLabel } from '@/components/campaign/labels';
-import { Card, formatFiscalShare, formatNumber, formatPercent, type FiscalDisplayUnit, Text } from '@/components/ui';
+import { monthLabel, shortMonthLabel } from '@/components/campaign/labels';
+import {
+  discretionaryFloorAlert,
+  interestShareOfRevenue,
+  minimumWageReais,
+  monetaryStance,
+  nextCopom,
+  nextCopomWhen,
+  rigidityShare,
+  shareTone,
+} from '@/components/economy/economyInsights';
+import {
+  Alert,
+  Card,
+  formatFiscalShare,
+  formatNumber,
+  formatPercent,
+  type FiscalDisplayUnit,
+  Text,
+} from '@/components/ui';
 import { loadContent } from '@/content';
 import {
   currentNominalGdpMillions,
@@ -57,6 +75,16 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
     formatFiscalShare(fraction, gdp, unit, { decimals, signed: true });
   const flowContext = FLOW_CONTEXT[unit];
 
+  // Leituras da Fase Q10 (economyInsights.ts): postura do BC, próximo Copom, piso, engessamento e juros.
+  const stance = monetaryStance(e.effectiveRealRate, calibration.juro_neutro);
+  const copom = nextCopom(state.monthIndex, content.scenario.copomMonths);
+  const floorAlert = discretionaryFloorAlert(f.discretionary, calibration.piso_custeio);
+  const rigidity = rigidityShare(f);
+  const interestShare = interestShareOfRevenue(e.interest, e.revenue);
+  const wageBase = content.scenario.fiscal?.minimumWage?.value;
+  const otherUnit: FiscalDisplayUnit = unit === 'pib' ? 'reais' : 'pib';
+  const debtOther = formatFiscalShare(e.grossDebt, gdp, otherUnit, { decimals: 1 });
+
   const copomText = (() => {
     if (!lastReport) return 'Nenhum mês encerrado ainda.';
     if (!lastReport.copom) return 'Sem reunião do Copom no último mês encerrado.';
@@ -73,7 +101,19 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
       </Text>
 
       <Card title="Juros e preços">
-        <StatRow label="Selic" value={formatPercent(e.selic, 2)} context="Meta anual" />
+        <StatRow
+          label="Selic"
+          value={formatPercent(e.selic, 2)}
+          context={`Meta anual · juro real ${formatPercent(e.effectiveRealRate, 2)}`}
+        />
+        <StatRow label="Postura do Banco Central" value={stance.label} context={stance.text} />
+        {copom ? (
+          <StatRow
+            label="Próxima reunião do Copom"
+            value={shortMonthLabel(copom.monthIndex)}
+            context={nextCopomWhen(copom)}
+          />
+        ) : null}
         <StatRow
           label="Expectativa de inflação"
           value={formatPercent(e.inflationExpectation, 1)}
@@ -86,7 +126,11 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
           goodWhen="down"
           context={`meta ${formatPercent(calibration.meta_inflacao, 1)} ± ${formatNumber(calibration.tolerancia_meta * 100, 1)} p.p.`}
         />
-        <StatRow label="Juro real efetivo" value={formatPercent(e.effectiveRealRate, 2)} />
+        <StatRow
+          label="Juro real efetivo"
+          value={formatPercent(e.effectiveRealRate, 2)}
+          context={`Média dos últimos meses; neutro: ${formatPercent(calibration.juro_neutro, 1)}`}
+        />
       </Card>
 
       <Card title="Atividade">
@@ -134,13 +178,33 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
           context={unit === 'pib' ? '% do PIB, acumulado em 12 meses' : 'R$, acumulado em 12 meses'}
         />
         <StatRow label="Juros nominais" value={flow(e.interest)} context={flowContext} />
+        {interestShare !== null ? (
+          <StatRow
+            label="Juros sobre a receita"
+            value={formatPercent(interestShare, 0)}
+            context={`De cada R$ 100 arrecadados, R$ ${formatNumber(interestShare * 100, 0)} pagariam os juros da dívida`}
+            contextColor={shareTone(interestShare, 0.25, 0.4)}
+          />
+        ) : null}
         <StatRow
           label="Dívida bruta"
           value={flow(e.grossDebt)}
-          context={unit === 'pib' ? '% do PIB' : 'Saldo acumulado'}
+          context={unit === 'pib' ? `% do PIB · cerca de ${debtOther}` : `Saldo acumulado · ${debtOther}`}
         />
         <StatRow label="Credibilidade" value={formatNumber(e.credibility * 100, 0)} context="Índice de 0 a 100" />
       </Card>
+
+      {floorAlert ? (
+        <Alert
+          tone={floorAlert.level === 'abaixo' ? 'negative' : 'warning'}
+          title={floorAlert.level === 'abaixo' ? 'Discricionárias abaixo do piso' : 'Discricionárias perto do piso'}
+          message={
+            floorAlert.level === 'abaixo'
+              ? `Abaixo de ${flow(calibration.piso_custeio)}, serviços param e a aprovação cai todo mês.`
+              : `Faltam ${flow(floorAlert.room, 2)} para o piso de funcionamento (${flow(calibration.piso_custeio)}). Novas despesas obrigatórias ou perda de receita podem levar a paralisações.`
+          }
+        />
+      ) : null}
 
       <Card
         title="Limite de despesas"
@@ -153,6 +217,12 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
           label="Limite"
           value={flow(f.spendingLimit)}
           context={`Cresce ${formatPercent(f.limitRealGrowth, 1)} acima da inflação neste ano`}
+        />
+        <StatRow
+          label="Engessamento"
+          value={formatPercent(rigidity, 0)}
+          context={`Obrigatórias e vinculadas sobre a despesa: só ${formatPercent(1 - rigidity, 0)} é de livre escolha`}
+          contextColor={shareTone(rigidity, 0.9, 0.93)}
         />
         {MANDATORY_GROUPS.map((g) => (
           <StatRow key={g} label={MANDATORY_LABEL[g]} value={flow(f.mandatory[g])} context={flowContext} />
@@ -176,11 +246,19 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
         {f.extraordinary > 0 && (
           <StatRow label="Créditos extraordinários" value={flow(f.extraordinary, 2)} context="Fora do limite" />
         )}
-        <StatRow
-          label="Salário mínimo real"
-          value={formatNumber(f.minimumWageIndex * 100, 1)}
-          context="Índice, jan/2027 = 100"
-        />
+        {wageBase !== undefined ? (
+          <StatRow
+            label="Salário mínimo"
+            value={`R$ ${formatNumber(minimumWageReais(wageBase, f.minimumWageIndex, e.priceLevel), 0)}`}
+            context={`Por mês · índice real ${formatNumber(f.minimumWageIndex * 100, 1)} (jan/2027 = 100)`}
+          />
+        ) : (
+          <StatRow
+            label="Salário mínimo real"
+            value={formatNumber(f.minimumWageIndex * 100, 1)}
+            context="Índice, jan/2027 = 100"
+          />
+        )}
       </Card>
 
       <Card
