@@ -11,7 +11,7 @@ export const unstable_settings = { anchor: 'painel' };
 
 /**
  * Telas do jogo (grupo `(jogo)`), numa pilha sem cabeçalho e sem barra de abas: o Painel é a âncora e Gabinete,
- * Congresso, Economia, Notícias e Legado sobem sobre ele como subtelas, com o próprio botão "Voltar ao Painel".
+ * Congresso, Economia, Notícias, Legado e Linha do tempo sobem sobre ele como subtelas, com o próprio botão "Voltar ao Painel".
  */
 export default function JogoLayout() {
   const { scheme, colors } = useTheme();
@@ -43,6 +43,7 @@ export default function JogoLayout() {
           <Stack.Screen name="economia" options={{ animation: 'fade_from_bottom' }} />
           <Stack.Screen name="noticias" options={{ animation: 'fade' }} />
           <Stack.Screen name="legado" options={{ animation: 'fade' }} />
+          <Stack.Screen name="linha-do-tempo" options={{ animation: 'fade' }} />
         </Stack>
         {/* Confirmações (decisões irreversíveis, limpar a agenda) por cima de qualquer tela do jogo. */}
         <GameConfirmHost />

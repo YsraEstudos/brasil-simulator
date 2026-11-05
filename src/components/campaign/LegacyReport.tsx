@@ -20,6 +20,7 @@ import type { PublicPolicyState } from '@/engine/publicPolicies/types';
 import type { SocietyState } from '@/engine/society/types';
 import { gameStore, useGame } from '@/store';
 
+import { legacyProposals } from './legacyModel';
 import { indicatorLabel, INDICATOR_META, INDICATOR_ORDER, PROPOSAL_STATUS_LABEL, monthLabel } from './labels';
 import { useFiscal } from './useFiscal';
 
@@ -72,9 +73,7 @@ export function LegacyReport({ state, content, campaignId }: LegacyReportProps) 
   const { signs, score } = legacyScore(initialValues, state.indicators);
   const improved = INDICATOR_ORDER.filter((k) => signs[k] === 1).length;
 
-  const approved = state.proposals.filter((p) => ['aprovada', 'em_execucao', 'concluida'].includes(p.status));
-  const rejected = state.proposals.filter((p) => p.status === 'rejeitada');
-  const executed = state.proposals.filter((p) => p.status === 'em_execucao' || p.status === 'concluida');
+  const { approved, rejected, executed } = legacyProposals(state.proposals);
   const phaseLabels: Record<string, string> = {
     planejamento: 'Planejamento',
     licenciamento: 'Licenciamento',
@@ -196,6 +195,16 @@ export function LegacyReport({ state, content, campaignId }: LegacyReportProps) 
       <ProposalGroup title="Propostas aprovadas" proposals={approved} content={content} />
       <ProposalGroup title="Propostas rejeitadas" proposals={rejected} content={content} />
       <ProposalGroup title="Propostas executadas" proposals={executed} content={content} />
+
+      <Card>
+        <Button
+          label="Ver a linha do tempo do mandato"
+          variant="secondary"
+          onPress={() => router.push('/linha-do-tempo')}
+          block
+          accessibilityHint="Abre leis, eventos, decisões e eleições mês a mês"
+        />
+      </Card>
 
       {campaignId && <RestartCard campaignId={campaignId} />}
     </View>

@@ -1,5 +1,6 @@
 import { isGraveEvent } from '@/components/campaign/eventGravity';
 import { shortMonthLabel } from '@/components/campaign/labels';
+import { ENACTED_STATUSES } from '@/components/campaign/legacyModel';
 import type { FiredEvent } from '@/database/campaignRepository';
 import {
   formatEventText,
@@ -8,7 +9,6 @@ import {
   type GameContent,
   type GameState,
   type Proposal,
-  type ProposalStatus,
 } from '@/engine';
 
 /**
@@ -28,7 +28,7 @@ export interface ChartMark {
 export const MARK_SYMBOL: Record<ChartMarkKind, string> = { lei: '▲', crise: '◆' };
 
 /** Situações em que a proposta virou lei (as mesmas do relatório de legado). */
-const ENACTED: ReadonlySet<ProposalStatus> = new Set<ProposalStatus>(['aprovada', 'em_execucao', 'concluida']);
+const ENACTED = ENACTED_STATUSES;
 
 /** Uma marca por lei: a primeira transição da trilha para aprovada, em execução ou concluída. */
 export function lawMarks(

@@ -25,6 +25,7 @@ import {
   tenureText,
 } from '@/components/congress/congressDeadlines';
 import { ProposalFilterBar } from '@/components/congress/ProposalFilterBar';
+import { VoteHistoryCard } from '@/components/congress/VoteHistoryCard';
 import { VoteMeter } from '@/components/congress/VoteMeter';
 import { Icon, ICONS } from '@/components/campaign/GabineteBits';
 import { Alert, Button, Card, formatNumber, formatPercent, Text } from '@/components/ui';
@@ -212,6 +213,8 @@ export function CongressPanel({ campaign }: { campaign: ActiveCampaign }) {
       ) : null}
 
       {showClosed && closed.length > 0 ? <ProposalList proposals={closed} content={content} /> : null}
+
+      <VoteHistoryCard state={state} content={content} />
 
       {blocs.map((bloc) => (
         <BlocCard key={bloc.id} bloc={bloc} state={state} content={content} />

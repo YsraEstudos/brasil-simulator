@@ -23,7 +23,7 @@ export function ProposalFilterBar({
 }) {
   return (
     <View style={styles.root}>
-      <Row title="Situação" label="Filtrar propostas por situação">
+      <FilterRow title="Situação" label="Filtrar propostas por situação">
         <FilterChip
           label="Todas"
           active={filter.situation === null}
@@ -39,8 +39,8 @@ export function ProposalFilterBar({
             onPress={() => onChange({ ...filter, situation: filter.situation === id ? null : id })}
           />
         ))}
-      </Row>
-      <Row title="Tipo" label="Filtrar propostas por tipo">
+      </FilterRow>
+      <FilterRow title="Tipo" label="Filtrar propostas por tipo">
         <FilterChip label="Todos" active={filter.kind === null} onPress={() => onChange({ ...filter, kind: null })} />
         {PROPOSAL_KINDS.map((kind) => (
           <FilterChip
@@ -52,12 +52,13 @@ export function ProposalFilterBar({
             onPress={() => onChange({ ...filter, kind: filter.kind === kind ? null : kind })}
           />
         ))}
-      </Row>
+      </FilterRow>
     </View>
   );
 }
 
-function Row({ title, label, children }: { title: string; label: string; children: ReactNode }) {
+/** Linha de chips com título, rolando na horizontal (também no histórico de votações e na linha do tempo, H6). */
+export function FilterRow({ title, label, children }: { title: string; label: string; children: ReactNode }) {
   return (
     <View style={styles.row}>
       <Text variant="caption" color="textMuted" style={styles.title}>
