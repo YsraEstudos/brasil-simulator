@@ -27,11 +27,11 @@ export function decodeRle(rle: readonly number[], length: number): Uint8Array {
   let at = 0;
   for (let i = 0; i + 1 < rle.length; i += 2) {
     const count = rle[i + 1];
-    if (at + count > length) throw new RangeError('RLE do índice de UF maior que a grade');
+    if (at + count > length) throw new RangeError('RLE maior que a grade');
     out.fill(rle[i], at, at + count);
     at += count;
   }
-  if (at !== length) throw new RangeError('RLE do índice de UF menor que a grade');
+  if (at !== length) throw new RangeError('RLE menor que a grade');
   return out;
 }
 

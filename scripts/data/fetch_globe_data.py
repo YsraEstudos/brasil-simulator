@@ -28,6 +28,10 @@ FILES = {
     "naturalearth/NE2_50M_SR_W.zip": "https://naciscdn.org/naturalearth/50m/raster/NE2_50M_SR_W.zip",
     "naturalearth/ne_10m_rivers_lake_centerlines.geojson": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_rivers_lake_centerlines.geojson",
     "naturalearth/ne_10m_lakes.geojson": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_lakes.geojson",
+    # Países (PLANO_PAISES.md, P1): unidades no ponto de vista do Brasil, capitais e fronteiras terrestres.
+    "naturalearth/ne_10m_admin_0_countries_bra.geojson": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries_bra.geojson",
+    "naturalearth/ne_10m_populated_places.geojson": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_populated_places.geojson",
+    "naturalearth/ne_50m_admin_0_boundary_lines_land.geojson": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_boundary_lines_land.geojson",
     "ibge/Biomas_250mil.zip": "https://geoftp.ibge.gov.br/informacoes_ambientais/estudos_ambientais/biomas/vetores/Biomas_250mil.zip",
     "ibge/uf.geojson": "https://servicodados.ibge.gov.br/api/v3/malhas/paises/BR?formato=application/vnd.geo%2Bjson&intrarregiao=UF&qualidade=maxima",
     "ibge/uf_metadata.json": "https://servicodados.ibge.gov.br/api/v1/localidades/estados",

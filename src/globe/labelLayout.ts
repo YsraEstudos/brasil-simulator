@@ -10,6 +10,7 @@ import {
   type Rect,
   type UfLabelCandidate,
 } from './labels';
+import { buildCountryCandidates, type CountryLabelPoint } from './countryLabels';
 import { buildMarkerCandidates, type GlobeMarker, type MarkerPoint } from './markers';
 
 /**
@@ -93,6 +94,8 @@ export type GlobeLayoutInput = {
   tier?: LabelTier;
   /** Marcadores de eventos e notícias (um por UF): entram na colisão com prioridade acima das siglas. */
   markers?: readonly GlobeMarker[];
+  /** Nomes dos países (PLANO_PAISES.md, P1): entram na mesma colisão, abaixo de qualquer rótulo de UF. */
+  countries?: boolean;
 };
 
 /** Candidatos de rótulo na tela agora (antes de colisão): o nível sai da altitude e o tamanho da UF dos px por grau. */
@@ -111,19 +114,32 @@ export type GlobeLayout = {
   /** Ids (`SP:sigla`, `DF:pin`, `SP:capital`, `CE:marker`, `CE:badge`) dos rótulos que cabem agora. */
   shown: Set<string>;
   markerPoints: MarkerPoint[];
+  /** Nomes de país desenhados agora, com a caixa na tela (para o toque no nome). */
+  countryPoints: CountryLabelPoint[];
 };
 
 /**
  * Layout completo de um quadro: rótulos e marcadores juntos, guloso por prioridade (marcador crítico > marcador >
- * sigla/pin > capital). O selo (`CE:badge`) vai junto do marcador mostrado quando o grupo tem mais de um item.
+ * sigla/pin > capital > nome de país). O selo (`CE:badge`) vai junto do marcador mostrado quando o grupo tem mais de um item.
  */
 export function layoutGlobe(input: GlobeLayoutInput): GlobeLayout {
   const markers = input.markers ?? [];
+  const countries = input.countries
+    ? buildCountryCandidates({
+        project: input.project,
+        pixelsPerDegree: pixelsPerDegreeAtAltitude(input.altitude, input.viewport.height, input.fovDeg),
+        scale: input.scale,
+      })
+    : [];
   const candidates = [
     ...globeLabelCandidates(input),
     ...buildMarkerCandidates(markers, { project: input.project, scale: input.scale }),
+    ...countries,
   ];
   const shown = layoutLabels(candidates, input.viewport, input.reserved);
+  const countryPoints: CountryLabelPoint[] = countries
+    .filter((c) => shown.has(c.id))
+    .map((c) => ({ countryId: c.countryId, x: c.x, y: c.y, w: c.w, h: c.h }));
   const markerPoints: MarkerPoint[] = [];
   for (const m of markers) {
     const c = candidates.find((x) => x.id === `${m.sigla}:marker`);
@@ -131,7 +147,7 @@ export function layoutGlobe(input: GlobeLayoutInput): GlobeLayout {
     markerPoints.push({ sigla: m.sigla, x: c.x, y: c.y });
     if (m.count > 1) shown.add(`${m.sigla}:badge`);
   }
-  return { shown, markerPoints };
+  return { shown, markerPoints, countryPoints };
 }
 
 /** Ids (`SP:sigla`, `DF:pin`, `SP:capital`) dos rótulos que cabem agora, depois de prioridade e colisões. */

@@ -341,3 +341,80 @@ void main() {
   vec3 color = mix(vec3(0.063, 0.078, 0.110), vec3(1.0), fill);
   gl_FragColor = vec4(color, alpha);
 }`;
+
+/**
+ * Nomes dos países (PLANO_PAISES.md, P1): o mesmo posicionamento dos rótulos das UFs (`labelVertexShader`), com o atlas
+ * de campo de distância. Cada nome ocupa um canal (`aChannel` = máscara R, G ou B).
+ */
+export const countryLabelVertexShader = /* glsl */ `
+precision highp float;
+uniform vec2 uViewport;
+uniform float uRadius;
+uniform float uScale;
+uniform float uDpr;
+attribute vec2 aCorner;
+attribute vec2 aUv;
+attribute vec3 aChannel;
+attribute float aVisible;
+varying vec2 vUv;
+varying vec3 vChannel;
+void main() {
+  vUv = vec2(aUv.x, 1.0 - aUv.y);
+  vChannel = aChannel;
+  vec3 dir = normalize(position);
+  vec3 p = dir * uRadius;
+  float facing = dot(dir, normalize(cameraPosition - p));
+  vec4 clip = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  if (aVisible < 0.5 || facing < ${f(LABEL_MIN_FACING)} || clip.w <= 0.0) {
+    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+    return;
+  }
+  vec2 px = clip.xy / clip.w * 0.5 * uViewport + vec2(aCorner.x, -aCorner.y) * uScale;
+  px = floor(px * uDpr + 0.5) / uDpr;
+  gl_Position = vec4(px * 2.0 / uViewport, 0.0, 1.0);
+}`;
+
+/** Texto cinza-azulado com contorno escuro, tirados do campo de distância (0,5 = borda da letra). */
+export function countryLabelFragmentShader(spreadPx: number, strokePx: number): string {
+  return /* glsl */ `
+precision highp float;
+uniform sampler2D uAtlas;
+varying vec2 vUv;
+varying vec3 vChannel;
+void main() {
+  float v = dot(texture2D(uAtlas, vUv).rgb, vChannel);
+  float d = (v - 0.5) * ${f(2 * spreadPx)}; // px do atlas; positivo dentro da letra
+  float aa = clamp(fwidth(d) * 0.75, 0.05, 1.5);
+  float fill = smoothstep(-aa, aa, d);
+  float alpha = smoothstep(${f(-strokePx)} - aa, ${f(-strokePx)} + aa, d);
+  if (alpha < 0.004) discard;
+  vec3 color = mix(vec3(0.063, 0.078, 0.110), vec3(0.808, 0.847, 0.902), fill);
+  gl_FragColor = vec4(color, alpha);
+}`;
+}
+
+/**
+ * Fronteiras terrestres e contorno do país selecionado (PLANO_PAISES.md, P1): linhas sobre a esfera, sem teste de
+ * profundidade (o relevo exagerado as esconderia), então o lado oculto do globo é descartado aqui, com um esmaecimento
+ * perto do limbo.
+ */
+export const borderVertexShader = /* glsl */ `
+precision highp float;
+uniform float uRadius;
+varying float vFacing;
+void main() {
+  vec3 dir = normalize(position);
+  vec3 p = dir * uRadius;
+  vFacing = dot(dir, normalize(cameraPosition - p));
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}`;
+
+export const borderFragmentShader = /* glsl */ `
+precision highp float;
+uniform vec3 uColor;
+uniform float uOpacity;
+varying float vFacing;
+void main() {
+  if (vFacing < 0.0) discard;
+  gl_FragColor = vec4(uColor, uOpacity * smoothstep(0.0, 0.15, vFacing));
+}`;

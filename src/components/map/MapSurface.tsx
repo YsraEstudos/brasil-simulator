@@ -26,6 +26,9 @@ export interface MapSurfaceProps {
   viewModel: RegionalMapViewModel;
   /** Toque numa UF (sigla) ou no fundo/oceano (`null`). */
   onSelect: (sigla: string | null) => void;
+  /** País selecionado e toque num país fora do Brasil (só no globo: o mapa 2D mostra só o Brasil). PLANO_PAISES.md, P1. */
+  selectedCountryId?: string | null;
+  onSelectCountry?: (id: string) => void;
   /**
    * Toque num marcador de eventos e notícias (`viewModel.markers`): o globo e o mapa 2D chamam o mesmo tratador. O 2D
    * leve não desenha marcadores (eles seguem nos Alertas e nas Notícias).
@@ -151,6 +154,8 @@ function MapSurfaceRenderer({
   renderer,
   viewModel,
   onSelect,
+  selectedCountryId,
+  onSelectCountry,
   onMarkerPress,
   onPulseDone,
   onReady,
@@ -208,6 +213,8 @@ function MapSurfaceRenderer({
         fills={viewModel.fills}
         selectedId={viewModel.selectedId}
         onSelect={onSelect}
+        selectedCountryId={selectedCountryId}
+        onSelectCountry={onSelectCountry}
         onReady={onReady}
         paused={paused}
         onGlobeFailure={reportGlobeFailure}

@@ -17,6 +17,8 @@ import { cloudCapBuffers } from './cloudCap';
 import { CLOUD_DRIFT_PER_SECOND, shouldAnimateClouds, startCloudLoop } from './cloudLoop';
 import { EARTH_RADIUS_M, TILE_GRID, terrainExaggeration } from './config';
 import type { GlobeController } from './controller';
+import { borderRadius, borderSegments, outlineSegments } from './countryBorders';
+import type { Country } from './countries';
 import { deviceUtc } from './deviceClock';
 import { ufFillGeometries } from './fills';
 import { lonLatToVec3, raySphere, tileBounds, vec3ToLonLat, type Vec3 } from './geo';
@@ -28,6 +30,8 @@ import type { GlobeBudget } from './qualityProfiles';
 import {
   atmosphereFragmentShader,
   atmosphereVertexShader,
+  borderFragmentShader,
+  borderVertexShader,
   cityLightsFragmentShader,
   cityLightsVertexShader,
   cloudFragmentShader,
@@ -44,6 +48,14 @@ import { computeSun, sunKey, type SkyInput } from './visualClock';
 import { sunTransition } from './motion';
 
 const DEG = Math.PI / 180;
+
+/** Fronteiras: cinza-claro discreto, desenhadas antes do mapa de calor das UFs (4), que continua legível por cima. */
+const BORDER_COLOR = '#d6dde8';
+const BORDER_OPACITY = 0.55;
+const BORDER_RENDER_ORDER = 3;
+/** Contorno do país selecionado: o mesmo dourado da UF selecionada, na mesma camada (5). */
+const SELECTION_COLOR = '#ffe27a';
+const SELECTION_RENDER_ORDER = 5;
 
 /** Um quadro desenhado, para medir desempenho sem `setState`. */
 export type SceneFrame = { atMs: number; moving: boolean; tilesBusy: boolean };
@@ -214,6 +226,8 @@ function UfFills({ fills, invalidate }: { fills: Readonly<Record<string, string>
 type Props = {
   controller: GlobeController;
   selectedUf: { polygons: number[][][] } | null;
+  /** País selecionado (PLANO_PAISES.md, P1): ganha o contorno dourado. */
+  selectedCountry: Pick<Country, 'outline'> | null;
   /** Cor de cada UF (sigla → hex) no mapa de calor; `null` = sem mapa. */
   fills?: Readonly<Record<string, string>> | null;
   onStats?: (s: SceneStats) => void;
@@ -247,6 +261,7 @@ type Props = {
 export function GlobeScene({
   controller,
   selectedUf,
+  selectedCountry,
   fills,
   onStats,
   reservedRects,
@@ -632,6 +647,64 @@ export function GlobeScene({
     };
   }, [highlight, invalidate]);
 
+  // Fronteiras do mundo (uma malha de linhas, uma chamada de desenho) e contorno do país selecionado: o mesmo shader,
+  // que descarta o lado oculto do globo (as linhas não testam profundidade, senão o relevo exagerado as cobriria).
+  const borders = useMemo(() => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(borderSegments(), 3));
+    const material = new THREE.ShaderMaterial({
+      vertexShader: borderVertexShader,
+      fragmentShader: borderFragmentShader,
+      uniforms: {
+        uRadius: { value: 1 },
+        uColor: { value: new THREE.Color(BORDER_COLOR) },
+        uOpacity: { value: BORDER_OPACITY },
+      },
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const lines = new THREE.LineSegments(geometry, material);
+    lines.frustumCulled = false;
+    lines.renderOrder = BORDER_RENDER_ORDER;
+    return lines;
+  }, []);
+  const countryHighlight = useMemo(() => {
+    if (!selectedCountry) return null;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(outlineSegments(selectedCountry), 3));
+    const material = new THREE.ShaderMaterial({
+      vertexShader: borderVertexShader,
+      fragmentShader: borderFragmentShader,
+      uniforms: {
+        uRadius: (borders.material as THREE.ShaderMaterial).uniforms.uRadius,
+        uColor: { value: new THREE.Color(SELECTION_COLOR) },
+        uOpacity: { value: 1 },
+      },
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const lines = new THREE.LineSegments(geometry, material);
+    lines.frustumCulled = false;
+    lines.renderOrder = SELECTION_RENDER_ORDER;
+    return lines;
+  }, [selectedCountry, borders]);
+  useEffect(
+    () => () => {
+      borders.geometry.dispose();
+      (borders.material as THREE.Material).dispose();
+    },
+    [borders],
+  );
+  useEffect(() => {
+    invalidate();
+    return () => {
+      countryHighlight?.geometry.dispose();
+      (countryHighlight?.material as THREE.Material | undefined)?.dispose();
+    };
+  }, [countryHighlight, invalidate]);
+
   useFrame((state) => {
     const now = state.clock.getElapsedTime();
     const dt = Math.min(0.05, Math.max(0, now - last.current.time));
@@ -735,6 +808,7 @@ export function GlobeScene({
         meshes.current.delete(id);
       }
     }
+    (borders.material as THREE.ShaderMaterial).uniforms.uRadius.value = borderRadius(s.altitude);
     // Estrelas somem perto do solo, onde a câmera está dentro da atmosfera
     starMaterial.opacity = 0.8 * Math.min(1, Math.max(0, (s.altitude - 0.06) / 0.25));
     globeMaterial.uniforms.uHideBox.value = store.isLoaded('0/0/0') ? 1 : 0;
@@ -793,7 +867,9 @@ export function GlobeScene({
       <UfFills fills={fills ?? NO_FILLS} invalidate={invalidate} />
       <primitive object={cloudMesh} />
       <primitive object={lights} />
+      <primitive object={borders} />
       {highlight && <primitive object={highlight} />}
+      {countryHighlight && <primitive object={countryHighlight} />}
       <GlobeLabels
         updateRef={labelsUpdate}
         reservedRects={reservedRects}
