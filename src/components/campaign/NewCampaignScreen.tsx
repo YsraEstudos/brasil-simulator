@@ -21,6 +21,9 @@ import { useTheme } from '@/hooks/use-theme';
 import {
   CAMPAIGN_NAME_MAX,
   checkSetupForm,
+  decodeChallengeCode,
+  encodeChallengeCode,
+  formWithChallenge,
   DIFFICULTIES,
   gameStore,
   hasPendingChoices,
@@ -142,6 +145,9 @@ function NewCampaignForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   // Erro do botão "Colar" (área de transferência sem semente válida); some ao editar o campo de semente.
   const [seedPasteError, setSeedPasteError] = useState<string | null>(null);
+  // Código de desafio (D13): texto do campo e resultado da última aplicação.
+  const [codeText, setCodeText] = useState('');
+  const [codeMessage, setCodeMessage] = useState<{ ok: boolean; text: string } | null>(null);
   // Trava síncrona: cobre a janela entre o fim da gravação e a troca de tela, quando `busy` já voltou a falso.
   const submitLock = useRef(false);
   const completed = useRef(false);
@@ -178,6 +184,13 @@ function NewCampaignForm({
   const check = useMemo(() => checkSetupForm(form), [form]);
   const errors = check.ok ? {} : check.errors;
   const summary = useMemo(() => setupSummary(form), [form]);
+  // Com semente escolhida o código já é conhecido; com semente aleatória ele aparece no cartão do save.
+  const summaryCode = useMemo(() => {
+    const seed = parseSeedInput(form.seedText);
+    return seed.ok && seed.value !== null
+      ? encodeChallengeCode({ scenarioId: form.scenarioId, difficulty: form.difficulty, seed: seed.value })
+      : null;
+  }, [form]);
   const difficulty = difficultyView(form.difficulty);
   const selectedScenario = SCENARIOS.find((o) => o.id === form.scenarioId)?.scenario;
   const current = SCENARIOS.filter((o) => o.kind === 'atual');
@@ -254,6 +267,41 @@ function NewCampaignForm({
     }
     setSeedPasteError(null);
     update({ seedText: text.trim() });
+  };
+
+  /**
+   * Aplica um código de desafio (D13): preenche cenário, dificuldade e semente de uma vez. Perfil e ponto de partida
+   * ficam com o jogador (D-H1). Código inválido não mexe no formulário.
+   */
+  const applyCode = (raw: string) => {
+    const decoded = decodeChallengeCode(raw);
+    if (!decoded.ok) {
+      setCodeMessage({ ok: false, text: decoded.error });
+      return;
+    }
+    const next = formWithChallenge(form, decoded.setup);
+    setSeedPasteError(null);
+    update(next);
+    setCodeText(encodeChallengeCode(decoded.setup) ?? raw.trim());
+    if (SCENARIOS.find((o) => o.id === next.scenarioId)?.kind !== 'atual') setShowOlder(true);
+    setShowAdvanced(true);
+    setCodeMessage({
+      ok: true,
+      text: 'Código aplicado: cenário, dificuldade e semente preenchidos. O perfil e o ponto de partida ficam à sua escolha.',
+    });
+  };
+
+  const pasteCode = async () => {
+    let text: string;
+    try {
+      text = await Clipboard.getStringAsync();
+    } catch {
+      setCodeMessage({ ok: false, text: CLIPBOARD_READ_ERROR });
+      return;
+    }
+    if (!mounted.current) return;
+    setCodeText(text.trim());
+    applyCode(text);
   };
 
   const create = async () => {
@@ -335,6 +383,68 @@ function NewCampaignForm({
                 Sortear partida completa
               </Text>
             </PressScale>
+          </Animated.View>
+
+          <Animated.View entering={enterAt(0)} layout={LAYOUT}>
+            <Card
+              title="Código de desafio"
+              subtitle="Recebeu um código como BR27-EST-48290? Ele preenche cenário, dificuldade e semente">
+              <View style={styles.inputRow}>
+                <TextInput
+                  value={codeText}
+                  onChangeText={(t) => {
+                    setCodeText(t);
+                    setCodeMessage(null);
+                  }}
+                  onSubmitEditing={() => applyCode(codeText)}
+                  placeholder="BR27-EST-48290"
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={32}
+                  multiline={false}
+                  returnKeyType="done"
+                  editable={!locked}
+                  accessibilityLabel="Código de desafio"
+                  accessibilityHint="Digite o código e toque em Aplicar"
+                  style={[
+                    styles.flex,
+                    ...inputStyle,
+                    { borderColor: codeMessage && !codeMessage.ok ? colors.negative : colors.border },
+                  ]}
+                />
+                <PressScale
+                  onPress={() => applyCode(codeText)}
+                  disabled={locked}
+                  accessibilityLabel="Aplicar código de desafio"
+                  style={[styles.textButton, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                  <Text variant="label" color="accent">
+                    Aplicar
+                  </Text>
+                </PressScale>
+              </View>
+              <PressScale
+                onPress={() => void pasteCode()}
+                disabled={locked}
+                accessibilityLabel="Colar código de desafio"
+                accessibilityHint="Lê o código copiado e preenche cenário, dificuldade e semente"
+                style={[styles.textButton, { borderColor: colors.accent }]}>
+                <Text variant="label" color="accent" align="center">
+                  Colar código
+                </Text>
+              </PressScale>
+              {codeMessage && (
+                <Animated.View entering={FadeInDown.duration(200)} exiting={FadeOut.duration(120)}>
+                  <Text
+                    variant="caption"
+                    color={codeMessage.ok ? 'positive' : 'negative'}
+                    accessibilityLiveRegion="polite"
+                    accessibilityRole={codeMessage.ok ? undefined : 'alert'}>
+                    {codeMessage.text}
+                  </Text>
+                </Animated.View>
+              )}
+            </Card>
           </Animated.View>
 
           <Animated.View entering={enterAt(1)} layout={LAYOUT}>
@@ -607,6 +717,11 @@ function NewCampaignForm({
               <SummaryRow label="Versão" value={summary.version} />
               <SummaryRow label="Duração máxima" value={summary.duration} />
               <SummaryRow label="Semente" value={summary.seed} muted={summary.seed === 'Aleatória'} />
+              <SummaryRow
+                label="Código de desafio"
+                value={summaryCode ?? 'Gerado ao criar (veja no cartão do save)'}
+                muted={summaryCode === null}
+              />
             </View>
           </Animated.View>
 

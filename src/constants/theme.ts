@@ -124,6 +124,15 @@ export const Colors: Record<ColorScheme, ThemeColors> = {
 };
 
 /**
+ * Cores de destaque do cartão do save (PLANO_SAVES_HISTORICO.md H2, D44), por esquema. Não seguem o modo para
+ * daltônicos: não dizem bom nem ruim, e cada cor aparece sempre com o nome escrito ao lado.
+ */
+export const SaveAccentColors: Record<ColorScheme, Record<'dourado' | 'verde' | 'azul' | 'vermelho', string>> = {
+  light: { dourado: palette.gold700, verde: palette.green700, azul: palette.blue700, vermelho: palette.red700 },
+  dark: { dourado: palette.gold500, verde: palette.green400, azul: palette.blue400, vermelho: palette.red400 },
+};
+
+/**
  * Modo para daltônicos: troca só os tons de bom/ruim. O positivo vira azul e o negativo laranja, para o sentido não
  * depender de distinguir verde de vermelho (a forma de deuteranopia e protanopia mais comum). Os alertas de aviso
  * (âmbar) e de informação (azul) seguem como estão, e a direção vem sempre com sinal `+`/`−` e seta (ver Indicator).

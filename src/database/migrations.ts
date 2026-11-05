@@ -227,6 +227,18 @@ export const MIGRATIONS: readonly Migration[] = [
       ALTER TABLE campaigns ADD COLUMN setup_json TEXT;
     `,
   },
+  {
+    version: 11,
+    name: 'notas_e_cor',
+    sql: `
+      -- PLANO_SAVES_HISTORICO.md, Fase H2: bloco de notas da campanha (D31, até 2.000 caracteres, conferido pelo
+      -- repositório) e cor de destaque do cartão (D44; NULL = sem cor). As duas entram no pacote de exportação (M5),
+      -- que copia a linha inteira de campaigns.
+      ALTER TABLE campaigns ADD COLUMN notes TEXT NOT NULL DEFAULT '';
+      ALTER TABLE campaigns ADD COLUMN accent TEXT
+        CHECK (accent IS NULL OR accent IN ('dourado', 'verde', 'azul', 'vermelho'));
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

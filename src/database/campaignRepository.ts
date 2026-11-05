@@ -23,6 +23,8 @@ import {
   type MonthResult,
   type ProfileMove,
 } from '../engine';
+import { CAMPAIGN_ACCENTS, CAMPAIGN_NOTES_MAX, isCampaignAccent, type CampaignAccent } from '@/types/campaignIdentity';
+
 import type { SqlDatabase } from './types';
 
 /**
@@ -106,6 +108,20 @@ export interface CampaignSummary {
   locked: boolean;
   /** Opções do Novo Jogo (migração 10); `null` em partidas criadas antes dela. */
   setup: CampaignSetupSnapshot | null;
+  /** Bloco de notas da campanha (migração 11, D31); `''` = sem notas. */
+  notes: string;
+  /** Cor de destaque do cartão (migração 11, D44); `null` = nenhuma. */
+  accent: CampaignAccent | null;
+}
+
+export { CAMPAIGN_ACCENTS, CAMPAIGN_NOTES_MAX, isCampaignAccent, type CampaignAccent };
+
+/** Notas longas demais (o campo já corta em `CAMPAIGN_NOTES_MAX`; isto protege outros caminhos). */
+export class CampaignNotesTooLongError extends Error {
+  constructor() {
+    super(`As notas podem ter no máximo 2.000 caracteres.`);
+    this.name = 'CampaignNotesTooLongError';
+  }
 }
 
 /**
@@ -609,6 +625,8 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     pinned: number;
     locked: number;
     setup_json: string | null;
+    notes: string;
+    accent: string | null;
   }>('SELECT * FROM campaigns ORDER BY updated_at DESC, id');
   return rows.map((r) => ({
     id: r.id,
@@ -629,6 +647,8 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     pinned: r.pinned === 1,
     locked: r.locked === 1,
     setup: parseSetupSnapshot(r.setup_json),
+    notes: r.notes,
+    accent: isCampaignAccent(r.accent) ? r.accent : null,
   }));
 }
 
@@ -714,6 +734,26 @@ export async function setCampaignPinned(db: SqlDatabase, campaignId: string, pin
 /** Liga ou desliga o cadeado contra exclusão. */
 export async function setCampaignLocked(db: SqlDatabase, campaignId: string, locked: boolean): Promise<void> {
   await db.run('UPDATE campaigns SET locked = ? WHERE id = ?', [locked ? 1 : 0, campaignId]);
+}
+
+/**
+ * Grava o bloco de notas (D31). Não mexe em `updated_at`: anotar não reordena a lista. Recusa texto acima de
+ * `CAMPAIGN_NOTES_MAX` em vez de cortar (quem chama já normalizou e cortou no campo).
+ */
+export async function setCampaignNotes(db: SqlDatabase, campaignId: string, notes: string): Promise<void> {
+  if (notes.length > CAMPAIGN_NOTES_MAX) throw new CampaignNotesTooLongError();
+  const result = await db.run('UPDATE campaigns SET notes = ? WHERE id = ?', [notes, campaignId]);
+  if (result.changes !== 1) throw new CampaignNotFoundError(campaignId);
+}
+
+/** Troca a cor de destaque do cartão (D44); `null` tira a cor. Não mexe em `updated_at`. */
+export async function setCampaignAccent(
+  db: SqlDatabase,
+  campaignId: string,
+  accent: CampaignAccent | null,
+): Promise<void> {
+  const result = await db.run('UPDATE campaigns SET accent = ? WHERE id = ?', [accent, campaignId]);
+  if (result.changes !== 1) throw new CampaignNotFoundError(campaignId);
 }
 
 /** Grava o estado completo do mês e os pontos das séries de longo prazo, nacional e regional (na transação de quem chama). */

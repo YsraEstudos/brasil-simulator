@@ -7,7 +7,9 @@ import {
   deleteCampaign,
   deleteFinishedCampaigns,
   renameCampaign,
+  setCampaignAccent,
   setCampaignLocked,
+  setCampaignNotes,
   setCampaignPinned,
   finishCampaign,
   listCampaigns,
@@ -21,6 +23,7 @@ import {
   loadStateAt,
   recordMonth,
   touchCampaign,
+  type CampaignAccent,
   type CampaignSummary,
   type FiredEvent,
   type IndicatorPoint,
@@ -65,6 +68,7 @@ import {
   type AgendaDraft,
 } from './agendaDraft';
 import { GOVERNMENTS_KEY, resolveGovernmentCount } from './governments';
+import { normalizeNotes } from './campaignNotes';
 import {
   checkNewCampaignInput,
   DEFAULT_SETUP_PREFS,
@@ -228,6 +232,13 @@ export interface GameStoreState {
   setCampaignPinned(id: string, pinned: boolean): Promise<boolean>;
   /** Cadeado: protege ou libera a campanha contra exclusão. */
   setCampaignLocked(id: string, locked: boolean): Promise<boolean>;
+  /**
+   * Grava o bloco de notas (D31; normalizado e cortado em 2.000 caracteres). Não usa `busy`: a nota sai ao deixar o
+   * campo e não pode se perder porque um mês está sendo gravado. Falha vira `error` e devolve `false`.
+   */
+  setCampaignNotes(id: string, notes: string): Promise<boolean>;
+  /** Cor de destaque do cartão (D44); `null` tira a cor. Como as notas, sem `busy`. */
+  setCampaignAccent(id: string, accent: CampaignAccent | null): Promise<boolean>;
   /** Apaga as encerradas sem cadeado; `null` se a operação não rodou (ocupado ou falha). */
   deleteFinishedCampaigns(): Promise<{ deleted: number; keptLocked: number } | null>;
   /** Ordem e filtro da lista de campanhas (lembrados em `settings`). */
@@ -791,6 +802,31 @@ export function createGameStore(deps: GameStoreDeps) {
           await setCampaignLocked(d, id, locked);
           await refreshList(d);
         }),
+
+      async setCampaignNotes(id, raw) {
+        if (!db) return false;
+        const notes = normalizeNotes(raw);
+        try {
+          await setCampaignNotes(db, id, notes);
+          set((s) => ({ campaigns: s.campaigns.map((c) => (c.id === id ? { ...c, notes } : c)) }));
+          return true;
+        } catch (e) {
+          set({ error: e instanceof Error ? e.message : String(e) });
+          return false;
+        }
+      },
+
+      async setCampaignAccent(id, accent) {
+        if (!db) return false;
+        try {
+          await setCampaignAccent(db, id, accent);
+          set((s) => ({ campaigns: s.campaigns.map((c) => (c.id === id ? { ...c, accent } : c)) }));
+          return true;
+        } catch (e) {
+          set({ error: e instanceof Error ? e.message : String(e) });
+          return false;
+        }
+      },
 
       async deleteFinishedCampaigns() {
         let outcome: { deleted: number; keptLocked: number } | null = null;

@@ -9,6 +9,7 @@ import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campai
 import { ElectionsCard } from '@/components/campaign/ElectionsCard';
 import { EventInbox } from '@/components/campaign/EventInbox';
 import { requestDecision } from '@/components/campaign/gameConfirm';
+import { CampaignNotesField } from '@/components/campaign/SaveIdentityBits';
 import {
   canChooseEvent,
   canToggleDecision,
@@ -204,6 +205,8 @@ export function PainelScreen() {
   const draft = useGame((s) => s.draft);
   const busy = useGame((s) => s.busy);
   const error = useGame((s) => s.error);
+  // Notas da partida aberta (D31), lidas da lista em memória (a store atualiza a lista ao gravar).
+  const activeNotes = useGame((s) => s.campaigns.find((c) => c.id === s.active?.id)?.notes ?? '');
   // Modo canhoto (Configurações): os trilhos e o Encerrar o mês trocam de lado (`mesaSides` em `hudReserved`).
   const leftHanded = useGame((s) => s.prefs.leftHanded);
   const sides = mesaSides(leftHanded);
@@ -891,6 +894,26 @@ export function PainelScreen() {
               <Text style={{ color: Hud.textMuted, fontSize: 10.5, paddingTop: 2 }}>
                 {`${active.name} · ${DIFFICULTY[active.state.difficulty].name}`}
               </Text>
+            )}
+            {/* D31: bloco de notas da campanha; grava ao sair do campo, sem esperar o fim do mês. */}
+            {active && (
+              <>
+                <SheetHeading text="Notas da campanha" />
+                <CampaignNotesField
+                  key={active.id}
+                  campaignId={active.id}
+                  campaignName={active.name}
+                  notes={activeNotes}
+                  fontSize={12.5}
+                  colors={{
+                    text: Hud.text,
+                    muted: Hud.textMuted,
+                    border: Hud.tileBorder,
+                    background: Hud.tile,
+                    negative: Hud.negative,
+                  }}
+                />
+              </>
             )}
           </>
         );

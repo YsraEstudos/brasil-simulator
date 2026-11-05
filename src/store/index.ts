@@ -24,3 +24,5 @@ export * from './mapQuality';
 export * from './mapDayTime';
 export * from './mapClouds';
 export * from './preferences';
+export * from './challengeCode';
+export { normalizeNotes } from './campaignNotes';
