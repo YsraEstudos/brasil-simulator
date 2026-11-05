@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 
-import type { FiredEvent, IndicatorPoint } from '@/database/campaignRepository';
+import type { FiredEvent, IndicatorPoint, MandateLog } from '@/database/campaignRepository';
 import { gameStore, useGame } from '@/store';
 
 /** Leituras do banco da partida ativa usadas pelos gráficos, pelo nome do método da store. */
 interface CampaignReads {
   history: IndicatorPoint[];
   firedEvents: FiredEvent[];
+  mandateLog: MandateLog;
 }
 
 /**
@@ -40,4 +41,9 @@ export function useIndicatorHistory(): IndicatorPoint[] | null {
 /** Eventos disparados na partida ativa (marcas de crise do gráfico). */
 export function useFiredEvents(): FiredEvent[] | null {
   return useCampaignRead('firedEvents');
+}
+
+/** Eventos, respostas, decisões e eleições da partida ativa (linha do tempo do mandato, H6). */
+export function useMandateLog(): MandateLog | null {
+  return useCampaignRead('mandateLog');
 }

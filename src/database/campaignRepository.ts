@@ -426,6 +426,77 @@ export async function loadFiredEvents(db: SqlDatabase, campaignId: string): Prom
   });
 }
 
+/** Resposta a um evento: o turno em que foi aplicada, a escolha e se veio do prazo vencido (escolha padrão). */
+export interface EventChoiceRow {
+  turnIndex: number;
+  eventId: string;
+  choiceId: string;
+  automatic: boolean;
+}
+
+/** Decisão enviada num turno, aceita ou recusada pelo motor (com o motivo da recusa). */
+export interface DecisionRow {
+  turnIndex: number;
+  policyId: string;
+  params: Decision['params'] | null;
+  accepted: boolean;
+  rejectionReason: string | null;
+}
+
+/** Tudo o que a linha do tempo do mandato lê do banco (PLANO_SAVES_HISTORICO.md H6, A40). */
+export interface MandateLog {
+  fired: FiredEvent[];
+  choices: EventChoiceRow[];
+  decisions: DecisionRow[];
+  elections: ElectionResult[];
+}
+
+/**
+ * Eventos (disparos e respostas), decisões e eleições da campanha inteira, em ordem de turno. Nada disso é descartado
+ * pela retenção; o turno do banco vira mês do mandato na interface.
+ */
+export async function loadMandateLog(db: SqlDatabase, campaignId: string): Promise<MandateLog> {
+  const choiceRows = await db.all<{
+    turn_index: number;
+    event_id: string;
+    choice_id: string;
+    payload_json: string | null;
+  }>(
+    'SELECT turn_index, event_id, choice_id, payload_json FROM events WHERE campaign_id = ? AND choice_id IS NOT NULL ORDER BY turn_index, id',
+    [campaignId],
+  );
+  const decisionRows = await db.all<{
+    turn_index: number;
+    policy_id: string;
+    params_json: string | null;
+    accepted: number;
+    rejection_reason: string | null;
+  }>(
+    'SELECT turn_index, policy_id, params_json, accepted, rejection_reason FROM decisions WHERE campaign_id = ? ORDER BY turn_index, position',
+    [campaignId],
+  );
+  return {
+    fired: await loadFiredEvents(db, campaignId),
+    choices: choiceRows.map((r) => {
+      const payload = r.payload_json ? (JSON.parse(r.payload_json) as { automatic?: boolean }) : null;
+      return {
+        turnIndex: r.turn_index,
+        eventId: r.event_id,
+        choiceId: r.choice_id,
+        automatic: payload?.automatic === true,
+      };
+    }),
+    decisions: decisionRows.map((r) => ({
+      turnIndex: r.turn_index,
+      policyId: r.policy_id,
+      params: r.params_json ? (JSON.parse(r.params_json) as Decision['params']) : null,
+      accepted: r.accepted === 1,
+      rejectionReason: r.rejection_reason,
+    })),
+    elections: await loadElectionResults(db, campaignId),
+  };
+}
+
 /** Série de longo prazo da campanha, mês do mandato a mês (inclui a posse, mês 0; nenhum turno pré-posse). */
 export async function loadIndicatorHistory(db: SqlDatabase, campaignId: string): Promise<IndicatorPoint[]> {
   const rows = await db.all<{ month_index: number; point_json: string }>(

@@ -13,6 +13,7 @@ import {
   listCampaigns,
   loadElectionResults,
   loadFiredEvents,
+  loadMandateLog,
   loadIndicatorHistory,
   loadLatestState,
   loadProfileHistory,
@@ -23,6 +24,7 @@ import {
   touchCampaign,
   type CampaignSummary,
   type FiredEvent,
+  type MandateLog,
   type IndicatorPoint,
   type ProfileHistory,
   type RegionalPoint,
@@ -200,6 +202,8 @@ export interface GameStoreState {
   electionResults(): Promise<ElectionResult[]>;
   /** Eventos disparados na campanha, em ordem (marcas de crise do gráfico); vazia sem partida ou leitura falha. */
   firedEvents(): Promise<FiredEvent[]>;
+  /** Eventos, respostas, decisões e eleições da partida (linha do tempo do mandato); vazio sem partida ou leitura falha. */
+  mandateLog(): Promise<MandateLog>;
   /** Rastro do perfil do governo e decisões que o moveram nos últimos meses (folha Perfil); vazio sem partida ou leitura falha. */
   profileHistory(): Promise<ProfileHistory>;
   /**
@@ -676,6 +680,18 @@ export function createGameStore(deps: GameStoreDeps) {
           return await loadFiredEvents(db, active.id);
         } catch {
           return [];
+        }
+      },
+
+      async mandateLog() {
+        const empty: MandateLog = { fired: [], choices: [], decisions: [], elections: [] };
+        const active = get().active;
+        if (!active || !db) return empty;
+        // Como `history`: leitura para a linha do tempo, sem `busy` e sem erro na tela.
+        try {
+          return await loadMandateLog(db, active.id);
+        } catch {
+          return empty;
         }
       },
 

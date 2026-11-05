@@ -125,7 +125,7 @@ const SECOND_ROW_STATS: readonly HudStatId[] = ['capital', 'inflacao', 'desempre
 /** Subtelas que a doca abre (rotas do grupo `(jogo)`). */
 type DockRoute = '/gabinete' | '/congresso' | '/economia' | '/noticias';
 /** Rotas que a mesa abre com `router.push`: as da doca e o legado, que o botão dourado abre com a campanha encerrada. */
-type GameRoute = DockRoute | '/legado';
+type GameRoute = DockRoute | '/legado' | '/linha-do-tempo';
 
 const DOCK: readonly { route: DockRoute; icon: SymbolViewProps['name']; label: string }[] = [
   { route: '/gabinete', icon: { ios: 'building.2.fill', android: 'domain', web: 'domain' }, label: 'Gabinete' },
@@ -161,6 +161,7 @@ const MENU_ICON: SymbolViewProps['name'] = { ios: 'line.3.horizontal', android: 
 const HOME_ICON: SymbolViewProps['name'] = { ios: 'house.fill', android: 'home', web: 'home' };
 const SETTINGS_ICON: SymbolViewProps['name'] = { ios: 'gearshape.fill', android: 'settings', web: 'settings' };
 const SAVE_AS_ICON: SymbolViewProps['name'] = { ios: 'doc.on.doc.fill', android: 'content_copy', web: 'content_copy' };
+const TIMELINE_ICON: SymbolViewProps['name'] = { ios: 'clock.arrow.circlepath', android: 'history', web: 'history' };
 
 /**
  * Paisagem: largura mínima para a doca (4 × 48 + 3 × 6) ficar centrada sem encostar no Encerrar o mês compacto do
@@ -878,6 +879,10 @@ export function PainelScreen() {
             )}
             {active && (
               <MenuRow icon={SAVE_AS_ICON} label="Salvar como…" disabled={busy} onPress={() => void saveAsCopy()} />
+            )}
+            {/* Linha do tempo do mandato (H6, A40): no menu, sem mexer na ordem dos trilhos. */}
+            {active && (
+              <MenuRow icon={TIMELINE_ICON} label="Linha do tempo do mandato" onPress={() => go('/linha-do-tempo')} />
             )}
             <MenuRow
               icon={SETTINGS_ICON}
