@@ -81,7 +81,10 @@ import {
 import { Hud } from './hudTheme';
 import { agendaPips, agendaPipsLabel } from './agendaPips';
 import { GUIDED_BY_INDICATOR, outOfBandAlert } from './indicatorGuide';
+import { EffectsPanel } from './EffectsPanel';
 import { IndicatorGuideCard } from './IndicatorGuideCard';
+import { ministrySignature, railNews } from './railNews';
+import { useRailSeen } from './railSeenStore';
 import {
   DELTA_BASIS_LABEL,
   inaugurationIndicators,
@@ -597,6 +600,21 @@ export function PainelScreen() {
   );
 
   // Trilhos (ids e rótulos em `mesaNav`): selo de pendências no sino e camada do mapa ativa acesa.
+  // Pontos de novidade nos trilhos (B24): relatório não aberto e ministério com novo ocupante. Abrir a gaveta apaga.
+  const reportMonth = active?.lastReport?.monthIndex ?? null;
+  const ministriesSig = ministrySignature(hud.ministries);
+  const { byCampaign: railSeen, mark: markRailSeen } = useRailSeen();
+  const seenHere = activeId !== undefined ? railSeen[activeId] : undefined;
+  useEffect(() => {
+    if (activeId === undefined) return;
+    // Primeira vez nesta partida: os ministérios de agora contam como vistos; o relatório ainda não.
+    const initial = { report: -1, ministries: ministriesSig };
+    if (sheet === 'relatorio' && reportMonth !== null) markRailSeen(activeId, { report: reportMonth }, initial);
+    else if (sheet === 'ministerios') markRailSeen(activeId, { ministries: ministriesSig }, initial);
+    else markRailSeen(activeId, {}, initial);
+  }, [activeId, sheet, reportMonth, ministriesSig, markRailSeen]);
+  const railDots = playing && seenHere ? railNews({ reportMonth, ministries: ministriesSig, seen: seenHere }) : {};
+
   const rail = (entries: ReturnType<typeof leftRail>) => (
     <View pointerEvents="box-none" style={{ gap: compact ? 6 : 10 }}>
       {entries.map((entry) => (
@@ -606,6 +624,7 @@ export function PainelScreen() {
           label={entry.label}
           size={buttonSize}
           badge={entry.id === 'alertas' ? pendingCount : undefined}
+          dot={railDots[entry.id]}
           active={entry.id === 'camadas' && layer !== null}
           onPress={() => setSheet(entry.id)}
         />
@@ -751,6 +770,12 @@ export function PainelScreen() {
               <IndicatorGuideCard indicator={guideGuided} value={indicators[guideIndicator]} />
             )}
             {openIndicator && <WhyChanged indicator={openIndicator} report={active?.lastReport} />}
+            {active && !active.finished && (
+              <>
+                <SheetHeading text="O que vem por aí" />
+                <EffectsPanel state={active.state} honeymoonMonths={content.calibration.meses_lua_de_mel} />
+              </>
+            )}
             <SheetHeading text="Setores da economia" />
             <View style={{ flexDirection: 'row', gap: 6 }}>
               {hud.sectors.map((sector) => (

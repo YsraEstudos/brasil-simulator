@@ -184,6 +184,7 @@ export function RoundButton({
   size = 48,
   badge,
   active,
+  dot,
   onPress,
 }: {
   icon: SymbolViewProps['name'];
@@ -193,14 +194,17 @@ export function RoundButton({
   badge?: number;
   /** Botão ligado (ex.: camada do mapa ativa): moldura dourada e ícone aceso. */
   active?: boolean;
+  /** Ponto de novidade (B24): o texto vai para o leitor de tela, ex.: "relatório novo". Some com o contador. */
+  dot?: string;
   onPress: () => void;
 }) {
+  const counted = badge != null && badge > 0;
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
       accessibilityRole="button"
-      accessibilityLabel={badge != null && badge > 0 ? `${label}, ${badge} sem resposta` : label}
+      accessibilityLabel={counted ? `${label}, ${badge} sem resposta` : dot ? `${label}, ${dot}` : label}
       accessibilityState={active ? { selected: true } : undefined}
       style={({ pressed }) => [
         styles.roundButton,
@@ -210,6 +214,7 @@ export function RoundButton({
       ]}>
       <HudIcon name={icon} size={Math.round(size * 0.42)} color={active ? Hud.titleBright : Hud.title} />
       <CountBadge count={badge} />
+      {!counted && dot ? <View style={styles.roundDot} /> : null}
     </Pressable>
   );
 }
@@ -699,6 +704,18 @@ const styles = {
     justifyContent: 'center',
   },
   roundBadgeText: { color: '#ffffff', fontSize: 9, fontWeight: '800' },
+  /** Ponto de novidade: dourado (não é pendência), com borda escura para destacar do vidro. */
+  roundDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: Hud.titleBright,
+    borderWidth: 2,
+    borderColor: Hud.board,
+  },
   demoBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
