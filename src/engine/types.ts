@@ -83,6 +83,11 @@ export interface FiscalState {
   revenueByGroup: Record<RevenueGroup, number>;
   /** Arrecadação perdida por retorno decrescente (sonegação, elisão, informalidade), líquida. */
   revenueLoss: number;
+  /**
+   * `revenueLoss` por grupo de receita (soma = `revenueLoss`; royalties sempre 0). Só leitura para a interface
+   * (PLANO_SAVES_HISTORICO.md H8, C7): nenhuma conta do motor o usa. Ausente em estados gravados antes da H8.
+   */
+  revenueLossByGroup?: Record<RevenueGroup, number>;
   /** Receita líquida acumulada em 12 meses (suavizada), para a revisão anual do limite. */
   revenue12m: number;
   /** `revenue12m` na última revisão do limite (janeiro). */

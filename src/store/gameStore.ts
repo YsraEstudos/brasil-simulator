@@ -65,6 +65,7 @@ import {
   type AgendaDraft,
 } from './agendaDraft';
 import { GOVERNMENTS_KEY, resolveGovernmentCount } from './governments';
+import { pushReading, RECENT_TURNS, turnReading, type TurnReading } from './recentTurns';
 import {
   checkNewCampaignInput,
   DEFAULT_SETUP_PREFS,
@@ -127,6 +128,11 @@ export interface ActiveCampaign {
   baseline?: GameState;
   /** Indicadores do turno anterior (para mostrar a variação). */
   previous?: Indicators;
+  /**
+   * Leituras compactas do turno atual e dos 12 anteriores, mais antiga primeiro (PLANO_SAVES_HISTORICO.md H8): só os
+   * turnos cujo snapshot ainda existe. Ausente = sem comparação (as telas dizem isso, não inventam dados).
+   */
+  recent?: readonly TurnReading[];
   lastReport?: MonthReport;
   finished: boolean;
 }
@@ -464,7 +470,7 @@ export function createGameStore(deps: GameStoreDeps) {
               },
             });
             const baseline = inaugurationTurnIndex(state) === null ? undefined : state;
-            created = { id, name, state, baseline, finished: false };
+            created = { id, name, state, baseline, recent: [turnReading(state)], finished: false };
           } catch (e) {
             // Nada foi gravado (a transação desfaz tudo): a campanha anterior e o rascunho continuam como estavam. O
             // erro vai no resultado, para a tela de NOVO JOGO; o `error` global ficaria velho na Presidência e em
@@ -600,7 +606,16 @@ export function createGameStore(deps: GameStoreDeps) {
           const state = await loadLatestState(d, id);
           // Turno anterior pelo índice do turno (PLANO_CAMPANHA.md §2.3), não pelo mês do mandato.
           const turn = turnIndexOf(state);
-          const previous = turn > 0 ? (await loadStateAt(d, id, turn - 1))?.indicators : undefined;
+          // Turnos ainda guardados em snapshot (o atual e até 12 anteriores), para as comparações da aba Economia.
+          let recent: TurnReading[] = [];
+          let previous: Indicators | undefined;
+          for (let t = Math.max(0, turn - (RECENT_TURNS - 1)); t < turn; t++) {
+            const past = await loadStateAt(d, id, t);
+            if (!past) continue;
+            recent = pushReading(recent, turnReading(past));
+            if (t === turn - 1) previous = past.indicators;
+          }
+          recent = pushReading(recent, turnReading(state));
           const lastReport = turn > 0 ? ((await loadReport(d, id, turn - 1)) ?? undefined) : undefined;
           // A posse vem do snapshot do turno da posse no save, e não do cenário embutido (que pode ter sido
           // recalibrado) nem do primeiro turno da partida, que pode ser da campanha. Antes da posse não há base.
@@ -620,6 +635,7 @@ export function createGameStore(deps: GameStoreDeps) {
               state,
               baseline,
               previous,
+              recent,
               lastReport,
               finished,
             },
@@ -706,6 +722,7 @@ export function createGameStore(deps: GameStoreDeps) {
               state: result.state,
               baseline: active.baseline ?? (justInaugurated ? result.state : undefined),
               previous: active.state.indicators,
+              recent: pushReading(active.recent ?? [turnReading(active.state)], turnReading(result.state)),
               lastReport: result.report,
               finished,
             },

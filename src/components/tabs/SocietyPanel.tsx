@@ -7,6 +7,9 @@ import { useTheme } from '@/hooks/use-theme';
 import type { GameState } from '@/engine';
 import { DEFAULT_SOCIETY_CALIBRATION } from '@/engine/society/calibration';
 import type { SocietyExplanation, SocietyMetric, SocietyState } from '@/engine/society/types';
+import type { TurnReading } from '@/store/recentTurns';
+
+import { societyChanges, type ChangeDirection, type MonthChange } from './societyChangeModel';
 
 const SECTOR_LABEL: Record<string, string> = {
   agropecuaria: 'Agropecuária',
@@ -67,8 +70,10 @@ function formatMetricDelta(metric: SocietyMetric, delta: number): string {
 }
 
 /** Distribuição social reconciliada com o agregado: o painel só lê o estado produzido pelo motor. */
-export function SocietyPanel({ state }: { state: GameState }) {
+export function SocietyPanel({ state, previous }: { state: GameState; previous?: TurnReading }) {
   const society: SocietyState = state.society;
+  // Variação contra o turno anterior (H8, B41); sem turno anterior guardado, a tela diz isso.
+  const changes = societyChanges(society, previous);
 
   return (
     <View style={styles.root}>
@@ -93,6 +98,7 @@ export function SocietyPanel({ state }: { state: GameState }) {
             <Text variant="caption" color="textSecondary" tabular>
               Crescimento setorial: {formatPercent(sector.growth, 1)}
             </Text>
+            <MonthChangeLine change={changes?.sectors[sector.id] ?? null} />
             <SensitivityTag value={DEFAULT_SOCIETY_CALIBRATION.termsOfTradeSensitivity[sector.id]} />
           </View>
         ))}
@@ -105,6 +111,7 @@ export function SocietyPanel({ state }: { state: GameState }) {
             <Text variant="body" tabular>
               Renda real {formatNumber(quintile.realIncome, 3)} · {formatPercent(quintile.incomeShare, 1)} da renda
             </Text>
+            <MonthChangeLine change={changes?.quintiles[quintile.id] ?? null} />
           </View>
         ))}
       </Card>
@@ -126,6 +133,32 @@ export function SocietyPanel({ state }: { state: GameState }) {
         )}
       </Card>
     </View>
+  );
+}
+
+const CHANGE_COLOR: Record<ChangeDirection, 'positive' | 'negative' | 'textSecondary'> = {
+  up: 'positive',
+  down: 'negative',
+  flat: 'textSecondary',
+};
+
+/** Variação no mês (B41): seta e sinal dizem a direção; a cor (que segue o modo daltônico do tema) só reforça. */
+function MonthChangeLine({ change }: { change: MonthChange | null }) {
+  if (!change) {
+    return (
+      <Text variant="caption" color="textMuted">
+        Sem o mês anterior para comparar
+      </Text>
+    );
+  }
+  return (
+    <Text
+      variant="caption"
+      color={CHANGE_COLOR[change.direction]}
+      tabular
+      accessibilityLabel={change.accessibilityLabel}>
+      {change.text}
+    </Text>
   );
 }
 

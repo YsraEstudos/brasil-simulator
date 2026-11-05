@@ -16,6 +16,8 @@ import {
   rigidityShare,
   shareTone,
 } from '@/components/economy/economyInsights';
+import { SqueezeCard, TaxFatigueCard } from '@/components/economy/FiscalInsideCards';
+import { floorProjection, revenueYearOverYear, squeeze, taxFatigue } from '@/components/economy/fiscalHistoryModel';
 import {
   Alert,
   Card,
@@ -34,7 +36,7 @@ import {
   type RevenueGroup,
 } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
-import { useGame, type ActiveCampaign } from '@/store';
+import { readingAgo, turnReading, useGame, type ActiveCampaign } from '@/store';
 
 import { signedPercent, StatRow } from './StatRow';
 import { SocietyPanel } from './SocietyPanel';
@@ -69,6 +71,8 @@ const MANDATORY_LABEL: Record<MandatoryGroup, string> = {
 /** Painel da aba Economia (GAME_DESIGN.md §8). Variações só existem para indicadores do protótipo. */
 export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
   const { state, previous, lastReport } = campaign;
+  // Trilha do turno atual e dos 12 anteriores (H8); sem ela, só o turno atual (nenhuma comparação inventada).
+  const recent = campaign.recent ?? [turnReading(state)];
   const content = loadContent(state.scenarioId);
   const { calibration } = content;
   const unit = useGame((s) => s.prefs.fiscalUnit);
@@ -97,6 +101,11 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
   const wageBase = content.scenario.fiscal?.minimumWage?.value;
   const otherUnit: FiscalDisplayUnit = unit === 'pib' ? 'reais' : 'pib';
   const debtOther = formatFiscalShare(e.grossDebt, gdp, otherUnit, { decimals: 1 });
+  // Economia por dentro (H8): A67, C3 e C7 (fiscalHistoryModel.ts).
+  const revenueYoY = revenueYearOverYear(recent);
+  const squeezeView = squeeze(f, calibration.piso_custeio);
+  const projection = floorProjection(recent, calibration.piso_custeio);
+  const fatigue = taxFatigue(f, calibration.perda_max);
 
   const copomText = (() => {
     if (!lastReport) return 'Nenhum mês encerrado ainda.';
@@ -193,6 +202,13 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
 
       <Card title="Contas públicas" subtitle={FLOW_SUBTITLE[unit]}>
         <StatRow label="Receita primária" value={flow(e.revenue)} context={flowContext} />
+        {revenueYoY ? (
+          <StatRow
+            label="Contra o mesmo mês do ano anterior"
+            value={revenueYoY.kind === 'ok' ? signedPercent(revenueYoY.real, 1) : '—'}
+            context={revenueYoY.kind === 'ok' ? `${revenueYoY.text} · ${revenueYoY.context}` : revenueYoY.text}
+          />
+        ) : null}
         <StatRow label="Despesa primária" value={flow(e.primarySpending)} context={flowContext} />
         <StatRow label="Resultado primário do mês" value={signedFlow(e.monthlyPrimary)} context={flowContext} />
         <StatRow
@@ -286,6 +302,8 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
         )}
       </Card>
 
+      <SqueezeCard squeeze={squeezeView} projection={projection} flow={flow} />
+
       <Card
         title="Receitas por grupo"
         subtitle={
@@ -305,11 +323,13 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
         )}
       </Card>
 
+      <TaxFatigueCard fatigue={fatigue} />
+
       <Card title="Último Copom">
         <Text variant="body">{copomText}</Text>
       </Card>
 
-      <SocietyPanel state={state} />
+      <SocietyPanel state={state} previous={readingAgo(recent, 1)} />
     </>
   );
 }

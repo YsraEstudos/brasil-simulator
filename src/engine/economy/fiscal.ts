@@ -90,6 +90,7 @@ export function initialFiscal(v: FiscalValues, gdpGrowth: number, gdpGrowthTwoYe
     limitExcess: 0,
     revenueByGroup,
     revenueLoss: 0,
+    revenueLossByGroup: zeroByGroup(),
     revenue12m: v.revenue,
     revenue12mAtReview: v.revenue,
     gdpGrowthHistory: [gdpGrowthTwoYearsAgo, gdpGrowth],
@@ -97,6 +98,11 @@ export function initialFiscal(v: FiscalValues, gdpGrowth: number, gdpGrowthTwoYe
     demandRef: 0,
   };
   return fiscal;
+}
+
+/** Um valor zero por grupo de receita. */
+function zeroByGroup(): Record<RevenueGroup, number> {
+  return Object.fromEntries(REVENUE_GROUPS.map((g) => [g, 0])) as Record<RevenueGroup, number>;
 }
 
 // ── Receitas ───────────────────────────────────────────────────────────────────────────────────────
@@ -124,6 +130,8 @@ export interface RevenueMonth {
   byGroup: Record<RevenueGroup, number>;
   /** Arrecadação perdida pelo retorno decrescente, líquida de repartição (≥ 0). */
   loss: number;
+  /** `loss` por grupo (soma = `loss`). */
+  lossByGroup: Record<RevenueGroup, number>;
   /** Carga sobre a renda acima da margem sem perda (alimenta a saída de capital, §5.7). */
   incomeOverload: number;
   /** Receita líquida sem políticas nem ciclo (parte da tendência fiscal). */
@@ -162,6 +170,7 @@ export function revenueMonth(
   }
 
   const byGroup = {} as Record<RevenueGroup, number>;
+  const lossByGroup = {} as Record<RevenueGroup, number>;
   const pieces: Piece[] = [];
   let base = 0;
   let cycleTotal = 0;
@@ -175,7 +184,8 @@ export function revenueMonth(
     byGroup[g] = kept * load[g] * (1 - rate) * cyc;
     base += kept * structure.baseGross[g];
     cycleTotal += kept * structure.baseGross[g] * (cyc - 1);
-    loss += kept * load[g] * rate * cyc;
+    lossByGroup[g] = kept * load[g] * rate * cyc;
+    loss += lossByGroup[g];
     if (g !== 'folha') linkedBase += kept * structure.baseGross[g] * cyc;
   }
 
@@ -188,7 +198,7 @@ export function revenueMonth(
 
   const incomeOverload = Math.max(0, load.renda - structure.baseGross.renda - c.margem_carga_renda);
   const total = REVENUE_GROUPS.reduce((s, g) => s + byGroup[g], 0);
-  return { total, byGroup, loss, incomeOverload, base, linkedBase, pieces };
+  return { total, byGroup, loss, lossByGroup, incomeOverload, base, linkedBase, pieces };
 }
 
 // ── Revisão anual (janeiro) ─────────────────────────────────────────────────────────────────────────
