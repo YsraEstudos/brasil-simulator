@@ -7,10 +7,10 @@ import Animated, { FadeIn, FadeInDown, FadeOutLeft, ZoomIn } from 'react-native-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Alert, Text } from '@/components/ui';
-import { MaxContentWidth, MIN_TOUCH, Radius, Spacing } from '@/constants/theme';
+import { MaxContentWidth, MIN_TOUCH, Radius, SaveAccentColors, Spacing } from '@/constants/theme';
 import type { CampaignSummary } from '@/database/campaignRepository';
 import { useTheme } from '@/hooks/use-theme';
-import { gameStore, hasPendingChoices, isKnownScenario, useGame } from '@/store';
+import { encodeChallengeCode, gameStore, hasPendingChoices, isKnownScenario, useGame } from '@/store';
 import { governmentsLabel } from '@/store/governments';
 import { campaignMonths, SCENARIOS } from '@/store/scenarios';
 import {
@@ -24,6 +24,8 @@ import {
 import { durationLabel, scenarioTitle } from './campaignSetupView';
 import { CAREER_STAGE_LABEL, DIFFICULTY, shortMonthLabel } from './labels';
 import { RenameCampaignSheet } from './RenameCampaignSheet';
+import { AccentPicker, CampaignNotesField } from './SaveIdentityBits';
+import { accentName, notesPreview } from './saveIdentity';
 import {
   deleteFinishedButtonLabel,
   deleteFinishedConfirmMessage,
@@ -602,7 +604,8 @@ function SavedItem({
   onToggleLocked: () => void;
   onRename: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
+  const [identityOpen, setIdentityOpen] = useState(false);
   const done = c.status === 'encerrada';
   const scenario = isKnownScenario(c.scenarioId) ? SCENARIOS[c.scenarioId] : null;
   const months = campaignMonths(c.scenarioId);
@@ -618,10 +621,18 @@ function SavedItem({
   const difficulty = DIFFICULTY[c.difficulty]?.name ?? c.difficulty;
   const summary = governmentSummaryLine(c.cardSummary, c.stage);
   const activity = savedCardActivityLine(c, new Date());
+  const accentColor = c.accent ? SaveAccentColors[scheme][c.accent] : null;
+  // D44: faixa na borda esquerda, na cor escolhida; o nome da cor vem escrito no selo.
+  const stripe = accentColor ? { borderLeftWidth: ACCENT_STRIPE, borderLeftColor: accentColor } : null;
+  const preview = notesPreview(c.notes);
 
   return (
     <View
-      style={[styles.item, { backgroundColor: colors.surface, borderColor: isOpen ? colors.accent : colors.border }]}>
+      style={[
+        styles.item,
+        { backgroundColor: colors.surface, borderColor: isOpen ? colors.accent : colors.border },
+        stripe,
+      ]}>
       <View style={styles.itemHead}>
         <View style={styles.titleCol}>
           <Text variant="heading" numberOfLines={2}>
@@ -630,6 +641,7 @@ function SavedItem({
           <View style={styles.badges}>
             {isOpen && <Badge label="Aberta agora" />}
             <Badge label={done ? 'Encerrada' : 'Ativa'} tone={done ? 'textSecondary' : 'positive'} />
+            {c.accent && <Badge label={`Cor: ${accentName(c.accent)}`} tone="textSecondary" />}
           </View>
         </View>
         <View style={styles.iconRow}>
@@ -675,6 +687,46 @@ function SavedItem({
         </Text>
       )}
       <SeedRow seed={c.seed} hidden={seedHidden} onToggleHidden={onToggleSeed} />
+      <ChallengeCodeRow code={encodeChallengeCode(c)} hidden={seedHidden} />
+      {preview !== '' && !identityOpen && (
+        <Text variant="caption" color="textSecondary" numberOfLines={1}>
+          {`Notas: ${preview}`}
+        </Text>
+      )}
+      <PressScale
+        onPress={() => setIdentityOpen((v) => !v)}
+        accessibilityLabel={identityOpen ? `Fechar notas e cor de ${c.name}` : `Abrir notas e cor de ${c.name}`}
+        accessibilityState={{ expanded: identityOpen }}
+        style={[styles.seedButton, styles.identityToggle, { borderColor: colors.border }]}>
+        <Text variant="label" color="accent">
+          {identityOpen ? 'Fechar notas e cor' : 'Notas e cor'}
+        </Text>
+      </PressScale>
+      {identityOpen && (
+        <View style={styles.identity}>
+          <CampaignNotesField
+            campaignId={c.id}
+            campaignName={c.name}
+            notes={c.notes}
+            colors={{
+              text: colors.text,
+              muted: colors.textMuted,
+              border: colors.border,
+              background: colors.background,
+              negative: colors.negative,
+            }}
+          />
+          <Text variant="label" color="textSecondary">
+            Cor de destaque
+          </Text>
+          <AccentPicker
+            campaignName={c.name}
+            value={c.accent}
+            disabled={disabled}
+            onChange={(accent) => void gameStore.getState().setCampaignAccent(c.id, accent)}
+          />
+        </View>
+      )}
       {hasDraft && (
         <PressScale
           onPress={onDiscardDraft}
@@ -691,8 +743,8 @@ function SavedItem({
         <PressScale
           onPress={onLoad}
           disabled={disabled}
-          accessibilityLabel={`${done ? 'Ver resultado de' : 'Continuar'} ${c.name}`}
-          style={[styles.itemButton, { backgroundColor: colors.accent, borderColor: colors.accent }]}>
+          accessibilityLabel={`${done ? 'Ver resultado de' : 'Continuar'} ${c.name}${c.accent ? `, cor ${accentName(c.accent)}` : ''}`}
+          style={[styles.itemButton, { backgroundColor: colors.accent, borderColor: colors.accent }, stripe]}>
           {loading ? (
             <ActivityIndicator color={colors.onAccent} />
           ) : (
@@ -770,6 +822,67 @@ function SavedItem({
 }
 
 type CopyStatus = 'idle' | 'copiada' | 'falhou';
+
+/** Largura da faixa da cor de destaque (D44) no cartão e no botão Continuar. */
+const ACCENT_STRIPE = 6;
+
+/**
+ * Código de desafio (D13): cenário, dificuldade e semente para outra pessoa jogar a mesma partida. Como a semente,
+ * fica oculto quando o jogador esconde as sementes; cenário sem código não mostra a linha.
+ */
+function ChallengeCodeRow({ code, hidden }: { code: string | null; hidden: boolean }) {
+  const { colors } = useTheme();
+  const [status, setStatus] = useState<CopyStatus>('idle');
+  const alive = useRef(true);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+  if (code === null) return null;
+
+  const copy = async () => {
+    let next: CopyStatus;
+    try {
+      next = (await Clipboard.setStringAsync(code)) ? 'copiada' : 'falhou';
+    } catch {
+      next = 'falhou';
+    }
+    if (!alive.current) return;
+    setStatus(next);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setStatus('idle'), 2000);
+  };
+
+  return (
+    <View style={styles.seedRow}>
+      <Text variant="caption" color="textMuted" selectable={!hidden} style={styles.seedText}>
+        {hidden ? 'Código de desafio: ••••••' : `Código de desafio: ${code}`}
+      </Text>
+      {!hidden && (
+        <PressScale
+          onPress={() => void copy()}
+          accessibilityLabel={`Copiar código de desafio ${code}`}
+          accessibilityHint="Outra pessoa cola o código no Novo Jogo para jogar com o mesmo cenário, dificuldade e semente"
+          style={[styles.seedButton, { borderColor: colors.accent }]}>
+          <Text variant="label" color="accent">
+            Copiar código
+          </Text>
+        </PressScale>
+      )}
+      <Text
+        variant="caption"
+        color={status === 'falhou' ? 'negative' : 'positive'}
+        accessibilityLiveRegion="polite"
+        style={styles.seedText}>
+        {status === 'copiada' ? 'Código copiado' : status === 'falhou' ? 'Não foi possível copiar' : ''}
+      </Text>
+    </View>
+  );
+}
 
 /**
  * Semente em texto selecionável, com cópia em um toque; a confirmação some sozinha após 2 s. Oculta (D19): mostra só
@@ -912,4 +1025,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   protectedTag: { flexDirection: 'row', gap: Spacing.one },
+  identityToggle: { alignSelf: 'flex-start' },
+  identity: { gap: Spacing.two, marginTop: Spacing.one },
 });

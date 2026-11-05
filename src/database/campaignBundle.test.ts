@@ -18,7 +18,9 @@ import {
   createCampaign,
   loadLatestState,
   recordMonth,
+  setCampaignAccent,
   setCampaignLocked,
+  setCampaignNotes,
   setCampaignPinned,
 } from './campaignRepository';
 import { LATEST_DB_VERSION } from './migrations';
@@ -173,6 +175,33 @@ describe('pacote de campanha (PLANO_MENU_SAVES_CONFIG.md, Fase M5)', () => {
       expect(copia).toMatchObject({ pinned: 0, locked: 0 });
       expect(await linhaCampanha(db, ORIGEM)).toEqual(linhaAntes);
       expect(await loadLatestState(db, ORIGEM)).toEqual(estadoAntes);
+    });
+  });
+
+  // PLANO_SAVES_HISTORICO.md, Fase H2: notas (D31) e cor (D44) vão no pacote, na importação e na duplicação.
+  describe('notas e cor de destaque', () => {
+    it('vão no arquivo exportado e voltam na importação e na duplicação', async () => {
+      const db = await bancoComOrigem(2);
+      const notas = 'Meta: reforma tributária\nNão brigar com o Centrão';
+      await setCampaignNotes(db, ORIGEM, notas);
+      await setCampaignAccent(db, ORIGEM, 'azul');
+      const arquivo = await arquivoDe(db);
+      expect(arquivo.campaign).toMatchObject({ notes: notas, accent: 'azul' });
+
+      await importBundle(db, parseBundle(arquivo), { id: COPIA, name: 'Importada' });
+      expect(await linhaCampanha(db, COPIA)).toMatchObject({ notes: arquivo.campaign.notes, accent: 'azul' });
+      await duplicateCampaign(db, ORIGEM, { id: 'dup', name: 'Duplicada' });
+      expect(await linhaCampanha(db, 'dup')).toMatchObject({ notes: arquivo.campaign.notes, accent: 'azul' });
+    });
+
+    it('cor fora da lista no arquivo é recusada sem gravar nada', async () => {
+      const db = await bancoComOrigem(1);
+      const arquivo = await arquivoDe(db);
+      arquivo.campaign.accent = 'roxo';
+      await expect(importBundle(db, parseBundle(arquivo), { id: COPIA, name: 'x' })).rejects.toBeInstanceOf(
+        BundleError,
+      );
+      expect(await linhaCampanha(db, COPIA)).toBeFalsy();
     });
   });
 

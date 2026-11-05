@@ -14,6 +14,10 @@ import {
 } from '../engine';
 import {
   addPlayTime,
+  CAMPAIGN_NOTES_MAX,
+  CampaignNotesTooLongError,
+  setCampaignAccent,
+  setCampaignNotes,
   cardSummaryOf,
   CampaignLockedError,
   CampaignNotFoundError,
@@ -84,7 +88,7 @@ describe('migrações', () => {
     const v2: Migration = {
       version: LATEST_DB_VERSION + 1,
       name: 'teste_coluna_nova',
-      sql: "ALTER TABLE campaigns ADD COLUMN notes TEXT NOT NULL DEFAULT '';",
+      sql: "ALTER TABLE campaigns ADD COLUMN teste_coluna TEXT NOT NULL DEFAULT '';",
     };
     // pendentes = todas depois da v1, mais a nova
     expect(await migrate(db, [...MIGRATIONS, v2])).toEqual([...MIGRATIONS.slice(1).map((m) => m.version), v2.version]);
@@ -115,7 +119,7 @@ describe('migrações', () => {
     await migrate(db, MIGRATIONS.slice(0, 2));
     await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
     // Ajuste: a lista de pendentes ganhou a migração 10 (setup_json).
-    expect(await migrate(db)).toEqual([3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(await migrate(db)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11]);
     expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
     expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Antiga']);
   });
@@ -314,7 +318,7 @@ describe('campanhas', () => {
       'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
       ['c1', 0, state.schemaVersion, JSON.stringify(state)],
     );
-    expect(await migrate(old)).toEqual([4, 5, 6, 7, 8, 9, 10]);
+    expect(await migrate(old)).toEqual([4, 5, 6, 7, 8, 9, 10, 11]);
     const [point] = await loadIndicatorHistory(old, 'c1');
     expect(point?.indicators).toEqual(state.indicators);
     expect(point?.selic).toBe(state.economy.selic);
@@ -511,7 +515,7 @@ describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
     await put(1, s1);
     await put(2, semRegioes); // snapshot de formato sem o bloco regional
 
-    expect(await migrate(old)).toEqual([5, 6, 7, 8, 9, 10]);
+    expect(await migrate(old)).toEqual([5, 6, 7, 8, 9, 10, 11]);
     const history = await loadRegionalHistory(old, 'c1');
     expect(history.map((p) => p.monthIndex)).toEqual([1]);
     for (const uf of s1.regions.ufs) {
@@ -775,8 +779,8 @@ describe('organização dos saves (migração 9, PLANO_MENU_SAVES_CONFIG.md, Fas
 
   it('a migração 9 cria pinned e locked com padrão 0 e só aceita 0 ou 1', async () => {
     // Ajuste: a migração 10 (setup_json) veio depois; o teste confere as colunas da 9, que continuam iguais.
-    expect(LATEST_DB_VERSION).toBe(10);
-    expect(await currentVersion(db)).toBe(10);
+    expect(LATEST_DB_VERSION).toBeGreaterThanOrEqual(10);
+    expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
     const cols = await db.all<{ name: string; dflt_value: string | null; notnull: number }>(
       'PRAGMA table_info(campaigns)',
     );
@@ -803,7 +807,7 @@ describe('organização dos saves (migração 9, PLANO_MENU_SAVES_CONFIG.md, Fas
        VALUES ('antiga', 'Antiga', ?, '0.1.0', 'estrategica', 1, '0.2.0', 0)`,
       [DEFAULT_SCENARIO_ID],
     );
-    expect(await migrate(old)).toEqual([9, 10]);
+    expect(await migrate(old)).toEqual([9, 10, 11]);
     const [c] = await listCampaigns(old);
     expect(c).toMatchObject({ id: 'antiga', pinned: false, locked: false });
   });
@@ -911,8 +915,8 @@ describe('opções da partida (migração 10, PLANO_MENU_SAVES_CONFIG.md, Fase M
   };
 
   it('a migração 10 cria setup_json como TEXT, aceitando nulo', async () => {
-    expect(LATEST_DB_VERSION).toBe(10);
-    expect(await currentVersion(db)).toBe(10);
+    expect(LATEST_DB_VERSION).toBeGreaterThanOrEqual(10);
+    expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
     const cols = await db.all<{ name: string; type: string; notnull: number }>('PRAGMA table_info(campaigns)');
     expect(cols.find((c) => c.name === 'setup_json')).toMatchObject({ type: 'TEXT', notnull: 0 });
   });
@@ -929,7 +933,7 @@ describe('opções da partida (migração 10, PLANO_MENU_SAVES_CONFIG.md, Fase M
        VALUES ('antiga', 'Antiga', ?, '0.1.0', 'estrategica', 1, '0.2.0', 0)`,
       [DEFAULT_SCENARIO_ID],
     );
-    expect(await migrate(old)).toEqual([10]);
+    expect(await migrate(old)).toEqual(MIGRATIONS.filter((m) => m.version >= 10).map((m) => m.version));
     expect(await listCampaigns(old)).toMatchObject([{ id: 'antiga', name: 'Antiga', setup: null }]);
   });
 
@@ -992,5 +996,52 @@ describe('opções da partida (migração 10, PLANO_MENU_SAVES_CONFIG.md, Fase M
       ),
     ).toStrictEqual({ difficulty: 'casual', scenarioId: 'prototipo_ficticio', seed: 9 });
     expect(parseSetupSnapshot(JSON.stringify(setup))).toStrictEqual(setup);
+  });
+});
+
+// PLANO_SAVES_HISTORICO.md, Fase H2: bloco de notas (D31) e cor de destaque (D44) na linha da campanha.
+describe('notas e cor (migração 11, PLANO_SAVES_HISTORICO.md, Fase H2)', () => {
+  let db: SqlDatabase;
+  beforeEach(async () => {
+    db = openNodeDatabase();
+    await migrate(db);
+    await createCampaign(db, { id: 'c1', name: 'x', scenarioVersion: '0.1.0', state: newState() });
+  });
+
+  it('a migração 11 cria notes (vazia por padrão) e accent (nula), e só aceita as quatro cores', async () => {
+    const cols = await db.all<{ name: string; dflt_value: string | null; notnull: number }>(
+      'PRAGMA table_info(campaigns)',
+    );
+    expect(cols.find((c) => c.name === 'notes')).toMatchObject({ dflt_value: "''", notnull: 1 });
+    expect(cols.find((c) => c.name === 'accent')).toMatchObject({ notnull: 0 });
+    expect(await listCampaigns(db)).toMatchObject([{ id: 'c1', notes: '', accent: null }]);
+    await expect(db.run("UPDATE campaigns SET accent = 'roxo' WHERE id = 'c1'")).rejects.toThrow();
+  });
+
+  it('grava notas e cor sem mexer em updated_at, e listCampaigns devolve as duas', async () => {
+    const before = await db.first<{ updated_at: string }>("SELECT updated_at FROM campaigns WHERE id = 'c1'");
+    await setCampaignNotes(db, 'c1', 'Aprovar a reforma até o mês 12');
+    await setCampaignAccent(db, 'c1', 'verde');
+    expect(await listCampaigns(db)).toMatchObject([
+      { id: 'c1', notes: 'Aprovar a reforma até o mês 12', accent: 'verde' },
+    ]);
+    await setCampaignAccent(db, 'c1', null);
+    expect((await listCampaigns(db))[0].accent).toBeNull();
+    expect(await db.first("SELECT updated_at FROM campaigns WHERE id = 'c1'")).toEqual(before);
+  });
+
+  it('recusa notas acima de 2.000 caracteres e campanha inexistente', async () => {
+    await expect(setCampaignNotes(db, 'c1', 'a'.repeat(CAMPAIGN_NOTES_MAX + 1))).rejects.toBeInstanceOf(
+      CampaignNotesTooLongError,
+    );
+    await setCampaignNotes(db, 'c1', 'a'.repeat(CAMPAIGN_NOTES_MAX));
+    await expect(setCampaignNotes(db, 'nada', 'x')).rejects.toBeInstanceOf(CampaignNotFoundError);
+    await expect(setCampaignAccent(db, 'nada', 'azul')).rejects.toBeInstanceOf(CampaignNotFoundError);
+  });
+
+  it('cor gravada fora da lista (banco mexido à mão) é lida como nenhuma', async () => {
+    await db.exec('PRAGMA ignore_check_constraints = ON');
+    await db.run("UPDATE campaigns SET accent = 'roxo' WHERE id = 'c1'");
+    expect((await listCampaigns(db))[0].accent).toBeNull();
   });
 });

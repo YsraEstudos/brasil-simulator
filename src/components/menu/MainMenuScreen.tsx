@@ -7,7 +7,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Radius, Spacing } from '@/constants/theme';
+import { accentName } from '@/components/campaign/saveIdentity';
+import { Radius, SaveAccentColors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { gameStore, useGame } from '@/store';
 
@@ -78,6 +79,12 @@ export function MainMenuScreen() {
   const active = useGame((s) => s.active);
   const campaigns = useGame((s) => s.campaigns);
   const [note, setNote] = useState<string | null>(null);
+  // D44: o CONTINUAR leva a faixa da cor da partida que ele abre (a aberta ou a última jogada).
+  const continueAccent =
+    (
+      campaigns.find((c) => c.id === active?.id) ??
+      campaigns.reduce<(typeof campaigns)[number] | null>((b, c) => (!b || c.updatedAt > b.updatedAt ? c : b), null)
+    )?.accent ?? null;
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Área útil dentro de safe areas e margens: estimada pela janela e corrigida pelo onLayout.
@@ -200,7 +207,9 @@ export function MainMenuScreen() {
       {ITEMS.map((item) => (
         <Pressable
           key={item.id}
-          accessibilityLabel={item.label}
+          accessibilityLabel={
+            item.id === 'continuar' && continueAccent ? `${item.label}, cor ${accentName(continueAccent)}` : item.label
+          }
           accessibilityRole="button"
           disabled={busy}
           hitSlop={btnH < 44 ? Spacing.one : undefined}
@@ -209,6 +218,9 @@ export function MainMenuScreen() {
             styles.button,
             { height: btnH, paddingHorizontal: btnH >= 40 ? Spacing.three : Spacing.two + Spacing.half },
             pressed && !busy && styles.buttonPressed,
+            item.id === 'continuar' && continueAccent
+              ? { borderLeftWidth: 6, borderLeftColor: SaveAccentColors.dark[continueAccent] }
+              : null,
           ]}>
           <Text
             adjustsFontSizeToFit
