@@ -343,6 +343,44 @@ export function proposalForecast(state: GameState, proposal: Proposal, content: 
   return votesOpinion(state, policy.id, tightest);
 }
 
+/** Custo fiscal e efeito na aprovação com as mesmas escalas que a execução aplicará (proposals.ts). */
+function effectParts(state: Readonly<GameState>, policy: Policy, content: GameContent) {
+  const adhesion = adhesionWarning(state, policy, content);
+  // Adesão dos estados e perda da pasta de bloco.
+  const factors = executionFactors(state, policy, content, adhesion?.share ?? 1);
+  const gdpMillions = currentNominalGdpMillions(state, content);
+  const parts = fiscalParts(policy, gdpMillions, factors.reach);
+  const approvalImpact = policy.impacts
+    .filter((i) => i.channel === APPROVAL_CHANNEL)
+    .reduce((n, i) => n + i.magnitude * (i.magnitude > 0 ? factors.resultFactor : 1), 0);
+  return { adhesion, factors, gdpMillions, parts, approvalImpact };
+}
+
+/** Previsão barata de uma política para os cartões do catálogo (H9/D3): sem votos nem textos. */
+export interface PolicyEffectForecast {
+  /** Fração do PIB por ano; positivo piora o resultado primário (o mesmo número da Fazenda). */
+  annualFiscalImpact: number;
+  /** Efeito na aprovação, fração (o mesmo número da Comunicação). */
+  approvalImpact: number;
+  /** PIB nominal anual em R$ milhões, para mostrar o custo em R$. */
+  gdpMillions: number;
+}
+
+/**
+ * Os mesmos números de `adviseDecision` (`forecast.annualFiscalImpact` e `forecast.approvalImpact`), sem prever
+ * votos: cabe em cada cartão do catálogo. Função pura; não avança `state.rng`.
+ */
+export function policyEffectForecast(
+  state: Readonly<GameState>,
+  policyId: string,
+  content: GameContent,
+): PolicyEffectForecast {
+  const policy = content.policies[policyId];
+  if (!policy) throw new RangeError(`política desconhecida: ${policyId}`);
+  const { parts, approvalImpact, gdpMillions } = effectParts(state, policy, content);
+  return { annualFiscalImpact: parts.fiscal, approvalImpact, gdpMillions };
+}
+
 /**
  * Pareceres da mesa de despacho (GAME_DESIGN.md §4.4) antes de uma decisão. Função pura: não altera `state`
  * nem avança `state.rng`. Previsões vêm do próprio motor (`predictVotes`), com faixa e viés por dificuldade.
@@ -358,14 +396,7 @@ export function adviseDecision(
   if (!policy) throw new RangeError(`política desconhecida: ${policyId}`);
 
   let articulacao: Opinion = { text: 'Ato do Executivo: não depende do Congresso.', tone: 'neutro' };
-  const adhesion = adhesionWarning(state, policy, content);
-  // Mesmas escalas que a execução aplicará (proposals.ts): adesão dos estados e perda da pasta de bloco.
-  const factors = executionFactors(state, policy, content, adhesion?.share ?? 1);
-  const gdpMillions = currentNominalGdpMillions(state, content);
-  const parts = fiscalParts(policy, gdpMillions, factors.reach);
-  const approvalImpact = policy.impacts
-    .filter((i) => i.channel === APPROVAL_CHANNEL)
-    .reduce((n, i) => n + i.magnitude * (i.magnitude > 0 ? factors.resultFactor : 1), 0);
+  const { adhesion, factors, gdpMillions, parts, approvalImpact } = effectParts(state, policy, content);
   let votes: VotePrediction[] = [];
   if (legislativeInstrument(policy) !== null) {
     votes = predictVotes(state, policy, content);

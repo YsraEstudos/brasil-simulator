@@ -452,8 +452,10 @@ Jogar os 12 meses, tomar decisões diferentes em duas campanhas, observar conseq
 ## 12. Explicabilidade
 
 - Cada indicador tem um botão **"Por que mudou?"** que mostra a decomposição da variação do mês por causa (políticas, choques, Banco Central, tendência).
+- Na folha Indicadores, junto do "Por que mudou?", a **conta aberta** soma o valor do mês passado, as 4 maiores causas e "outros" até o valor de agora; quando as parcelas arredondadas não fecham, a diferença aparece como "arredondamento", com explicação.
 - Cada proposta tem uma **linha do tempo** com o estado atual e o histórico.
 - Previsões ministeriais aparecem antes da decisão, com faixa de incerteza (§6).
+- Os cartões das opções de evento e do catálogo de políticas mostram os efeitos declarados no conteúdo (aprovação, Congresso, governadores, capital político, credibilidade, inflação e custo fiscal): **valor exato no Casual** e **faixa** ("+0,6 a +1,8 p.p.") na Estratégica e no Realismo Extremo, com a regra da mesa de despacho (centro sorteado; mais largo e com viés otimista no Realismo). Riscos e cadeias de eventos não ganham número.
 - O jogo nunca mostra uma "resposta certa".
 
 ---

@@ -4,6 +4,7 @@ import { Text } from '@/components/ui';
 import { MIN_TOUCH, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+import { figuresA11y, type EffectFigure } from './effectFigures';
 import { costText } from './labels';
 
 export interface ChoiceOptionProps {
@@ -21,6 +22,8 @@ export interface ChoiceOptionProps {
   /** Cabe nas ações de agenda (a já marcada sempre pode ser desmarcada). */
   enabled: boolean;
   onPress: () => void;
+  /** Números da escolha (H9/D3): exatos no Casual, faixa nas outras dificuldades. */
+  figures?: readonly EffectFigure[];
 }
 
 /**
@@ -37,6 +40,7 @@ export function ChoiceOption({
   unanswered = false,
   enabled,
   onPress,
+  figures = [],
 }: ChoiceOptionProps) {
   const { colors } = useTheme();
   const pendingDefault = Boolean(isDefault) && unanswered && !selected;
@@ -46,7 +50,12 @@ export function ChoiceOption({
         if (enabled) onPress();
       }}
       accessibilityRole="radio"
-      accessibilityLabel={`${label}, custo ${costText(agendaCost)}${isDefault ? (pendingDefault ? ', vale esta se você não responder' : ', padrão se não responder') : ''}`}
+      accessibilityLabel={[
+        `${label}, custo ${costText(agendaCost)}${isDefault ? (pendingDefault ? ', vale esta se você não responder' : ', padrão se não responder') : ''}`,
+        figuresA11y(figures),
+      ]
+        .filter(Boolean)
+        .join('. ')}
       accessibilityState={{ checked: selected, disabled: !enabled }}
       style={({ pressed }) => [
         styles.option,
@@ -99,6 +108,7 @@ export function ChoiceOption({
         <Text variant="caption" color="textSecondary">
           {description}
         </Text>
+        <FigureChips figures={figures} />
         {pendingDefault && (
           <Text variant="caption" color="warning" style={styles.chipText}>
             Vale esta se você não responder até o fim do mês.
@@ -109,7 +119,38 @@ export function ChoiceOption({
   );
 }
 
+const FIGURE_COLOR = { positive: 'positive', negative: 'negative', neutral: 'textSecondary' } as const;
+
+/**
+ * Números de um efeito em pílulas (H9/D3). O sinal e a palavra (Custo/Economia) vão no texto; a cor só reforça.
+ * Fora do Casual, a primeira pílula diz "estimativa" para não parecer valor exato.
+ */
+export function FigureChips({ figures }: { figures: readonly EffectFigure[] }) {
+  const { colors } = useTheme();
+  if (figures.length === 0) return null;
+  const estimate = figures.some((f) => !f.exact);
+  return (
+    <View style={styles.figures} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      {estimate && (
+        <Text variant="caption" color="textMuted" style={styles.figureNote}>
+          estimativa
+        </Text>
+      )}
+      {figures.map((f) => (
+        <View key={f.key} style={[styles.figure, { borderColor: colors.border }]}>
+          <Text variant="caption" color={FIGURE_COLOR[f.tone]} tabular>
+            {f.text}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  figures: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.half },
+  figure: { borderWidth: 1, borderRadius: Radius.pill, paddingHorizontal: 7, paddingVertical: 1 },
+  figureNote: { fontStyle: 'italic' },
   option: {
     minHeight: MIN_TOUCH,
     flexDirection: 'row',

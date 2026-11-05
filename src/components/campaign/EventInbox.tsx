@@ -17,6 +17,8 @@ import { useTheme } from '@/hooks/use-theme';
 import type { GameEvent } from '@/types/event';
 
 import { ChoiceOption } from './ChoiceOption';
+import { eventChoiceFigures, type FigureContext } from './effectFigures';
+import type { FiscalDisplayUnit } from '@/components/ui/format';
 import {
   ALERT_SEVERITIES,
   ALERT_SEVERITY_LABEL,
@@ -59,6 +61,11 @@ export interface EventInboxProps {
    * caixa de entrada e ganha o contorno de destaque. Ausente ou fora da lista = a ordem normal, sem destaque.
    */
   focusInstanceId?: string | null;
+  /**
+   * Números nas opções (H9/D3): dificuldade, semente e mês da partida, unidade fiscal e PIB nominal anual em R$
+   * milhões. Ausente = opções sem números.
+   */
+  figures?: { context: FigureContext; unit: FiscalDisplayUnit; gdpMillions: number };
 }
 
 const SANCTION_OPTIONS: Record<SanctionChoice, { label: string; description: string }> = {
@@ -110,6 +117,7 @@ export function EventInbox({
   onSanction,
   characters = [],
   focusInstanceId,
+  figures,
 }: EventInboxProps) {
   const [expanded, setExpanded] = useState<string | null>(() =>
     items.some(({ pending }) => pending.instanceId === focusInstanceId) ? `event:${focusInstanceId}` : null,
@@ -253,6 +261,11 @@ export function EventInbox({
                     unanswered={selectedId === undefined}
                     enabled={isSelected || canChoose(event.id, choice.id)}
                     onPress={() => onChoose(event.id, choice.id)}
+                    figures={
+                      figures
+                        ? eventChoiceFigures(event.id, choice, figures.context, figures.unit, figures.gdpMillions)
+                        : undefined
+                    }
                   />
                 );
               })}
