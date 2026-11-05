@@ -15,6 +15,7 @@ import {
   type DecisionRejection,
   type Difficulty,
   type ElectionResult,
+  type EventLocation,
   type GameState,
   type IdeologyPoint,
   type Indicators,
@@ -399,6 +400,30 @@ export async function loadCareerSummary(db: SqlDatabase, campaignId: string): Pr
     [campaignId],
   );
   return row ? (JSON.parse(row.summary_json) as CareerSummary) : null;
+}
+
+/** Evento disparado: o turno em que chegou à caixa de entrada e o local congelado no disparo (se houver). */
+export interface FiredEvent {
+  turnIndex: number;
+  eventId: string;
+  location?: EventLocation;
+}
+
+/**
+ * Eventos disparados na campanha inteira, em ordem (marcas de crise no gráfico, PLANO_SAVES_HISTORICO.md H5). As
+ * linhas sem escolha são as do disparo; as respostas ficam em outras linhas e não entram aqui.
+ */
+export async function loadFiredEvents(db: SqlDatabase, campaignId: string): Promise<FiredEvent[]> {
+  const rows = await db.all<{ turn_index: number; event_id: string; payload_json: string | null }>(
+    'SELECT turn_index, event_id, payload_json FROM events WHERE campaign_id = ? AND choice_id IS NULL ORDER BY turn_index, id',
+    [campaignId],
+  );
+  return rows.map((r) => {
+    const payload = r.payload_json ? (JSON.parse(r.payload_json) as { location?: EventLocation }) : null;
+    return payload?.location
+      ? { turnIndex: r.turn_index, eventId: r.event_id, location: payload.location }
+      : { turnIndex: r.turn_index, eventId: r.event_id };
+  });
 }
 
 /** Série de longo prazo da campanha, mês do mandato a mês (inclui a posse, mês 0; nenhum turno pré-posse). */
