@@ -1,7 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 
+import { keepAwakeNote } from '@/components/painel/hudClockModel';
 import { Button, Card, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { useKeepAwakeAvailable } from '@/hooks/use-keep-screen-awake';
 import {
   FISCAL_UNITS,
   gameStore,
@@ -78,10 +80,11 @@ function Toggle({
 
 /**
  * Cartões das preferências do registro (PLANO_MENU_SAVES_CONFIG.md, Fases M6 e M7): aparência, acessibilidade, valores
- * fiscais, globo, animações e abertura do app. Tudo vale na hora e fica gravado no aparelho (fora do save).
+ * fiscais, globo, tela durante a partida (H1), animações e abertura do app. Tudo vale na hora e fica gravado no aparelho (fora do save).
  */
 export function PreferenceCards() {
   const prefs = useGame((s) => s.prefs);
+  const keepAwakeAvailable = useKeepAwakeAvailable();
 
   return (
     <>
@@ -149,6 +152,21 @@ export function PreferenceCards() {
           value={prefs.globeZoomSpeed}
           label={speedLabel}
           onChange={(v) => setPref('globeZoomSpeed', v)}
+        />
+      </Card>
+
+      <Card title="Durante a partida" subtitle="Tela e relógio no Painel">
+        <Text variant="label">Manter a tela acesa</Text>
+        <Toggle
+          value={prefs.keepScreenAwake}
+          onChange={(on) => setPref('keepScreenAwake', on)}
+          description={keepAwakeNote(keepAwakeAvailable)}
+        />
+        <Text variant="label">Relógio e bateria no Painel</Text>
+        <Toggle
+          value={prefs.hudClock}
+          onChange={(on) => setPref('hudClock', on)}
+          description="Mostra a hora do aparelho e a bateria num canto do Painel. Sem bateria (computador), só a hora."
         />
       </Card>
 

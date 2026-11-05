@@ -47,6 +47,7 @@ import { useMapMarkers } from '@/components/map/useMapMarkers';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
 import type { Profile3d } from '@/globe/qualityProfiles';
+import { useKeepScreenAwake } from '@/hooks/use-keep-screen-awake';
 import { draftCost, gameStore, hasPendingChoices, planMapQuality, useGame, type RegionalPoint } from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
@@ -77,7 +78,12 @@ import {
   mesaSides,
   painelLabelReserve,
   TOP_INSET,
+  clockRailShift,
+  clockRect,
+  RESERVED_MARGIN,
 } from './hudReserved';
+import { HudClock } from './HudClock';
+import { keepAwakeActive, showHudClock } from './hudClockModel';
 import { Hud } from './hudTheme';
 import { agendaPips, agendaPipsLabel } from './agendaPips';
 import { GUIDED_BY_INDICATOR, outOfBandAlert } from './indicatorGuide';
@@ -238,6 +244,11 @@ export function PainelScreen() {
   const [endMonthFailed, setEndMonthFailed] = useState(false);
   // Há subtela por cima do Painel? Então o globo não desenha (a pilha mantém o Painel montado por baixo).
   const focused = useIsFocused();
+  // Tela acesa e relógio do HUD (PLANO_SAVES_HISTORICO.md H1): a tela só fica acesa com o Painel em foco.
+  const keepAwakePref = useGame((s) => s.prefs.keepScreenAwake);
+  const hudClockPref = useGame((s) => s.prefs.hudClock);
+  const textScale = useGame((s) => s.textScale);
+  useKeepScreenAwake(keepAwakeActive(keepAwakePref, focused));
   const globe = useRef<GlobeApi | null>(null);
   // Qualidade do mapa (Configurações: Automático ou um perfil). Se o globo falhar a superfície cai sozinha para o 2D só
   // nesta sessão: nada é gravado, e o aviso aparece uma vez.
@@ -446,8 +457,9 @@ export function PainelScreen() {
   // constantes de `hudReserved` não acompanham isso.
   const [topBarBottom, setTopBarBottom] = useState(0);
   // Áreas do HUD onde o mapa não pode pôr siglas e capitais (trilhos, barra do topo, doca): ver `hudReserved`.
-  const labelReserve = useMemo(() => {
-    const reserve = painelLabelReserve({
+  const clockShown = showHudClock(hudClockPref, size.width, size.height);
+  const reserveInput = useMemo(
+    () => ({
       width: size.width,
       height: size.height,
       insets,
@@ -457,9 +469,41 @@ export function PainelScreen() {
       leftRailCount: leftRail(showElections).length,
       rightRailCount: RIGHT_RAIL.length,
       leftHanded,
-    });
+      clock: clockShown,
+      textScale,
+      topBarBottom,
+    }),
+    [
+      size.width,
+      size.height,
+      insets,
+      compact,
+      hud.demo,
+      legendShown,
+      showElections,
+      topBarBottom,
+      leftHanded,
+      clockShown,
+      textScale,
+    ],
+  );
+  const labelReserve = useMemo(() => {
+    const reserve = painelLabelReserve(reserveInput);
     return { ...reserve, insets: { ...reserve.insets, top: Math.max(reserve.insets.top, topBarBottom) } };
-  }, [size.width, size.height, insets, compact, hud.demo, legendShown, showElections, topBarBottom, leftHanded]);
+  }, [reserveInput, topBarBottom]);
+  // Canto do relógio (sem a folga da reserva) e quanto o trilho "o mês" desce para dar lugar a ele.
+  const clockBox = useMemo(() => {
+    const r = clockRect(reserveInput);
+    return (
+      r && {
+        x: r.x + RESERVED_MARGIN,
+        y: r.y + RESERVED_MARGIN,
+        w: r.w - 2 * RESERVED_MARGIN,
+        h: r.h - 2 * RESERVED_MARGIN,
+      }
+    );
+  }, [reserveInput]);
+  const monthRailShift = clockRailShift(reserveInput);
 
   /** Fecha o detalhe e limpa a seleção do mapa (o ✕, o toque fora e o voltar do Android passam por aqui). */
   const closeSheet = () => {
@@ -615,8 +659,8 @@ export function PainelScreen() {
   }, [activeId, sheet, reportMonth, ministriesSig, markRailSeen]);
   const railDots = playing && seenHere ? railNews({ reportMonth, ministries: ministriesSig, seen: seenHere }) : {};
 
-  const rail = (entries: ReturnType<typeof leftRail>) => (
-    <View pointerEvents="box-none" style={{ gap: compact ? 6 : 10 }}>
+  const rail = (entries: ReturnType<typeof leftRail>, marginTop = 0) => (
+    <View pointerEvents="box-none" style={{ gap: compact ? 6 : 10, marginTop }}>
       {entries.map((entry) => (
         <RoundButton
           key={entry.id}
@@ -1024,16 +1068,28 @@ export function PainelScreen() {
             {/* Trilho "o mês" e "o país": no canhoto trocam de lado (a ordem na linha é a do `space-between`). */}
             {sides.monthRail === 'left' ? (
               <>
-                {rail(leftRail(showElections))}
+                {rail(leftRail(showElections), monthRailShift)}
                 {rail(RIGHT_RAIL)}
               </>
             ) : (
               <>
                 {rail(RIGHT_RAIL)}
-                {rail(leftRail(showElections))}
+                {rail(leftRail(showElections), monthRailShift)}
               </>
             )}
           </View>
+
+          {clockBox && (
+            <HudClock
+              left={clockBox.x}
+              top={clockBox.y}
+              width={clockBox.w}
+              height={clockBox.h}
+              alignRight={sides.monthRail === 'right'}
+              textScale={textScale}
+              colorBlind={colorBlind}
+            />
+          )}
 
           {/* Doca: as subtelas do jogo e o Encerrar o mês. Retrato: o Encerrar numa linha própria, à direita, acima dos
               quatro botões (ícone + rótulo na largura toda — com cinco na mesma linha, 360 px não dá); paisagem: só

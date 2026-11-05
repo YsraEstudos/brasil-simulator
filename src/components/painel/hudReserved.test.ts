@@ -23,6 +23,8 @@ import {
   RAIL_EDGE,
   TOP_INSET,
   bottomBandHeight,
+  clockRect,
+  clockSize,
   mesaSides,
   painelLabelReserve,
   topBandHeight,
@@ -155,6 +157,89 @@ describe('painelLabelReserve', () => {
   it('mesaSides: destro e canhoto espelham trilhos e o Encerrar o mês', () => {
     expect(mesaSides(false)).toEqual({ monthRail: 'left', countryRail: 'right', endMonth: 'right' });
     expect(mesaSides(true)).toEqual({ monthRail: 'right', countryRail: 'left', endMonth: 'left' });
+  });
+});
+
+/** Relógio e bateria no HUD (PLANO_SAVES_HISTORICO.md H1, D33): canto reservado que não cobre números nem trilhos. */
+describe('canto do relógio', () => {
+  const SIZES: [number, number][] = [
+    [320, 640],
+    [360, 740],
+    [400, 860],
+    [640, 360],
+  ];
+
+  it('sem a preferência não reserva nada e os trilhos não mudam', () => {
+    expect(clockRect(input(360, 740))).toBeNull();
+    expect(painelLabelReserve(input(360, 740, { clock: false }))).toEqual(painelLabelReserve(input(360, 740)));
+  });
+
+  it.each([
+    ['destro', false],
+    ['canhoto', true],
+  ] as const)('fica abaixo da barra do topo, dentro da tela e longe dos trilhos (%s)', (_side, leftHanded) => {
+    for (const [w, h] of SIZES)
+      for (const insets of [SAFE, NOTCH, NO_SAFE])
+        for (const textScale of [1, 1.3]) {
+          const where = `${w}x${h} escala ${textScale}`;
+          const cfg = input(w, h, { insets, leftHanded, clock: true, textScale });
+          const clock = clockRect(cfg)!;
+          const reserve = painelLabelReserve(cfg);
+          expect(reserve.rects, where).toHaveLength(3);
+          expect(reserve.rects[2]).toEqual(clock);
+          // Não cobre os números do topo.
+          expect(clock.y + 4, where).toBeGreaterThanOrEqual(topBandHeight(cfg));
+          expect(clock.x, where).toBeGreaterThanOrEqual(0);
+          expect(clock.x + clock.w, where).toBeLessThanOrEqual(w);
+          // O trilho "o mês", do lado do relógio, começa abaixo dele (caixas reais, sem a folga de 4 px de cada reserva).
+          const month = reserve.rects[0];
+          expect(month.y + 4, where).toBeGreaterThanOrEqual(clock.y + clock.h - 4);
+          // O trilho "o país" fica do outro lado e não muda.
+          expect(reserve.rects[1]).toEqual(painelLabelReserve({ ...cfg, clock: false }).rects[1]);
+          expect(rectsCollide(reserve.rects[1], clock, 0), where).toBe(false);
+        }
+  });
+
+  it('lado do trilho "o mês": destro à esquerda, canhoto à direita, espelhado', () => {
+    const destro = clockRect(input(360, 740, { insets: NO_SAFE, clock: true }))!;
+    const canhoto = clockRect(input(360, 740, { insets: NO_SAFE, clock: true, leftHanded: true }))!;
+    expect(destro.x).toBe(RAIL_EDGE - 4);
+    expect(canhoto.x + canhoto.w).toBe(360 - RAIL_EDGE + 4);
+    expect(canhoto).toEqual({ ...destro, x: 360 - destro.x - destro.w });
+  });
+
+  it('desce com a barra do topo medida e cresce com o texto', () => {
+    const base = clockRect(input(360, 740, { clock: true }))!;
+    const lower = clockRect(input(360, 740, { clock: true, topBarBottom: base.y + 4 + 30 }))!;
+    expect(lower.y).toBe(base.y + 30);
+    expect(clockSize(1.3).h).toBeGreaterThan(clockSize(1).h);
+    expect(clockRect(input(360, 740, { clock: true, textScale: 1.3 }))!.w).toBeGreaterThan(base.w);
+  });
+
+  it('rótulos do mapa não ficam sob o relógio (destro e canhoto)', () => {
+    for (const leftHanded of [false, true])
+      for (const [w, h] of SIZES) {
+        const reserve = painelLabelReserve(input(w, h, { clock: true, leftHanded }));
+        const viewport: LabelViewport = { width: w, height: h, insets: reserve.insets };
+        const altitude = CAMERA.initial.altitude;
+        const { project, fovDeg } = globeProjector(
+          { lon: CAMERA.initial.lon, lat: CAMERA.initial.lat, altitude },
+          w,
+          h,
+        );
+        const candidates = globeLabelCandidates({
+          project,
+          altitude,
+          fovDeg,
+          viewport,
+          reserved: reserve.rects,
+          scale: labelScale(1),
+        });
+        const shown = layoutLabels(candidates, viewport, reserve.rects);
+        const clock = reserve.rects[2];
+        for (const c of candidates.filter((c) => shown.has(c.id)))
+          expect(rectsCollide(candidateRect(c), clock, 0), `${c.id} em ${w}x${h}`).toBe(false);
+      }
   });
 });
 
