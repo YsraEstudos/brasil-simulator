@@ -112,12 +112,13 @@ describe('Painel com a partida', () => {
     expect(Object.keys(data.fills ?? {})).toHaveLength(27);
   });
 
-  it('transforma a série longa do banco na série do gráfico', () => {
-    const active = campaign();
+  it('variações desde a posse (B21) vêm do ponto da posse na série do banco', () => {
+    const base = campaign();
+    const active = { ...base, state: { ...base.state, monthIndex: 1 } };
     const history: IndicatorPoint[] = [
       {
         monthIndex: 0,
-        indicators: active.state.indicators,
+        indicators: { ...active.state.indicators, approval: active.state.indicators.approval - 0.06 },
         selic: null,
         grossDebt: null,
         credibility: null,
@@ -134,12 +135,34 @@ describe('Painel com a partida', () => {
         riskPremium: 0.02,
       },
     ];
-    const data = hudFromCampaign(active, content, history);
-    expect(data.series).toEqual([
-      { monthIndex: 0, value: active.state.indicators.gdpGrowth12m },
-      { monthIndex: 1, value: 0.024 },
-    ]);
-    expect(hudFromCampaign(active, content, null).series).toEqual([]);
+    const data = hudFromCampaign(active, content, history, null, null, false, 'pib', 'posse');
+    expect(stat(data, 'aprovacao')).toMatchObject({ delta: '+6 p.p.', deltaBasis: 'posse', trend: 'up' });
+    // No mês, sem mês anterior, não há variação; sem o ponto da posse, também não.
+    expect(stat(hudFromCampaign(active, content, history), 'aprovacao').delta).toBeUndefined();
+    expect(
+      stat(hudFromCampaign(active, content, null, null, null, false, 'pib', 'posse'), 'aprovacao').delta,
+    ).toBeUndefined();
+  });
+
+  it('a seta do PIB segue o mês mesmo com as variações desde a posse', () => {
+    const base = campaign();
+    const gdp = base.state.indicators.gdpGrowth12m;
+    const active = {
+      ...base,
+      state: { ...base.state, monthIndex: 2 },
+      previous: { ...base.state.indicators, gdpGrowth12m: gdp - 0.002 },
+    };
+    const posse: IndicatorPoint = {
+      monthIndex: 0,
+      indicators: { ...base.state.indicators, gdpGrowth12m: gdp + 0.01 },
+      selic: null,
+      grossDebt: null,
+      credibility: null,
+      exchangeRate: null,
+      riskPremium: null,
+    };
+    const pib = stat(hudFromCampaign(active, content, [posse], null, null, false, 'pib', 'posse'), 'pib');
+    expect(pib).toMatchObject({ trend: 'up', sentiment: 'positive' });
   });
 
   it('avalia a meta pela inflação e pelo resultado primário', () => {

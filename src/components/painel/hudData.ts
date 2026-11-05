@@ -34,11 +34,11 @@ import type { IndicatorPoint } from '@/database/campaignRepository';
 import type { ActiveCampaign } from '@/store/gameStore';
 
 import { bandTone, indicatorBand, INFLATION_BAND, INFLATION_TARGET, outOfBandAlert } from './indicatorGuide';
+import { inaugurationIndicators, type DeltaBasis } from './indicatorSeries';
 
 /**
  * Dados do Painel (HUD estilo mesa de jogo): funções puras que transformam a partida em tudo o que a tela
- * mostra — barras do topo, ministérios, Congresso, indicadores setoriais, regiões, meta e a série do
- * PIB. Sem partida em andamento, `hudFromScenario` monta a mesma tela com os dados do cenário e a marca
+ * mostra — barras do topo, ministérios, Congresso, indicadores setoriais, regiões e meta. Sem partida em andamento, `hudFromScenario` monta a mesma tela com os dados do cenário e a marca
  * `demo: true` (a tela exibe o selo de demonstração; nada aqui inventa números que pareçam da partida).
  */
 
@@ -50,8 +50,10 @@ export interface HudStat {
   id: HudStatId;
   label: string;
   value: string;
-  /** Variação em relação ao mês anterior, já formatada (ex.: "+4,0 p.p."). */
+  /** Variação em relação ao mês anterior ou à posse (`deltaBasis`), já formatada (ex.: "+4,0 p.p."). */
   delta?: string;
+  /** Base da variação, quando há variação: o leitor de tela e a célula dizem "desde a posse". */
+  deltaBasis?: DeltaBasis;
   sentiment: Sentiment;
   /** Preenchimento da barrinha (0–1), quando o número tem leitura de nível. */
   progress?: number;
@@ -116,12 +118,6 @@ export interface HudGoal {
   checks: HudGoalCheck[];
 }
 
-export interface HudSeriesPoint {
-  monthIndex: number;
-  /** PIB em 12 meses (fração). */
-  value: number;
-}
-
 export interface HudData {
   /** `true` sem partida em andamento: a tela mostra o selo de demonstração. */
   demo: boolean;
@@ -143,7 +139,6 @@ export interface HudData {
   sectors: readonly HudSector[];
   regions: readonly HudRegion[];
   goal: HudGoal;
-  series: readonly HudSeriesPoint[];
   /** Cores por UF do mapa de calor do globo (a camada escolhida no Painel); `null` sem partida ou sem camada. */
   fills: Readonly<Record<string, string>> | null;
 }
@@ -178,16 +173,6 @@ const DEMO_SECTORS: Readonly<Record<SocietySectorId, { growth: number; share: nu
   extrativa: { growth: 0.001, share: 0.03 },
   construcao: { growth: 0.001, share: 0.08 },
 };
-
-/** Série de demonstração do PIB 12 meses (primeiros meses fictícios; o selo de demo cobre). */
-const DEMO_SERIES: readonly HudSeriesPoint[] = [
-  { monthIndex: 0, value: 0.018 },
-  { monthIndex: 1, value: 0.019 },
-  { monthIndex: 2, value: 0.0195 },
-  { monthIndex: 3, value: 0.021 },
-  { monthIndex: 4, value: 0.0205 },
-  { monthIndex: 5, value: 0.022 },
-];
 
 const GOOD_WHEN = { approval: 'up', inflation: 'down', unemployment: 'down', gdp: 'up' } as const;
 
@@ -224,7 +209,14 @@ function signedPercent(fraction: number, decimals = 1): string {
 
 interface StatInput {
   indicators: Indicators;
+  /** Base das variações: o mês anterior ou a posse (B21). */
   previous?: Indicators;
+  deltaBasis?: DeltaBasis;
+  /**
+   * Mês anterior, sempre: a célula do PIB mostra o crescimento em 12 meses, não uma variação, e a seta dela segue o
+   * mês mesmo com as variações desde a posse (uma seta da posse ao lado de "+1,4%" seria lida como a do número).
+   */
+  lastMonth?: Indicators;
   /** Capital político 0–100. */
   politicalCapital: number;
   /** PIB nominal anual em R$ milhões. */
@@ -243,17 +235,24 @@ function buildStats(input: StatInput): HudStat[] {
   const delta = (key: keyof Indicators, goodWhen: 'up' | 'down', decimals: number) => {
     if (!p) return { delta: undefined, sentiment: 'neutral' as Sentiment };
     const d = i[key] - p[key];
-    return { delta: formatPointsDelta(d, decimals), sentiment: deltaSentiment(d, goodWhen).sentiment };
+    return {
+      delta: formatPointsDelta(d, decimals),
+      deltaBasis: input.deltaBasis,
+      sentiment: deltaSentiment(d, goodWhen).sentiment,
+    };
   };
 
   const approval = delta('approval', GOOD_WHEN.approval, 0);
   const inflation = delta('inflation12m', GOOD_WHEN.inflation, 1);
   const unemployment = delta('unemployment', GOOD_WHEN.unemployment, 1);
-  const gdp = delta('gdpGrowth12m', GOOD_WHEN.gdp, 1);
-  /** Seta: sentido da mudança em relação ao mês anterior (sem mês anterior ou sem mudança, não há seta). */
-  const trendOf = (key: keyof Indicators): 'up' | 'down' | undefined => {
-    if (!p) return undefined;
-    const d = i[key] - p[key];
+  const lastMonth = input.lastMonth ?? p;
+  const gdpChange = lastMonth ? i.gdpGrowth12m - lastMonth.gdpGrowth12m : undefined;
+  const gdpSentiment: Sentiment =
+    gdpChange === undefined ? 'neutral' : deltaSentiment(gdpChange, GOOD_WHEN.gdp).sentiment;
+  /** Seta: sentido da mudança em relação à base (sem base ou sem mudança, não há seta). */
+  const trendOf = (key: keyof Indicators, base: Indicators | undefined = p): 'up' | 'down' | undefined => {
+    if (!base) return undefined;
+    const d = i[key] - base[key];
     return d === 0 ? undefined : d > 0 ? 'up' : 'down';
   };
 
@@ -291,8 +290,8 @@ function buildStats(input: StatInput): HudStat[] {
       label: 'PIB',
       value: formatMoneyMillions(input.nominalGdp),
       delta: signedPercent(i.gdpGrowth12m),
-      sentiment: gdp.sentiment === 'neutral' ? 'neutral' : gdp.sentiment,
-      trend: trendOf('gdpGrowth12m'),
+      sentiment: gdpSentiment,
+      trend: trendOf('gdpGrowth12m', lastMonth),
       progress: clamp01(i.gdpGrowth12m / 0.06),
       tone: bandTone(indicatorBand('gdpGrowth12m', i.gdpGrowth12m)),
       alert: outOfBandAlert('gdpGrowth12m', i.gdpGrowth12m),
@@ -426,16 +425,12 @@ function buildGoal(
   };
 }
 
-function buildSeries(history: readonly IndicatorPoint[] | null): HudSeriesPoint[] {
-  if (!history) return [];
-  return history.map((point) => ({ monthIndex: point.monthIndex, value: point.indicators.gdpGrowth12m }));
-}
-
 /**
  * Tela do Painel com a partida em andamento (GAME_DESIGN.md §4.2–§4.5). `mapIndicator` escolhe a camada do
  * mapa de calor do globo; `null` (padrão) deixa só a imagem de satélite. `election` é a última fotografia da eleição
  * geral (banco), usada só pela camada Resultado. `colorBlind` (preferência) troca a escala divergente do mapa e
- * `fiscalUnit` (preferência) é a unidade do resultado primário na meta.
+ * `fiscalUnit` (preferência) é a unidade do resultado primário na meta. `deltaBasis` (B21) troca a base das variações
+ * do topo pela posse do mandato em curso, lida da série do banco (`history`); sem o ponto da posse, não há variação.
  */
 export function hudFromCampaign(
   campaign: ActiveCampaign,
@@ -445,6 +440,7 @@ export function hudFromCampaign(
   election: ElectionResult | null = null,
   colorBlind = false,
   fiscalUnit: FiscalDisplayUnit = 'pib',
+  deltaBasis: DeltaBasis = 'mes',
 ): HudData {
   const state = campaign.state;
   const ufs = regionsOf(content);
@@ -464,7 +460,12 @@ export function hudFromCampaign(
     actionsMax: state.resources.agendaActionsPerMonth,
     stats: buildStats({
       indicators: state.indicators,
-      previous: campaign.previous,
+      previous:
+        deltaBasis === 'posse'
+          ? inaugurationIndicators(history, state.monthIndex, campaignMonths(state.scenarioId))
+          : campaign.previous,
+      deltaBasis,
+      lastMonth: campaign.previous,
       politicalCapital: state.resources.politicalCapital,
       nominalGdp,
       populationThousands: ufs.reduce((n, uf) => n + uf.population, 0),
@@ -477,7 +478,6 @@ export function hudFromCampaign(
     sectors: buildSectors(state.society),
     regions: buildRegions(content, ufStates.length > 0 ? ufStates.map((uf) => uf.share) : null),
     goal: buildGoal(state.indicators, content.calibration, nominalGdp, fiscalUnit),
-    series: buildSeries(history),
     fills:
       mapIndicator && content.scenario.regions
         ? mapFills(mapRows(mapIndicator, state, content, election, colorBlind))
@@ -512,7 +512,6 @@ export function hudFromScenario(content: GameContent, fiscalUnit: FiscalDisplayU
     sectors: buildSectors(null),
     regions: buildRegions(content, null),
     goal: buildGoal(indicators, content.calibration, nominalGdp, fiscalUnit),
-    series: DEMO_SERIES,
     fills: null,
   };
 }

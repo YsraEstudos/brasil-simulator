@@ -1,4 +1,10 @@
+import { useState } from 'react';
+
 import { monthLabel, shortMonthLabel } from '@/components/campaign/labels';
+import { themeChartPalette } from '@/components/charts/chartPalette';
+import { SeriesChart } from '@/components/charts/SeriesChart';
+import { useIndicatorHistory } from '@/components/charts/useIndicatorHistory';
+import { ECONOMY_SERIES, termStartMonth, type SeriesKey } from '@/components/painel/indicatorSeries';
 import {
   discretionaryFloorAlert,
   interestShareOfRevenue,
@@ -18,7 +24,7 @@ import {
   type FiscalDisplayUnit,
   Text,
 } from '@/components/ui';
-import { loadContent } from '@/content';
+import { campaignMonths, loadContent } from '@/content';
 import {
   currentNominalGdpMillions,
   MANDATORY_GROUPS,
@@ -26,6 +32,7 @@ import {
   type MandatoryGroup,
   type RevenueGroup,
 } from '@/engine';
+import { useTheme } from '@/hooks/use-theme';
 import { useGame, type ActiveCampaign } from '@/store';
 
 import { signedPercent, StatRow } from './StatRow';
@@ -64,6 +71,10 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
   const content = loadContent(state.scenarioId);
   const { calibration } = content;
   const unit = useGame((s) => s.prefs.fiscalUnit);
+  const { colors } = useTheme();
+  const history = useIndicatorHistory();
+  // Gráfico de Selic, dívida e câmbio (A26): os indicadores do Painel têm o seu na gaveta de Indicadores.
+  const [chartKey, setChartKey] = useState<SeriesKey>('selic');
   const gdp = currentNominalGdpMillions(state, content);
   const e = state.economy;
   const f = e.fiscal;
@@ -164,6 +175,17 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
           context="Juro extra que o mercado cobra do país"
         />
         <StatRow label="Juro externo" value={formatPercent(e.externalRate, 2)} context="Referência internacional" />
+      </Card>
+
+      <Card title="Histórico" subtitle="Selic, dívida e câmbio mês a mês">
+        <SeriesChart
+          history={history}
+          keys={ECONOMY_SERIES}
+          selected={chartKey}
+          onSelect={setChartKey}
+          termStart={termStartMonth(state.monthIndex, campaignMonths(state.scenarioId))}
+          palette={themeChartPalette(colors)}
+        />
       </Card>
 
       <Card title="Contas públicas" subtitle={FLOW_SUBTITLE[unit]}>

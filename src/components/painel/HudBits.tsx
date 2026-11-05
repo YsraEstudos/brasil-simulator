@@ -127,14 +127,22 @@ export function StatCell({
   // "203,1 milhões" e "R$ 11,40 tri" não cabem na célula estreita; a versão curta é só de exibição.
   const colorBlind = useColorBlind();
   const shown = (value ?? stat.value).replace(' milhões', ' mi').replace(/(,\d)\d (tri|bi)$/, '$1 $2');
-  const shownLine = line ?? stat.delta ?? stat.context;
+  // Variação desde a posse (B21): a célula marca "posse" e o leitor de tela ouve a base inteira.
+  const sincePosse = !line && stat.delta !== undefined && stat.deltaBasis === 'posse';
+  const shownLine = line ?? (stat.delta && sincePosse ? `${stat.delta} posse` : stat.delta) ?? stat.context;
   // Seta da mudança em relação ao mês anterior (B19), em todos os modos; o sentido vem de `trend`, a cor de `sentiment`.
   const arrow = !line && stat.trend ? (stat.trend === 'up' ? '▲' : '▼') : '';
   const deltaColor = hudSentimentColor(stat.sentiment, colorBlind);
   // Semáforo (B57): o número ganha a cor da faixa do indicador; sem faixa (mês, população), fica na cor do texto.
   const valueColor = stat.tone === 'neutral' ? Hud.text : toneColor(stat.tone, colorBlind);
   // Fora da faixa (A36): o símbolo ⚠ marca o rótulo e o leitor de tela recebe o aviso junto com o número.
-  const label = a11yLabel ?? (stat.alert ? `${stat.label} ${shown}. ${stat.alert}` : undefined);
+  const label =
+    a11yLabel ??
+    (stat.alert || sincePosse
+      ? [`${stat.label} ${shown}`, sincePosse ? `${stat.delta} desde a posse` : '', stat.alert ?? '']
+          .filter(Boolean)
+          .join('. ')
+      : undefined);
   return (
     <View
       style={[styles.cell, compact && styles.cellCompact]}

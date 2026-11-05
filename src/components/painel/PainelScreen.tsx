@@ -1,7 +1,7 @@
 import { router, useIsFocused } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { BackHandler, Image, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { BackHandler, Image, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
 
@@ -20,10 +20,13 @@ import {
 } from '@/components/campaign/inboxModel';
 import { MonthSummary } from '@/components/campaign/MonthSummary';
 import { WhyChanged } from '@/components/campaign/WhyChanged';
+import { hudChartPalette } from '@/components/charts/chartPalette';
+import { useHistoryView } from '@/components/charts/historyViewStore';
+import { useIndicatorHistory } from '@/components/charts/useIndicatorHistory';
+import { SeriesChart } from '@/components/charts/SeriesChart';
 import { Alert, Indicator, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
-import { DEFAULT_SCENARIO_ID, loadContent } from '@/content';
-import type { IndicatorPoint } from '@/database/campaignRepository';
+import { campaignMonths, DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import {
   indicatorsFromScenario,
   initialRegions,
@@ -45,7 +48,6 @@ import type { Profile3d } from '@/globe/qualityProfiles';
 import { draftCost, gameStore, hasPendingChoices, planMapQuality, useGame, type RegionalPoint } from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
-import { GdpChart } from './GdpChart';
 import {
   BellButton,
   DemoBadge,
@@ -78,6 +80,14 @@ import { Hud } from './hudTheme';
 import { agendaPips, agendaPipsLabel } from './agendaPips';
 import { GUIDED_BY_INDICATOR, outOfBandAlert } from './indicatorGuide';
 import { IndicatorGuideCard } from './IndicatorGuideCard';
+import {
+  DELTA_BASIS_LABEL,
+  inaugurationIndicators,
+  PAINEL_SERIES,
+  termStartMonth,
+  type DeltaBasis,
+  type SeriesKey,
+} from './indicatorSeries';
 import { InfoSheet } from './InfoSheet';
 import {
   congressBadge,
@@ -195,7 +205,6 @@ export function PainelScreen() {
   // O Encerrar o mês (e a doca de selo, do outro lado dele) fica no canto esquerdo só no canhoto.
   const endLeft = sides.endMonth === 'left';
   const insets = useSafeAreaInsets();
-  const [series, setSeries] = useState<{ id: string; points: readonly IndicatorPoint[] } | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   // Série por UF do cartão do estado: mesma regra da série do PIB (par id + pontos, relida a cada mês gravado).
   const [regional, setRegional] = useState<{ id: string; points: readonly RegionalPoint[] } | null>(null);
@@ -210,6 +219,10 @@ export function PainelScreen() {
   const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
   // Indicador cuja explicação (botão "?") está aberta na gaveta de Indicadores (A18).
   const [guideIndicator, setGuideIndicator] = useState<IndicatorKey | null>(null);
+  // Variável do gráfico de histórico na gaveta de Indicadores (A26); tocar num indicador também o escolhe.
+  const [chartKey, setChartKey] = useState<SeriesKey>('gdpGrowth12m');
+  // Base das variações do topo e da gaveta (B21): no mês ou desde a posse. Fica na memória do app.
+  const { deltaBasis, setDeltaBasis } = useHistoryView();
   // Evento aberto por um marcador do mapa: a folha Alertas o põe no topo e o destaca. Limpo ao fechar a folha.
   const [focusInstance, setFocusInstance] = useState<string | null>(null);
   // Último item que o toque num marcador abriu, por UF: tocar de novo percorre o grupo (`nextMarkerItem`).
@@ -249,22 +262,8 @@ export function PainelScreen() {
   const activeId = active?.id;
   const monthIndex = active?.state.monthIndex;
 
-  // Série do PIB: relida do banco quando a partida ou o mês mudam; a tela não guarda histórico próprio.
-  // O par (id, pontos) evita mostrar a série de uma partida anterior enquanto a nova ainda não chegou.
-  useEffect(() => {
-    if (activeId === undefined) return;
-    let live = true;
-    void gameStore
-      .getState()
-      .history()
-      .then((points) => {
-        if (live) setSeries({ id: activeId, points });
-      });
-    return () => {
-      live = false;
-    };
-  }, [activeId, monthIndex]);
-  const history = activeId !== undefined && series?.id === activeId ? series.points : null;
+  // Série de longo prazo da partida (gráficos e variações desde a posse), relida quando a partida ou o mês mudam.
+  const history = useIndicatorHistory();
 
   useEffect(() => {
     if (activeId === undefined) return;
@@ -317,9 +316,9 @@ export function PainelScreen() {
   const hud = useMemo(
     () =>
       active
-        ? hudFromCampaign(active, content, history, layer, election, colorBlind, fiscalUnit)
+        ? hudFromCampaign(active, content, history, layer, election, colorBlind, fiscalUnit, deltaBasis)
         : hudFromScenario(content, fiscalUnit),
-    [active, content, history, layer, election, colorBlind, fiscalUnit],
+    [active, content, history, layer, election, colorBlind, fiscalUnit, deltaBasis],
   );
   // Clima do mês: a textura do globo é refeita só quando o clima ou o mês mudam; o 2D lê as marcas (hachura, nuvem).
   const mapClouds = useGame((s) => s.mapClouds);
@@ -685,8 +684,37 @@ export function PainelScreen() {
         // Sem partida mostra os valores do cenário, sem variação nem "Por que mudou?" (ainda não há mês encerrado).
         const indicators = active?.state.indicators ?? indicatorsFromScenario(content.scenario);
         const guideGuided = guideIndicator ? GUIDED_BY_INDICATOR[guideIndicator] : undefined;
+        const totalMonths = active ? campaignMonths(active.state.scenarioId) : 0;
+        const termStart = active ? termStartMonth(active.state.monthIndex, totalMonths) : 0;
+        const baseline =
+          deltaBasis === 'posse' && active
+            ? inaugurationIndicators(history, active.state.monthIndex, totalMonths)
+            : active?.previous;
         return (
           <>
+            {active && (
+              <View style={styles.basisRow}>
+                <Text style={{ color: Hud.textDim, fontSize: 11.5 }}>Variações:</Text>
+                {(['mes', 'posse'] as const).map((basis: DeltaBasis) => (
+                  <Pressable
+                    key={basis}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: deltaBasis === basis }}
+                    accessibilityLabel={`Mostrar variações ${DELTA_BASIS_LABEL[basis].toLowerCase()}, aqui e no topo`}
+                    onPress={() => setDeltaBasis(basis)}
+                    style={[styles.basisChip, deltaBasis === basis && { borderColor: Hud.title }]}>
+                    <Text
+                      style={{
+                        color: deltaBasis === basis ? Hud.title : Hud.text,
+                        fontSize: 12,
+                        fontWeight: '700',
+                      }}>
+                      {DELTA_BASIS_LABEL[basis]}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
             <View style={styles.indicatorGrid}>
               {INDICATOR_ORDER.map((key) => {
                 const meta = INDICATOR_META[key];
@@ -696,13 +724,17 @@ export function PainelScreen() {
                     key={key}
                     label={meta.label}
                     value={indicators[key]}
-                    previous={active?.previous?.[key]}
+                    previous={baseline?.[key]}
+                    deltaSuffix={deltaBasis === 'posse' ? 'desde a posse' : undefined}
                     goodWhen={meta.goodWhen}
                     decimals={meta.decimals}
                     context={meta.context}
                     alert={guided ? outOfBandAlert(guided, indicators[key]) : undefined}
                     onHelp={guided ? () => setGuideIndicator((cur) => (cur === key ? null : key)) : undefined}
-                    onPress={() => setOpenIndicator((cur) => (cur === key ? null : key))}
+                    onPress={() => {
+                      setOpenIndicator((cur) => (cur === key ? null : key));
+                      setChartKey(key);
+                    }}
                   />
                 );
               })}
@@ -717,8 +749,19 @@ export function PainelScreen() {
                 <SectorTile key={sector.id} sector={sector} />
               ))}
             </View>
-            <SheetHeading text="PIB em 12 meses" />
-            <GdpChart series={hud.series} height={150} />
+            <SheetHeading text="Histórico" />
+            {active ? (
+              <SeriesChart
+                history={history}
+                keys={PAINEL_SERIES}
+                selected={chartKey}
+                onSelect={setChartKey}
+                termStart={termStart}
+                palette={hudChartPalette(colorBlind)}
+              />
+            ) : (
+              <EmptyNote text="Os gráficos aparecem quando houver uma campanha em andamento." />
+            )}
           </>
         );
       }
@@ -1133,4 +1176,13 @@ const styles = StyleSheet.create({
   dockCompact: { flexDirection: 'row', gap: 6 },
   error: { position: 'absolute' },
   indicatorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  basisRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
+  basisChip: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderRadius: 5,
+    borderColor: Hud.border,
+  },
 });
