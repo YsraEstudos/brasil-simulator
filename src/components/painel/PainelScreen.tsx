@@ -22,7 +22,9 @@ import { MonthSummary } from '@/components/campaign/MonthSummary';
 import { WhyChanged } from '@/components/campaign/WhyChanged';
 import { hudChartPalette } from '@/components/charts/chartPalette';
 import { useHistoryView } from '@/components/charts/historyViewStore';
-import { useIndicatorHistory } from '@/components/charts/useIndicatorHistory';
+import { campaignMarks } from '@/components/charts/chartMarks';
+import { MonthCompare } from '@/components/charts/MonthComparePanel';
+import { useFiredEvents, useIndicatorHistory } from '@/components/charts/useIndicatorHistory';
 import { SeriesChart } from '@/components/charts/SeriesChart';
 import { Alert, Indicator, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
@@ -264,6 +266,12 @@ export function PainelScreen() {
 
   // Série de longo prazo da partida (gráficos e variações desde a posse), relida quando a partida ou o mês mudam.
   const history = useIndicatorHistory();
+  // Marcas de lei e crise no gráfico (A28): leis da trilha das propostas, crises dos eventos gravados no banco.
+  const firedEvents = useFiredEvents();
+  const chartMarks = useMemo(
+    () => (active ? campaignMarks(active.state, content, firedEvents) : []),
+    [active, content, firedEvents],
+  );
 
   useEffect(() => {
     if (activeId === undefined) return;
@@ -758,10 +766,12 @@ export function PainelScreen() {
                 onSelect={setChartKey}
                 termStart={termStart}
                 palette={hudChartPalette(colorBlind)}
+                marks={chartMarks}
               />
             ) : (
               <EmptyNote text="Os gráficos aparecem quando houver uma campanha em andamento." />
             )}
+            {active && <MonthCompare history={history} termStart={termStart} palette={hudChartPalette(colorBlind)} />}
           </>
         );
       }

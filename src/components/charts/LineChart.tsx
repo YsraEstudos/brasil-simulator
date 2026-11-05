@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { View, type LayoutChangeEvent } from 'react-native';
+import { Pressable, View, type LayoutChangeEvent } from 'react-native';
 
 import { shortMonthLabel } from '@/components/campaign/labels';
 import { chartRange, seriesExtremes, type SeriesBand, type SeriesPoint } from '@/components/painel/indicatorSeries';
 import { Text } from '@/components/ui';
 
 import type { ChartPalette } from './chartPalette';
+import type { MarkGroup } from './chartMarks';
 
 /** Ponto e traço da linha. */
 const STROKE = 2;
 const DOT = 2.5;
 /** Acima disso, só os pontos de destaque (último, máxima e mínima): 240 bolinhas viram uma faixa borrada. */
 const MAX_DOTS = 40;
+/** Altura da faixa das marcas e diâmetro de cada uma. */
+const MARK_STRIP = 26;
 
 export interface LineChartProps {
   points: readonly SeriesPoint[];
@@ -26,6 +29,11 @@ export interface LineChartProps {
   caption: string;
   /** Resumo em texto do gráfico inteiro, para o leitor de tela. */
   accessibilityLabel: string;
+  /** Marcas de lei e crise (A28), já agrupadas e dentro do recorte; tocar numa abre o texto dela. */
+  marks?: readonly MarkGroup[];
+  /** Mês do grupo aberto. */
+  selectedMark?: number | null;
+  onMarkPress?: (group: MarkGroup) => void;
 }
 
 /**
@@ -41,6 +49,9 @@ export function LineChart({
   height = 150,
   caption,
   accessibilityLabel,
+  marks = [],
+  selectedMark = null,
+  onMarkPress,
 }: LineChartProps) {
   const [width, setWidth] = useState(0);
   const values = points.map((p) => p.value);
@@ -53,17 +64,37 @@ export function LineChart({
   const extremes = seriesExtremes(points);
 
   const innerHeight = height - 4;
-  const x = (i: number) => ((width - 8) * i) / Math.max(1, points.length - 1) + 4;
+  // Posição pelo mês, não pelo índice: as marcas caem no mês certo mesmo com lacunas na série.
+  const span = Math.max(1, last.monthIndex - first.monthIndex);
+  const x = (monthIndex: number) => ((width - 8) * (monthIndex - first.monthIndex)) / span + 4;
   const y = (v: number) => innerHeight - ((v - min) / (max - min)) * innerHeight + 2;
-  const xy = points.map((p, i) => ({ x: x(i), y: y(p.value) }));
+  const xy = points.map((p) => ({ x: x(p.monthIndex), y: y(p.value) }));
   const highlight = (i: number) =>
     i === points.length - 1 || points[i] === extremes?.max || points[i] === extremes?.min;
 
   return (
-    <View style={{ gap: 4 }} accessible accessibilityRole="image" accessibilityLabel={accessibilityLabel}>
-      <View onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)} style={{ height }}>
+    <View style={{ gap: 4 }}>
+      <View
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={accessibilityLabel}
+        onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}
+        style={{ height }}>
         {width > 0 && (
           <>
+            {marks.map((group) => (
+              <View
+                key={`guide-${group.monthIndex}`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  left: x(group.monthIndex),
+                  width: 1,
+                  backgroundColor: group.monthIndex === selectedMark ? palette.chipActive : palette.grid,
+                }}
+              />
+            ))}
             {band && (
               <>
                 <View
@@ -161,6 +192,41 @@ export function LineChart({
           </>
         )}
       </View>
+      {marks.length > 0 && width > 0 && (
+        <View style={{ height: MARK_STRIP }}>
+          {marks.map((group) => {
+            const selected = group.monthIndex === selectedMark;
+            return (
+              <Pressable
+                key={`mark-${group.monthIndex}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={`Marca: ${group.description}`}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                onPress={() => onMarkPress?.(group)}
+                style={{
+                  position: 'absolute',
+                  left: Math.min(width - MARK_STRIP, Math.max(0, x(group.monthIndex) - MARK_STRIP / 2)),
+                  width: MARK_STRIP,
+                  height: MARK_STRIP,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: MARK_STRIP / 2,
+                  borderWidth: selected ? 1 : 0,
+                  borderColor: palette.chipActive,
+                }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: group.symbol === '◆' ? palette.negative : selected ? palette.chipActive : palette.text,
+                  }}>
+                  {group.symbol}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 6 }}>
         <Text style={{ color: palette.muted, fontSize: 9.5 }}>{shortMonthLabel(first.monthIndex)}</Text>
         <Text style={{ color: palette.muted, fontSize: 9.5, flexShrink: 1, textAlign: 'center' }}>

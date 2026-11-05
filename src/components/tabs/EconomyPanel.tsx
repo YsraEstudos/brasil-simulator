@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { monthLabel, shortMonthLabel } from '@/components/campaign/labels';
 import { themeChartPalette } from '@/components/charts/chartPalette';
 import { SeriesChart } from '@/components/charts/SeriesChart';
-import { useIndicatorHistory } from '@/components/charts/useIndicatorHistory';
+import { campaignMarks } from '@/components/charts/chartMarks';
+import { useFiredEvents, useIndicatorHistory } from '@/components/charts/useIndicatorHistory';
 import { ECONOMY_SERIES, termStartMonth, type SeriesKey } from '@/components/painel/indicatorSeries';
 import {
   discretionaryFloorAlert,
@@ -73,6 +74,7 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
   const unit = useGame((s) => s.prefs.fiscalUnit);
   const { colors } = useTheme();
   const history = useIndicatorHistory();
+  const firedEvents = useFiredEvents();
   // Gráfico de Selic, dívida e câmbio (A26): os indicadores do Painel têm o seu na gaveta de Indicadores.
   const [chartKey, setChartKey] = useState<SeriesKey>('selic');
   const gdp = currentNominalGdpMillions(state, content);
@@ -185,6 +187,7 @@ export function EconomyPanel({ campaign }: { campaign: ActiveCampaign }) {
           onSelect={setChartKey}
           termStart={termStartMonth(state.monthIndex, campaignMonths(state.scenarioId))}
           palette={themeChartPalette(colors)}
+          marks={campaignMarks(state, content, firedEvents)}
         />
       </Card>
 

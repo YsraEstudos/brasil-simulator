@@ -12,6 +12,7 @@ import {
   finishCampaign,
   listCampaigns,
   loadElectionResults,
+  loadFiredEvents,
   loadIndicatorHistory,
   loadLatestState,
   loadProfileHistory,
@@ -21,6 +22,7 @@ import {
   recordMonth,
   touchCampaign,
   type CampaignSummary,
+  type FiredEvent,
   type IndicatorPoint,
   type ProfileHistory,
   type RegionalPoint,
@@ -196,6 +198,8 @@ export interface GameStoreState {
   regionalHistory(): Promise<RegionalPoint[]>;
   /** Fotografias das eleições gerais por UF, da mais antiga à mais recente; vazia antes da primeira eleição, sem partida ou com leitura falha. */
   electionResults(): Promise<ElectionResult[]>;
+  /** Eventos disparados na campanha, em ordem (marcas de crise do gráfico); vazia sem partida ou leitura falha. */
+  firedEvents(): Promise<FiredEvent[]>;
   /** Rastro do perfil do governo e decisões que o moveram nos últimos meses (folha Perfil); vazio sem partida ou leitura falha. */
   profileHistory(): Promise<ProfileHistory>;
   /**
@@ -659,6 +663,17 @@ export function createGameStore(deps: GameStoreDeps) {
         // Como `history`: leitura para a camada Resultado do mapa, sem `busy` e sem erro na tela.
         try {
           return await loadElectionResults(db, active.id);
+        } catch {
+          return [];
+        }
+      },
+
+      async firedEvents() {
+        const active = get().active;
+        if (!active || !db) return [];
+        // Como `history`: leitura para o gráfico, sem `busy` e sem erro na tela.
+        try {
+          return await loadFiredEvents(db, active.id);
         } catch {
           return [];
         }

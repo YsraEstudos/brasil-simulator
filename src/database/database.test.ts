@@ -22,6 +22,7 @@ import {
   deleteFinishedCampaigns,
   finishCampaign,
   listCampaigns,
+  loadFiredEvents,
   renameCampaign,
   setCampaignLocked,
   setCampaignPinned,
@@ -372,6 +373,10 @@ describe('campanhas', () => {
     expect(rows).toEqual([
       { choice_id: null, payload_json: JSON.stringify({ instanceId: 'teste_choque#1', location }) },
       { choice_id: 'subsidiar', payload_json: JSON.stringify({ automatic: false, instanceId: 'teste_choque#0' }) },
+    ]);
+    // Marcas de crise do gráfico (H5): só o disparo, com o turno em que chegou e o local.
+    expect(await loadFiredEvents(db, 'c1')).toEqual([
+      { turnIndex: real.report.monthIndex + 1, eventId: 'teste_choque', location },
     ]);
   });
 
