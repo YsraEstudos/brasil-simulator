@@ -17,6 +17,13 @@ export const DEMO_BADGE_BAND = 28;
 /** Faixa da legenda fixa do mapa acima da doca, quando há camada ativa (Fase Q11, B42). */
 export const LEGEND_BAND = 30;
 
+/**
+ * Canto do relógio e da bateria (PLANO_SAVES_HISTORICO.md H1, D33): uma faixa logo abaixo da barra do topo, no canto
+ * do trilho "o mês" (destro: esquerda; canhoto: direita), o mais curto: só ele desce para dar lugar ao relógio. Medidas em escala 1 do texto; crescem com ela.
+ */
+export const CLOCK_BAND = 22;
+export const CLOCK_WIDTH = 104;
+
 /** Tamanho dos botões redondos dos trilhos e o espaço entre eles. */
 export const RAIL_BUTTON = { portrait: 48, compact: 40 } as const;
 export const RAIL_GAP = { portrait: 10, compact: 6 } as const;
@@ -46,6 +53,12 @@ export type PainelReserveInput = {
   rightRailCount: number;
   /** Modo canhoto (`prefs.leftHanded`): espelha os trilhos e o Encerrar o mês. Padrão: destro. */
   leftHanded?: boolean;
+  /** Relógio do HUD ligado (`prefs.hudClock`): reserva o canto dele e o trilho "o mês" começa abaixo. */
+  clock?: boolean;
+  /** Escala do texto (Configurações): o canto do relógio cresce com ela. Padrão 1. */
+  textScale?: number;
+  /** Fim medido da barra do topo (px): o relógio nunca sobe acima dele, para não cobrir os números. */
+  topBarBottom?: number;
 };
 
 /** Lado da tela onde fica um conjunto da mesa. */
@@ -78,7 +91,47 @@ export function topBandHeight({ compact, insets }: Pick<PainelReserveInput, 'com
   return (compact ? TOP_INSET.compact : TOP_INSET.portrait) + insets.top;
 }
 
-function railRect(count: number, x: number, input: PainelReserveInput): Rect | null {
+/** Altura e largura (px) do canto do relógio na escala do texto. */
+export function clockSize(textScale = 1): { w: number; h: number } {
+  return { w: Math.ceil(CLOCK_WIDTH * textScale), h: Math.ceil(CLOCK_BAND * textScale) };
+}
+
+/** Topo (px) do canto do relógio: logo abaixo da barra do topo, a calculada ou a medida, a que for mais baixa. */
+export function clockTop(input: Pick<PainelReserveInput, 'compact' | 'insets' | 'topBarBottom'>): number {
+  return Math.max(topBandHeight(input), input.topBarBottom ?? 0);
+}
+
+/** Onde começa a área do trilho "o mês": abaixo da barra do topo e, com o relógio, abaixo do canto dele. */
+export function monthRailTop(input: PainelReserveInput): number {
+  return input.clock ? clockTop(input) + clockSize(input.textScale).h : topBandHeight(input);
+}
+
+/**
+ * Quanto (px) o trilho "o mês" desce por causa do relógio: na tela vira `marginTop` dele, e como o trilho fica
+ * centrado na linha, o centro desce metade disso, o mesmo que centrá-lo entre o relógio e a doca.
+ */
+export function clockRailShift(input: PainelReserveInput): number {
+  return monthRailTop(input) - topBandHeight(input);
+}
+
+/**
+ * Retângulo do relógio (com a folga `RESERVED_MARGIN`), ou `null` sem ele. Fica colado à borda da área segura do
+ * lado do trilho "o mês" (`mesaSides`), então no canhoto vai para a direita.
+ */
+export function clockRect(input: PainelReserveInput): Rect | null {
+  if (!input.clock) return null;
+  const { w, h } = clockSize(input.textScale);
+  const side = mesaSides(input.leftHanded ?? false).monthRail;
+  const x = side === 'left' ? RAIL_EDGE + input.insets.left : input.width - RAIL_EDGE - input.insets.right - w;
+  return {
+    x: x - RESERVED_MARGIN,
+    y: clockTop(input) - RESERVED_MARGIN,
+    w: w + 2 * RESERVED_MARGIN,
+    h: h + 2 * RESERVED_MARGIN,
+  };
+}
+
+function railRect(count: number, x: number, input: PainelReserveInput, top: number): Rect | null {
   if (count <= 0) return null;
   const { compact, height } = input;
   const button = compact ? RAIL_BUTTON.compact : RAIL_BUTTON.portrait;
@@ -86,7 +139,6 @@ function railRect(count: number, x: number, input: PainelReserveInput): Rect | n
   const railHeight = count * button + (count - 1) * gap;
   // Mesma conta do `PainelScreen`: a área dos trilhos vai do fim da barra do topo ao início da doca (+ folga) e o
   // trilho fica centrado nela (`alignItems: 'center'`).
-  const top = topBandHeight(input);
   const bottomPad = bottomBandHeight(input) + (compact ? 0 : RAIL_DOCK_GAP);
   const free = height - top - bottomPad;
   const y = top + (free - railHeight) / 2;
@@ -110,10 +162,10 @@ export function painelLabelReserve(input: PainelReserveInput): { rects: Rect[]; 
   // Os trilhos são colados às bordas da área segura; o lado de cada um vem de `mesaSides` (no canhoto, espelhado).
   const xOf = (side: MesaSide) =>
     side === 'left' ? RAIL_EDGE + insets.left : width - RAIL_EDGE - insets.right - button;
-  const monthRect = railRect(input.leftRailCount, xOf(sides.monthRail), input);
-  const countryRect = railRect(input.rightRailCount, xOf(sides.countryRail), input);
+  const monthRect = railRect(input.leftRailCount, xOf(sides.monthRail), input, monthRailTop(input));
+  const countryRect = railRect(input.rightRailCount, xOf(sides.countryRail), input, topBandHeight(input));
   return {
-    rects: [monthRect, countryRect].filter((r): r is Rect => r !== null),
+    rects: [monthRect, countryRect, clockRect(input)].filter((r): r is Rect => r !== null),
     insets: {
       top: topBandHeight(input),
       right: insets.right,

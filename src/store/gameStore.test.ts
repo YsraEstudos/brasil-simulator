@@ -1043,6 +1043,8 @@ describe('restaurar configurações padrão (PLANO_MENU_SAVES_CONFIG.md M9)', ()
       await s.setPreference('colorBlind', true);
       await s.setPreference('fiscalUnit', 'reais');
       await s.setPreference('globeFps', 30);
+      await s.setPreference('keepScreenAwake', true);
+      await s.setPreference('hudClock', true);
       await s.setTextScale(1.3);
       await s.setReduceMotion(true);
       await s.setMapClouds(false);
@@ -1051,6 +1053,9 @@ describe('restaurar configurações padrão (PLANO_MENU_SAVES_CONFIG.md M9)', ()
       expect(await store.getState().resetSettings()).toBe(true);
       const after = store.getState();
       expect(after.prefs).toEqual(DEFAULT_PREFERENCES);
+      // PLANO_SAVES_HISTORICO.md H1: tela acesa e relógio do HUD voltam a desligados.
+      expect(after.prefs.keepScreenAwake).toBe(false);
+      expect(after.prefs.hudClock).toBe(false);
       expect(after.textScale).toBe(1);
       expect(after.reduceMotion).toBe(false);
       expect(after.mapClouds).toBe(true);

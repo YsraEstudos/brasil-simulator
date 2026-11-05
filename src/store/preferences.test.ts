@@ -27,6 +27,11 @@ describe('loadPreferences', () => {
     expect(DEFAULT_PREFERENCES.globeFps).toBe(60);
     expect(DEFAULT_PREFERENCES.globeRotationSpeed).toBe(1);
     expect(DEFAULT_PREFERENCES.openLastCampaign).toBe(false);
+    // PLANO_SAVES_HISTORICO.md H1: tela acesa e relógio do HUD começam desligados.
+    expect(DEFAULT_PREFERENCES.keepScreenAwake).toBe(false);
+    expect(DEFAULT_PREFERENCES.hudClock).toBe(false);
+    expect(PREFERENCE_DEFS.keepScreenAwake.key).toBe('manter_tela_acesa');
+    expect(PREFERENCE_DEFS.hudClock.key).toBe('hud_relogio');
   });
 
   it('aceita valores válidos gravados', async () => {
@@ -42,6 +47,8 @@ describe('loadPreferences', () => {
         pular_abertura_jornal: true,
         abrir_na_campanha: true,
         ocultar_semente: true,
+        manter_tela_acesa: true,
+        hud_relogio: true,
       }),
     );
     expect(prefs).toEqual<Preferences>({
@@ -55,6 +62,8 @@ describe('loadPreferences', () => {
       skipNewspaperIntro: true,
       openLastCampaign: true,
       hideSeed: true,
+      keepScreenAwake: true,
+      hudClock: true,
     });
   });
 

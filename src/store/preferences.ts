@@ -40,6 +40,10 @@ export interface Preferences {
   openLastCampaign: boolean;
   /** Esconde a semente nos cartões de Carregar Jogo (para print ou vídeo sem entregar a semente). */
   hideSeed: boolean;
+  /** Mantém a tela acesa enquanto o Painel está aberto (PLANO_SAVES_HISTORICO.md, H1, B11). */
+  keepScreenAwake: boolean;
+  /** Mostra a hora do aparelho e a bateria num canto do HUD do Painel (H1, D33). Só interface: o motor não vê a hora. */
+  hudClock: boolean;
 }
 
 export type PreferenceKey = keyof Preferences;
@@ -73,6 +77,8 @@ export const PREFERENCE_DEFS: { [K in PreferenceKey]: PreferenceDef<Preferences[
   skipNewspaperIntro: { key: 'pular_abertura_jornal', default: false, resolve: bool(false) },
   openLastCampaign: { key: 'abrir_na_campanha', default: false, resolve: bool(false) },
   hideSeed: { key: 'ocultar_semente', default: false, resolve: bool(false) },
+  keepScreenAwake: { key: 'manter_tela_acesa', default: false, resolve: bool(false) },
+  hudClock: { key: 'hud_relogio', default: false, resolve: bool(false) },
 };
 
 export const PREFERENCE_KEYS = Object.keys(PREFERENCE_DEFS) as PreferenceKey[];
