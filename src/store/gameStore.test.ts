@@ -93,6 +93,9 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     }
     const before = app.getState().active!.state;
     const beforePrevious = app.getState().active!.previous;
+    const beforeRecent = app.getState().active!.recent;
+    // H8: a trilha tem o turno atual e os anteriores, mais antigo primeiro.
+    expect(beforeRecent?.map((r) => r.turnIndex)).toEqual([0, 1, 2, 3]);
     const lastReport = app.getState().active!.lastReport;
     expect(before.monthIndex).toBe(3);
 
@@ -105,6 +108,7 @@ describe('criar, salvar, fechar e retomar (critério da Fase 01)', () => {
     const resumed = app.getState().active!;
     expect(resumed.state).toEqual(before);
     expect(resumed.previous).toEqual(beforePrevious); // mês anterior carregado do snapshot
+    expect(resumed.recent).toEqual(beforeRecent); // a trilha da H8 é refeita a partir dos snapshots
     expect(resumed.state.decisionLog).toHaveLength(3);
     expect(resumed.lastReport).toEqual(lastReport); // relatório do mês anterior vem do banco
     expect(resumed.baseline).toEqual(baseline); // a posse vem do snapshot do mês 0 do save, não do cenário embutido
