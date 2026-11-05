@@ -10,7 +10,7 @@ import { Alert, Text } from '@/components/ui';
 import { MaxContentWidth, MIN_TOUCH, Radius, SaveAccentColors, Spacing } from '@/constants/theme';
 import type { CampaignSummary } from '@/database/campaignRepository';
 import { useTheme } from '@/hooks/use-theme';
-import { encodeChallengeCode, gameStore, hasPendingChoices, isKnownScenario, useGame } from '@/store';
+import { duplicateBlock, encodeChallengeCode, gameStore, hasPendingChoices, isKnownScenario, useGame } from '@/store';
 import { governmentsLabel } from '@/store/governments';
 import { campaignMonths, SCENARIOS } from '@/store/scenarios';
 import {
@@ -625,6 +625,7 @@ function SavedItem({
   // D44: faixa na borda esquerda, na cor escolhida; o nome da cor vem escrito no selo.
   const stripe = accentColor ? { borderLeftWidth: ACCENT_STRIPE, borderLeftColor: accentColor } : null;
   const preview = notesPreview(c.notes);
+  const duplicateReason = duplicateBlock(c);
 
   return (
     <View
@@ -642,6 +643,7 @@ function SavedItem({
             {isOpen && <Badge label="Aberta agora" />}
             <Badge label={done ? 'Encerrada' : 'Ativa'} tone={done ? 'textSecondary' : 'positive'} />
             {c.accent && <Badge label={`Cor: ${accentName(c.accent)}`} tone="textSecondary" />}
+            {c.ironman && <Badge label="Sem volta (Ironman)" tone="warning" />}
           </View>
         </View>
         <View style={styles.iconRow}>
@@ -768,19 +770,31 @@ function SavedItem({
             )}
           </PressScale>
         )}
-        <PressScale
-          onPress={onDuplicate}
-          disabled={disabled}
-          accessibilityLabel={`Duplicar ${c.name}`}
-          style={[styles.itemButton, { borderColor: colors.accent }]}>
-          {copying ? (
-            <ActivityIndicator color={colors.accent} />
-          ) : (
-            <Text variant="label" color="accent">
-              Duplicar
+        {duplicateReason ? (
+          // B53: no Ironman o "Duplicar" some e o motivo fica no lugar.
+          <View
+            accessible
+            accessibilityLabel={duplicateReason}
+            style={[styles.itemButton, styles.protectedTag, styles.reasonTag, { borderColor: colors.border }]}>
+            <Text variant="caption" color="textSecondary" align="center">
+              {duplicateReason}
             </Text>
-          )}
-        </PressScale>
+          </View>
+        ) : (
+          <PressScale
+            onPress={onDuplicate}
+            disabled={disabled}
+            accessibilityLabel={`Duplicar ${c.name}`}
+            style={[styles.itemButton, { borderColor: colors.accent }]}>
+            {copying ? (
+              <ActivityIndicator color={colors.accent} />
+            ) : (
+              <Text variant="label" color="accent">
+                Duplicar
+              </Text>
+            )}
+          </PressScale>
+        )}
         <PressScale
           onPress={onExport}
           disabled={disabled}
@@ -1027,4 +1041,5 @@ const styles = StyleSheet.create({
   protectedTag: { flexDirection: 'row', gap: Spacing.one },
   identityToggle: { alignSelf: 'flex-start' },
   identity: { gap: Spacing.two, marginTop: Spacing.one },
+  reasonTag: { maxWidth: 260, paddingVertical: Spacing.one },
 });

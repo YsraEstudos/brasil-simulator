@@ -22,6 +22,7 @@ import {
   loadReport,
   loadStateAt,
   recordMonth,
+  rewindCampaign,
   touchCampaign,
   type CampaignAccent,
   type CampaignSummary,
@@ -69,6 +70,7 @@ import {
 } from './agendaDraft';
 import { GOVERNMENTS_KEY, resolveGovernmentCount } from './governments';
 import { normalizeNotes } from './campaignNotes';
+import { duplicateBlock, rewindBlock } from './campaignRules';
 import {
   checkNewCampaignInput,
   DEFAULT_SETUP_PREFS,
@@ -211,6 +213,11 @@ export interface GameStoreState {
    * `busy`: gravar o tempo não disputa com o encerramento do mês (é um UPDATE simples). Silenciosa em erro.
    */
   recordPlayTime(ms: number, campaignId?: string): Promise<void>;
+  /**
+   * Voltar ao mês anterior (PLANO_SAVES_HISTORICO.md H3, D34) na partida aberta: confere `rewindBlock`, desfaz o
+   * último turno no banco e reabre a partida no início dele, com o rascunho vazio. Recusa vira `error`.
+   */
+  rewindMonth(): Promise<boolean>;
   /** Encerra o mês com a entrada dada ou, sem ela, com o rascunho da agenda (limpo se o mês avançar). */
   endMonth(input?: MonthInput): Promise<boolean>;
   /** Marca/desmarca no rascunho; ignorado enquanto o mês é gravado (`busy`) ou com a campanha encerrada. */
@@ -442,7 +449,7 @@ export function createGameStore(deps: GameStoreDeps) {
           return { ok: false, reason: 'falha', error: 'O banco de dados ainda não está pronto.' };
         }
         const d = db;
-        const { name, difficulty, scenarioId, profileId, startPoint } = checked.input;
+        const { name, difficulty, scenarioId, profileId, startPoint, ironman } = checked.input;
         set({ busy: true, error: undefined });
 
         // Um único `finally` devolve `busy` a falso: nenhuma exceção, prevista ou não, trava a store.
@@ -472,6 +479,7 @@ export function createGameStore(deps: GameStoreDeps) {
                 ...(profileId ? { profileId } : {}),
                 ...(startPoint ? { startPoint } : {}),
                 seed,
+                ...(ironman ? { ironman: true as const } : {}),
               },
             });
             const baseline = inaugurationTurnIndex(state) === null ? undefined : state;
@@ -520,6 +528,11 @@ export function createGameStore(deps: GameStoreDeps) {
         const source = get().campaigns.find((c) => c.id === id);
         if (!source) {
           set({ error: 'Campanha não encontrada.' });
+          return null;
+        }
+        const blocked = duplicateBlock(source);
+        if (blocked) {
+          set({ error: blocked });
           return null;
         }
         const copyId = newCampaignId();
@@ -599,6 +612,7 @@ export function createGameStore(deps: GameStoreDeps) {
           ...(setup.profileId ? { profileId: setup.profileId } : {}),
           ...(setup.startPoint ? { startPoint: setup.startPoint } : {}),
           seed: setup.seed,
+          ...(setup.ironman ? { ironman: true } : {}),
         } as NewCampaignInput;
         return get().newCampaign(input);
       },
@@ -722,6 +736,35 @@ export function createGameStore(deps: GameStoreDeps) {
             },
             ...FRESH_DRAFT,
           });
+          await refreshList(d);
+        }),
+
+      rewindMonth: () =>
+        run(async (d) => {
+          const active = get().active;
+          if (!active) throw new Error('Nenhuma partida aberta.');
+          const summary = get().campaigns.find((c) => c.id === active.id);
+          const blocked = rewindBlock({
+            ironman: summary?.ironman ?? false,
+            difficulty: active.state.difficulty,
+            finished: active.finished,
+            currentTurn: turnIndexOf(active.state),
+            rewoundTurn: summary?.rewoundTurn ?? null,
+          });
+          if (blocked) throw new Error(blocked);
+          const state = await rewindCampaign(d, active.id);
+          const turn = turnIndexOf(state);
+          const previous = turn > 0 ? (await loadStateAt(d, active.id, turn - 1))?.indicators : undefined;
+          const lastReport = turn > 0 ? ((await loadReport(d, active.id, turn - 1)) ?? undefined) : undefined;
+          // A posse pode ter sido o turno desfeito: aí a partida volta a não ter base "na posse".
+          const posse = inaugurationTurnIndex(state);
+          const baseline =
+            posse === null
+              ? undefined
+              : posse === turn
+                ? state
+                : ((await loadStateAt(d, active.id, posse)) ?? active.baseline);
+          set({ active: { ...active, state, baseline, previous, lastReport, finished: false }, ...FRESH_DRAFT });
           await refreshList(d);
         }),
 

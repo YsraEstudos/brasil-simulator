@@ -68,6 +68,10 @@ import {
 const SCENARIOS = scenarioOptions();
 const PROFILES = profilePresetViews();
 
+/** O que o Modo sem volta muda (B53), no cartão do Novo Jogo e no rótulo para leitor de tela. */
+const IRONMAN_HINT =
+  'Sem duplicar, sem "Salvar como" e sem voltar o mês. Exportar continua valendo como cópia de segurança, mas a cópia importada perde o selo.';
+
 const CLIPBOARD_READ_ERROR = 'Não foi possível ler a área de transferência.';
 const CLIPBOARD_SEED_ERROR = 'A área de transferência não tem uma semente válida.';
 
@@ -555,6 +559,29 @@ function NewCampaignForm({
           </Animated.View>
 
           <Animated.View entering={enterAt(2)} layout={LAYOUT}>
+            <Card title="Regras da partida" subtitle="Valem para esta campanha inteira">
+              <OptionCard
+                selected={form.ironman === true}
+                disabled={locked}
+                onPress={() => update({ ironman: !form.ironman })}
+                accessibilityLabel={`Modo sem volta (Ironman), ${form.ironman ? 'ligado' : 'desligado'}. ${IRONMAN_HINT}`}>
+                <View style={styles.optionTitle}>
+                  <Text variant="heading" style={styles.flex}>
+                    Modo sem volta (Ironman)
+                  </Text>
+                  <Badge
+                    label={form.ironman ? 'Ligado' : 'Desligado'}
+                    tone={form.ironman ? 'warning' : 'textSecondary'}
+                  />
+                </View>
+                <Text variant="caption" color="textSecondary">
+                  {IRONMAN_HINT}
+                </Text>
+              </OptionCard>
+            </Card>
+          </Animated.View>
+
+          <Animated.View entering={enterAt(2)} layout={LAYOUT}>
             <Card
               title="Perfil do governo"
               subtitle="Onde o governo começa nos eixos Estado ↔ mercado e progressista ↔ conservador">
@@ -717,6 +744,7 @@ function NewCampaignForm({
               <SummaryRow label="Versão" value={summary.version} />
               <SummaryRow label="Duração máxima" value={summary.duration} />
               <SummaryRow label="Semente" value={summary.seed} muted={summary.seed === 'Aleatória'} />
+              <SummaryRow label="Modo sem volta" value={form.ironman ? 'Ligado (Ironman)' : 'Desligado'} />
               <SummaryRow
                 label="Código de desafio"
                 value={summaryCode ?? 'Gerado ao criar (veja no cartão do save)'}

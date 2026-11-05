@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { loadLatestState } from './campaignRepository';
+import { loadLatestState, parseSetupSnapshot } from './campaignRepository';
 import { LATEST_DB_VERSION } from './migrations';
 import type { SqlDatabase, SqlValue } from './types';
 
@@ -164,7 +164,14 @@ async function writeBundle(
   childCols: Map<BundleChildTable, Set<string>>,
 ): Promise<void> {
   await db.transaction(async () => {
-    const campaign: BundleRow = { ...bundle.campaign, id: options.id, name: options.name, pinned: 0, locked: 0 };
+    const campaign: BundleRow = {
+      ...bundle.campaign,
+      id: options.id,
+      name: options.name,
+      pinned: 0,
+      locked: 0,
+      setup_json: withoutIronman(bundle.campaign.setup_json),
+    };
     const keys = Object.keys(campaign);
     await db.run(
       insertSql('campaigns', keys, campaignCols),
@@ -195,8 +202,32 @@ async function writeBundle(
   });
 }
 
-/** Duplica uma campanha ("Salvar como"): exporta e importa na hora, com id e nome novos. */
+/**
+ * Tira o selo Ironman das opções da partida (PLANO_SAVES_HISTORICO.md H3, D-H3): a cópia importada de um arquivo não é
+ * mais "sem volta", porque o original pode continuar existindo. Sem selo, ou ilegível, o valor fica como veio (a
+ * validação do resto do pacote decide).
+ */
+function withoutIronman(setupJson: BundleRow[string] | undefined): BundleRow[string] {
+  if (typeof setupJson !== 'string') return setupJson ?? null;
+  try {
+    const setup = JSON.parse(setupJson) as Record<string, unknown> | null;
+    if (!setup || typeof setup !== 'object' || !('ironman' in setup)) return setupJson;
+    delete setup.ironman;
+    return JSON.stringify(setup);
+  } catch {
+    return setupJson;
+  }
+}
+
+/** Partida Ironman não pode ser duplicada (B53); exportar continua valendo como cópia de segurança (D-H3). */
+export const IRONMAN_DUPLICATE_MESSAGE = 'Modo sem volta (Ironman): esta partida não pode ser duplicada.';
+
+/** Duplica uma campanha ("Salvar como"): exporta e importa na hora, com id e nome novos. Recusa partida Ironman. */
 export async function duplicateCampaign(db: SqlDatabase, sourceId: string, options: ImportOptions): Promise<void> {
+  const row = await db.first<{ setup_json: string | null }>('SELECT setup_json FROM campaigns WHERE id = ?', [
+    sourceId,
+  ]);
+  if (row && parseSetupSnapshot(row.setup_json)?.ironman) throw new BundleError(IRONMAN_DUPLICATE_MESSAGE);
   await importBundle(db, await exportBundle(db, sourceId), options);
 }
 

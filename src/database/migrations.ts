@@ -239,6 +239,16 @@ export const MIGRATIONS: readonly Migration[] = [
         CHECK (accent IS NULL OR accent IN ('dourado', 'verde', 'azul', 'vermelho'));
     `,
   },
+  {
+    version: 12,
+    name: 'volta_do_mes',
+    sql: `
+      -- PLANO_SAVES_HISTORICO.md, Fase H3 (D34, decisão D-H2): turno para o qual a partida já voltou uma vez (NULL =
+      -- nunca voltou). Voltar ao mês anterior só vale para um turno depois deste: cada mês pode ser desfeito uma vez,
+      -- e não dá para voltar dois meses seguidos.
+      ALTER TABLE campaigns ADD COLUMN rewound_turn INTEGER;
+    `,
+  },
 ];
 
 export const LATEST_DB_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

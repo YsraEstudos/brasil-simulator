@@ -119,7 +119,7 @@ describe('migrações', () => {
     await migrate(db, MIGRATIONS.slice(0, 2));
     await insertLegacyCampaign(db, { id: 'c1', name: 'Antiga', scenarioVersion: '0.1.0', state: newState() });
     // Ajuste: a lista de pendentes ganhou a migração 10 (setup_json).
-    expect(await migrate(db)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(await migrate(db)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(await currentVersion(db)).toBe(LATEST_DB_VERSION);
     expect((await listCampaigns(db)).map((c) => c.name)).toEqual(['Antiga']);
   });
@@ -318,7 +318,7 @@ describe('campanhas', () => {
       'INSERT INTO snapshots (campaign_id, month_index, state_schema_version, state_json) VALUES (?, ?, ?, ?)',
       ['c1', 0, state.schemaVersion, JSON.stringify(state)],
     );
-    expect(await migrate(old)).toEqual([4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(await migrate(old)).toEqual([4, 5, 6, 7, 8, 9, 10, 11, 12]);
     const [point] = await loadIndicatorHistory(old, 'c1');
     expect(point?.indicators).toEqual(state.indicators);
     expect(point?.selic).toBe(state.economy.selic);
@@ -515,7 +515,7 @@ describe('série regional (PLANO_GLOBO.md, PR 3)', () => {
     await put(1, s1);
     await put(2, semRegioes); // snapshot de formato sem o bloco regional
 
-    expect(await migrate(old)).toEqual([5, 6, 7, 8, 9, 10, 11]);
+    expect(await migrate(old)).toEqual([5, 6, 7, 8, 9, 10, 11, 12]);
     const history = await loadRegionalHistory(old, 'c1');
     expect(history.map((p) => p.monthIndex)).toEqual([1]);
     for (const uf of s1.regions.ufs) {
@@ -807,7 +807,7 @@ describe('organização dos saves (migração 9, PLANO_MENU_SAVES_CONFIG.md, Fas
        VALUES ('antiga', 'Antiga', ?, '0.1.0', 'estrategica', 1, '0.2.0', 0)`,
       [DEFAULT_SCENARIO_ID],
     );
-    expect(await migrate(old)).toEqual([9, 10, 11]);
+    expect(await migrate(old)).toEqual([9, 10, 11, 12]);
     const [c] = await listCampaigns(old);
     expect(c).toMatchObject({ id: 'antiga', pinned: false, locked: false });
   });

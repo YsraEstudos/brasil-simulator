@@ -8,7 +8,7 @@ import type { SymbolViewProps } from 'expo-symbols';
 import { DIFFICULTY, INDICATOR_META, INDICATOR_ORDER } from '@/components/campaign/labels';
 import { ElectionsCard } from '@/components/campaign/ElectionsCard';
 import { EventInbox } from '@/components/campaign/EventInbox';
-import { requestDecision } from '@/components/campaign/gameConfirm';
+import { askConfirm, requestDecision } from '@/components/campaign/gameConfirm';
 import { CampaignNotesField } from '@/components/campaign/SaveIdentityBits';
 import {
   canChooseEvent,
@@ -35,6 +35,7 @@ import {
   initialRegions,
   SANCTION_ACTION_ID,
   toCalendar,
+  turnIndexOf,
   type Decision,
   type ElectionResult,
   type IndicatorKey,
@@ -48,7 +49,17 @@ import { useMapMarkers } from '@/components/map/useMapMarkers';
 import { MapSurface } from '@/components/map/MapSurface';
 import type { GlobeApi } from '@/globe/GlobeView';
 import type { Profile3d } from '@/globe/qualityProfiles';
-import { draftCost, gameStore, hasPendingChoices, planMapQuality, useGame, type RegionalPoint } from '@/store';
+import {
+  draftCost,
+  gameStore,
+  hasPendingChoices,
+  planMapQuality,
+  rewindBlock,
+  rewindConfirmMessage,
+  saveAsBlock,
+  useGame,
+  type RegionalPoint,
+} from '@/store';
 import { ForceHudTheme } from '@/theme/ThemeProvider';
 
 import {
@@ -162,6 +173,11 @@ const MENU_ICON: SymbolViewProps['name'] = { ios: 'line.3.horizontal', android: 
 const HOME_ICON: SymbolViewProps['name'] = { ios: 'house.fill', android: 'home', web: 'home' };
 const SETTINGS_ICON: SymbolViewProps['name'] = { ios: 'gearshape.fill', android: 'settings', web: 'settings' };
 const SAVE_AS_ICON: SymbolViewProps['name'] = { ios: 'doc.on.doc.fill', android: 'content_copy', web: 'content_copy' };
+const REWIND_ICON: SymbolViewProps['name'] = {
+  ios: 'arrow.uturn.backward.circle.fill',
+  android: 'undo',
+  web: 'undo',
+};
 
 /**
  * Paisagem: largura mínima para a doca (4 × 48 + 3 × 6) ficar centrada sem encostar no Encerrar o mês compacto do
@@ -207,6 +223,19 @@ export function PainelScreen() {
   const error = useGame((s) => s.error);
   // Notas da partida aberta (D31), lidas da lista em memória (a store atualiza a lista ao gravar).
   const activeNotes = useGame((s) => s.campaigns.find((c) => c.id === s.active?.id)?.notes ?? '');
+  // Regras da partida (H3): Ironman e "Voltar ao mês anterior". O motivo aparece no lugar do botão.
+  const activeIronman = useGame((s) => s.campaigns.find((c) => c.id === s.active?.id)?.ironman ?? false);
+  const activeRewound = useGame((s) => s.campaigns.find((c) => c.id === s.active?.id)?.rewoundTurn ?? null);
+  const saveAsReason = saveAsBlock({ ironman: activeIronman });
+  const rewindReason = active
+    ? rewindBlock({
+        ironman: activeIronman,
+        difficulty: active.state.difficulty,
+        finished: active.finished,
+        currentTurn: turnIndexOf(active.state),
+        rewoundTurn: activeRewound,
+      })
+    : null;
   // Modo canhoto (Configurações): os trilhos e o Encerrar o mês trocam de lado (`mesaSides` em `hudReserved`).
   const leftHanded = useGame((s) => s.prefs.leftHanded);
   const sides = mesaSides(leftHanded);
@@ -516,6 +545,29 @@ export function PainelScreen() {
     closeSheet();
     if (active?.finished) await gameStore.getState().leaveCampaign();
     router.navigate('/');
+  };
+
+  /**
+   * "Voltar ao mês anterior" (D34): pergunta antes, avisando que os mesmos sorteios voltam. Depois de voltar, a mesa fica
+   * no início do mês desfeito, com o rascunho vazio; uma recusa da store cai no aviso de erro da mesa.
+   */
+  const askRewind = () => {
+    closeSheet();
+    askConfirm({
+      title: 'Voltar ao mês anterior?',
+      message: rewindConfirmMessage(hasPendingChoices(draft)),
+      confirmLabel: 'VOLTAR UM MÊS',
+      danger: true,
+      onConfirm: () => {
+        setCopyNotice(null);
+        void gameStore
+          .getState()
+          .rewindMonth()
+          .then((ok) => {
+            if (ok) setCopyNotice('Você voltou ao início do mês anterior. Os mesmos sorteios vão se repetir.');
+          });
+      },
+    });
   };
 
   /**
@@ -879,9 +931,22 @@ export function PainelScreen() {
                   : 'O mês já está salvo.'}
               </Text>
             )}
-            {active && (
-              <MenuRow icon={SAVE_AS_ICON} label="Salvar como…" disabled={busy} onPress={() => void saveAsCopy()} />
-            )}
+            {/* B53: no Ironman o "Salvar como…" some e o motivo fica no lugar. */}
+            {active &&
+              (saveAsReason ? (
+                <Text style={{ color: Hud.textMuted, fontSize: 10.5, paddingTop: 2 }}>{saveAsReason}</Text>
+              ) : (
+                <MenuRow icon={SAVE_AS_ICON} label="Salvar como…" disabled={busy} onPress={() => void saveAsCopy()} />
+              ))}
+            {/* D34: voltar ao mês anterior, com confirmação; o motivo aparece quando não vale. */}
+            {active &&
+              (rewindReason ? (
+                <Text style={{ color: Hud.textMuted, fontSize: 10.5, paddingTop: 2 }}>
+                  {`Voltar ao mês anterior: ${rewindReason}`}
+                </Text>
+              ) : (
+                <MenuRow icon={REWIND_ICON} label="Voltar ao mês anterior" disabled={busy} onPress={askRewind} />
+              ))}
             <MenuRow
               icon={SETTINGS_ICON}
               label="Configurações"
