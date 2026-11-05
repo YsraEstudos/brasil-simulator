@@ -9,6 +9,8 @@ import { AutoQualityMachine } from './autoQuality';
 import type { ClimateMapData } from './climateTexture';
 import { CAMERA, GLOBE_STATS_ENABLED } from './config';
 import { GlobeController } from './controller';
+import { countryById } from './countries';
+import { countryAt } from './countryGrid';
 import {
   GlFailureWatcher,
   GlobePerfProbe,
@@ -52,6 +54,13 @@ export interface GlobeViewProps {
   selectedId: string | null;
   /** Toque no globo: a UF tocada (ou `null` no oceano), para quem usa o globo decidir o que fazer. */
   onSelect: (sigla: string | null) => void;
+  /** País selecionado (código do Natural Earth, `ARG`): ganha o contorno dourado. PLANO_PAISES.md, P1. */
+  selectedCountryId?: string | null;
+  /**
+   * Toque num país fora do Brasil (no território ou no nome dele). Sem esta função, o toque fora do Brasil é como no
+   * oceano (`onSelect(null)`).
+   */
+  onSelectCountry?: (id: string) => void;
   onReady?: (api: GlobeApi) => void;
   /**
    * Pausa o desenho (`frameloop="never"`): a tela perdeu o foco (há uma subtela por cima do Painel) e o Canvas não
@@ -110,6 +119,8 @@ export function GlobeView({
   fills,
   selectedId,
   onSelect,
+  selectedCountryId = null,
+  onSelectCountry,
   onReady,
   paused = false,
   onGlFailure,
@@ -134,12 +145,19 @@ export function GlobeView({
     () => labelInsets ?? { top: insets.top, right: insets.right, bottom: insets.bottom, left: insets.left },
     [labelInsets, insets.top, insets.right, insets.bottom, insets.left],
   );
-  // Último toque no globo (o contador distingue dois toques seguidos na mesma UF).
-  const [tap, setTap] = useState<{ uf: Uf | null; n: number }>({ uf: null, n: 0 });
+  // Último toque no globo (o contador distingue dois toques seguidos na mesma UF ou no mesmo país).
+  const [tap, setTap] = useState<{ uf: Uf | null; country: string | null; n: number }>({
+    uf: null,
+    country: null,
+    n: 0,
+  });
   const selected = selectedId ? (ufBySigla(selectedId) ?? null) : null;
+  const selectedCountry = selectedCountryId ? (countryById(selectedCountryId) ?? null) : null;
 
   useEffect(() => {
-    if (tap.n > 0) onSelect(tap.uf?.sigla ?? null);
+    if (tap.n === 0) return;
+    if (tap.country && !tap.uf && onSelectCountry) onSelectCountry(tap.country);
+    else onSelect(tap.uf?.sigla ?? null);
     // só reage ao toque, não a uma nova função `onSelect`
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tap]);
@@ -228,9 +246,16 @@ export function GlobeView({
           setMarkerTap((t) => ({ sigla: marker, n: t.n + 1 }));
           return;
         }
+        // Depois, o nome de um país (é o que acha os minúsculos, que somem na grade); então a UF e, fora do Brasil, o país.
+        const labelled = controller.pickCountryLabel(e.x, e.y);
+        if (labelled) {
+          setTap((t) => ({ uf: null, country: labelled, n: t.n + 1 }));
+          return;
+        }
         const p = controller.pick(e.x, e.y);
         const uf = p ? findUf(p.lon, p.lat) : null;
-        setTap((t) => ({ uf, n: t.n + 1 }));
+        const country = p && !uf ? (countryAt(p.lon, p.lat)?.id ?? null) : null;
+        setTap((t) => ({ uf, country, n: t.n + 1 }));
       });
     const doubleTap = Gesture.Tap()
       .runOnJS(true)
@@ -276,6 +301,7 @@ export function GlobeView({
                 <GlobeScene
                   controller={controller}
                   selectedUf={selected}
+                  selectedCountry={selectedCountry}
                   fills={fills}
                   onStats={GLOBE_STATS_ENABLED ? setStats : undefined}
                   reservedRects={reservedRects}
@@ -306,6 +332,7 @@ export function GlobeView({
                 <GlobeScene
                   controller={controller}
                   selectedUf={selected}
+                  selectedCountry={selectedCountry}
                   fills={fills}
                   onStats={GLOBE_STATS_ENABLED ? setStats : undefined}
                   reservedRects={reservedRects}

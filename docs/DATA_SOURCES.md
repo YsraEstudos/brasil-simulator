@@ -99,6 +99,18 @@ Pipeline: `npm run build:cities` (`scripts/data/build_cities.py`; lê `src/globe
 
 Pipeline: `npm run build:globe-climate` (`scripts/data/build_globe_climate.py [--raw data-raw]`; lê só os contornos de UF e os lagos, os mesmos insumos de `build_globe.py`, e **não** regera os tiles). Determinístico. Dado só visual: não entra no motor nem no cenário. O clima em si (chuva e seca por UF) é do motor ([ECONOMIC_MODEL.md](ECONOMIC_MODEL.md) §5.18–5.19).
 
+### 3.5 Países do mundo no globo (PLANO_PAISES.md, Fase P1, 05/11/2026)
+
+| Dado | Fonte | Uso | Status / licença |
+| --- | --- | --- | --- |
+| Contorno, código (`ADM0_A3`), nome em português (`NAME_PT`), tipo (país, território, disputa), continente, sub-região, população estimada (`POP_EST`, `POP_YEAR`) e ponto do nome (`LABEL_X/Y`, `MIN_LABEL`) das 249 unidades | Natural Earth 1:10m, Admin 0 Countries, **ponto de vista do Brasil** (`ne_10m_admin_0_countries_bra`) | Nomes no globo, grade do toque (`src/globe/data/countryIndex.json`, células de 0,2°), contorno do destaque e a ficha Identidade (`src/globe/data/countries.json`) | Domínio público. Nomes `PROVISORIO`: o script corrige 18 para o uso brasileiro (`NAME_FIXES`, ex.: "Vietnã", "Tchéquia", "Ilhas Spratly" no lugar do "Ilha Wake" errado do arquivo); revisar a lista inteira. A população é a do Natural Earth (em geral de 2019), mostrada com o ano |
+| Capitais | Natural Earth 1:10m, Populated Places (`FEATURECLA` "Admin-0 capital", nome em `NAME_PT`) | Linha Capital da ficha e distância de Brasília | Domínio público. Onde o arquivo marca mais de uma, o script escolhe a oficial (`CAPITAL_PICK`: Sucre, Pretória, Yamoussoukro…); Jerusalém leva a nota "status internacional em disputa" |
+| Fronteiras terrestres | Natural Earth 1:50m, Admin 0 Boundary Lines Land (ponto de vista padrão), simplificadas a ~2 km | Malha de linhas do globo (`src/globe/data/countryBorders.json`) | Domínio público. Limitação: o arquivo de linhas não tem a versão do ponto de vista do Brasil; nas áreas em disputa o traço pode diferir do contorno |
+| Vizinhos do Brasil e distância de Brasília | Calculados dos contornos (vértices em comum) e por haversine até a capital | Ficha Identidade | Derivado. O script confere contra a lista conhecida de 10 vizinhos (com a França, pela Guiana Francesa) e falha se divergir |
+| Atlas dos nomes (`assets/globe/countryLabels.png`) | DejaVu Sans (matplotlib), rasterizada como **campo de distância**, um nome por canal R, G ou B | Nomes dos países no globo | Gerado; sem restrição de uso |
+
+Situação da unidade na ficha: `HOMEPART ≠ 1` vira "território de outro país" (com o país soberano); `TYPE` Disputed ou Indeterminate vira "soberania em disputa" (Malvinas, Palestina, Kosovo, Saara Ocidental…), e o script marca também Taiwan assim; a Antártida tem situação própria. Pipeline: `python scripts/data/fetch_globe_data.py` (baixa os três arquivos) → `npm run build:countries` (`scripts/data/build_countries.py`). Determinístico. Dado só de interface: o motor não sabe que os países existem.
+
 > **Códigos de séries:** serão levantados e conferidos na Fase 01/03. Nenhum código deve ser usado sem validação da resposta da API, porque séries são descontinuadas ou renumeradas.
 
 ---

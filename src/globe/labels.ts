@@ -152,7 +152,8 @@ export function labelTier(altitude: number): LabelTier {
 
 export type Rect = { x: number; y: number; w: number; h: number };
 
-export type LabelKind = 'marker' | 'pin' | 'sigla' | 'capital';
+/** `country`: nome de um país vizinho no globo (PLANO_PAISES.md, P1), sempre abaixo dos rótulos das UFs. */
+export type LabelKind = 'marker' | 'pin' | 'sigla' | 'capital' | 'country';
 
 export type LabelCandidate = {
   id: string;
@@ -172,8 +173,8 @@ export type LabelViewport = {
   insets: { top: number; right: number; bottom: number; left: number };
 };
 
-/** Em empate de prioridade, marcadores vêm primeiro, depois pins e siglas, e por último capitais. */
-const KIND_ORDER: Record<LabelKind, number> = { marker: -1, pin: 0, sigla: 1, capital: 2 };
+/** Em empate de prioridade, marcadores vêm primeiro, depois pins e siglas, as capitais e por último os países. */
+const KIND_ORDER: Record<LabelKind, number> = { marker: -1, pin: 0, sigla: 1, capital: 2, country: 3 };
 
 export function candidateRect(c: Pick<LabelCandidate, 'x' | 'y' | 'w' | 'h'>): Rect {
   return { x: c.x - c.w / 2, y: c.y - c.h / 2, w: c.w, h: c.h };

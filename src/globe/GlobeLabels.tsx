@@ -4,16 +4,25 @@ import * as THREE from 'three';
 
 import type { CameraState } from './camera';
 import type { GlobeController } from './controller';
+import { COUNTRY_ATLAS } from './countries';
+import { buildCountryQuadBuffers, hitTestCountryLabels, type CountryLabelPoint } from './countryLabels';
 import { labelRadius, layoutGlobe, makeGlobeProjector } from './labelLayout';
 import { buildLabelQuadBuffers, writeMarkerAttributes, writeVisibility } from './labelQuads';
 import type { LabelViewport, Rect } from './labels';
 import { startMarkerPulse } from './markerPulse';
 import { hitTestMarkers, type GlobeMarker, type MarkerPoint } from './markers';
-import { labelFragmentShader, labelVertexShader } from './shaders';
+import {
+  countryLabelFragmentShader,
+  countryLabelVertexShader,
+  labelFragmentShader,
+  labelVertexShader,
+} from './shaders';
 import { loadTexture } from './tileStore';
 
 /** Ordem de desenho: acima do mapa de calor (4) e do contorno da UF selecionada (5). */
 const LABELS_RENDER_ORDER = 6;
+/** Os nomes dos países vêm na mesma camada, desenhados antes das siglas (a colisão já impede que se cruzem). */
+const COUNTRY_LABELS_RENDER_ORDER = 6;
 
 export type LabelInsets = LabelViewport['insets'];
 
@@ -132,6 +141,84 @@ export function GlobeLabels({
   // Parâmetros do layout em ref: o laço de quadros lê daqui sem passar pelo React.
   const params = useRef({ reservedRects, insets, scale, markers });
   const laidOut = useRef<LaidOut | null>(null);
+
+  // Nomes dos países (PLANO_PAISES.md, P1): outra malha, com o atlas de campo de distância, mas a mesma colisão.
+  const countryQuads = useMemo(() => buildCountryQuadBuffers(), []);
+  const countryVisibility = useMemo(() => new Float32Array(countryQuads.quadCount * 4), [countryQuads]);
+  const countryGeometry = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(countryQuads.positions, 3));
+    g.setAttribute('aCorner', new THREE.BufferAttribute(countryQuads.corners, 2));
+    g.setAttribute('aUv', new THREE.BufferAttribute(countryQuads.uvs, 2));
+    g.setAttribute('aChannel', new THREE.BufferAttribute(countryQuads.channels, 3));
+    const visible = new THREE.BufferAttribute(countryVisibility, 1);
+    visible.setUsage(THREE.DynamicDrawUsage);
+    g.setAttribute('aVisible', visible);
+    g.setIndex(new THREE.BufferAttribute(countryQuads.indices, 1));
+    return g;
+  }, [countryQuads, countryVisibility]);
+  const countryMaterial = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: countryLabelVertexShader,
+        fragmentShader: countryLabelFragmentShader(COUNTRY_ATLAS.spread, COUNTRY_ATLAS.stroke),
+        uniforms: {
+          uAtlas: { value: null },
+          uViewport: { value: new THREE.Vector2(1, 1) },
+          uRadius: { value: 1 },
+          uScale: { value: 1 },
+          uDpr: { value: 1 },
+        },
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+      }),
+    [],
+  );
+  const countryMesh = useMemo(() => {
+    const m = new THREE.Mesh(countryGeometry, countryMaterial);
+    m.renderOrder = COUNTRY_LABELS_RENDER_ORDER;
+    m.frustumCulled = false;
+    m.visible = false; // até o atlas carregar
+    return m;
+  }, [countryGeometry, countryMaterial]);
+  // Onde os nomes dos países estão na tela depois do último layout: o toque no nome procura aqui.
+  const countryPoints = useRef<readonly CountryLabelPoint[]>([]);
+
+  // Atlas dos nomes: PNG opaco com um campo de distância por canal. Sem mipmaps (o texto é desenhado perto de 1:2 e o
+  // campo de distância já suaviza a borda): os 512x1024 cabem na meta de memória nova do globo.
+  useEffect(() => {
+    let alive = true;
+    let tex: THREE.Texture | null = null;
+    loadTexture(require('../../assets/globe/countryLabels.png'))
+      .then((t) => {
+        if (!alive) {
+          t.dispose();
+          return;
+        }
+        tex = t;
+        t.colorSpace = THREE.NoColorSpace;
+        t.generateMipmaps = false;
+        t.minFilter = THREE.LinearFilter;
+        t.magFilter = THREE.LinearFilter;
+        t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+        t.anisotropy = 1;
+        t.needsUpdate = true;
+        countryMaterial.uniforms.uAtlas.value = t;
+        countryMesh.visible = true;
+        laidOut.current = null; // força um layout no próximo quadro
+        invalidate();
+      })
+      .catch((e) => {
+        if (__DEV__) console.warn('atlas dos nomes de países falhou', e);
+      });
+    return () => {
+      alive = false;
+      tex?.dispose();
+    };
+  }, [countryMaterial, countryMesh, invalidate]);
   // Onde os marcadores estão na tela depois do último layout: o toque os procura aqui.
   const markerPoints = useRef<readonly MarkerPoint[]>([]);
   const viewProjection = useMemo(() => new THREE.Matrix4(), []);
@@ -176,11 +263,13 @@ export function GlobeLabels({
     invalidate();
   }, [reservedRects, insets, scale, markers, quads, geometry, invalidate]);
 
-  // Toque num marcador: vale antes da seleção da UF (o `GlobeView` pergunta aqui primeiro).
+  // Toque num marcador: vale antes da seleção da UF (o `GlobeView` pergunta aqui primeiro). Depois, o nome de um país.
   useEffect(() => {
     controller.pickMarker = (x, y) => hitTestMarkers(markerPoints.current, x, y, params.current.scale);
+    controller.pickCountryLabel = (x, y) => hitTestCountryLabels(countryPoints.current, x, y);
     return () => {
       controller.pickMarker = () => null;
+      controller.pickCountryLabel = () => null;
     };
   }, [controller]);
 
@@ -246,11 +335,12 @@ export function GlobeLabels({
         params: p,
       };
       const radius = labelRadius(state.altitude);
-      const u = material.uniforms;
-      u.uRadius.value = radius;
-      u.uScale.value = p.scale;
-      u.uDpr.value = dpr;
-      (u.uViewport.value as THREE.Vector2).set(size.width, size.height);
+      for (const u of [material.uniforms, countryMaterial.uniforms]) {
+        u.uRadius.value = radius;
+        u.uScale.value = p.scale;
+        u.uDpr.value = dpr;
+        (u.uViewport.value as THREE.Vector2).set(size.width, size.height);
+      }
 
       viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
       const project = makeGlobeProjector({
@@ -268,24 +358,49 @@ export function GlobeLabels({
         reserved: p.reservedRects,
         scale: p.scale,
         markers: p.markers,
+        countries: true,
       });
       markerPoints.current = layout.markerPoints;
       pulseVisible.current = layout.markerPoints.some((pt) => p.markers.some((m) => m.pulse && m.sigla === pt.sigla));
       writeVisibility(visibility, quads.groups, layout.shown);
       geometry.getAttribute('aVisible').needsUpdate = true;
+      countryPoints.current = layout.countryPoints;
+      writeVisibility(countryVisibility, countryQuads.groups, layout.shown);
+      countryGeometry.getAttribute('aVisible').needsUpdate = true;
     };
     return () => {
       updateRef.current = null;
     };
-  }, [updateRef, size.width, size.height, dpr, material, geometry, quads, visibility, viewProjection]);
+  }, [
+    updateRef,
+    size.width,
+    size.height,
+    dpr,
+    material,
+    geometry,
+    quads,
+    visibility,
+    viewProjection,
+    countryMaterial,
+    countryGeometry,
+    countryQuads,
+    countryVisibility,
+  ]);
 
   useEffect(
     () => () => {
       geometry.dispose();
       material.dispose();
+      countryGeometry.dispose();
+      countryMaterial.dispose();
     },
-    [geometry, material],
+    [geometry, material, countryGeometry, countryMaterial],
   );
 
-  return <primitive object={mesh} />;
+  return (
+    <>
+      <primitive object={countryMesh} />
+      <primitive object={mesh} />
+    </>
+  );
 }

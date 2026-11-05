@@ -85,6 +85,8 @@ import {
 import { ProfileSheet } from './ProfileSheet';
 import { availableIndicators, indicatorSpec, layerBadge, mapRows, type MapIndicator } from './regionalMetrics';
 import { UfDetail } from './StateDetail';
+import { CountryDetail } from './CountryDetail';
+import { countryById } from '@/globe/countries';
 import { ReadingList } from './MapReadingPanel';
 import { DIMMED_UF, rankUfs, ufDescription } from './mapReading';
 
@@ -144,8 +146,11 @@ const SETTINGS_ICON: SymbolViewProps['name'] = { ios: 'gearshape.fill', android:
  */
 const COMPACT_DOCK_CENTER_MIN_WIDTH = 600;
 
-/** Folhas da mesa: as dos trilhos, mais o cartão do estado (toque no globo) e o menu (botão ☰ do topo). */
-type SheetId = RailSheetId | 'estado' | 'menu';
+/**
+ * Folhas da mesa: as dos trilhos, mais o cartão do estado e a ficha do país (toques no globo) e o menu (botão ☰ do
+ * topo).
+ */
+type SheetId = RailSheetId | 'estado' | 'pais' | 'menu';
 
 const SHEET_TITLES: Record<SheetId, string> = {
   alertas: 'Alertas e Eventos',
@@ -158,6 +163,7 @@ const SHEET_TITLES: Record<SheetId, string> = {
   ministerios: 'Ministérios',
   perfil: 'Perfil do Governo',
   estado: 'Estado',
+  pais: 'País',
   menu: 'Menu',
 };
 
@@ -190,6 +196,8 @@ export function PainelScreen() {
   const [sheet, setSheet] = useState<SheetId | null>(null);
   const [mapLayer, setMapLayer] = useState<MapIndicator | null>(null);
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
+  // País tocado no globo (PLANO_PAISES.md, P1): só consulta, fora do save.
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [mapRegion, setMapRegion] = useState<string | null>(null);
   const [openIndicator, setOpenIndicator] = useState<IndicatorKey | null>(null);
   // Evento aberto por um marcador do mapa: a folha Alertas o põe no topo e o destaca. Limpo ao fechar a folha.
@@ -420,6 +428,7 @@ export function PainelScreen() {
   const closeSheet = () => {
     setSheet(null);
     setSelectedUf(null);
+    setSelectedCountry(null);
     setOpenIndicator(null);
     setFocusInstance(null);
   };
@@ -496,15 +505,27 @@ export function PainelScreen() {
   const selectState = (sigla: string | null) => {
     if (!active || sigla === null) {
       setSelectedUf(null);
+      setSelectedCountry(null);
+      if (sheet === 'pais') setSheet(null);
       return;
     }
+    setSelectedCountry(null);
     setSelectedUf(sigla);
     setSheet('estado');
+  };
+
+  /** Toque num país fora do Brasil (no território ou no nome): abre a ficha dele, só de consulta. */
+  const selectCountry = (id: string) => {
+    if (!active || !countryById(id)) return;
+    setSelectedUf(null);
+    setSelectedCountry(id);
+    setSheet('pais');
   };
 
   /** Escolha na lista: leva a câmera até a UF e abre o cartão dela. */
   const chooseState = (sigla: string) => {
     globe.current?.flyToUf(sigla);
+    setSelectedCountry(null);
     setSelectedUf(sigla);
     setSheet('estado');
   };
@@ -706,6 +727,14 @@ export function PainelScreen() {
         ) : (
           <EmptyNote text="Toque num estado do mapa para ver os números e o porquê da diferença." />
         );
+      case 'pais': {
+        const country = selectedCountry ? countryById(selectedCountry) : undefined;
+        return country ? (
+          <CountryDetail country={country} />
+        ) : (
+          <EmptyNote text="Toque num país do globo para ver a ficha dele." />
+        );
+      }
       case 'perfil':
         return active ? (
           <ProfileSheet
@@ -800,6 +829,8 @@ export function PainelScreen() {
             reservedRects={labelReserve.rects}
             labelInsets={labelReserve.insets}
             onSelect={selectState}
+            selectedCountryId={selectedCountry}
+            onSelectCountry={selectCountry}
             onMarkerPress={openMarker}
             onPulseDone={onPulseDone}
             onGlobeFailure={() => setGlobeFailed(true)}
@@ -982,7 +1013,11 @@ export function PainelScreen() {
           {sheet && (
             <InfoSheet
               title={
-                sheet === 'estado' && selectedRow ? `${selectedRow.name} · ${selectedRow.uf.id}` : SHEET_TITLES[sheet]
+                sheet === 'estado' && selectedRow
+                  ? `${selectedRow.name} · ${selectedRow.uf.id}`
+                  : sheet === 'pais' && selectedCountry
+                    ? (countryById(selectedCountry)?.name ?? SHEET_TITLES.pais)
+                    : SHEET_TITLES[sheet]
               }
               onClose={closeSheet}>
               {sheetBody()}

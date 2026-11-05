@@ -320,7 +320,7 @@ def priorities(ufs, areas) -> dict[str, int]:
 
 # ---------------------------------------------------------------- atlas
 
-def load_font(size: int) -> ImageFont.FreeTypeFont:
+def load_font(size: int, font_file: str = FONT_FILE) -> ImageFont.FreeTypeFont:
     """DejaVu Sans Bold, localizada pelo matplotlib (que a traz embutida). Sem alternativa silenciosa."""
     try:
         import matplotlib
@@ -329,15 +329,17 @@ def load_font(size: int) -> ImageFont.FreeTypeFont:
             "matplotlib não encontrado: ele traz a fonte DejaVu Sans Bold usada no atlas. "
             "Instale com: pip install matplotlib"
         )
-    path = pathlib.Path(matplotlib.__file__).parent / "mpl-data" / "fonts" / "ttf" / FONT_FILE
+    path = pathlib.Path(matplotlib.__file__).parent / "mpl-data" / "fonts" / "ttf" / font_file
     if not path.is_file():
         raise SystemExit(
-            f"fonte {FONT_FILE} não encontrada em {path}. Reinstale o matplotlib: pip install --force-reinstall matplotlib"
+            f"fonte {font_file} não encontrada em {path}. Reinstale o matplotlib: pip install --force-reinstall matplotlib"
         )
     return ImageFont.truetype(str(path), size)
 
 
-def render_text(text: str, font: ImageFont.FreeTypeFont, stroke: int) -> Image.Image:
+def render_text(
+    text: str, font: ImageFont.FreeTypeFont, stroke: int, fill: tuple[int, int, int] = TEXT_FILL
+) -> Image.Image:
     """Texto branco com contorno escuro, RGBA com alfa reto (sem franja escura nas bordas).
 
     O contorno sai da distância (px) ao glifo: cobertura 1 até `stroke` px, com 1 px de suavização na borda.
@@ -352,9 +354,9 @@ def render_text(text: str, font: ImageFont.FreeTypeFont, stroke: int) -> Image.I
     as_ = np.maximum(af, np.clip(stroke + 0.5 - dist, 0.0, 1.0))
     alpha = af + as_ * (1.0 - af)
     safe = np.where(alpha > 0, alpha, 1.0)[..., None]
-    fill = np.array(TEXT_FILL, np.float32)
+    fill_rgb = np.array(fill, np.float32)
     dark = np.array(TEXT_STROKE, np.float32)
-    rgb = (fill * af[..., None] + dark * (as_ * (1.0 - af))[..., None]) / safe
+    rgb = (fill_rgb * af[..., None] + dark * (as_ * (1.0 - af))[..., None]) / safe
     rgba = np.zeros((h, w, 4), np.uint8)
     rgba[..., :3] = np.rint(rgb).astype(np.uint8)
     rgba[..., 3] = np.rint(alpha * 255.0).astype(np.uint8)
@@ -396,11 +398,11 @@ def shelf_pack(sizes: list[tuple[str, int, int]], side_w: int, side_h: int):
     return pos
 
 
-def build_atlas(entries: list[tuple[str, Image.Image]]):
+def build_atlas(entries: list[tuple[str, Image.Image]], max_side: int = ATLAS_MAX_SIDE):
     sizes = [(k, im.width, im.height) for k, im in entries]
     sides = []
     s = ATLAS_MIN_SIDE
-    while s <= ATLAS_MAX_SIDE:
+    while s <= max_side:
         sides.append(s)
         s *= 2
     # menor área primeiro; empate: o mais quadrado (largura primeiro)
@@ -412,7 +414,7 @@ def build_atlas(entries: list[tuple[str, Image.Image]]):
             for k, im in entries:
                 atlas.paste(im, pos[k])
             return atlas, pos
-    raise SystemExit(f"os rótulos não cabem em {ATLAS_MAX_SIDE}x{ATLAS_MAX_SIDE}")
+    raise SystemExit(f"os rótulos não cabem em {max_side}x{max_side}")
 
 
 def round_up(v: float) -> float:
