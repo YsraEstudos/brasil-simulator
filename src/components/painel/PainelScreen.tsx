@@ -19,6 +19,7 @@ import {
   sanctionItems,
 } from '@/components/campaign/inboxModel';
 import { MonthSummary } from '@/components/campaign/MonthSummary';
+import { IndicatorEquation } from '@/components/campaign/IndicatorEquation';
 import { WhyChanged } from '@/components/campaign/WhyChanged';
 import { hudChartPalette } from '@/components/charts/chartPalette';
 import { useHistoryView } from '@/components/charts/historyViewStore';
@@ -30,6 +31,7 @@ import { Alert, Indicator, Text } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { campaignMonths, DEFAULT_SCENARIO_ID, loadContent } from '@/content';
 import {
+  currentNominalGdpMillions,
   indicatorsFromScenario,
   initialRegions,
   SANCTION_ACTION_ID,
@@ -330,6 +332,23 @@ export function PainelScreen() {
         ? hudFromCampaign(active, content, history, layer, election, colorBlind, fiscalUnit, deltaBasis)
         : hudFromScenario(content, fiscalUnit),
     [active, content, history, layer, election, colorBlind, fiscalUnit, deltaBasis],
+  );
+  // Números nas opções de evento (H9/D3): exatos no Casual, faixa nas outras dificuldades.
+  const activeState = active?.state;
+  const eventFigures = useMemo(
+    () =>
+      activeState
+        ? {
+            context: {
+              difficulty: activeState.difficulty,
+              seed: activeState.seed,
+              monthIndex: activeState.monthIndex,
+            },
+            unit: fiscalUnit,
+            gdpMillions: currentNominalGdpMillions(activeState, content),
+          }
+        : undefined,
+    [activeState, content, fiscalUnit],
   );
   // Clima do mês: a textura do globo é refeita só quando o clima ou o mês mudam; o 2D lê as marcas (hachura, nuvem).
   const mapClouds = useGame((s) => s.mapClouds);
@@ -664,6 +683,7 @@ export function PainelScreen() {
             onChoose={gameStore.getState().toggleEventChoice}
             characters={characters}
             focusInstanceId={focusInstance}
+            figures={eventFigures}
             sanctions={sanctions}
             sanctionChosen={sanctionChosen}
             onSanction={(proposalId, choice) =>
@@ -768,6 +788,14 @@ export function PainelScreen() {
             </View>
             {guideIndicator && guideGuided && (
               <IndicatorGuideCard indicator={guideGuided} value={indicators[guideIndicator]} />
+            )}
+            {openIndicator && active && (
+              <IndicatorEquation
+                indicator={openIndicator}
+                report={active.lastReport}
+                current={indicators[openIndicator]}
+                previous={active.previous?.[openIndicator]}
+              />
             )}
             {openIndicator && <WhyChanged indicator={openIndicator} report={active?.lastReport} />}
             {active && !active.finished && (

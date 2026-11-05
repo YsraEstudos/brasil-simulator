@@ -1,12 +1,16 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ministryIcon } from '@/components/painel/HudBits';
 import { Text } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
-import type { GameContent, GameState } from '@/engine';
+import { policyEffectForecast, type GameContent, type GameState } from '@/engine';
 import { useTheme } from '@/hooks/use-theme';
+import { useGame } from '@/store';
 
+import { FigureChips } from './ChoiceOption';
 import { DispatchCard } from './DispatchCard';
+import { figuresA11y, policyFigures } from './effectFigures';
 import { Badge, CostPips, Icon, ICONS, IconTile } from './GabineteBits';
 import { PROPOSAL_STATUS_LABEL } from './labels';
 import { POLICY_KIND_LABEL, shortByLabel, type CatalogEntry } from './policyCatalogModel';
@@ -46,6 +50,20 @@ export function PolicyCatalogCard({
   const expanded = !locked && expandedProp;
   const dimmed = locked || shortBy > 0;
   const kindLabel = POLICY_KIND_LABEL[kind];
+  const unit = useGame((s) => s.prefs.fiscalUnit);
+  // Números do cartão (H9/D3): os mesmos da mesa de despacho, exatos no Casual e em faixa nas outras dificuldades.
+  const figures = useMemo(
+    () =>
+      locked || saturated
+        ? []
+        : policyFigures(
+            policy.id,
+            policyEffectForecast(state, policy.id, content),
+            { difficulty: state.difficulty, seed: state.seed, monthIndex: state.monthIndex },
+            unit,
+          ),
+    [locked, saturated, policy.id, state, content, unit],
+  );
 
   const body = (
     <>
@@ -70,6 +88,7 @@ export function PolicyCatalogCard({
       <Text variant="caption" color="textSecondary" numberOfLines={expanded ? undefined : 2}>
         {policy.summary}
       </Text>
+      <FigureChips figures={figures} />
       <View style={styles.badges}>
         <Badge
           icon={kind === 'decreto' ? ICONS.executive : ICONS.congress}
@@ -119,6 +138,7 @@ export function PolicyCatalogCard({
     kindLabel.short,
     selected ? 'Na agenda' : shortBy > 0 ? shortByLabel(shortBy) : undefined,
     saturated ? 'Teto ou piso atingido' : undefined,
+    figuresA11y(figures),
     expanded ? 'Fechar mesa de despacho' : 'Abrir mesa de despacho',
   ]
     .filter(Boolean)
