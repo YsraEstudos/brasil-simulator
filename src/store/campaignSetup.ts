@@ -272,6 +272,8 @@ export interface CampaignSetupForm {
   startPoint?: StartPoint;
   /** Texto do campo de semente (vazio = automática). */
   seedText: string;
+  /** Modo sem volta (Ironman, B53); ausente = desligado. */
+  ironman?: boolean;
 }
 
 export interface NewCampaignInput {
@@ -287,6 +289,8 @@ export interface NewCampaignInput {
   startPoint?: StartPoint;
   /** Semente da simulação; ausente = sorteada pela store. */
   seed?: number;
+  /** Modo sem volta (PLANO_SAVES_HISTORICO.md H3, B53): sem duplicar, sem "Salvar como", sem voltar o mês. */
+  ironman?: boolean;
 }
 
 export interface SetupErrors {
@@ -313,6 +317,7 @@ export function checkNewCampaignInput(input: {
   profileId?: unknown;
   startPoint?: unknown;
   seed?: unknown;
+  ironman?: unknown;
 }): SetupCheck {
   const name = validateCampaignName(input.name);
   const { difficulty } = input;
@@ -330,7 +335,8 @@ export function checkNewCampaignInput(input: {
     startOk &&
     seedOk
   ) {
-    return { ok: true, input: { name: name.value, difficulty, scenarioId, profileId, startPoint, seed } };
+    const ironman = input.ironman === true;
+    return { ok: true, input: { name: name.value, difficulty, scenarioId, profileId, startPoint, seed, ironman } };
   }
   const errors: SetupErrors = {};
   if (!name.ok) errors.name = name.error;
@@ -352,6 +358,7 @@ export function checkSetupForm(form: CampaignSetupForm): SetupCheck {
     profileId: form.profileId,
     startPoint: form.startPoint,
     seed: seed.ok ? (seed.value ?? undefined) : undefined,
+    ironman: form.ironman,
   });
   if (seed.ok) return base;
   return { ok: false, errors: { ...(base.ok ? {} : base.errors), seed: seed.error } };

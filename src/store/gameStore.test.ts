@@ -437,8 +437,8 @@ describe('migração 2 (configurações)', () => {
     });
     // Ajuste: a lista de pendentes e a última versão ganharam a migração 10 (setup_json); a campanha antiga segue sem
     // setup e continua aparecendo.
-    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-    expect(LATEST_DB_VERSION).toBe(11);
+    expect(await migrate(db)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(LATEST_DB_VERSION).toBe(12);
     await v1.getState().init();
     expect(v1.getState().campaigns.map((c) => c.name)).toEqual(['Campanha da v1']);
   });

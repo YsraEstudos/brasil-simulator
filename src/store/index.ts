@@ -26,3 +26,4 @@ export * from './mapClouds';
 export * from './preferences';
 export * from './challengeCode';
 export { normalizeNotes } from './campaignNotes';
+export * from './campaignRules';

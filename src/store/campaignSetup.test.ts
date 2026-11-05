@@ -300,6 +300,7 @@ describe('checkNewCampaignInput', () => {
         profileId: 'centro',
         startPoint: 'posse',
         seed: null,
+        ironman: false,
       },
     });
   });
@@ -321,6 +322,7 @@ describe('checkNewCampaignInput', () => {
         profileId: 'centro',
         startPoint: 'posse',
         seed: 7,
+        ironman: false,
       },
     });
   });

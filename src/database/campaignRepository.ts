@@ -112,6 +112,10 @@ export interface CampaignSummary {
   notes: string;
   /** Cor de destaque do cartão (migração 11, D44); `null` = nenhuma. */
   accent: CampaignAccent | null;
+  /** Modo sem volta (B53), lido de `setup_json`: sem duplicar, sem "Salvar como" e sem voltar o mês. */
+  ironman: boolean;
+  /** Turno para o qual a partida já voltou uma vez (migração 12, D34); `null` = nunca voltou. */
+  rewoundTurn: number | null;
 }
 
 export { CAMPAIGN_ACCENTS, CAMPAIGN_NOTES_MAX, isCampaignAccent, type CampaignAccent };
@@ -136,6 +140,11 @@ export interface CampaignSetupSnapshot {
   /** Ponto de partida; ausente = posse. */
   startPoint?: string;
   seed: number;
+  /**
+   * Modo sem volta (PLANO_SAVES_HISTORICO.md H3, B53); ausente = desligado. Só é gravado quando ligado. A importação
+   * de um arquivo tira o selo (D-H3).
+   */
+  ironman?: true;
 }
 
 /** Lê `setup_json`; ilegível ou incompleto vira `null`. */
@@ -152,6 +161,7 @@ export function parseSetupSnapshot(json: string | null): CampaignSetupSnapshot |
       ...(typeof v.profileId === 'string' ? { profileId: v.profileId } : {}),
       ...(typeof v.startPoint === 'string' ? { startPoint: v.startPoint } : {}),
       seed: v.seed,
+      ...(v.ironman === true ? { ironman: true as const } : {}),
     };
   } catch {
     return null;
@@ -627,6 +637,7 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     setup_json: string | null;
     notes: string;
     accent: string | null;
+    rewound_turn: number | null;
   }>('SELECT * FROM campaigns ORDER BY updated_at DESC, id');
   return rows.map((r) => ({
     id: r.id,
@@ -649,7 +660,86 @@ export async function listCampaigns(db: SqlDatabase): Promise<CampaignSummary[]>
     setup: parseSetupSnapshot(r.setup_json),
     notes: r.notes,
     accent: isCampaignAccent(r.accent) ? r.accent : null,
+    ironman: parseSetupSnapshot(r.setup_json)?.ironman === true,
+    rewoundTurn: r.rewound_turn,
   }));
+}
+
+/** Voltar ao mês anterior foi recusado pelo banco (D34): a mensagem é para o jogador. */
+export class CampaignRewindError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CampaignRewindError';
+  }
+}
+
+/**
+ * Voltar ao mês anterior (PLANO_SAVES_HISTORICO.md H3, D34): desfaz o último turno jogado, numa transação, e devolve o
+ * estado do início dele. O turno desfeito T é o anterior ao atual; somem tudo o que `recordMonth(T)` gravou: o snapshot
+ * de T + 1 (e qualquer um depois), as decisões, o relatório e as respostas a eventos de T, os eventos disparados em T
+ * (que chegaram em T + 1), os pontos das séries depois do mês de T, a fotografia da eleição de T e os turnos ≥ T do
+ * resumo da pré-campanha. Os eventos disparados no turno anterior a T (linhas de T sem escolha) ficam: chegaram antes.
+ *
+ * As regras de quem pode voltar (dificuldade, Ironman) ficam na store; aqui ficam as travas que valem no banco: a
+ * campanha precisa estar ativa, ter um turno anterior com snapshot e não ter voltado para T ou depois
+ * (`rewound_turn`, uma vez por mês jogado, decisão D-H2). O motor não muda: jogar de novo com as mesmas decisões dá
+ * o mesmo estado, porque o PRNG vem do estado salvo.
+ */
+export async function rewindCampaign(db: SqlDatabase, campaignId: string): Promise<GameState> {
+  let restored: GameState | null = null;
+  await db.transaction(async () => {
+    const row = await db.first<{ current_turn: number; status: string; rewound_turn: number | null }>(
+      'SELECT current_turn, status, rewound_turn FROM campaigns WHERE id = ?',
+      [campaignId],
+    );
+    if (!row) throw new CampaignNotFoundError(campaignId);
+    if (row.status !== 'ativa') throw new CampaignRewindError('Uma campanha encerrada não volta o mês.');
+    const target = row.current_turn - 1;
+    if (target < 0) throw new CampaignRewindError('Ainda não há mês jogado para desfazer.');
+    if (row.rewound_turn !== null && target <= row.rewound_turn) {
+      throw new CampaignRewindError('Este mês já foi desfeito uma vez. Jogue mais um mês para poder voltar de novo.');
+    }
+    const state = await loadStateAt(db, campaignId, target);
+    if (!state) throw new CampaignRewindError('O mês anterior não está mais salvo.');
+    const report = await loadReport(db, campaignId, target);
+
+    await db.run('DELETE FROM snapshots WHERE campaign_id = ? AND turn_index > ?', [campaignId, target]);
+    await db.run('DELETE FROM decisions WHERE campaign_id = ? AND turn_index >= ?', [campaignId, target]);
+    await db.run('DELETE FROM month_reports WHERE campaign_id = ? AND turn_index >= ?', [campaignId, target]);
+    await db.run(
+      `DELETE FROM events WHERE campaign_id = ?
+         AND (turn_index > ? OR (turn_index = ? AND choice_id IS NOT NULL))`,
+      [campaignId, target, target],
+    );
+    // As séries começam na posse: voltando a um turno anterior a ela, nenhum ponto fica.
+    const seriesFrom = isPreInauguration(state) ? -1 : state.monthIndex;
+    for (const table of ['indicator_history', 'regional_indicator_history'] as const) {
+      await db.run(`DELETE FROM ${table} WHERE campaign_id = ? AND month_index > ?`, [campaignId, seriesFrom]);
+    }
+    if (report?.electionResult) {
+      await db.run('DELETE FROM election_results WHERE campaign_id = ? AND month_index = ?', [
+        campaignId,
+        report.electionResult.monthIndex,
+      ]);
+    }
+    const career = await loadCareerSummary(db, campaignId);
+    if (career) {
+      career.turns = career.turns.filter((t) => t.turnIndex < target);
+      await db.run('UPDATE career_summaries SET summary_json = ? WHERE campaign_id = ?', [
+        JSON.stringify(career),
+        campaignId,
+      ]);
+    }
+    await db.run(
+      `UPDATE campaigns SET current_month = ?, current_turn = ?, stage = ?, summary_json = ?, rewound_turn = ?,
+         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), last_played_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+       WHERE id = ?`,
+      [state.monthIndex, target, stageColumn(state), JSON.stringify(cardSummaryOf(state)), target, campaignId],
+    );
+    restored = state;
+  });
+  if (!restored) throw new CampaignNotFoundError(campaignId);
+  return restored;
 }
 
 /** Estado salvo no início de um turno (ex.: o anterior, para mostrar variações). `null` se não existir. */
